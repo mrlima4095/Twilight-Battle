@@ -1,0 +1,239 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: white;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Tela de Login */
+#login-screen {
+    text-align: center;
+    padding: 50px 20px;
+}
+
+#login-screen h1 {
+    font-size: 48px;
+    margin-bottom: 40px;
+    text-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+
+.login-form {
+    max-width: 500px;
+    margin: 0 auto;
+    background: rgba(0,0,0,0.3);
+    padding: 30px;
+    border-radius: 10px;
+}
+
+#player-name {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 2px solid #4a4a6a;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 18px;
+    border-radius: 5px;
+}
+
+.room-options {
+    margin-top: 20px;
+}
+
+#rooms-list {
+    margin: 20px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.room-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.room-item:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+/* Sala de Espera */
+#waiting-room {
+    text-align: center;
+}
+
+.players-list {
+    max-width: 400px;
+    margin: 30px auto;
+    background: rgba(0,0,0,0.3);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+#players {
+    list-style: none;
+    margin: 20px 0;
+}
+
+#players li {
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+}
+
+#start-game-btn {
+    padding: 15px 40px;
+    font-size: 18px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 20px 0;
+}
+
+#start-game-btn:hover {
+    background: #45a049;
+}
+
+.waiting-message {
+    color: #888;
+    font-style: italic;
+}
+
+/* Tela do Jogo */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.time-display {
+    font-size: 18px;
+}
+
+.time-display span:first-child {
+    color: #FFD700;
+    margin-right: 15px;
+}
+
+.battlefield {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.opponents-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    min-height: 200px;
+    padding: 20px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+}
+
+.opponent-card {
+    background: rgba(139,0,0,0.3);
+    border: 2px solid #8B0000;
+    border-radius: 10px;
+    padding: 15px;
+    min-width: 200px;
+}
+
+.opponent-name {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.opponent-life {
+    color: #FF4444;
+}
+
+.player-area {
+    background: rgba(0,0,50,0.3);
+    border: 2px solid #4a4a6a;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.player-field {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.field-section {
+    flex: 1;
+}
+
+.field-section h4 {
+    margin-bottom: 10px;
+    color: #888;
+}
+
+.card-field {
+    min-height: 120px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 5px;
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.card {
+    width: 100px;
+    height: 140px;
+    background: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+    border: 2px solid #4a4a6a;
+    border-radius: 8px;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    border-color: #FFD700;
+}
+
+.card.tapped {
+    transform: rotate(90deg);
+}
+
+.card.attack

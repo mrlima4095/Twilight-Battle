@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle - Jogo de Cartas RPG</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Tela de Login/Entrada -->
+        <div id="login-screen" class="screen active">
+            <h1>Twilight Battle</h1>
+            <div class="login-form">
+                <input type="text" id="player-name" placeholder="Seu nome" maxlength="20">
+                <div class="room-options">
+                    <h3>Salas Disponíveis</h3>
+                    <div id="rooms-list"></div>
+                    <button onclick="createRoom()">Criar Nova Sala</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sala de Espera -->
+        <div id="waiting-room" class="screen">
+            <h2>Sala: <span id="room-id"></span></h2>
+            <div class="players-list">
+                <h3>Jogadores (<span id="player-count">0</span>/6)</h3>
+                <ul id="players"></ul>
+            </div>
+            <button id="start-game-btn" onclick="startGame()" style="display: none;">Começar Jogo</button>
+            <div class="waiting-message">Aguardando jogadores...</div>
+        </div>
+
+        <!-- Tela do Jogo -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="time-display">
+                    <span id="time-of-day">Dia</span>
+                    <span id="turn-indicator"></span>
+                </div>
+                <div class="game-status">
+                    <span id="current-player"></span>
+                </div>
+            </div>
+
+            <div class="battlefield">
+                <!-- Área dos Oponentes -->
+                <div id="opponents-area" class="opponents-area"></div>
+
+                <!-- Área do Jogador Atual -->
+                <div class="player-area">
+                    <!-- Campo de Batalha do Jogador -->
+                    <div class="player-field">
+                        <div class="field-section">
+                            <h4>Ataque (Máx: 3)</h4>
+                            <div id="player-attack-field" class="card-field"></div>
+                        </div>
+                        <div class="field-section">
+                            <h4>Defesa (Máx: 6)</h4>
+                            <div id="player-defense-field" class="card-field"></div>
+                        </div>
+                    </div>
+
+                    <!-- Informações do Jogador -->
+                    <div class="player-info">
+                        <div class="castle">
+                            <div class="castle-life">
+                                <span id="player-life">5000</span> / 5000
+                            </div>
+                            <div class="castle-icon">🏰</div>
+                        </div>
+                        <div class="player-stats">
+                            <div>Deck: <span id="deck-count">0</span></div>
+                            <div>Cemitério: <span id="graveyard-count">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Mão do Jogador -->
+                    <div class="hand-area">
+                        <h4>Sua Mão</h4>
+                        <div id="player-hand" class="hand-cards"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ações do Turno -->
+            <div class="action-bar">
+                <button onclick="drawCard()" id="draw-btn">Comprar Carta</button>
+                <button onclick="endTurn()" id="end-turn-btn">Finalizar Turno</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/game.js"></script>
+</body>
+</html>
