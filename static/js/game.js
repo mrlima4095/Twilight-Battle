@@ -1,4 +1,10 @@
-const socket = io();
+const socket = io({
+    transports: ['polling'], // Força uso de polling em vez de websocket para evitar problemas
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000
+});
+
 let currentRoom = null;
 let playerId = null;
 let playerName = '';
@@ -14,6 +20,10 @@ socket.on('connect', () => {
     console.log('Conectado ao servidor');
     playerId = socket.id;
     loadRooms();
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Erro de conexão:', error);
 });
 
 // Carrega salas disponíveis
@@ -96,14 +106,20 @@ socket.on('update_players', (data) => {
     updatePlayersList(data.players);
     
     // Mostra botão de iniciar para o host (primeiro jogador)
-    if (data.players.length > 0 && data.players[0][0] === playerId) {
+    if (data.players.length > 0 && data.players[0].id === playerId) {
         document.getElementById('start-game-btn').style.display = 'block';
     }
 });
 
 socket.on('game_started', (data) => {
     showScreen('game-screen');
-    gameState.players = Object.fromEntries(data.players);
+    
+    // Converte array de players para objeto
+    gameState.players = {};
+    data.players.forEach(p => {
+        gameState.players[p.id] = [p.name, p.life];
+    });
+    
     gameState.currentTurn = data.current_turn;
     gameState.timeOfDay = data.time_of_day;
     
@@ -187,9 +203,9 @@ function showScreen(screenId) {
 function updatePlayersList(players) {
     const list = document.getElementById('players');
     list.innerHTML = '';
-    players.forEach(([id, name]) => {
+    players.forEach(player => {
         const li = document.createElement('li');
-        li.textContent = name + (id === playerId ? ' (você)' : '');
+        li.textContent = player.name + (player.id === playerId ? ' (você)' : '');
         list.appendChild(li);
     });
 }
@@ -252,15 +268,18 @@ function createOpponentsArea() {
     const opponentsArea = document.getElementById('opponents-area');
     opponentsArea.innerHTML = '';
     
-    Object.entries(gameState.players).forEach(([id, [name, life]]) => {
+    Object.entries(gameState.players).forEach(([id, playerData]) => {
         if (id !== playerId) {
+            const [name, life] = playerData;
             const opponentDiv = document.createElement('div');
             opponentDiv.className = 'opponent-card';
+            opponentDiv.id = `opponent-${id}`;
             opponentDiv.innerHTML = `
                 <div class="opponent-name">${name}</div>
                 <div class="opponent-life">Vida: ${life}</div>
                 <div class="opponent-field" id="opponent-field-${id}"></div>
                 <button onclick="attackPlayer('${id}')" 
+                        class="attack-btn"
                         ${gameState.currentTurn !== playerId ? 'disabled' : ''}>
                     Atacar
                 </button>
@@ -278,10 +297,11 @@ function addCardToHand(card) {
 
 function createCardElement(card, index) {
     const cardDiv = document.createElement('div');
-    cardDiv.className = `card ${card.position || ''}`;
+    cardDiv.className = `card ${card.position || ''} ${card.tapped ? 'tapped' : ''}`;
+    cardDiv.setAttribute('data-index', index);
     cardDiv.innerHTML = `
         <div class="card-name">${card.name}</div>
-        <div class="card-description">${card.description.substring(0, 30)}...</div>
+        <div class="card-description">${(card.description || '').substring(0, 20)}...</div>
         <div class="card-stats">
             <span class="card-life">❤️ ${card.life || '-'}</span>
             <span class="card-attack">⚔️ ${card.attack || '-'}</span>
@@ -299,29 +319,37 @@ function createCardElement(card, index) {
 function showPlayOptions(cardIndex) {
     const position = prompt('Onde jogar a carta? (ataque/defesa)');
     if (position === 'ataque' || position === 'defesa') {
-        playCard(cardIndex, position);
+        playCard(cardIndex, position === 'ataque' ? 'attack' : 'defense');
     }
 }
 
 function updatePlayerField(card, position) {
     const fieldId = position === 'attack' ? 'player-attack-field' : 'player-defense-field';
     const field = document.getElementById(fieldId);
-    const cardElement = createCardElement(card);
+    const cardElement = createCardElement(card, field.children.length);
     field.appendChild(cardElement);
 }
 
 function updateOpponentField(playerId, card, position) {
-    // Implementar atualização do campo do oponente
-    console.log(`Campo do oponente ${playerId} atualizado:`, card);
+    const opponentField = document.getElementById(`opponent-field-${playerId}`);
+    if (opponentField) {
+        const cardElement = createCardElement(card);
+        cardElement.classList.add('opponent-card');
+        opponentField.appendChild(cardElement);
+    }
 }
 
 function updateDefenderField(fieldCards) {
-    // Atualiza o campo após ataque
+    // Limpa campos
     document.getElementById('player-attack-field').innerHTML = '';
     document.getElementById('player-defense-field').innerHTML = '';
     
+    // Recria cartas no campo
     fieldCards.forEach(card => {
-        updatePlayerField(card, card.position);
+        const fieldId = card.position === 'attack' ? 'player-attack-field' : 'player-defense-field';
+        const field = document.getElementById(fieldId);
+        const cardElement = createCardElement(card);
+        field.appendChild(cardElement);
     });
 }
 
@@ -336,7 +364,16 @@ function getPlayerName(playerId) {
 }
 
 function highlightCurrentPlayer(playerId) {
-    // Implementar destaque visual do jogador atual
+    // Remove destaque de todos
+    document.querySelectorAll('.opponent-card').forEach(card => {
+        card.style.border = '2px solid #8B0000';
+    });
+    
+    // Destaca jogador atual
+    const currentOpponent = document.getElementById(`opponent-${playerId}`);
+    if (currentOpponent) {
+        currentOpponent.style.border = '2px solid #FFD700';
+    }
 }
 
 function showNotification(message) {

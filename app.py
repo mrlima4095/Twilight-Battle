@@ -1,13 +1,14 @@
 from flask import Flask, render_template, request, jsonify, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import uuid
-from game_logic import Game, Player, Card
+from game_logic import Game, Player, Card, TimeOfDay
 import threading
 import time
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'twilight_battle_secret'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", ping_timeout=60, ping_interval=25)
 
 # Armazenamento dos jogos
 games = {}
@@ -71,25 +72,56 @@ def create_room():
     games[room_id] = GameRoom(room_id)
     return jsonify({'room_id': room_id})
 
+@socketio.on('connect')
+def handle_connect():
+    print(f'Cliente conectado: {request.sid}')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f'Cliente desconectado: {request.sid}')
+    player_id = request.sid
+    for room_id, room in list(games.items()):
+        if player_id in room.players:
+            room.remove_player(player_id)
+            emit('player_left', {
+                'player_id': player_id
+            }, room=room_id)
+            
+            if len(room.players) == 0:
+                if room.turn_timer:
+                    room.turn_timer.cancel()
+                del games[room_id]
+
 @socketio.on('join')
 def handle_join(data):
     room_id = data['room_id']
     player_name = data['player_name']
     player_id = request.sid
     
+    print(f"Jogador {player_name} tentando entrar na sala {room_id}")
+    
     if room_id in games:
         room = games[room_id]
         if room.add_player(player_id, player_name):
             join_room(room_id)
+            
+            # Prepara lista de jogadores para enviar
+            players_list = []
+            for pid, p in room.players.items():
+                players_list.append({
+                    'id': pid,
+                    'name': p.name
+                })
+            
             emit('player_joined', {
                 'player_id': player_id,
                 'player_name': player_name,
-                'players': [(pid, p.name) for pid, p in room.players.items()]
+                'players': players_list
             }, room=room_id)
             
             # Atualiza lista de jogadores para todos
             emit('update_players', {
-                'players': [(pid, p.name) for pid, p in room.players.items()],
+                'players': players_list,
                 'count': len(room.players)
             }, room=room_id)
         else:
@@ -100,6 +132,8 @@ def handle_start_game(data):
     room_id = data['room_id']
     player_id = request.sid
     
+    print(f"Tentativa de iniciar jogo na sala {room_id} pelo jogador {player_id}")
+    
     if room_id in games:
         room = games[room_id]
         if player_id in room.players and room.start_game():
@@ -108,10 +142,19 @@ def handle_start_game(data):
                 player = room.players[pid]
                 player.draw_initial_hand()
             
+            # Prepara dados dos jogadores
+            players_data = []
+            for pid, p in room.players.items():
+                players_data.append({
+                    'id': pid,
+                    'name': p.name,
+                    'life': p.life
+                })
+            
             emit('game_started', {
-                'players': [(pid, p.name, p.life) for pid, p in room.players.items()],
+                'players': players_data,
                 'current_turn': list(room.players.keys())[room.current_turn],
-                'time_of_day': room.game.time_of_day
+                'time_of_day': room.game.time_of_day.value  # Usa .value para serializar
             }, room=room_id)
             
             # Inicia timer do turno
@@ -152,7 +195,12 @@ def handle_attack(data):
             defender = room.players[target_player_id]
             
             # Calcula dano total dos atacantes
-            total_attack = sum(card.attack for card in attacker.field if card.position == 'attack')
+            total_attack = sum(card.attack for card in attacker.field if card.position == 'attack' and not card.tapped)
+            
+            # Marca cartas de ataque como usadas (viradas)
+            for card in attacker.field:
+                if card.position == 'attack' and not card.tapped:
+                    card.tapped = True
             
             # Aplica dano na defesa do defensor
             damage_dealt = defender.take_damage(total_attack)
@@ -219,7 +267,7 @@ def handle_end_turn(data):
             emit('turn_changed', {
                 'previous_player': player_id,
                 'current_player': next_player_id,
-                'time_of_day': room.game.time_of_day
+                'time_of_day': room.game.time_of_day.value
             }, room=room_id)
             
             start_turn_timer(room_id)
@@ -250,18 +298,5 @@ def check_turn_complete(room, player_id):
     if actions_used >= 3:  # Máximo de 3 ações por turno
         handle_end_turn({'room_id': room.room_id})
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    player_id = request.sid
-    for room_id, room in list(games.items()):
-        if player_id in room.players:
-            room.remove_player(player_id)
-            emit('player_left', {
-                'player_id': player_id
-            }, room=room_id)
-            
-            if len(room.players) == 0:
-                del games[room_id]
-
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

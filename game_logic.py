@@ -1,9 +1,12 @@
-import random
 from enum import Enum
+import random
 
 class TimeOfDay(Enum):
     DAY = "day"
     NIGHT = "night"
+    
+    def to_string(self):
+        return self.value
 
 class Card:
     def __init__(self, card_id, name, life=0, attack=0, description="", card_type="creature"):
