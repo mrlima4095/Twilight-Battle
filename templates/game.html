@@ -1,0 +1,862 @@
+<!-- templates/game.html -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle - Sala {{ game_id }}</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            color: #fff;
+        }
+        
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header */
+        .game-header {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-title {
+            font-size: 2em;
+            color: #ffd700;
+        }
+        
+        .game-info {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .time-indicator {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .time-day {
+            background: #ffa500;
+            color: #000;
+        }
+        
+        .time-night {
+            background: #4a0080;
+            color: #fff;
+        }
+        
+        .turn-indicator {
+            background: #4CAF50;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        /* Área de oponentes */
+        .opponents-area {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .opponent-card {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        
+        .opponent-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .opponent-name {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        .opponent-life {
+            color: #ff6b6b;
+        }
+        
+        .bases-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .base-slot {
+            width: 50px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #444;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .base-slot.attack {
+            border-color: #ff4444;
+        }
+        
+        .base-slot.defense {
+            border-color: #44aaff;
+        }
+        
+        .base-slot.has-card {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+        }
+        
+        .base-slot:hover {
+            transform: scale(1.1);
+            z-index: 10;
+        }
+        
+        .card-tooltip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            padding: 10px;
+            width: 200px;
+            z-index: 100;
+            font-size: 12px;
+        }
+        
+        .base-slot:hover .card-tooltip {
+            display: block;
+        }
+        
+        /* Área do jogador */
+        .player-area {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #ffd700;
+            backdrop-filter: blur(10px);
+        }
+        
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .player-stats {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        
+        .hand-area {
+            margin: 20px 0;
+        }
+        
+        .hand-title {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .hand-cards {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .card {
+            width: 100px;
+            height: 140px;
+            background: linear-gradient(145deg, #2a2a3a, #1a1a2a);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .card.selected {
+            border-color: #00ff00;
+            box-shadow: 0 0 20px #00ff00;
+        }
+        
+        .card-name {
+            font-weight: bold;
+            font-size: 11px;
+            color: #ffd700;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .card-type {
+            font-size: 8px;
+            color: #888;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .card-stats {
+            font-size: 10px;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+        
+        .card-description {
+            font-size: 8px;
+            color: #ccc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+        
+        .deck-info {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .pile {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .action-btn {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+        
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-btn.danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+        
+        .log-area {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ffd700;
+        }
+        
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+        }
+        
+        .waiting-room {
+            text-align: center;
+            padding: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            margin-top: 50px;
+        }
+        
+        .waiting-room h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        .players-list {
+            margin: 20px 0;
+            color: #fff;
+        }
+        
+        .start-btn {
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .winner-announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+            padding: 40px;
+            border-radius: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="game-container">
+        <!-- Header será preenchido dinamicamente -->
+        <div class="game-header" id="game-header">
+            <div class="game-title">Twilight Battle</div>
+            <div class="game-info" id="game-info">
+                <div class="time-indicator" id="time-indicator">Carregando...</div>
+                <div class="turn-indicator" id="turn-indicator">...</div>
+            </div>
+        </div>
+        
+        <!-- Área de oponentes -->
+        <div id="opponents-area" class="opponents-area"></div>
+        
+        <!-- Área do jogador -->
+        <div class="player-area" id="player-area" style="display: none;">
+            <div class="player-header">
+                <h2 id="player-name">Seu campo</h2>
+                <div class="player-stats">
+                    <div class="stat">Vida: <span id="player-life">5000</span></div>
+                    <div class="stat">Runas: <span id="player-runes">0</span></div>
+                    <div class="stat">Talismãs: <span id="player-talismans">0</span></div>
+                </div>
+            </div>
+            
+            <!-- Bases de Ataque -->
+            <div class="bases-section">
+                <h3>Bases de Ataque (3)</h3>
+                <div class="bases-row" id="attack-bases"></div>
+            </div>
+            
+            <!-- Bases de Defesa -->
+            <div class="bases-section">
+                <h3>Bases de Defesa (6)</h3>
+                <div class="bases-row" id="defense-bases"></div>
+            </div>
+            
+            <!-- Equipamentos -->
+            <div class="equipment-section">
+                <h3>Equipamentos</h3>
+                <div class="bases-row" id="equipment-slots">
+                    <div class="base-slot" id="weapon-slot">Arma</div>
+                    <div class="base-slot" id="helmet-slot">Capacete</div>
+                    <div class="base-slot" id="armor-slot">Peitoral</div>
+                    <div class="base-slot" id="boots-slot">Botas</div>
+                    <div class="base-slot" id="mount-slot">Montaria</div>
+                </div>
+            </div>
+            
+            <!-- Mão -->
+            <div class="hand-area">
+                <div class="hand-title">Sua mão (<span id="hand-count">0</span> cartas)</div>
+                <div class="hand-cards" id="hand-cards"></div>
+            </div>
+            
+            <!-- Montes -->
+            <div class="deck-info">
+                <div class="pile" id="deck-pile">
+                    <strong>Monte</strong><br>
+                    <span id="deck-count">0</span> cartas
+                </div>
+                <div class="pile" id="graveyard-pile">
+                    <strong>Cemitério</strong><br>
+                    <span id="graveyard-count">0</span> cartas
+                </div>
+            </div>
+            
+            <!-- Ações -->
+            <div class="action-buttons" id="action-buttons">
+                <button class="action-btn" id="draw-btn">Comprar carta</button>
+                <button class="action-btn" id="end-turn-btn">Finalizar turno</button>
+                <button class="action-btn" id="oracle-btn">Oráculo</button>
+            </div>
+        </div>
+        
+        <!-- Waiting Room -->
+        <div class="waiting-room" id="waiting-room">
+            <h2>Aguardando jogadores...</h2>
+            <p>Código da sala: <strong>{{ game_id }}</strong></p>
+            <div class="players-list" id="players-list">
+                <p>Jogadores na sala:</p>
+                <ul id="player-names"></ul>
+            </div>
+            <p>Mínimo de 2 jogadores para começar</p>
+            <button class="start-btn" id="start-game-btn">Começar jogo</button>
+        </div>
+    </div>
+    
+    <div id="winner-modal" style="display: none;" class="winner-announcement"></div>
+    
+    <script>
+        const gameId = '{{ game_id }}';
+        const socket = io();
+        let currentPlayerId = null;
+        let gameState = null;
+        let selectedCard = null;
+        let selectedBase = null;
+        let actionMode = null; // 'play', 'move', 'flip'
+        
+        // Conectar ao servidor
+        socket.on('connect', function() {
+            console.log('Conectado ao servidor');
+            
+            const playerName = localStorage.getItem('playerName') || 'Jogador';
+            
+            // Entrar na sala
+            socket.emit('join_game', {
+                game_id: gameId,
+                player_name: playerName
+            });
+        });
+        
+        // Eventos do jogo
+        socket.on('player_joined', function(data) {
+            console.log('Jogador entrou:', data);
+            updatePlayersList(data.players);
+        });
+        
+        socket.on('game_started', function(data) {
+            console.log('Jogo começou!');
+            document.getElementById('waiting-room').style.display = 'none';
+            document.getElementById('player-area').style.display = 'block';
+            requestGameState();
+        });
+        
+        socket.on('game_state', function(data) {
+            console.log('Estado do jogo:', data);
+            gameState = data;
+            updateGameUI();
+        });
+        
+        socket.on('action_success', function(data) {
+            console.log('Ação bem-sucedida:', data);
+            requestGameState();
+            addLogEntry(`Ação realizada: ${data.action}`);
+        });
+        
+        socket.on('action_error', function(data) {
+            console.error('Erro na ação:', data);
+            alert('Erro: ' + data.message);
+        });
+        
+        socket.on('game_over', function(data) {
+            const winner = data.winner;
+            const winnerName = gameState.players[winner].name;
+            
+            const modal = document.getElementById('winner-modal');
+            modal.innerHTML = `🏆 ${winnerName} VENCEU! 🏆`;
+            modal.style.display = 'block';
+            
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 5000);
+        });
+        
+        socket.on('error', function(data) {
+            console.error('Erro:', data);
+            alert('Erro: ' + data.message);
+        });
+        
+        function requestGameState() {
+            socket.emit('get_game_state', { game_id: gameId });
+        }
+        
+        function updatePlayersList(players) {
+            const list = document.getElementById('player-names');
+            list.innerHTML = '';
+            
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player.name;
+                list.appendChild(li);
+                
+                if (player.id === socket.id) {
+                    currentPlayerId = player.id;
+                }
+            });
+        }
+        
+        function updateGameUI() {
+            if (!gameState) return;
+            
+            // Atualizar cabeçalho
+            const timeIndicator = document.getElementById('time-indicator');
+            timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+            timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
+            
+            const turnIndicator = document.getElementById('turn-indicator');
+            if (gameState.current_turn) {
+                const currentPlayer = gameState.players[gameState.current_turn];
+                turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
+                
+                // Destacar se é sua vez
+                if (gameState.current_turn === socket.id) {
+                    turnIndicator.style.background = '#4CAF50';
+                } else {
+                    turnIndicator.style.background = '#f44336';
+                }
+            }
+            
+            // Atualizar área de oponentes
+            updateOpponentsArea();
+            
+            // Atualizar área do jogador
+            if (gameState.players[socket.id]) {
+                updatePlayerArea();
+            }
+        }
+        
+        function updateOpponentsArea() {
+            const opponentsArea = document.getElementById('opponents-area');
+            opponentsArea.innerHTML = '';
+            
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId === socket.id) continue; // Pular próprio jogador
+                
+                const opponentCard = createOpponentCard(playerId, playerData);
+                opponentsArea.appendChild(opponentCard);
+            }
+        }
+        
+        function createOpponentCard(playerId, playerData) {
+            const div = document.createElement('div');
+            div.className = 'opponent-card';
+            div.innerHTML = `
+                <div class="opponent-header">
+                    <span class="opponent-name">${playerData.name}</span>
+                    <span class="opponent-life">❤️ ${playerData.life}</span>
+                </div>
+                <div class="bases-section">
+                    <small>Ataque</small>
+                    <div class="bases-row" id="opp-attack-${playerId}"></div>
+                </div>
+                <div class="bases-section">
+                    <small>Defesa</small>
+                    <div class="bases-row" id="opp-defense-${playerId}"></div>
+                </div>
+                <div>
+                    <small>Talismãs: ${playerData.talisman_count} | Runas: ${playerData.runes}</small>
+                </div>
+                <button class="action-btn" onclick="selectTarget('${playerId}')" 
+                        ${gameState.current_turn !== socket.id ? 'disabled' : ''}>
+                    Atacar
+                </button>
+            `;
+            
+            // Preencher bases
+            setTimeout(() => {
+                const attackRow = document.getElementById(`opp-attack-${playerId}`);
+                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
+                
+                if (attackRow) {
+                    playerData.attack_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'attack', index, true);
+                        attackRow.appendChild(slot);
+                    });
+                }
+                
+                if (defenseRow) {
+                    playerData.defense_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'defense', index, true);
+                        defenseRow.appendChild(slot);
+                    });
+                }
+            }, 0);
+            
+            return div;
+        }
+        
+        function updatePlayerArea() {
+            const playerData = gameState.players[socket.id];
+            
+            document.getElementById('player-name').textContent = playerData.name;
+            document.getElementById('player-life').textContent = playerData.life;
+            document.getElementById('player-runes').textContent = playerData.runes || 0;
+            document.getElementById('player-talismans').textContent = playerData.talisman_count || 0;
+            
+            // Bases de ataque
+            const attackBases = document.getElementById('attack-bases');
+            attackBases.innerHTML = '';
+            playerData.attack_bases.forEach((card, index) => {
+                const slot = createBaseSlot(card, 'attack', index, false);
+                slot.onclick = () => selectBase('attack', index, card);
+                attackBases.appendChild(slot);
+            });
+            
+            // Bases de defesa
+            const defenseBases = document.getElementById('defense-bases');
+            defenseBases.innerHTML = '';
+            playerData.defense_bases.forEach((card, index) => {
+                const slot = createBaseSlot(card, 'defense', index, false);
+                slot.onclick = () => selectBase('defense', index, card);
+                defenseBases.appendChild(slot);
+            });
+            
+            // Mão
+            const handCards = document.getElementById('hand-cards');
+            handCards.innerHTML = '';
+            document.getElementById('hand-count').textContent = playerData.hand.length;
+            
+            playerData.hand.forEach((card, index) => {
+                const cardElement = createCardElement(card, index);
+                cardElement.onclick = () => selectCard(card, index);
+                handCards.appendChild(cardElement);
+            });
+            
+            // Montes
+            document.getElementById('deck-count').textContent = gameState.deck_count;
+            document.getElementById('graveyard-count').textContent = gameState.graveyard_count;
+        }
+        
+        function createBaseSlot(card, type, index, isOpponent) {
+            const slot = document.createElement('div');
+            slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
+            
+            if (card) {
+                slot.innerHTML = `
+                    <strong>${card.name.substring(0, 10)}</strong>
+                    ${card.life ? `<small>❤️${card.life}</small>` : ''}
+                    ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
+                    <div class="card-tooltip">
+                        <strong>${card.name}</strong><br>
+                        ${card.description}<br>
+                        ${card.life ? `Vida: ${card.life}` : ''}
+                        ${card.attack ? ` | Ataque: ${card.attack}` : ''}
+                    </div>
+                `;
+            } else {
+                slot.innerHTML = `Vazio`;
+            }
+            
+            return slot;
+        }
+        
+        function createCardElement(card, index) {
+            const div = document.createElement('div');
+            div.className = `card ${selectedCard === card ? 'selected' : ''}`;
+            div.innerHTML = `
+                <div class="card-name">${card.name}</div>
+                <div class="card-type">${card.type}</div>
+                <div class="card-stats">
+                    ${card.life ? `❤️${card.life}` : ''}
+                    ${card.attack ? ` ⚔️${card.attack}` : ''}
+                    ${card.protection ? ` 🛡️${card.protection}` : ''}
+                </div>
+                <div class="card-description">${card.description}</div>
+            `;
+            return div;
+        }
+        
+        function selectCard(card, index) {
+            if (gameState.current_turn !== socket.id) {
+                alert('Não é seu turno!');
+                return;
+            }
+            
+            selectedCard = card;
+            actionMode = 'play';
+            
+            // Destacar visualmente
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+        
+        function selectBase(type, index, card) {
+            if (!selectedCard && actionMode !== 'move' && actionMode !== 'flip') {
+                return;
+            }
+            
+            if (actionMode === 'play' && selectedCard) {
+                // Jogar carta na base
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'play_card',
+                    params: {
+                        card_id: selectedCard.instance_id,
+                        position_type: type,
+                        position_index: index
+                    }
+                });
+                
+                selectedCard = null;
+                actionMode = null;
+            }
+        }
+        
+        function selectTarget(targetPlayerId) {
+            if (gameState.current_turn !== socket.id) {
+                alert('Não é seu turno!');
+                return;
+            }
+            
+            if (confirm(`Atacar ${gameState.players[targetPlayerId].name}?`)) {
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'attack',
+                    params: { target_id: targetPlayerId }
+                });
+            }
+        }
+        
+        function addLogEntry(message) {
+            const logArea = document.querySelector('.log-area') || createLogArea();
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logArea.appendChild(entry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+        
+        function createLogArea() {
+            const logArea = document.createElement('div');
+            logArea.className = 'log-area';
+            document.querySelector('.game-container').appendChild(logArea);
+            return logArea;
+        }
+        
+        // Event listeners
+        document.getElementById('draw-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                alert('Não é seu turno!');
+                return;
+            }
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'draw',
+                params: {}
+            });
+        });
+        
+        document.getElementById('end-turn-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                alert('Não é seu turno!');
+                return;
+            }
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'end_turn',
+                params: {}
+            });
+        });
+        
+        document.getElementById('oracle-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                alert('Não é seu turno!');
+                return;
+            }
+            
+            const target = prompt('ID do jogador alvo para o Oráculo:');
+            if (target) {
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'oracle',
+                    params: { target_id: target }
+                });
+            }
+        });
+        
+        document.getElementById('start-game-btn').addEventListener('click', function() {
+            fetch(`/start-game/${gameId}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(data.message || 'Erro ao iniciar jogo');
+                    }
+                });
+        });
+        
+        // Solicitar estado inicial
+        setInterval(requestGameState, 2000);
+    </script>
+</body>
+</html>

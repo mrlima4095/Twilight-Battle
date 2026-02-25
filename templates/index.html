@@ -1,98 +1,328 @@
+<!-- templates/index.html -->
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Jogo de Cartas RPG</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <title>Twilight Battle - RPG de Cartas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 800px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 3em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .subtitle {
+            color: #a8a8a8;
+            text-align: center;
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+        
+        .join-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .join-section h2 {
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #fff;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        input::placeholder {
+            color: #888;
+        }
+        
+        select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .create-btn {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+        }
+        
+        .games-list {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .games-list h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        
+        .game-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        .game-info {
+            color: #fff;
+        }
+        
+        .game-status {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .status-waiting {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .status-playing {
+            background: #f44336;
+            color: white;
+        }
+        
+        .join-game-btn {
+            padding: 8px 15px;
+            background: #ffd700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #fff;
+            margin-top: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #ffd700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- Tela de Login/Entrada -->
-        <div id="login-screen" class="screen active">
-            <h1>Twilight Battle</h1>
-            <div class="login-form">
-                <input type="text" id="player-name" placeholder="Seu nome" maxlength="20">
-                <div class="room-options">
-                    <h3>Salas Disponíveis</h3>
-                    <div id="rooms-list"></div>
-                    <button onclick="createRoom()">Criar Nova Sala</button>
-                </div>
+        <h1>Twilight Battle</h1>
+        <p class="subtitle">O RPG de cartas onde a noite e o dia decidem seu destino</p>
+        
+        <div class="join-section">
+            <h2>Entrar em uma partida</h2>
+            <div class="input-group">
+                <label for="player-name">Seu nome</label>
+                <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="20">
             </div>
+            <div class="input-group">
+                <label for="game-id">Código da sala</label>
+                <input type="text" id="game-id" placeholder="Ex: ABC123">
+            </div>
+            <button id="join-game-btn">Entrar na sala</button>
+            <button id="create-game-btn" class="create-btn">Criar nova sala</button>
         </div>
-
-        <!-- Sala de Espera -->
-        <div id="waiting-room" class="screen">
-            <h2>Sala: <span id="room-id"></span></h2>
-            <div class="players-list">
-                <h3>Jogadores (<span id="player-count">0</span>/6)</h3>
-                <ul id="players"></ul>
+        
+        <div class="games-list">
+            <h2>Salas disponíveis</h2>
+            <div id="games-container">
+                <div class="game-item">
+                    <div class="game-info">Carregando salas...</div>
+                </div>
             </div>
-            <button id="start-game-btn" onclick="startGame()" style="display: none;">Começar Jogo</button>
-            <div class="waiting-message">Aguardando jogadores...</div>
+            <button id="refresh-games">Atualizar lista</button>
         </div>
-
-        <!-- Tela do Jogo -->
-        <div id="game-screen" class="screen">
-            <div class="game-header">
-                <div class="time-display">
-                    <span id="time-of-day">Dia</span>
-                    <span id="turn-indicator"></span>
-                </div>
-                <div class="game-status">
-                    <span id="current-player"></span>
-                </div>
-            </div>
-
-            <div class="battlefield">
-                <!-- Área dos Oponentes -->
-                <div id="opponents-area" class="opponents-area"></div>
-
-                <!-- Área do Jogador Atual -->
-                <div class="player-area">
-                    <!-- Campo de Batalha do Jogador -->
-                    <div class="player-field">
-                        <div class="field-section">
-                            <h4>Ataque (Máx: 3)</h4>
-                            <div id="player-attack-field" class="card-field"></div>
-                        </div>
-                        <div class="field-section">
-                            <h4>Defesa (Máx: 6)</h4>
-                            <div id="player-defense-field" class="card-field"></div>
-                        </div>
-                    </div>
-
-                    <!-- Informações do Jogador -->
-                    <div class="player-info">
-                        <div class="castle">
-                            <div class="castle-life">
-                                <span id="player-life">5000</span> / 5000
-                            </div>
-                            <div class="castle-icon">🏰</div>
-                        </div>
-                        <div class="player-stats">
-                            <div>Deck: <span id="deck-count">0</span></div>
-                            <div>Cemitério: <span id="graveyard-count">0</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Mão do Jogador -->
-                    <div class="hand-area">
-                        <h4>Sua Mão</h4>
-                        <div id="player-hand" class="hand-cards"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Ações do Turno -->
-            <div class="action-bar">
-                <button onclick="drawCard()" id="draw-btn">Comprar Carta</button>
-                <button onclick="endTurn()" id="end-turn-btn">Finalizar Turno</button>
-            </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Conectando ao servidor...</p>
         </div>
     </div>
-
-    <script src="/static/js/game.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const playerNameInput = document.getElementById('player-name');
+            const gameIdInput = document.getElementById('game-id');
+            const joinBtn = document.getElementById('join-game-btn');
+            const createBtn = document.getElementById('create-game-btn');
+            const refreshBtn = document.getElementById('refresh-games');
+            const gamesContainer = document.getElementById('games-container');
+            const loading = document.getElementById('loading');
+            
+            // Carregar lista de jogos
+            function loadGames() {
+                fetch('/api/games')
+                    .then(response => response.json())
+                    .then(games => {
+                        if (games.length === 0) {
+                            gamesContainer.innerHTML = '<div class="game-item">Nenhuma sala disponível. Crie uma!</div>';
+                            return;
+                        }
+                        
+                        gamesContainer.innerHTML = '';
+                        games.forEach(game => {
+                            const gameElement = document.createElement('div');
+                            gameElement.className = 'game-item';
+                            gameElement.innerHTML = `
+                                <div class="game-info">
+                                    <strong>Sala: ${game.id}</strong><br>
+                                    Jogadores: ${game.players}/${game.max_players}
+                                </div>
+                                <span class="game-status ${game.started ? 'status-playing' : 'status-waiting'}">
+                                    ${game.started ? 'Em andamento' : 'Aguardando'}
+                                </span>
+                                <button class="join-game-btn" onclick="joinGame('${game.id}')" ${game.started ? 'disabled' : ''}>
+                                    Entrar
+                                </button>
+                            `;
+                            gamesContainer.appendChild(gameElement);
+                        });
+                    });
+            }
+            
+            window.joinGame = function(gameId) {
+                const playerName = playerNameInput.value.trim();
+                if (!playerName) {
+                    alert('Digite seu nome primeiro!');
+                    return;
+                }
+                
+                // Salvar nome e redirecionar
+                localStorage.setItem('playerName', playerName);
+                window.location.href = `/game/${gameId}`;
+            };
+            
+            createBtn.addEventListener('click', function() {
+                loading.classList.add('active');
+                
+                fetch('/api/create-game', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.classList.remove('active');
+                        gameIdInput.value = data.game_id;
+                        alert(`Sala ${data.game_id} criada! Compartilhe o código com seus amigos.`);
+                    })
+                    .catch(error => {
+                        loading.classList.remove('active');
+                        alert('Erro ao criar sala');
+                    });
+            });
+            
+            refreshBtn.addEventListener('click', loadGames);
+            
+            joinBtn.addEventListener('click', function() {
+                const playerName = playerNameInput.value.trim();
+                const gameId = gameIdInput.value.trim();
+                
+                if (!playerName || !gameId) {
+                    alert('Preencha seu nome e o código da sala!');
+                    return;
+                }
+                
+                localStorage.setItem('playerName', playerName);
+                window.location.href = `/game/${gameId}`;
+            });
+            
+            // Carregar lista inicial
+            loadGames();
+            
+            // Atualizar a cada 10 segundos
+            setInterval(loadGames, 10000);
+        });
+    </script>
 </body>
 </html>
