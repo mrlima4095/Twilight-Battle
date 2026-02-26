@@ -512,7 +512,7 @@ class Game:
             return alive_players[0]
         return None
 
-        def apply_day_damage(self):
+    def apply_day_damage(self):
         """Aplica dano da luz do dia em criaturas noturnas"""
         for player_id in self.players:
             player = self.player_data[player_id]
