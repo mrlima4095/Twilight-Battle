@@ -1180,17 +1180,26 @@
                 return;
             }
             
-            // Verificar se tem mago em campo
             const playerData = gameState.players[socket.id];
             let hasMage = false;
             let hasReiMago = false;
             let hasMagoNegro = false;
+            let mageCards = [];
             
             for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
                 if (card) {
-                    if (card.id === 'mago') hasMage = true;
-                    if (card.id === 'rei_mago') hasReiMago = true;
-                    if (card.id === 'mago_negro') hasMagoNegro = true;
+                    if (card.id === 'mago') {
+                        hasMage = true;
+                        mageCards.push(card);
+                    }
+                    if (card.id === 'rei_mago') {
+                        hasReiMago = true;
+                        mageCards.push(card);
+                    }
+                    if (card.id === 'mago_negro') {
+                        hasMagoNegro = true;
+                        mageCards.push(card);
+                    }
                 }
             }
             
@@ -1206,53 +1215,76 @@
                 return;
             }
             
-            // Mostrar feitiços disponíveis
-            const spells = playerData.hand.filter(c => c.type === 'spell');
-            
-            if (spells.length === 0 && !hasReiMago && !hasMagoNegro) {
+            // Se tem Rei Mago ou Mago Negro, mostrar TODOS os feitiços do jogo
+            if (hasReiMago || hasMagoNegro) {
+                // Lista de todos os feitiços do jogo (baseado nas cartas definidas)
+                const allSpells = [
+                    { id: 'feitico_cortes', name: 'Feitiço - Cortes', description: 'Aumenta ataque de um monstro em 1024 pontos.' },
+                    { id: 'feitico_duro_matar', name: 'Feitiço - Duro de matar', description: 'Aumenta defesa do jogador em 1024 pontos.' },
+                    { id: 'feitico_troca', name: 'Feitiço - Troca', description: 'Troca as cartas de defesa para ataque e vice-versa.' },
+                    { id: 'feitico_comunista', name: 'Feitiço - Comunista', description: 'Todas as cartas das mãos voltam para a pilha.' },
+                    { id: 'feitico_silencio', name: 'Feitiço - Silêncio', description: '2 rodadas sem armadilhas.' },
+                    { id: 'feitico_para_sempre', name: 'Feitiço - Para Sempre', description: 'Reverte efeito Blade of Vampires.' },
+                    { id: 'feitico_capitalista', name: 'Feitiço - Capitalista', description: 'Troca cartas com outros jogadores.' }
+                ];
+                
+                let spellsHtml = '';
+                allSpells.forEach(spell => {
+                    spellsHtml += `
+                        <div class="spell-option" onclick="selectSpell('${spell.id}')" style="padding: 10px; margin: 5px; background: rgba(74, 144, 226, 0.2); border: 1px solid #4a90e2; border-radius: 5px; cursor: pointer;">
+                            <strong>${spell.name}</strong><br>
+                            <small>${spell.description}</small>
+                        </div>
+                    `;
+                });
+                
                 Swal.fire({
-                    icon: 'info',
-                    title: 'Sem feitiços',
-                    text: 'Você não tem feitiços na mão',
+                    title: '✨ Todos os Feitiços (Rei Mago/Mago Negro)',
+                    html: `<div style="max-height: 400px; overflow-y: auto;">${spellsHtml}</div>`,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
                     background: '#1a1a2e',
                     color: '#fff',
-                    confirmButtonColor: '#ffd700'
+                    confirmButtonColor: '#ffd700',
+                    showConfirmButton: false
                 });
-                return;
-            }
-            
-            // Implementar seleção de feitiço
-            Swal.fire({
-                title: 'Selecionar Feitiço',
-                html: `
-                    <select id="spell-select" class="swal2-select">
-                        ${spells.map(s => `<option value="${s.instance_id}">${s.name}</option>`).join('')}
-                    </select>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Usar',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                preConfirm: () => {
-                    const spellId = document.getElementById('spell-select').value;
-                    if (!spellId) {
-                        Swal.showValidationMessage('Selecione um feitiço');
-                    }
-                    return spellId;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    socket.emit('player_action', {
-                        game_id: gameId,
-                        action: 'cast_spell',
-                        params: {
-                            spell_id: result.value
-                        }
+            } else {
+                // Mostrar apenas feitiços na mão
+                const spells = playerData.hand.filter(c => c && c.type === 'spell');
+                
+                if (spells.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Sem feitiços',
+                        text: 'Você não tem feitiços na mão',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
                     });
+                    return;
                 }
-            });
+                
+                let spellsHtml = '';
+                spells.forEach(spell => {
+                    spellsHtml += `
+                        <div class="spell-option" onclick="selectSpell('${spell.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; border-radius: 5px; cursor: pointer;">
+                            <strong>${spell.name}</strong><br>
+                            <small>${spell.description}</small>
+                        </div>
+                    `;
+                });
+                
+                Swal.fire({
+                    title: '✨ Seus Feitiços',
+                    html: `<div style="max-height: 400px; overflow-y: auto;">${spellsHtml}</div>`,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    showConfirmButton: false
+                });
+            }
         });
         
         document.getElementById('revive-btn').addEventListener('click', function() {
@@ -1406,7 +1438,244 @@
                 });
         });
         
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar se acabou de criar uma sala
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('created') === 'true') {
+                const playerName = localStorage.getItem('playerName') || 'Jogador';
+                setTimeout(() => {
+                    socket.emit('join_game', {
+                        game_id: gameId,
+                        player_name: playerName
+                    });
+                }, 500);
+            }
+        });
+
+        window.selectSpell = function(spellId) {
+            Swal.close();
+            
+            // Se tem Rei Mago ou Mago Negro, pode escolher alvo
+            const playerData = gameState.players[socket.id];
+            let hasReiMago = false;
+            let hasMagoNegro = false;
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card) {
+                    if (card.id === 'rei_mago') hasReiMago = true;
+                    if (card.id === 'mago_negro') hasMagoNegro = true;
+                }
+            }
+            
+            if (hasReiMago || hasMagoNegro) {
+                // Para feitiços que precisam de alvo
+                if (['feitico_cortes', 'feitico_troca', 'feitico_capitalista'].includes(spellId)) {
+                    showTargetSelection(spellId);
+                } else {
+                    // Usar feitiço sem alvo
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'cast_spell',
+                        params: {
+                            spell_id: spellId
+                        }
+                    });
+                }
+            } else {
+                // Usar feitiço normal da mão
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'cast_spell',
+                    params: {
+                        spell_id: spellId
+                    }
+                });
+            }
+        };
+        
+        // Função para mostrar seleção de alvo
+        function showTargetSelection(spellId) {
+            const targets = [];
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== socket.id) {
+                    targets.push({
+                        id: playerId,
+                        name: playerData.name
+                    });
+                }
+            }
+            
+            let targetHtml = '';
+            targets.forEach(target => {
+                targetHtml += `
+                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" style="padding: 10px; margin: 5px; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 5px; cursor: pointer;">
+                        <strong>${target.name}</strong>
+                    </div>
+                `;
+            });
+            
+            Swal.fire({
+                title: 'Selecione o alvo',
+                html: `<div style="max-height: 400px; overflow-y: auto;">${targetHtml}</div>`,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false
+            });
+        }
+        
+        // Função para selecionar alvo do feitiço
+        window.selectSpellTarget = function(spellId, targetId) {
+            Swal.close();
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'cast_spell',
+                params: {
+                    spell_id: spellId,
+                    target_player_id: targetId
+                }
+            });
+        };
+        
+        // Função para equipar item em criatura
+        window.equipToCreature = function(itemCardId) {
+            // Mostrar lista de criaturas para equipar
+            const playerData = gameState.players[socket.id];
+            const creatures = [];
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card && card.type === 'creature') {
+                    creatures.push(card);
+                }
+            }
+            
+            if (creatures.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sem criaturas',
+                    text: 'Você não tem criaturas em campo para equipar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let creaturesHtml = '';
+            creatures.forEach(creature => {
+                let equippedItems = '';
+                if (creature.equipped_items && creature.equipped_items.length > 0) {
+                    equippedItems = `<br><small>Equipado: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
+                }
+                
+                creaturesHtml += `
+                    <div class="creature-option" onclick="selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; border-radius: 5px; cursor: pointer;">
+                        <strong>${creature.name}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
+                        ${equippedItems}
+                    </div>
+                `;
+            });
+            
+            Swal.fire({
+                title: 'Selecione a criatura',
+                html: `<div style="max-height: 400px; overflow-y: auto;">${creaturesHtml}</div>`,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false
+            });
+        };
+        
+        // Função para selecionar criatura para equipar
+        window.selectCreatureForEquip = function(itemCardId, creatureId) {
+            Swal.close();
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'equip_item',
+                params: {
+                    item_card_id: itemCardId,
+                    creature_card_id: creatureId
+                }
+            });
+        };
+        
+        // Modificar a função selectCard para incluir opção de equipar
+        function selectCard(card, index) {
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            selectedCard = card;
+            actionMode = 'play';
+            
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            
+            let message = '';
+            let actions = [];
+            
+            if (card.type === 'creature') {
+                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul)';
+            } else if (card.type === 'trap') {
+                message = 'Clique em um slot de armadilha para colocá-la';
+            } else if (card.type === 'spell') {
+                message = 'Use o botão "Usar Feitiço" para lançá-lo';
+            } else if (card.type === 'rune') {
+                message = 'Runas são usadas para reviver cartas (4 runas)';
+            } else if (card.type === 'weapon' || card.type === 'armor') {
+                message = 'Clique em "Equipar em criatura" para usar este item';
+                actions.push({
+                    name: 'Equipar em criatura',
+                    callback: () => equipToCreature(card.instance_id)
+                });
+            }
+            
+            if (actions.length > 0) {
+                let actionHtml = '';
+                actions.forEach(action => {
+                    actionHtml += `<button class="action-btn" onclick="(${action.callback})()" style="margin: 5px;">${action.name}</button>`;
+                });
+                
+                Swal.fire({
+                    title: `📌 ${card.name} selecionada`,
+                    html: `<p>${message}</p>${actionHtml}`,
+                    icon: 'info',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    showConfirmButton: true,
+                    confirmButtonText: 'Fechar'
+                });
+            } else {
+                Swal.fire({
+                    title: `📌 ${card.name} selecionada`,
+                    text: message,
+                    icon: 'info',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+        }
+
+
         setInterval(requestGameState, 3000);
+        setInterval(() => {
+            fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {});
+        }, 60000);
     </script>
 </body>
 </html>

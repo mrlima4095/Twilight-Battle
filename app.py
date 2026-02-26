@@ -552,68 +552,6 @@ class Game:
             else:
                 card['life'] = new_life
     
-    def cast_spell(self, player_id, spell_card_id, target_player_id=None, target_card_id=None):
-        """Usa um feitiço"""
-        if not self.can_act(player_id, 'spell'):
-            return {'success': False, 'message': 'Você já usou um feitiço neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Verificar se pode usar feitiços
-        can_cast = False
-        caster_type = None
-        
-        # Verificar magos em campo
-        for card in player['attack_bases'] + player['defense_bases']:
-            if card and card.get('type') == 'creature':
-                if card['id'] == 'mago':
-                    can_cast = True
-                    caster_type = 'mago'
-                elif card['id'] == 'rei_mago':
-                    can_cast = True
-                    caster_type = 'rei_mago'
-                elif card['id'] == 'mago_negro':
-                    can_cast = True
-                    caster_type = 'mago_negro'
-        
-        if not can_cast:
-            return {'success': False, 'message': 'Você precisa de um Mago em campo para usar feitiços'}
-        
-        # Encontrar o feitiço na mão
-        spell_card = None
-        spell_index = -1
-        for i, card in enumerate(player['hand']):
-            if card['instance_id'] == spell_card_id:
-                spell_card = card
-                spell_index = i
-                break
-        
-        if not spell_card:
-            return {'success': False, 'message': 'Feitiço não encontrado na mão'}
-        
-        # Verificar se é realmente um feitiço
-        if spell_card.get('type') != 'spell':
-            return {'success': False, 'message': 'Esta carta não é um feitiço'}
-        
-        # Remover feitiço da mão
-        player['hand'].pop(spell_index)
-        
-        # Aplicar efeito do feitiço
-        result = self.apply_spell_effect(spell_card, player_id, target_player_id, target_card_id, caster_type)
-        
-        # Feitiço volta para o deck
-        self.deck.append(spell_card)
-        random.shuffle(self.deck)
-        
-        self.use_action(player_id, 'spell')
-        
-        return {
-            'success': True,
-            'spell': spell_card,
-            'effect': result,
-            'caster_type': caster_type
-        }
-    
     def apply_spell_effect(self, spell, caster_id, target_player_id, target_card_id, caster_type):
         """Aplica o efeito específico do feitiço"""
         spell_id = spell['id']
@@ -775,21 +713,183 @@ class Game:
             'message': f"{target_card['name']} foi revivido do cemitério"
         }
     
-    def equip_item_to_creature(self, player_id, item_card_id, creature_card_id):
-        """Equipa um item em uma criatura"""
+    def cleanup_empty_games():
+        """Limpa jogos vazios ou abandonados"""
+        games_to_remove = []
+        for game_id, game in games.items():
+            # Se não tem jogadores ou todos desconectaram
+            if len(game.players) == 0:
+                games_to_remove.append(game_id)
+            # Se o jogo começou mas não tem jogadores ativos
+            elif game.started and all(p not in game.player_data for p in game.players):
+                games_to_remove.append(game_id)
+        
+        for game_id in games_to_remove:
+            del games[game_id]
+            print(f"Jogo {game_id} removido por inatividade")
+    
+    def get_available_spells(self, player_id):
+        """Retorna lista de feitiços disponíveis baseado nos magos em campo"""
+        player = self.player_data[player_id]
+        available_spells = []
+        
+        # Verificar tipos de magos em campo
+        has_rei_mago = False
+        has_mago_negro = False
+        has_common_mage = False
+        
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card.get('type') == 'creature':
+                if card['id'] == 'rei_mago':
+                    has_rei_mago = True
+                elif card['id'] == 'mago_negro':
+                    has_mago_negro = True
+                elif card['id'] == 'mago':
+                    has_common_mage = True
+        
+        # Se tem Rei Mago ou Mago Negro, pode ver todos os feitiços do jogo
+        if has_rei_mago or has_mago_negro:
+            # Coletar todos os feitiços do deck e cemitério
+            all_spells = []
+            for card in self.deck:
+                if card.get('type') == 'spell' and card not in all_spells:
+                    all_spells.append(card)
+            for card in self.graveyard:
+                if card.get('type') == 'spell' and card not in all_spells:
+                    all_spells.append(card)
+            available_spells = all_spells
+        else:
+            # Apenas feitiços na mão
+            available_spells = [card for card in player['hand'] if card.get('type') == 'spell']
+        
+        return {
+            'success': True,
+            'has_mage': has_common_mage or has_rei_mago or has_mago_negro,
+            'has_rei_mago': has_rei_mago,
+            'has_mago_negro': has_mago_negro,
+            'spells': available_spells,
+            'spells_in_hand': [card for card in player['hand'] if card.get('type') == 'spell']
+        }
+    
+    def cast_spell(self, player_id, spell_card_id, target_player_id=None, target_card_id=None):
+        """Usa um feitiço com suporte para Rei Mago/Mago Negro"""
+        if not self.can_act(player_id, 'spell'):
+            return {'success': False, 'message': 'Você já usou um feitiço neste turno'}
+        
         player = self.player_data[player_id]
         
-        # Encontrar item na mão
+        # Verificar se pode usar feitiços
+        can_cast = False
+        caster_type = None
+        mage_card = None
+        
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card.get('type') == 'creature':
+                if card['id'] == 'mago' and not card.get('blocked', False):
+                    can_cast = True
+                    caster_type = 'mago'
+                    mage_card = card
+                elif card['id'] == 'rei_mago':
+                    can_cast = True
+                    caster_type = 'rei_mago'
+                    mage_card = card
+                elif card['id'] == 'mago_negro':
+                    can_cast = True
+                    caster_type = 'mago_negro'
+                    mage_card = card
+        
+        if not can_cast:
+            return {'success': False, 'message': 'Você precisa de um Mago em campo para usar feitiços'}
+        
+        # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço (não precisa ter na mão)
+        if caster_type in ['rei_mago', 'mago_negro']:
+            # Procurar o feitiço no deck ou cemitério
+            spell_card = None
+            for card in self.deck + self.graveyard:
+                if card.get('type') == 'spell' and (card['id'] == spell_card_id or card['instance_id'] == spell_card_id):
+                    spell_card = card
+                    break
+            
+            if not spell_card:
+                return {'success': False, 'message': 'Feitiço não encontrado'}
+            
+            # Remover do deck ou cemitério se aplicável
+            if spell_card in self.deck:
+                self.deck.remove(spell_card)
+            elif spell_card in self.graveyard:
+                self.graveyard.remove(spell_card)
+        else:
+            # Procurar feitiço na mão
+            spell_card = None
+            spell_index = -1
+            for i, card in enumerate(player['hand']):
+                if card['instance_id'] == spell_card_id:
+                    spell_card = card
+                    spell_index = i
+                    break
+            
+            if not spell_card:
+                return {'success': False, 'message': 'Feitiço não encontrado na mão'}
+            
+            # Remover da mão
+            player['hand'].pop(spell_index)
+        
+        # Aplicar efeito do feitiço
+        result = self.apply_spell_effect(spell_card, player_id, target_player_id, target_card_id, caster_type)
+        
+        # Feitiço volta para o deck (embaixo)
+        self.deck.append(spell_card)
+        
+        self.use_action(player_id, 'spell')
+        
+        return {
+            'success': True,
+            'spell': spell_card,
+            'effect': result,
+            'caster_type': caster_type
+        }
+    
+    def equip_item_to_creature(self, player_id, item_card_id, creature_card_id):
+        """Equipa um item em uma criatura específica"""
+        player = self.player_data[player_id]
+        
+        # Encontrar item (pode estar na mão ou no campo de equipamentos)
         item_card = None
+        item_source = None
         item_index = -1
+        
+        # Procurar na mão primeiro
         for i, card in enumerate(player['hand']):
             if card['instance_id'] == item_card_id:
                 item_card = card
+                item_source = 'hand'
                 item_index = i
                 break
         
+        # Se não achou na mão, procurar nos equipamentos das criaturas (para desequipar)
         if not item_card:
-            return {'success': False, 'message': 'Item não encontrado na mão'}
+            for base in ['attack_bases', 'defense_bases']:
+                for creature in player[base]:
+                    if creature and 'equipped_items' in creature:
+                        for i, eq in enumerate(creature['equipped_items']):
+                            if eq['instance_id'] == item_card_id:
+                                item_card = eq
+                                item_source = 'equipped'
+                                # Remover da criatura
+                                creature['equipped_items'].pop(i)
+                                # Remover bônus
+                                if eq.get('attack'):
+                                    creature['attack'] = max(0, creature.get('attack', 0) - eq['attack'])
+                                if eq.get('protection'):
+                                    creature['life'] = max(0, creature.get('life', 0) - eq['protection'])
+                                break
+                    if item_card:
+                        break
+            if item_card:
+                item_source = 'reequip'
+        
+        if not item_card:
+            return {'success': False, 'message': 'Item não encontrado'}
         
         # Verificar se é um item equipável
         if item_card.get('type') not in ['weapon', 'armor']:
@@ -812,16 +912,35 @@ class Game:
         if target_creature.get('type') != 'creature':
             return {'success': False, 'message': 'Alvo não é uma criatura'}
         
+        # Verificar restrições de equipamento
+        if item_card.get('id') == 'blade_vampires' and target_creature.get('id') not in ['vampiro_tayler', 'vampiro_wers']:
+            return {'success': False, 'message': 'Apenas vampiros podem usar a Blade of Vampires'}
+        
+        if item_card.get('id') == 'blade_dragons' and target_creature.get('id') not in ['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago']:
+            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Blade of Dragons'}
+        
+        if item_card.get('id') == 'lamina_almas' and target_creature.get('id') not in ['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers']:
+            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Lâmina das Almas'}
+        
         # Inicializar lista de itens equipados se não existir
         if 'equipped_items' not in target_creature:
             target_creature['equipped_items'] = []
         
-        # Verificar limite de itens (humanoide pode equipar vários)
-        if len(target_creature['equipped_items']) >= 5:  # Arma, capacete, peitoral, botas, montaria
-            return {'success': False, 'message': 'Criatura já tem muitos itens equipados'}
+        # Verificar limite de itens por tipo
+        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon')
+        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor')
+        
+        if item_card.get('type') == 'weapon' and weapon_count >= 1:
+            return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
+        
+        if item_card.get('type') == 'armor' and armor_count >= 4:  # Capacete, peitoral, botas, etc
+            return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
+        
+        # Remover da fonte original se ainda não foi removido
+        if item_source == 'hand':
+            player['hand'].pop(item_index)
         
         # Equipar item
-        player['hand'].pop(item_index)
         target_creature['equipped_items'].append(item_card)
         
         # Aplicar bônus do item
@@ -829,6 +948,8 @@ class Game:
             target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
         if item_card.get('protection'):
             target_creature['life'] = target_creature.get('life', 0) + item_card['protection']
+        if item_card.get('life'):
+            target_creature['life'] = target_creature.get('life', 0) + item_card['life']
         
         return {
             'success': True,
@@ -876,6 +997,11 @@ def start_game(game_id):
             socketio.emit('game_started', {'game_id': game_id}, room=game_id)
             return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Não foi possível iniciar o jogo'})
+
+@app.route('/api/cleanup-games', methods=['POST'])
+def cleanup_games():
+    Game.cleanup_empty_games()
+    return jsonify({'success': True})
 
 # Socket.IO events
 @socketio.on('connect')
