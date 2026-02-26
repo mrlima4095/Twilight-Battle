@@ -851,45 +851,24 @@ class Game:
     
     def equip_item_to_creature(self, player_id, item_card_id, creature_card_id):
         """Equipa um item em uma criatura específica"""
-        player = self.player_data[player_id]
+        print(f"Tentando equipar item {item_card_id} em criatura {creature_card_id}")
         
-        # Encontrar item (pode estar na mão ou no campo de equipamentos)
+        player = self.player_data.get(player_id)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+        
+        # Encontrar item na mão
         item_card = None
-        item_source = None
         item_index = -1
         
-        # Procurar na mão primeiro
         for i, card in enumerate(player['hand']):
             if card['instance_id'] == item_card_id:
                 item_card = card
-                item_source = 'hand'
                 item_index = i
                 break
         
-        # Se não achou na mão, procurar nos equipamentos das criaturas (para desequipar)
         if not item_card:
-            for base in ['attack_bases', 'defense_bases']:
-                for creature in player[base]:
-                    if creature and 'equipped_items' in creature:
-                        for i, eq in enumerate(creature['equipped_items']):
-                            if eq['instance_id'] == item_card_id:
-                                item_card = eq
-                                item_source = 'equipped'
-                                # Remover da criatura
-                                creature['equipped_items'].pop(i)
-                                # Remover bônus
-                                if eq.get('attack'):
-                                    creature['attack'] = max(0, creature.get('attack', 0) - eq['attack'])
-                                if eq.get('protection'):
-                                    creature['life'] = max(0, creature.get('life', 0) - eq['protection'])
-                                break
-                    if item_card:
-                        break
-            if item_card:
-                item_source = 'reequip'
-        
-        if not item_card:
-            return {'success': False, 'message': 'Item não encontrado'}
+            return {'success': False, 'message': 'Item não encontrado na mão'}
         
         # Verificar se é um item equipável
         if item_card.get('type') not in ['weapon', 'armor']:
@@ -901,13 +880,15 @@ class Game:
         
         for base in ['attack_bases', 'defense_bases']:
             for i, card in enumerate(player[base]):
-                if card and card['instance_id'] == creature_card_id:
+                if card and card.get('instance_id') == creature_card_id:
                     target_creature = card
                     creature_location = (base, i)
                     break
+            if target_creature:
+                break
         
         if not target_creature:
-            return {'success': False, 'message': 'Criatura não encontrada'}
+            return {'success': False, 'message': 'Criatura não encontrada em campo'}
         
         if target_creature.get('type') != 'creature':
             return {'success': False, 'message': 'Alvo não é uma criatura'}
@@ -933,12 +914,11 @@ class Game:
         if item_card.get('type') == 'weapon' and weapon_count >= 1:
             return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
         
-        if item_card.get('type') == 'armor' and armor_count >= 4:  # Capacete, peitoral, botas, etc
+        if item_card.get('type') == 'armor' and armor_count >= 4:
             return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
         
-        # Remover da fonte original se ainda não foi removido
-        if item_source == 'hand':
-            player['hand'].pop(item_index)
+        # Remover item da mão
+        player['hand'].pop(item_index)
         
         # Equipar item
         target_creature['equipped_items'].append(item_card)
@@ -951,13 +931,15 @@ class Game:
         if item_card.get('life'):
             target_creature['life'] = target_creature.get('life', 0) + item_card['life']
         
+        print(f"Item {item_card['name']} equipado em {target_creature['name']}")
+        
         return {
             'success': True,
             'creature': target_creature['name'],
             'item': item_card['name'],
             'message': f"{item_card['name']} equipado em {target_creature['name']}"
         }
-
+    
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -1095,6 +1077,8 @@ def handle_player_action(data):
     action = data['action']
     params = data.get('params', {})
     
+    print(f"Ação recebida: {action} no jogo {game_id} do jogador {request.sid}")
+    
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
         return
@@ -1114,41 +1098,52 @@ def handle_player_action(data):
         emit('error', {'message': 'Não é o seu turno'})
         return
     
-    # Processar ações
     result = None
     
-    if action == 'draw':
-        result = game.draw_card(player_id)
-    elif action == 'play_card':
-        result = game.play_card(player_id, params['card_id'], params['position_type'], params['position_index'])
-    elif action == 'attack':
-        result = game.attack(player_id, params['target_id'])
-    elif action == 'move_card':
-        result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
-    elif action == 'flip_card':
-        result = game.flip_card(player_id, params['position_type'], params['position_index'])
-    elif action == 'oracle':
-        result = game.perform_oracle(player_id, params['target_id'])
-    elif action == 'end_turn':
-        game.next_turn()
-        result = {'success': True, 'next_turn': game.players[game.current_turn]}
-    
-    if result and result['success']:
-        # Atualizar todos os jogadores
-        emit('action_success', {
-            'player_id': player_id,
-            'action': action,
-            'result': result
-        }, room=game_id)
+    try:
+        if action == 'draw':
+            result = game.draw_card(player_id)
+        elif action == 'play_card':
+            result = game.play_card(player_id, params['card_id'], params['position_type'], params['position_index'])
+        elif action == 'attack':
+            result = game.attack(player_id, params['target_id'])
+        elif action == 'equip_item':  # NOVA AÇÃO
+            result = game.equip_item_to_creature(player_id, params['item_card_id'], params['creature_card_id'])
+        elif action == 'cast_spell':
+            result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
+        elif action == 'move_card':
+            result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
+        elif action == 'flip_card':
+            result = game.flip_card(player_id, params['position_type'], params['position_index'])
+        elif action == 'oracle':
+            result = game.perform_oracle(player_id, params['target_id'])
+        elif action == 'revive':
+            result = game.revive_from_graveyard(player_id, params.get('card_id'))
+        elif action == 'end_turn':
+            game.next_turn()
+            result = {'success': True, 'next_turn': game.players[game.current_turn]}
         
-        # Verificar vencedor
-        winner = game.check_winner()
-        if winner:
-            emit('game_over', {'winner': winner}, room=game_id)
-    else:
-        emit('action_error', {
-            'message': result['message'] if result else 'Ação inválida'
-        })
+        if result and result.get('success'):
+            print(f"Ação {action} bem-sucedida: {result}")
+            emit('action_success', {
+                'player_id': player_id,
+                'action': action,
+                'result': result
+            }, room=game_id)
+            
+            winner = game.check_winner()
+            if winner:
+                emit('game_over', {'winner': winner}, room=game_id)
+        else:
+            error_msg = result['message'] if result else 'Ação inválida'
+            print(f"Erro na ação {action}: {error_msg}")
+            emit('action_error', {'message': error_msg})
+            
+    except Exception as e:
+        print(f"Exceção na ação {action}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        emit('action_error', {'message': f'Erro interno: {str(e)}'})
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
