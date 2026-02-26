@@ -204,7 +204,7 @@ class Game:
         return {'success': True, 'card': card}
     
     def play_card(self, player_id, card_instance_id, position_type, position_index):
-        """Joga uma carta da mão para o campo"""
+        """Joga uma carta da mão para o campo com validação de tipo"""
         if not self.can_act(player_id, 'play'):
             return {'success': False, 'message': 'Você já jogou uma carta neste turno'}
         
@@ -212,36 +212,69 @@ class Game:
         
         # Encontrar carta na mão
         card_to_play = None
+        card_index = -1
         for i, card in enumerate(player['hand']):
             if card['instance_id'] == card_instance_id:
                 card_to_play = card
-                player['hand'].pop(i)
+                card_index = i
                 break
         
         if not card_to_play:
             return {'success': False, 'message': 'Carta não encontrada na mão'}
         
-        # Verificar tipo de carta e posição
-        if position_type == 'attack':
-            if position_index >= len(player['attack_bases']):
-                return {'success': False, 'message': 'Posição de ataque inválida'}
-            if player['attack_bases'][position_index] is not None:
-                return {'success': False, 'message': 'Posição de ataque ocupada'}
-            player['attack_bases'][position_index] = card_to_play
-        elif position_type == 'defense':
-            if position_index >= len(player['defense_bases']):
-                return {'success': False, 'message': 'Posição de defesa inválida'}
-            if player['defense_bases'][position_index] is not None:
-                return {'success': False, 'message': 'Posição de defesa ocupada'}
-            player['defense_bases'][position_index] = card_to_play
-        else:
-            return {'success': False, 'message': 'Tipo de posição inválido'}
+        # Validar tipo de carta para a posição
+        if position_type in ['attack', 'defense']:
+            # Apenas criaturas podem ir para bases de ataque/defesa
+            if card_to_play.get('type') != 'creature':
+                return {'success': False, 'message': 'Apenas criaturas podem ser colocadas em bases de ataque ou defesa'}
+        
+        elif position_type == 'equipment':
+            # Equipamentos vão para slots específicos
+            valid_equipment_types = {
+                'weapon': ['weapon'],
+                'helmet': ['armor'],
+                'armor': ['armor'],
+                'boots': ['armor'],
+                'mount': ['creature']  # Montarias podem ser criaturas específicas
+            }
+            
+            slot_name = position_index  # position_index é o nome do slot aqui
+            if slot_name not in valid_equipment_types:
+                return {'success': False, 'message': 'Slot de equipamento inválido'}
+            
+            if card_to_play.get('type') not in valid_equipment_types[slot_name]:
+                return {'success': False, 'message': f'Esta carta não pode ser equipada em {slot_name}'}
+            
+            # Verificar se o slot está vazio
+            if player['equipment'][slot_name] is not None:
+                return {'success': False, 'message': f'Slot de {slot_name} já está ocupado'}
+        
+        # Remover carta da mão
+        player['hand'].pop(card_index)
+        
+        # Colocar carta no local apropriado
+        if position_type in ['attack', 'defense']:
+            if position_type == 'attack':
+                if position_index >= len(player['attack_bases']):
+                    return {'success': False, 'message': 'Posição de ataque inválida'}
+                if player['attack_bases'][position_index] is not None:
+                    return {'success': False, 'message': 'Posição de ataque ocupada'}
+                player['attack_bases'][position_index] = card_to_play
+            else:  # defense
+                if position_index >= len(player['defense_bases']):
+                    return {'success': False, 'message': 'Posição de defesa inválida'}
+                if player['defense_bases'][position_index] is not None:
+                    return {'success': False, 'message': 'Posição de defesa ocupada'}
+                player['defense_bases'][position_index] = card_to_play
+        
+        elif position_type == 'equipment':
+            player['equipment'][position_index] = card_to_play
         
         self.use_action(player_id, 'play')
         return {'success': True, 'card': card_to_play}
     
     def attack(self, player_id, target_player_id):
-        """Ataca outro jogador"""
+        """Ataca outro jogador com sistema de dano corrigido"""
         if not self.can_act(player_id, 'attack'):
             return {'success': False, 'message': 'Você já atacou neste turno'}
         
@@ -251,37 +284,76 @@ class Game:
         attacker = self.player_data[player_id]
         defender = self.player_data[target_player_id]
         
-        # Calcular poder de ataque total
-        total_attack = 0
+        # Verificar se tem cartas de ataque
+        has_attack_cards = False
         for card in attacker['attack_bases']:
-            if card:
-                total_attack += card.get('attack', 0)
+            if card and card.get('type') == 'creature':
+                has_attack_cards = True
+                break
+        
+        if not has_attack_cards:
+            return {'success': False, 'message': 'Você precisa de criaturas em posição de ataque para atacar'}
+        
+        # Calcular poder de ataque total (apenas criaturas)
+        total_attack = 0
+        attacking_cards = []
+        for card in attacker['attack_bases']:
+            if card and card.get('type') == 'creature':
+                attack_value = card.get('attack', 0)
+                total_attack += attack_value
+                attacking_cards.append(card)
         
         # Adicionar bônus de equipamentos
         if attacker['equipment']['weapon']:
-            total_attack += attacker['equipment']['weapon'].get('attack', 0)
+            weapon = attacker['equipment']['weapon']
+            if weapon.get('type') == 'weapon':
+                total_attack += weapon.get('attack', 0)
         
         # Talismã Guerreiro
         for talisman in attacker['talismans']:
             if talisman['id'] == 'talisma_guerreiro':
                 total_attack += 1000
         
-        # Calcular defesa total
-        total_defense = 0
+        # Coletar cartas de defesa com suas vidas
         defense_cards = []
-        for card in defender['defense_bases']:
-            if card:
-                defense_value = card.get('life', 0)
-                if card.get('protection'):
-                    defense_value += card['protection']
-                total_defense += defense_value
-                defense_cards.append(card)
+        for i, card in enumerate(defender['defense_bases']):
+            if card and card.get('type') == 'creature':
+                defense_cards.append({
+                    'card': card,
+                    'index': i,
+                    'current_life': card.get('life', 0),
+                    'original_life': card.get('life', 0)
+                })
         
-        # Aplicar dano
-        damage = max(0, total_attack - total_defense)
+        # Ordenar cartas de defesa por vida (maior primeiro)
+        defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
         
-        # Se dano > 0, aplicar ao jogador
-        if damage > 0:
+        # Aplicar dano às cartas de defesa primeiro
+        remaining_damage = total_attack
+        damage_log = []
+        
+        for def_card in defense_cards:
+            if remaining_damage <= 0:
+                break
+            
+            card = def_card['card']
+            card_life = def_card['current_life']
+            
+            if remaining_damage >= card_life:
+                # Carta morre
+                remaining_damage -= card_life
+                self.graveyard.append(card)
+                defender['defense_bases'][def_card['index']] = None
+                damage_log.append(f"{card['name']} foi destruída")
+            else:
+                # Carta leva dano mas sobrevive
+                new_life = card_life - remaining_damage
+                card['life'] = new_life
+                damage_log.append(f"{card['name']} recebeu {remaining_damage} de dano (vida restante: {new_life})")
+                remaining_damage = 0
+        
+        # Dano restante vai para o jogador
+        if remaining_damage > 0:
             # Verificar talismã da imortalidade
             has_immortality = False
             for talisman in defender['talismans']:
@@ -290,29 +362,23 @@ class Game:
                     break
             
             if has_immortality:
-                # Imortalidade: vida restaurada em vez de morrer
                 defender['life'] = 5000
-                # Remover talismã após uso
                 defender['talismans'] = [t for t in defender['talismans'] if t['id'] != 'talisma_imortalidade']
-                result_message = "Talismã da Imortalidade salvou o jogador!"
+                damage_log.append("Talismã da Imortalidade salvou o jogador!")
             else:
-                defender['life'] -= damage
-        
-        # Cartas de defesa que absorveram dano vão para o cemitério
-        for card in defense_cards:
-            self.graveyard.append(card)
-        
-        # Limpar bases de defesa
-        defender['defense_bases'] = [None] * 6
+                defender['life'] -= remaining_damage
+                damage_log.append(f"Jogador recebeu {remaining_damage} de dano direto")
         
         self.use_action(player_id, 'attack')
         
         return {
             'success': True,
-            'damage_dealt': damage,
+            'damage_dealt': total_attack - remaining_damage,
+            'damage_to_player': remaining_damage if remaining_damage > 0 else 0,
             'attacker': player_id,
             'target': target_player_id,
-            'target_life': defender['life']
+            'target_life': defender['life'],
+            'log': damage_log
         }
     
     def move_card(self, player_id, from_type, from_index, to_type, to_index):
@@ -388,7 +454,7 @@ class Game:
         return {'success': True}
     
     def perform_oracle(self, player_id, target_player_id):
-        """Realiza um oráculo (requer elfo em defesa)"""
+        """Realiza um oráculo com seleção de alvo"""
         player = self.player_data[player_id]
         
         # Verificar se tem elfo em defesa
@@ -413,17 +479,28 @@ class Game:
         if not has_oracle:
             return {'success': False, 'message': 'Você não tem o Oráculo'}
         
+        # Verificar se o alvo tem talismã da imortalidade
+        target_has_immortality = False
+        if target_player_id in self.player_data:
+            for talisman in self.player_data[target_player_id]['talismans']:
+                if talisman['id'] == 'talisma_imortalidade':
+                    target_has_immortality = True
+                    break
+        
+        if not target_has_immortality:
+            return {'success': False, 'message': 'O alvo não possui Talismã da Imortalidade'}
+        
         # Remover oráculo da mão (volta para o deck)
         oracle_card = player['hand'].pop(oracle_index)
         self.deck.insert(0, oracle_card)  # Volta para o topo do deck
         
-        # Revelar oráculo para todos
         return {
             'success': True,
-            'message': f'Jogador {player["name"]} revelou um Oráculo! O oráculo voltou para o deck.',
-            'oracle_revealed': True
+            'message': f'Jogador {player["name"]} revelou um Oráculo contra {self.player_data[target_player_id]["name"]}!',
+            'oracle_revealed': True,
+            'target': target_player_id
         }
-    
+
     def check_winner(self):
         """Verifica se há um vencedor"""
         alive_players = []
