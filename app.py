@@ -1038,6 +1038,9 @@ class Game:
 @app.route('/')
 def index():
     return render_template('index.html')
+@app.route('/rules')
+def rules():
+    return render_template('rules.html')
 
 @app.route('/game/<game_id>')
 def game(game_id):
