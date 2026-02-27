@@ -748,16 +748,16 @@
                 <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
             </div>
 
-            <!-- Indicador de modo de equipar -->
-            <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; display: flex; justify-content: space-between; align-items: center;">
-                <span>🔰 <strong>Modo Equipar ativo</strong> - Clique em uma criatura para equipar o item selecionado</span>
-                <button onclick="cancelEquipMode()" style="padding: 8px 20px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 15px;">✖ Cancelar</button>
-            </div>
-
             <!-- Indicador de modo de troca -->
-            <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; display: flex; justify-content: space-between; align-items: center;">
+            <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; align-items: center; justify-content: space-between;">
                 <span>🔄 <strong>Modo Troca ativo</strong> - Clique em duas posições para trocar as cartas</span>
                 <button onclick="cancelMoveMode()" style="padding: 8px 20px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 15px;">✖ Cancelar</button>
+            </div>
+
+            <!-- Indicador de modo de equipar -->
+            <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; align-items: center; justify-content: space-between;">
+                <span>🔰 <strong>Modo Equipar ativo</strong> - Clique em uma criatura para equipar o item selecionado</span>
+                <button onclick="cancelEquipMode()" style="padding: 8px 20px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 15px;">✖ Cancelar</button>
             </div>
         </div>
         
@@ -774,1096 +774,806 @@
     </div>
     
     <script>
-        const gameId = '{{ game_id }}';
-        const SESSION_KEY = `twilight_session_${gameId}`;
+        // Script corrigido - colocar todo o código dentro de DOMContentLoaded
 
-        let savedSession = localStorage.getItem(SESSION_KEY);
-        if (savedSession) {
-            try {
-                savedSession = JSON.parse(savedSession);
-                console.log('Sessão recuperada:', savedSession);
-            } catch (e) {
-                console.log('Erro ao recuperar sessão:', e);
-                savedSession = null;
-            }
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM carregado, inicializando jogo...');
+    
+    const gameId = '{{ game_id }}';
+    const SESSION_KEY = `twilight_session_${gameId}`;
+    
+    // Verificar se elementos existem antes de usar
+    const moveIndicator = document.getElementById('move-mode-indicator');
+    const equipIndicator = document.getElementById('equip-mode-indicator');
+    const actionButtons = document.getElementById('action-buttons');
+    
+    if (!moveIndicator || !equipIndicator || !actionButtons) {
+        console.error('Elementos necessários não encontrados no DOM');
+    }
+    
+    // Tentar recuperar sessão anterior
+    let savedSession = null;
+    try {
+        const saved = localStorage.getItem(SESSION_KEY);
+        if (saved) {
+            savedSession = JSON.parse(saved);
+            console.log('Sessão recuperada:', savedSession);
         }
+    } catch (e) {
+        console.log('Erro ao recuperar sessão:', e);
+    }
 
-        const socket = io({
-            reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
+    const socket = io({
+        reconnection: true,
+        reconnectionAttempts: 10,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        autoConnect: true
+    });
+
+    let currentPlayerId = savedSession?.playerId || null;
+    let gameState = null;
+    let selectedCard = null;
+    let selectedCreature = null;
+    let actionMode = null;
+    let trapCards = [null, null];
+    let reconnectAttempts = 0;
+    let reconnectTimer = null;
+
+    // Variáveis para controle de modos
+    let moveMode = false;
+    let firstSelection = null;
+    let equipMode = false;
+    let selectedItemForEquip = null;
+
+    // Função para salvar sessão
+    function saveSession() {
+        if (currentPlayerId) {
+            const session = {
+                playerId: currentPlayerId,
+                playerName: localStorage.getItem('playerName'),
+                gameId: gameId,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+            console.log('Sessão salva:', session);
+        }
+    }
+
+    // Função para limpar sessão
+    function clearSession() {
+        localStorage.removeItem(SESSION_KEY);
+        console.log('Sessão limpa');
+    }
+
+    // Função para tentar reconectar
+    function attemptReconnection() {
+        if (reconnectAttempts < 5) {
+            reconnectAttempts++;
+            console.log(`Tentativa de reconexão ${reconnectAttempts}/5...`);
+            
+            socket.connect();
+            
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+            }
+            
+            reconnectTimer = setTimeout(() => {
+                if (!socket.connected) {
+                    console.log('Falha na reconexão, tentando novamente...');
+                    attemptReconnection();
+                }
+            }, 3000);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro de conexão',
+                text: 'Não foi possível reconectar ao servidor. Recarregue a página.',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'Recarregar'
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+    }
+
+    // Socket event handlers
+    socket.on('connect', function() {
+        console.log('Conectado ao servidor');
+        reconnectAttempts = 0;
+        
+        const playerName = savedSession?.playerName || localStorage.getItem('playerName') || 'Jogador';
+        
+        if (savedSession) {
+            console.log('Tentando reconectar com sessão existente:', savedSession);
+            socket.emit('reconnect_game', {
+                game_id: gameId,
+                player_id: savedSession.playerId,
+                player_name: playerName
+            });
+        } else {
+            socket.emit('join_game', {
+                game_id: gameId,
+                player_name: playerName
+            });
+        }
+        
+        setTimeout(() => requestGameState(), 500);
+    });
+
+    socket.on('reconnect_success', function(data) {
+        console.log('Reconexão bem-sucedida:', data);
+        currentPlayerId = data.player_id;
+        saveSession();
+        
+        const indicator = document.getElementById('session-indicator');
+        if (indicator) {
+            indicator.style.display = 'block';
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 3000);
+        }
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Reconectado!',
+            text: 'Sua sessão foi restaurada.',
+            timer: 2000,
+            showConfirmButton: false,
+            background: '#1a1a2e',
+            color: '#fff'
         });
         
-        let currentPlayerId = null;
-        let gameState = null;
-        let selectedCard = null;
-        let actionMode = null;
-        let moveMode = false;
-        let firstSelection = null;
-        let equipMode = false;
-        let selectedItemForEquip = null;
-        let trapSlots = [null, null];
-        let trapCards = [null, null];
+        requestGameState();
+    });
 
-        function saveSession() {
-            if (currentPlayerId) {
-                const session = {
-                    playerId: currentPlayerId,
-                    playerName: localStorage.getItem('playerName'),
-                    gameId: gameId,
-                    timestamp: Date.now()
-                };
-                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-                console.log('Sessão salva:', session);
-            }
-        }
-        function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
+    socket.on('connect_error', function(error) {
+        console.error('Erro de conexão:', error);
+        attemptReconnection();
+    });
 
-        function attemptReconnection() {
-            if (reconnectAttempts < 5) {
-                reconnectAttempts++;
-                console.log(`Tentativa de reconexão ${reconnectAttempts}/5...`);
-                
-                socket.connect();
-                
-                if (reconnectTimer) {
-                    clearTimeout(reconnectTimer);
-                }
-                
-                reconnectTimer = setTimeout(() => {
-                    if (!socket.connected) {
-                        console.log('Falha na reconexão, tentando novamente...');
-                        attemptReconnection();
-                    }
-                }, 3000);
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erro de conexão',
-                    text: 'Não foi possível reconectar ao servidor. Recarregue a página.',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    confirmButtonText: 'Recarregar'
-                }).then(() => {
-                    window.location.reload();
-                });
-            }
-        }
-
-        socket.on('connect', function() {
-            console.log('Conectado ao servidor');
-            reconnectAttempts = 0;
+    socket.on('disconnect', function(reason) {
+        console.log('Desconectado do servidor:', reason);
+        
+        if (reason === 'io server disconnect' || reason === 'transport close') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Desconectado',
+                text: 'Perdeu conexão com o servidor. Tentando reconectar...',
+                background: '#1a1a2e',
+                color: '#fff',
+                showConfirmButton: false,
+                timer: 2000
+            });
             
-            const playerName = savedSession?.playerName || localStorage.getItem('playerName') || 'Jogador';
-            
-            // Se temos uma sessão, tentar reconectar diretamente
-            if (savedSession) {
-                console.log('Tentando reconectar com sessão existente:', savedSession);
-                socket.emit('reconnect_game', {
-                    game_id: gameId,
-                    player_id: savedSession.playerId,
-                    player_name: playerName
-                });
-            } else {
-                // Primeira conexão
-                socket.emit('join_game', {
-                    game_id: gameId,
-                    player_name: playerName
-                });
-            }
-            
-            setTimeout(requestGameState, 500);
-        });
-        socket.on('connect_error', function(error) {
-            console.error('Erro de conexão:', error);
             attemptReconnection();
-        });
+        }
+    });
 
-        socket.on('disconnect', function(reason) {
-            console.log('Desconectado do servidor:', reason);
-            
-            if (reason === 'io server disconnect' || reason === 'transport close') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Desconectado',
-                    text: 'Perdeu conexão com o servidor. Tentando reconectar...',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-                
-                attemptReconnection();
-            }
-        });
-
-        socket.on('reconnect', function() {
-            console.log('Reconectado ao servidor');
-            requestGameState();
-        });
-        socket.on('reconnect_success', function(data) {
-            console.log('Reconexão bem-sucedida:', data);
+    socket.on('player_joined', function(data) {
+        console.log('Jogador entrou:', data);
+        
+        if (data.player_name === localStorage.getItem('playerName')) {
             currentPlayerId = data.player_id;
             saveSession();
-            showSessionIndicator();
+        }
+        
+        updatePlayersList(data.players);
+    });
+
+    socket.on('game_started', function(data) {
+        console.log('Jogo começou!');
+        const waitingRoom = document.getElementById('waiting-room');
+        const playerArea = document.getElementById('player-area');
+        
+        if (waitingRoom) waitingRoom.style.display = 'none';
+        if (playerArea) playerArea.style.display = 'block';
+        
+        requestGameState();
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Jogo iniciado!',
+            text: 'Que comece a batalha!',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
+        });
+    });
+
+    socket.on('game_state', function(data) {
+        console.log('Estado do jogo:', data);
+        gameState = data;
+        
+        if (currentPlayerId && !gameState.players[currentPlayerId]) {
+            console.log('Jogador não encontrado no estado do jogo');
+            clearSession();
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Sessão expirada',
+                text: 'Você foi removido do jogo. Voltando para o início...',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 3000
+            }).then(() => {
+                window.location.href = '/';
+            });
+            return;
+        }
+        
+        updateGameUI();
+    });
+
+    socket.on('action_success', function(data) {
+        console.log('Ação bem-sucedida:', data);
+        requestGameState();
+        
+        if (data.result && data.result.first_round_ended) {
+            Swal.fire({
+                icon: 'success',
+                title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
+                html: '<p style="color: #fff;">Todos os jogadores já jogaram!<br><strong style="color: #ffd700;">Agora os ataques estão liberados!</strong></p>',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 3000
+            });
+        }
+        
+        if (data.action === 'swap_positions' && data.result) {
+            // Sair do modo de troca automaticamente
+            cancelMoveMode();
             
             Swal.fire({
                 icon: 'success',
-                title: 'Reconectado!',
-                text: 'Sua sessão foi restaurada.',
-                timer: 2000,
+                title: '🔄 Posições trocadas!',
+                text: data.result.message || 'Cartas trocadas com sucesso',
+                timer: 1500,
                 showConfirmButton: false,
                 background: '#1a1a2e',
                 color: '#fff'
             });
-            
-            requestGameState();
-        });
+        } else if (data.action === 'attack' && data.result) {
+            showAttackResult(data.result);
+        } else {
+            addLogEntry(`✅ Ação realizada: ${data.action}`);
+        }
+    });
 
-        socket.on('player_joined', function(data) {
-            console.log('Jogador entrou:', data);
-            
-            // Se for o próprio jogador, salvar ID
-            if (data.player_name === localStorage.getItem('playerName')) {
-                currentPlayerId = data.player_id;
-                saveSession();
-            }
-            
-            updatePlayersList(data.players);
+    socket.on('action_error', function(data) {
+        console.error('Erro na ação:', data);
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: data.message,
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
         });
-        socket.on('player_left', function(data) {
-            console.log('Jogador saiu:', data);
-            addLogEntry(`👋 Jogador ${data.player_id} saiu da partida`);
-            requestGameState();
-        });
+    });
 
-        socket.on('game_started', function(data) {
-            console.log('Jogo começou!');
-            document.getElementById('waiting-room').style.display = 'none';
-            document.getElementById('player-area').style.display = 'block';
-            requestGameState();
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Jogo iniciado!',
-                text: 'Que comece a batalha!',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-        });
-
-        socket.on('game_state', function(data) {
-            console.log('Estado do jogo:', data);
-            gameState = data;
-            
-            // Verificar se o jogador ainda está no jogo
-            if (currentPlayerId && !gameState.players[currentPlayerId]) {
-                console.log('Jogador não encontrado no estado do jogo');
-                clearSession();
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Sessão expirada',
-                    text: 'Você foi removido do jogo. Voltando para o início...',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 3000
-                }).then(() => {
-                    window.location.href = '/';
-                });
-                return;
-            }
-            
-            updateGameUI();
-        });
-
-        socket.on('graveyard_list', function(data) {
-            console.log('Cemitério:', data.cards);
-            
-            if (!data.cards || data.cards.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: '💀 Cemitério vazio',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Organizar cards por tipo para melhor visualização
-            const creatures = data.cards.filter(c => c.type === 'creature');
-            const spells = data.cards.filter(c => c.type === 'spell');
-            const weapons = data.cards.filter(c => c.type === 'weapon');
-            const armors = data.cards.filter(c => c.type === 'armor');
-            const runes = data.cards.filter(c => c.type === 'rune' || c.id === 'runa');
-            const talismans = data.cards.filter(c => c.type === 'talisman');
-            const traps = data.cards.filter(c => c.type === 'trap');
-            const others = data.cards.filter(c => 
-                !['creature', 'spell', 'weapon', 'armor', 'rune', 'talisman', 'trap'].includes(c.type)
-            );
-            
-            let html = `
-                <div style="max-height: 500px; overflow-y: auto; padding: 10px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 5px;">
-                        <span>Total: <strong style="color: #ffd700;">${data.cards.length}</strong> cartas</span>
-                        <span>👤 ${creatures.length} | ✨ ${spells.length} | ⚔️ ${weapons.length} | 🛡️ ${armors.length}</span>
-                    </div>
-            `;
-            
-            if (creatures.length > 0) {
-                html += '<h3 style="color: #ff6b6b; margin: 15px 0 5px; border-bottom: 1px solid #ff6b6b; padding-bottom: 5px;">👤 Criaturas</h3>';
-                creatures.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (spells.length > 0) {
-                html += '<h3 style="color: #9370db; margin: 15px 0 5px; border-bottom: 1px solid #9370db; padding-bottom: 5px;">✨ Feitiços</h3>';
-                spells.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (weapons.length > 0) {
-                html += '<h3 style="color: #ffa500; margin: 15px 0 5px; border-bottom: 1px solid #ffa500; padding-bottom: 5px;">⚔️ Armas</h3>';
-                weapons.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (armors.length > 0) {
-                html += '<h3 style="color: #4a90e2; margin: 15px 0 5px; border-bottom: 1px solid #4a90e2; padding-bottom: 5px;">🛡️ Armaduras</h3>';
-                armors.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (runes.length > 0) {
-                html += '<h3 style="color: #4CAF50; margin: 15px 0 5px; border-bottom: 1px solid #4CAF50; padding-bottom: 5px;">🔷 Runas</h3>';
-                runes.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (talismans.length > 0) {
-                html += '<h3 style="color: #ffd700; margin: 15px 0 5px; border-bottom: 1px solid #ffd700; padding-bottom: 5px;">🔮 Talismãs</h3>';
-                talismans.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (traps.length > 0) {
-                html += '<h3 style="color: #ff00ff; margin: 15px 0 5px; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">⚠️ Armadilhas</h3>';
-                traps.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (others.length > 0) {
-                html += '<h3 style="color: #a8a8a8; margin: 15px 0 5px; border-bottom: 1px solid #a8a8a8; padding-bottom: 5px;">📦 Outros</h3>';
-                others.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            html += '</div>';
-            
-            Swal.fire({
-                title: '💀 Cemitério',
-                html: html,
-                showCancelButton: false,
-                showConfirmButton: true,
-                confirmButtonText: 'Fechar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                width: '800px'
-            });
-        });
+    socket.on('game_over', function(data) {
+        const winner = data.winner;
+        const winnerName = gameState?.players[winner]?.name || 'Desconhecido';
         
-        socket.on('action_success', function(data) {
-            console.log('Ação bem-sucedida:', data);
-            requestGameState();
-            
-            if (data.action === 'attack' && data.result) {
-                showAttackResult(data.result);
-            } else {
-                addLogEntry(`✅ Ação realizada: ${data.action}`);
-            }
+        clearSession();
+        
+        Swal.fire({
+            title: '🏆 FIM DE JOGO! 🏆',
+            html: `<h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>`,
+            icon: 'success',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700',
+            confirmButtonText: 'Voltar ao início'
+        }).then(() => {
+            window.location.href = '/';
         });
+    });
 
-        socket.on('action_error', function(data) {
-            console.error('Erro na ação:', data);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erro',
-                text: data.message,
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
+    socket.on('player_left', function(data) {
+        console.log('Jogador saiu:', data);
+        addLogEntry(`👋 Jogador ${data.player_id} saiu da partida`);
+        requestGameState();
+    });
+
+    socket.on('graveyard_list', function(data) {
+        console.log('Cemitério:', data.cards);
+        showGraveyardList(data.cards);
+    });
+
+    // Funções auxiliares
+    function requestGameState() {
+        socket.emit('get_game_state', { game_id: gameId });
+    }
+
+    function updatePlayersList(players) {
+        const list = document.getElementById('player-names');
+        if (!list) return;
+        
+        list.innerHTML = '';
+        
+        players.forEach(player => {
+            const li = document.createElement('li');
+            li.textContent = player.name;
+            list.appendChild(li);
         });
+    }
 
-        socket.on('game_over', function(data) {
-            const winner = data.winner;
-            const winnerName = gameState.players[winner].name;
-            
-            Swal.fire({
-                title: '🏆 FIM DE JOGO! 🏆',
-                html: `<h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>`,
-                icon: 'success',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                confirmButtonText: 'Voltar ao início'
-            }).then(() => {
-                window.location.href = '/';
-            });
-        });
-
-        function showAttackResult(result) {
-            let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
-            
-            if (result.cards_destroyed && result.cards_destroyed.length > 0) {
-                html += `<p style="color: #ff6b6b;">💀 Destruídas: ${result.cards_destroyed.join(', ')}</p>`;
-            }
-            
-            if (result.cards_damaged && result.cards_damaged.length > 0) {
-                html += `<p style="color: #ffa500;">💔 Danificadas: ${result.cards_damaged.join(', ')}</p>`;
-            }
-            
-            if (result.damage_to_player && result.damage_to_player > 0) {
-                html += `<p style="color: #ff4444;">⚔️ Dano direto: ${result.damage_to_player}</p>`;
-            }
-            
-            html += `<p>❤️ Vida restante: ${result.target_life}</p>`;
-            
-            Swal.fire({
-                title: `⚔️ Ataque de ${result.attacker_name}!`,
-                html: html,
-                icon: 'info',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-            
-            // Criar animação de dano
-            createDamageAnimation(result.damage_to_player || 0);
-        }
-
-        function createDamageAnimation(damage) {
-            const targetCards = document.querySelectorAll('.opponent-card .base-slot.has-card');
-            targetCards.forEach(card => {
-                const damageNum = document.createElement('div');
-                damageNum.className = 'damage-number';
-                damageNum.textContent = `-${damage}`;
-                damageNum.style.left = card.offsetLeft + 'px';
-                damageNum.style.top = card.offsetTop + 'px';
-                card.appendChild(damageNum);
-                
-                setTimeout(() => damageNum.remove(), 1000);
-            });
-        }
-
-        function requestGameState() {
-            socket.emit('get_game_state', { game_id: gameId });
-        }
-
-        function updatePlayersList(players) {
-            const list = document.getElementById('player-names');
-            list.innerHTML = '';
-            
-            players.forEach(player => {
-                const li = document.createElement('li');
-                li.textContent = player.name;
-                list.appendChild(li);
-                
-                if (player.id === socket.id) {
-                    currentPlayerId = player.id;
-                }
-            });
-        }
-
-        function updateGameUI() {
-            if (!gameState) return;
-            
-            const timeIndicator = document.getElementById('time-indicator');
+    function updateGameUI() {
+        if (!gameState) return;
+        
+        const timeIndicator = document.getElementById('time-indicator');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const actionButtons = document.getElementById('action-buttons');
+        
+        if (timeIndicator) {
             timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
             timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
+        }
+        
+        if (turnIndicator && gameState.current_turn) {
+            const currentPlayer = gameState.players[gameState.current_turn];
             
-            const turnIndicator = document.getElementById('turn-indicator');
-            if (gameState.current_turn) {
-                const currentPlayer = gameState.players[gameState.current_turn];
-                
-                if (gameState.first_round) {
-                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
-                    turnIndicator.style.background = '#ffa500';
-                } else {
-                    turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
-                    turnIndicator.style.background = '#4CAF50';
-                }
-                
-                if (gameState.current_turn === socket.id) {
-                    turnIndicator.classList.add('my-turn');
-                } else {
-                    turnIndicator.classList.remove('my-turn');
-                }
+            if (gameState.first_round) {
+                turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
+                turnIndicator.style.background = '#ffa500';
+            } else {
+                turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
+                turnIndicator.style.background = '#4CAF50';
             }
             
-            // Atualizar visibilidade dos botões de ação
-            updateActionButtonsVisibility();
-            
-            updateOpponentsArea();
-            
-            if (gameState.players[socket.id]) {
-                updatePlayerArea();
+            if (gameState.current_turn === socket.id) {
+                turnIndicator.classList.add('my-turn');
+            } else {
+                turnIndicator.classList.remove('my-turn');
             }
         }
         
-        function showSessionIndicator() {
-            const indicator = document.getElementById('session-indicator');
-            if (indicator && currentPlayerId) {
-                indicator.style.display = 'block';
-                setTimeout(() => {
-                    indicator.style.display = 'none';
-                }, 3000);
+        // Atualizar visibilidade dos botões
+        if (actionButtons) {
+            const isMyTurn = gameState.current_turn === socket.id;
+            actionButtons.style.display = isMyTurn ? 'flex' : 'none';
+            
+            if (!isMyTurn) {
+                if (moveMode) cancelMoveMode();
+                if (equipMode) cancelEquipMode();
             }
         }
+        
+        updateOpponentsArea();
+        
+        if (gameState.players[socket.id]) {
+            updatePlayerArea();
+        }
+    }
 
-        function updateOpponentsArea() {
-            const opponentsArea = document.getElementById('opponents-area');
-            opponentsArea.innerHTML = '';
+    function updateOpponentsArea() {
+        const opponentsArea = document.getElementById('opponents-area');
+        if (!opponentsArea) return;
+        
+        opponentsArea.innerHTML = '';
+        
+        for (const [playerId, playerData] of Object.entries(gameState.players)) {
+            if (playerId === socket.id) continue;
             
-            for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId === socket.id) continue;
-                
-                const opponentCard = createOpponentCard(playerId, playerData);
-                opponentsArea.appendChild(opponentCard);
+            const opponentCard = createOpponentCard(playerId, playerData);
+            opponentsArea.appendChild(opponentCard);
+        }
+    }
+
+    function createOpponentCard(playerId, playerData) {
+        const div = document.createElement('div');
+        div.className = 'opponent-card';
+        div.innerHTML = `
+            <div class="opponent-header">
+                <span class="opponent-name">${playerData.name}</span>
+                <span class="opponent-life">❤️ ${playerData.life}</span>
+            </div>
+            <div class="opponent-stats">
+                <span class="stat-badge">🔮 ${playerData.talisman_count || 0}</span>
+                <span class="stat-badge">🔷 ${playerData.runes || 0}</span>
+            </div>
+            <div class="bases-section">
+                <small>⚔️ Ataque</small>
+                <div class="bases-row" id="opp-attack-${playerId}"></div>
+            </div>
+            <div class="bases-section">
+                <small>🛡️ Defesa</small>
+                <div class="bases-row" id="opp-defense-${playerId}"></div>
+            </div>
+            <button class="action-btn" onclick="selectTarget('${playerId}')" 
+                    ${gameState.current_turn !== socket.id ? 'disabled' : ''}>
+                ⚔️ Atacar
+            </button>
+        `;
+        
+        setTimeout(() => {
+            const attackRow = document.getElementById(`opp-attack-${playerId}`);
+            const defenseRow = document.getElementById(`opp-defense-${playerId}`);
+            
+            if (attackRow) {
+                playerData.attack_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'attack', index, true);
+                    attackRow.appendChild(slot);
+                });
             }
-        }
+            
+            if (defenseRow) {
+                playerData.defense_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'defense', index, true);
+                    defenseRow.appendChild(slot);
+                });
+            }
+        }, 0);
+        
+        return div;
+    }
 
-        function createOpponentCard(playerId, playerData) {
-            const div = document.createElement('div');
-            div.className = 'opponent-card';
-            div.innerHTML = `
-                <div class="opponent-header">
-                    <span class="opponent-name">${playerData.name}</span>
-                    <span class="opponent-life">❤️ ${playerData.life}</span>
-                </div>
-                <div class="opponent-stats">
-                    <span class="stat-badge">🔮 ${playerData.talisman_count || 0}</span>
-                    <span class="stat-badge">🔷 ${playerData.runes || 0}</span>
-                </div>
-                <div class="bases-section">
-                    <small>⚔️ Ataque</small>
-                    <div class="bases-row" id="opp-attack-${playerId}"></div>
-                </div>
-                <div class="bases-section">
-                    <small>🛡️ Defesa</small>
-                    <div class="bases-row" id="opp-defense-${playerId}"></div>
-                </div>
-                <button class="action-btn" onclick="selectTarget('${playerId}')" 
-                        ${gameState.current_turn !== socket.id ? 'disabled' : ''}>
-                    ⚔️ Atacar
-                </button>
-            `;
-            
-            setTimeout(() => {
-                const attackRow = document.getElementById(`opp-attack-${playerId}`);
-                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
-                
-                if (attackRow) {
-                    playerData.attack_bases.forEach((card, index) => {
-                        const slot = createBaseSlot(card, 'attack', index, true);
-                        attackRow.appendChild(slot);
-                    });
-                }
-                
-                if (defenseRow) {
-                    playerData.defense_bases.forEach((card, index) => {
-                        const slot = createBaseSlot(card, 'defense', index, true);
-                        defenseRow.appendChild(slot);
-                    });
-                }
-            }, 0);
-            
-            return div;
-        }
-
-        function updatePlayerArea() {
-            const playerData = gameState.players[socket.id];
-            
-            document.getElementById('player-name').textContent = playerData.name;
-            document.getElementById('player-life').textContent = playerData.life;
-            
-            // Contar runas na mão
-            const runes = playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length;
-            const talismans = playerData.hand.filter(c => c && c.type === 'talisman').length;
-            
-            document.getElementById('player-runes').textContent = runes;
-            document.getElementById('player-talismans').textContent = talismans;
-            document.getElementById('runas-count').textContent = runes;
-            
-            // Bases de ataque
-            const attackBases = document.getElementById('attack-bases');
+    function updatePlayerArea() {
+        const playerData = gameState.players[socket.id];
+        if (!playerData) return;
+        
+        const playerName = document.getElementById('player-name');
+        const playerLife = document.getElementById('player-life');
+        const playerRunes = document.getElementById('player-runes');
+        const playerTalismans = document.getElementById('player-talismans');
+        const runasCount = document.getElementById('runas-count');
+        
+        if (playerName) playerName.textContent = playerData.name;
+        if (playerLife) playerLife.textContent = playerData.life;
+        
+        const runes = playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length;
+        const talismans = playerData.hand.filter(c => c && c.type === 'talisman').length;
+        
+        if (playerRunes) playerRunes.textContent = runes;
+        if (playerTalismans) playerTalismans.textContent = talismans;
+        if (runasCount) runasCount.textContent = runes;
+        
+        // Bases de ataque
+        const attackBases = document.getElementById('attack-bases');
+        if (attackBases) {
             attackBases.innerHTML = '';
             playerData.attack_bases.forEach((card, index) => {
                 const slot = createBaseSlot(card, 'attack', index, false);
                 slot.onclick = () => selectBase('attack', index, card);
                 attackBases.appendChild(slot);
             });
-            
-            // Bases de defesa
-            const defenseBases = document.getElementById('defense-bases');
+        }
+        
+        // Bases de defesa
+        const defenseBases = document.getElementById('defense-bases');
+        if (defenseBases) {
             defenseBases.innerHTML = '';
             playerData.defense_bases.forEach((card, index) => {
                 const slot = createBaseSlot(card, 'defense', index, false);
                 slot.onclick = () => selectBase('defense', index, card);
                 defenseBases.appendChild(slot);
             });
-            
-            // Mão
-            const handCards = document.getElementById('hand-cards');
+        }
+        
+        // Mão
+        const handCards = document.getElementById('hand-cards');
+        const handCount = document.getElementById('hand-count');
+        
+        if (handCards) {
             handCards.innerHTML = '';
-            document.getElementById('hand-count').textContent = playerData.hand.length;
+            if (handCount) handCount.textContent = playerData.hand.length;
             
             playerData.hand.forEach((card, index) => {
                 const cardElement = createCardElement(card, index);
                 cardElement.onclick = () => selectCard(card, index);
                 handCards.appendChild(cardElement);
             });
-            
-            // Montes
-            document.getElementById('deck-count').textContent = gameState.deck_count;
-            document.getElementById('graveyard-count').textContent = gameState.graveyard_count;
-
-            if (equipMode) {
-                document.querySelectorAll('.base-slot.has-card').forEach(slot => {
-                    // Verificar se é uma criatura (tem card com type creature)
-                    if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
-                        slot.classList.add('creature-highlight');
-                    }
-                });
-            }
-        }
-    
-        function updateActionButtonsVisibility() {
-            const actionButtons = document.getElementById('action-buttons');
-            const moveIndicator = document.getElementById('move-mode-indicator');
-            const equipIndicator = document.getElementById('equip-mode-indicator');
-            
-            if (!gameState || !gameState.current_turn) {
-                actionButtons.style.display = 'none';
-                return;
-            }
-            
-            const isMyTurn = gameState.current_turn === socket.id;
-            
-            if (isMyTurn) {
-                actionButtons.style.display = 'flex';
-            } else {
-                actionButtons.style.display = 'none';
-                // Cancelar modos ativos se não for meu turno
-                if (moveMode) cancelMoveMode();
-                if (equipMode) cancelEquipMode();
-            }
-        }
-
-        function updateTrapSlots() {
-            for (let i = 0; i < 2; i++) {
-                const slot = document.getElementById(`trap-${i}`);
-                const trapCard = trapCards[i];
-                
-                if (trapCard) {
-                    slot.className = 'trap-slot has-trap';
-                    slot.innerHTML = `
-                        <div class="trap-card-content">
-                            <span style="font-size: 24px;">⚠️</span>
-                            <span class="trap-card-name">${trapCard.name}</span>
-                            <span class="trap-card-desc">${trapCard.description.substring(0, 30)}...</span>
-                        </div>
-                        <button class="trap-remove-btn" onclick="removeTrap(${i}, event)">✖</button>
-                    `;
-                } else {
-                    slot.className = 'trap-slot';
-                    slot.innerHTML = '⚠️ Slot ' + (i + 1);
-                }
-            }
-        }
-        function removeTrap(index, event) {
-            event.stopPropagation(); // Impedir que o clique no botão ative o slot
-            
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            Swal.fire({
-                title: 'Remover armadilha?',
-                text: `Deseja remover ${trapCards[index].name} do slot?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ff4444',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Sim, remover',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Aqui você pode implementar a lógica para remover a armadilha
-                    // Por enquanto, apenas removemos localmente
-                    trapCards[index] = null;
-                    updateTrapSlots();
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Armadilha removida',
-                        text: 'A armadilha voltou para sua mão',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                }
-            });
-        }
-
-        function createBaseSlot(card, type, index, isOpponent) {
-            const slot = document.createElement('div');
-            slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
-            slot.setAttribute('data-type', type);
-            slot.setAttribute('data-index', index);
-            
-            if (card) {
-                let lifePercent = 100;
-                if (card.original_life && card.life) {
-                    lifePercent = (card.life / card.original_life) * 100;
-                }
-                
-                let equippedItems = '';
-                if (card.equipped_items && card.equipped_items.length > 0) {
-                    equippedItems = `<div class="equipped-items">⚔️🛡️${card.equipped_items.length}</div>`;
-                }
-                
-                slot.innerHTML = `
-                    <div style="font-size: 16px;">${getTypeIcon(card.type)}</div>
-                    <strong>${card.name.substring(0, 8)}</strong>
-                    ${card.life ? `<small>❤️${card.life}</small>` : ''}
-                    ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
-                    ${equippedItems}
-                    <div class="card-tooltip">
-                        <strong>${card.name}</strong><br>
-                        Tipo: ${card.type}<br>
-                        ${card.description}<br>
-                        ${card.life ? `Vida: ${card.life}` : ''}
-                        ${card.attack ? ` | Ataque: ${card.attack}` : ''}
-                        ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
-                    </div>
-                `;
-                
-                if (lifePercent < 100) {
-                    slot.classList.add('damaged');
-                }
-            } else {
-                let placeholder = 'Vazio';
-                if (type === 'attack') placeholder = '⚔️';
-                else if (type === 'defense') placeholder = '🛡️';
-                slot.innerHTML = placeholder;
-            }
-            
-            // Adicionar evento de clique
-            slot.onclick = () => selectBase(type, index, card);
-
-            if (equipMode && card && card.type === 'creature' && !isOpponent) {
-                slot.classList.add('creature-highlight');
-            }
-            
-            return slot;
-        }
-
-        function createCardElement(card, index) {
-            const div = document.createElement('div');
-            div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
-            
-            div.innerHTML = `
-                <div style="font-size: 20px; text-align: center;">${getTypeIcon(card.type)}</div>
-                <div class="card-name">${card.name}</div>
-                <div class="card-type">${card.type}</div>
-                <div class="card-stats">
-                    ${card.life ? `❤️${card.life}` : ''}
-                    ${card.attack ? ` ⚔️${card.attack}` : ''}
-                    ${card.protection ? ` 🛡️${card.protection}` : ''}
-                </div>
-                <div class="card-description">${card.description.substring(0, 30)}...</div>
-            `;
-            return div;
-        }
-
-        function getTypeIcon(type) {
-            const icons = {
-                'creature': '👤',
-                'weapon': '⚔️',
-                'armor': '🛡️',
-                'talisman': '🔮',
-                'spell': '✨',
-                'rune': '🔷',
-                'oracle': '👁️',
-                'ritual': '📿',
-                'trap': '⚠️'
-            };
-            return icons[type] || '📦';
-        }
-
-        function selectCard(card, index) {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            selectedCard = card;
-            actionMode = 'play';
-            
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-            
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('selected');
-            } else {
-                const cards = document.querySelectorAll('.card');
-                if (cards[index]) {
-                    cards[index].classList.add('selected');
-                }
-            }
-            
-            let message = '';
-            let actionButtons = [];
-            
-            console.log('Tipo da carta:', card.type, 'ID:', card.id);
-            
-            if (card.type === 'creature') {
-                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
-            } 
-            else if (card.type === 'trap' || card.id.includes('armadilha')) {
-                message = '⚠️ Clique em um slot de armadilha (roxo) para colocá-la.';
-                actionButtons.push({
-                    name: '⚠️ Colocar em armadilha',
-                    callback: function() {
-                        selectTrapMode(card.instance_id);
-                    }
-                });
-            } 
-            else if (card.type === 'spell') {
-                message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
-            } 
-            else if (card.type === 'rune' || card.id === 'runa') {
-                message = '🔷 Runas são usadas para reviver cartas (4 runas).';
-            } 
-            else if (card.type === 'weapon' || card.type === 'armor' || 
-                    card.id === 'lamina_almas' || card.id === 'blade_vampires' || 
-                    card.id === 'blade_dragons' || card.id === 'capacete_trevas') {
-                message = '⚔️ Este item pode ser equipado em uma criatura.';
-                actionButtons.push({
-                    name: '🔰 Equipar em criatura',
-                    callback: function() {
-                        equipToCreature(card.instance_id);
-                    }
-                });
-            }
-            else if (card.type === 'talisman') {
-                message = '🔮 Talismãs são mantidos na mão e ativam automaticamente.';
-            }
-            else {
-                message = '📦 Tipo de carta: ' + (card.type || 'desconhecido');
-            }
-            
-            let actionHtml = '';
-            if (actionButtons.length > 0) {
-                actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">';
-                actionButtons.forEach(btn => {
-                    actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 12px 24px; font-size: 16px; background: linear-gradient(45deg, #4CAF50, #45a049);">${btn.name}</button>`;
-                });
-                actionHtml += '</div>';
-            }
-            
-            Swal.fire({
-                title: `📌 ${card.name}`,
-                html: `
-                    <div style="color: #fff; text-align: left;">
-                        <p><strong>Tipo:</strong> ${card.type || 'desconhecido'}</p>
-                        <p><strong>Descrição:</strong> ${card.description || 'Sem descrição'}</p>
-                        ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
-                        ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
-                        ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
-                        <p style="margin-top: 20px; color: #ffd700; font-size: 14px;">${message}</p>
-                        ${actionHtml}
-                    </div>
-                `,
-                icon: 'info',
-                background: '#1a1a2e',
-                color: '#fff',
-                showConfirmButton: true,
-                confirmButtonText: 'Fechar',
-                confirmButtonColor: '#ffd700',
-                width: '500px'
-            });
         }
         
-        function selectBase(type, index, card) {
-            if (moveMode) {
-                handleMoveSelection(type, index);
-                return;
+        // Montes
+        const deckCount = document.getElementById('deck-count');
+        const graveyardCount = document.getElementById('graveyard-count');
+        
+        if (deckCount) deckCount.textContent = gameState.deck_count;
+        if (graveyardCount) graveyardCount.textContent = gameState.graveyard_count;
+    }
+
+    function createBaseSlot(card, type, index, isOpponent) {
+        const slot = document.createElement('div');
+        slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
+        slot.setAttribute('data-type', type);
+        slot.setAttribute('data-index', index);
+        
+        if (card) {
+            let lifePercent = 100;
+            if (card.original_life && card.life) {
+                lifePercent = (card.life / card.original_life) * 100;
             }
             
-            if (equipMode) {
-                if (card && card.type === 'creature') {
-                    confirmEquip(card);
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Alvo inválido',
-                        text: 'Você só pode equipar itens em criaturas',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                }
-                return;
+            let equippedItems = '';
+            if (card.equipped_items && card.equipped_items.length > 0) {
+                equippedItems = `<div class="equipped-items">⚔️🛡️${card.equipped_items.length}</div>`;
             }
             
-            if (!selectedCard && actionMode !== 'move') {
-                return;
-            }
+            slot.innerHTML = `
+                <div style="font-size: 16px;">${getTypeIcon(card.type)}</div>
+                <strong>${card.name.substring(0, 8)}</strong>
+                ${card.life ? `<small>❤️${card.life}</small>` : ''}
+                ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
+                ${equippedItems}
+                <div class="card-tooltip">
+                    <strong>${card.name}</strong><br>
+                    Tipo: ${card.type}<br>
+                    ${card.description}<br>
+                    ${card.life ? `Vida: ${card.life}` : ''}
+                    ${card.attack ? ` | Ataque: ${card.attack}` : ''}
+                    ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
+                </div>
+            `;
             
-            if (actionMode === 'play' && selectedCard) {
-                if (selectedCard.type !== 'creature') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Carta inválida',
-                        text: 'Apenas criaturas podem ser colocadas em bases',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    return;
-                }
-                
-                socket.emit('player_action', {
-                    game_id: gameId,
-                    action: 'play_card',
-                    params: {
-                        card_id: selectedCard.instance_id,
-                        position_type: type,
-                        position_index: index
-                    }
-                });
-                
-                selectedCard = null;
-                actionMode = null;
+            if (lifePercent < 100) {
+                slot.classList.add('damaged');
+            }
+        } else {
+            let placeholder = 'Vazio';
+            if (type === 'attack') placeholder = '⚔️';
+            else if (type === 'defense') placeholder = '🛡️';
+            slot.innerHTML = placeholder;
+        }
+        
+        return slot;
+    }
+
+    function createCardElement(card, index) {
+        const div = document.createElement('div');
+        div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
+        
+        div.innerHTML = `
+            <div style="font-size: 20px; text-align: center;">${getTypeIcon(card.type)}</div>
+            <div class="card-name">${card.name}</div>
+            <div class="card-type">${card.type}</div>
+            <div class="card-stats">
+                ${card.life ? `❤️${card.life}` : ''}
+                ${card.attack ? ` ⚔️${card.attack}` : ''}
+                ${card.protection ? ` 🛡️${card.protection}` : ''}
+            </div>
+            <div class="card-description">${card.description.substring(0, 30)}...</div>
+        `;
+        return div;
+    }
+
+    function getTypeIcon(type) {
+        const icons = {
+            'creature': '👤',
+            'weapon': '⚔️',
+            'armor': '🛡️',
+            'talisman': '🔮',
+            'spell': '✨',
+            'rune': '🔷',
+            'oracle': '👁️',
+            'ritual': '📿',
+            'trap': '⚠️'
+        };
+        return icons[type] || '📦';
+    }
+
+    // Funções de cancelamento (definidas globalmente para acesso pelos botões)
+    window.cancelMoveMode = function() {
+        console.log('Cancelando modo de troca');
+        moveMode = false;
+        firstSelection = null;
+        
+        const indicator = document.getElementById('move-mode-indicator');
+        if (indicator) indicator.style.display = 'none';
+        
+        document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+            slot.classList.remove('selected-for-move');
+        });
+    };
+
+    window.cancelEquipMode = function() {
+        console.log('Cancelando modo de equipar');
+        equipMode = false;
+        selectedItemForEquip = null;
+        
+        const indicator = document.getElementById('equip-mode-indicator');
+        if (indicator) indicator.style.display = 'none';
+        
+        document.querySelectorAll('.base-slot.selected-for-equip, .base-slot.creature-highlight').forEach(slot => {
+            slot.classList.remove('selected-for-equip', 'creature-highlight');
+        });
+    };
+
+    // Funções de seleção
+    window.selectTarget = function(targetPlayerId) {
+        if (gameState.current_turn !== socket.id) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Não é seu turno!',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            return;
+        }
+        
+        const targetData = gameState.players[targetPlayerId];
+        
+        let hasAttackCards = false;
+        const playerData = gameState.players[socket.id];
+        for (let card of playerData.attack_bases) {
+            if (card && card.type === 'creature') {
+                hasAttackCards = true;
+                break;
             }
         }
-        function handleMoveSelection(type, index) {
-            if (!firstSelection) {
-                firstSelection = { type, index };
-                
-                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
-                    slot.classList.remove('selected-for-move');
+        
+        if (!hasAttackCards) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sem cartas de ataque!',
+                text: 'Você precisa de criaturas em posição de ataque',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            return;
+        }
+        
+        if (gameState.first_round) {
+            Swal.fire({
+                icon: 'info',
+                title: '🛡️ Primeira Rodada',
+                text: 'Ataques estão bloqueados até que todos os jogadores tenham jogado pelo menos uma vez!',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            return;
+        }
+        
+        Swal.fire({
+            title: `Atacar ${targetData.name}?`,
+            html: `
+                <div style="color: #fff;">
+                    <p>❤️ Vida: ${targetData.life}</p>
+                    <p>🛡️ Defesas: ${targetData.defense_bases.filter(c => c).length}</p>
+                    <p>🔮 Talismãs: ${targetData.talisman_count || 0}</p>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ff4444',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: '⚔️ Atacar!',
+            cancelButtonText: 'Cancelar',
+            background: '#1a1a2e',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'attack',
+                    params: { target_id: targetPlayerId }
                 });
-                
-                const slot = document.querySelector(`.base-slot.${type}[data-index="${index}"]`);
-                if (slot) {
-                    slot.classList.add('selected-for-move');
-                }
-                
+            }
+        });
+    };
+
+    function selectBase(type, index, card) {
+        if (moveMode) {
+            handleMoveSelection(type, index);
+            return;
+        }
+        
+        if (equipMode) {
+            if (card && card.type === 'creature') {
+                confirmEquip(card);
+            } else {
                 Swal.fire({
-                    title: 'Primeira posição selecionada',
-                    text: 'Agora clique na segunda posição',
+                    icon: 'error',
+                    title: 'Alvo inválido',
+                    text: 'Você só pode equipar itens em criaturas',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+            return;
+        }
+        
+        if (!selectedCard && actionMode !== 'move') {
+            return;
+        }
+        
+        if (actionMode === 'play' && selectedCard) {
+            if (selectedCard.type !== 'creature') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Carta inválida',
+                    text: 'Apenas criaturas podem ser colocadas em bases',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'play_card',
+                params: {
+                    card_id: selectedCard.instance_id,
+                    position_type: type,
+                    position_index: index
+                }
+            });
+            
+            selectedCard = null;
+            actionMode = null;
+        }
+    }
+
+    function handleMoveSelection(type, index) {
+        if (!firstSelection) {
+            firstSelection = { type, index };
+            
+            document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                slot.classList.remove('selected-for-move');
+            });
+            
+            const slot = document.querySelector(`.base-slot.${type}[data-index="${index}"]`);
+            if (slot) {
+                slot.classList.add('selected-for-move');
+            }
+            
+            Swal.fire({
+                title: 'Primeira posição selecionada',
+                text: 'Agora clique na segunda posição',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        } else {
+            const secondSelection = { type, index };
+            
+            if (firstSelection.type === secondSelection.type && 
+                firstSelection.index === secondSelection.index) {
+                cancelMoveMode();
+                Swal.fire({
+                    title: 'Troca cancelada',
+                    text: 'Selecionou a mesma posição',
                     icon: 'info',
                     timer: 1500,
                     showConfirmButton: false,
                     background: '#1a1a2e',
                     color: '#fff'
                 });
-            } else {
-                const secondSelection = { type, index };
-                
-                if (firstSelection.type === secondSelection.type && 
-                    firstSelection.index === secondSelection.index) {
-                    cancelMoveMode();
-                    Swal.fire({
-                        title: 'Troca cancelada',
-                        text: 'Selecionou a mesma posição',
-                        icon: 'info',
-                        timer: 1500,
-                        showConfirmButton: false,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                    return;
-                }
-                
-                socket.emit('player_action', {
-                    game_id: gameId,
-                    action: 'swap_positions',
-                    params: {
-                        pos1_type: firstSelection.type,
-                        pos1_index: firstSelection.index,
-                        pos2_type: secondSelection.type,
-                        pos2_index: secondSelection.index
-                    }
-                });
-                
-                // Sair do modo de troca automaticamente
-                cancelMoveMode();
-            }
-        }
-        
-        function selectTrapMode(cardId) {
-            Swal.close();
-            
-            const playerData = gameState.players[socket.id];
-            const trapCard = playerData.hand.find(c => c.instance_id === cardId);
-            
-            if (!trapCard) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erro',
-                    text: 'Carta não encontrada',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
                 return;
             }
             
-            // Verificar se tem slot vazio
-            const emptySlot = trapCards.findIndex(slot => slot === null);
-            if (emptySlot === -1) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Slots cheios',
-                    text: 'Ambos os slots de armadilha estão ocupados',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Colocar armadilha no primeiro slot vazio
-            trapCards[emptySlot] = trapCard;
-            updateTrapSlots();
-            
-            // Remover da mão (localmente - depois o servidor deve confirmar)
-            // Por enquanto, apenas feedback visual
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Armadilha colocada!',
-                text: `${trapCard.name} foi colocada no slot ${emptySlot + 1}`,
-                timer: 1500,
-                showConfirmButton: false,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-            
-            selectedCard = null;
-            actionMode = null;
-        }
-        function selectTarget(targetPlayerId) {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            const targetData = gameState.players[targetPlayerId];
-            
-            // Verificar se tem cartas de ataque
-            let hasAttackCards = false;
-            const playerData = gameState.players[socket.id];
-            for (let card of playerData.attack_bases) {
-                if (card && card.type === 'creature') {
-                    hasAttackCards = true;
-                    break;
-                }
-            }
-            
-            if (!hasAttackCards) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Sem cartas de ataque!',
-                    text: 'Você precisa de criaturas em posição de ataque',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Verificar se é a primeira rodada
-            if (gameState.first_round) {
-                Swal.fire({
-                    icon: 'info',
-                    title: '🛡️ Primeira Rodada',
-                    text: 'Ataques estão bloqueados até que todos os jogadores tenham jogado pelo menos uma vez!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            Swal.fire({
-                title: `Atacar ${targetData.name}?`,
-                html: `
-                    <div style="color: #fff;">
-                        <p>❤️ Vida: ${targetData.life}</p>
-                        <p>🛡️ Defesas: ${targetData.defense_bases.filter(c => c).length}</p>
-                        <p>🔮 Talismãs: ${targetData.talisman_count || 0}</p>
-                    </div>
-                `,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ff4444',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: '⚔️ Atacar!',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    socket.emit('player_action', {
-                        game_id: gameId,
-                        action: 'attack',
-                        params: { target_id: targetPlayerId }
-                    });
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'swap_positions',
+                params: {
+                    pos1_type: firstSelection.type,
+                    pos1_index: firstSelection.index,
+                    pos2_type: secondSelection.type,
+                    pos2_index: secondSelection.index
                 }
             });
         }
+    }
 
-        function drawCard() {
+    // Event listeners
+    const drawBtn = document.getElementById('draw-btn');
+    if (drawBtn) {
+        drawBtn.addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
                     icon: 'error',
@@ -1880,380 +1590,12 @@
                 action: 'draw',
                 params: {}
             });
-        }
-
-        function showGraveyard() {
-            if (!gameState || gameState.graveyard_count === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: '💀 Cemitério vazio',
-                    text: 'Nenhuma carta no cemitério ainda.',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Solicitar lista do cemitério ao servidor
-            socket.emit('get_graveyard', { game_id: gameId });
-        }
-
-        function createGraveyardCardHTML(card, clickable = false) {
-            // Ícone baseado no tipo
-            let icon = '📦';
-            if (card.type === 'creature') icon = '👤';
-            else if (card.type === 'spell') icon = '✨';
-            else if (card.type === 'weapon') icon = '⚔️';
-            else if (card.type === 'armor') icon = '🛡️';
-            else if (card.type === 'rune' || card.id === 'runa') icon = '🔷';
-            else if (card.type === 'talisman') icon = '🔮';
-            else if (card.type === 'trap') icon = '⚠️';
-            
-            const clickHandler = clickable ? `onclick="selectCardToRevive('${card.instance_id}')"` : '';
-            const cursorStyle = clickable ? 'pointer' : 'default';
-            const hoverStyle = clickable ? 'this.style.background="rgba(255, 215, 0, 0.3)"' : '';
-            const hoverOutStyle = clickable ? 'this.style.background="rgba(255, 215, 0, 0.1)"' : '';
-            
-            return `
-                <div ${clickHandler} 
-                    style="padding: 12px; margin: 8px 0; background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; border-radius: 8px; cursor: ${cursorStyle}; transition: all 0.3s;"
-                    ${clickable ? `onmouseover="${hoverStyle}" onmouseout="${hoverOutStyle}"` : ''}>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 20px;">${icon}</span>
-                            <div>
-                                <strong style="color: #ffd700;">${card.name}</strong>
-                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
-                            </div>
-                        </div>
-                        <div>
-                            ${card.life ? `<span style="color: #ff6b6b; margin-right: 10px;" title="Vida">❤️ ${card.life}</span>` : ''}
-                            ${card.attack ? `<span style="color: #ffa500; margin-right: 10px;" title="Ataque">⚔️ ${card.attack}</span>` : ''}
-                            ${card.protection ? `<span style="color: #4a90e2;" title="Proteção">🛡️ ${card.protection}</span>` : ''}
-                        </div>
-                    </div>
-                    <div style="color: #ccc; font-size: 12px; margin-top: 5px; margin-left: 30px;">
-                        ${card.description || 'Sem descrição'}
-                    </div>
-                </div>
-            `;
-        }
-
-        function selectCardToRevive(cardId) {
-            console.log('Selecionando carta para reviver:', cardId);
-            Swal.close();
-            
-            // Mostrar loading
-            Swal.fire({
-                title: 'Revivendo...',
-                html: 'Aguarde enquanto a carta é revivida',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'revive',
-                params: { card_id: cardId }
-            });
-        }
-
-        function addLogEntry(message) {
-            const logArea = document.querySelector('.log-area') || createLogArea();
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-            logArea.appendChild(entry);
-            logArea.scrollTop = logArea.scrollHeight;
-        }
-
-        function createLogArea() {
-            const logArea = document.createElement('div');
-            logArea.className = 'log-area';
-            document.querySelector('.game-container').appendChild(logArea);
-            return logArea;
-        }
-
-        // Event listeners
-        document.getElementById('draw-btn').addEventListener('click', drawCard);
-
-        document.getElementById('move-mode-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Se já está em modo de troca, cancelar
-            if (moveMode) {
-                cancelMoveMode();
-                return;
-            }
-            
-            // Cancelar outros modos se ativos
-            if (equipMode) {
-                cancelEquipMode();
-            }
-            
-            moveMode = true;
-            firstSelection = null;
-            document.getElementById('move-mode-indicator').style.display = 'flex';
-            
-            Swal.fire({
-                title: '🔄 Modo Troca Ativado',
-                text: 'Clique em duas posições (ataque ou defesa) para trocar as cartas',
-                icon: 'info',
-                timer: 2000,
-                showConfirmButton: false,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
         });
+    }
 
-        document.getElementById('equip-mode-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Primeiro, selecionar um item da mão
-            const playerData = gameState.players[socket.id];
-            const equipItems = playerData.hand.filter(c => 
-                c.type === 'weapon' || 
-                c.type === 'armor' || 
-                c.id === 'lamina_almas' || 
-                c.id === 'blade_vampires' || 
-                c.id === 'blade_dragons' || 
-                c.id === 'capacete_trevas'
-            );
-            
-            if (equipItems.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Sem itens',
-                    text: 'Você não tem itens equipáveis na mão',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            equipItems.forEach(item => {
-                itemsHtml += `
-                    <div onclick="selectItemForEquip('${item.instance_id}')" 
-                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
-                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
-                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
-                        <strong style="color: #4CAF50;">${item.name}</strong><br>
-                        <span style="color: #fff;">${item.description}</span><br>
-                        ${item.attack ? `<span style="color: #ffd700;">⚔️ Ataque: ${item.attack}</span>` : ''}
-                        ${item.protection ? `<span style="color: #ffd700;">🛡️ Proteção: ${item.protection}</span>` : ''}
-                    </div>
-                `;
-            });
-            itemsHtml += '</div>';
-            
-            Swal.fire({
-                title: '🔰 Selecione um item para equipar',
-                html: itemsHtml,
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                showConfirmButton: false,
-                width: '600px'
-            });
-        });
-
-        document.getElementById('spell-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            const playerData = gameState.players[socket.id];
-            let hasMage = false;
-            let hasReiMago = false;
-            let hasMagoNegro = false;
-            let mageCards = [];
-            
-            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
-                if (card) {
-                    if (card.id === 'mago') {
-                        hasMage = true;
-                        mageCards.push(card);
-                    }
-                    if (card.id === 'rei_mago') {
-                        hasReiMago = true;
-                        mageCards.push(card);
-                    }
-                    if (card.id === 'mago_negro') {
-                        hasMagoNegro = true;
-                        mageCards.push(card);
-                    }
-                }
-            }
-            
-            if (!hasMage && !hasReiMago && !hasMagoNegro) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Sem magos!',
-                    text: 'Você precisa de um mago em campo para usar feitiços',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Se tem Rei Mago ou Mago Negro, mostrar TODOS os feitiços do jogo
-            if (hasReiMago || hasMagoNegro) {
-                // Lista de todos os feitiços do jogo (baseado nas cartas definidas)
-                const allSpells = [
-                    { id: 'feitico_cortes', name: 'Feitiço - Cortes', description: 'Aumenta ataque de um monstro em 1024 pontos.' },
-                    { id: 'feitico_duro_matar', name: 'Feitiço - Duro de matar', description: 'Aumenta defesa do jogador em 1024 pontos.' },
-                    { id: 'feitico_troca', name: 'Feitiço - Troca', description: 'Troca as cartas de defesa para ataque e vice-versa.' },
-                    { id: 'feitico_comunista', name: 'Feitiço - Comunista', description: 'Todas as cartas das mãos voltam para a pilha.' },
-                    { id: 'feitico_silencio', name: 'Feitiço - Silêncio', description: '2 rodadas sem armadilhas.' },
-                    { id: 'feitico_para_sempre', name: 'Feitiço - Para Sempre', description: 'Reverte efeito Blade of Vampires.' },
-                    { id: 'feitico_capitalista', name: 'Feitiço - Capitalista', description: 'Troca cartas com outros jogadores.' }
-                ];
-                
-                let spellsHtml = '';
-                allSpells.forEach(spell => {
-                    spellsHtml += `
-                        <div class="spell-option" onclick="selectSpell('${spell.id}')" style="padding: 10px; margin: 5px; background: rgba(74, 144, 226, 0.2); border: 1px solid #4a90e2; border-radius: 5px; cursor: pointer;">
-                            <strong>${spell.name}</strong><br>
-                            <small>${spell.description}</small>
-                        </div>
-                    `;
-                });
-                
-                Swal.fire({
-                    title: '✨ Todos os Feitiços (Rei Mago/Mago Negro)',
-                    html: `<div style="max-height: 400px; overflow-y: auto;">${spellsHtml}</div>`,
-                    showCancelButton: true,
-                    cancelButtonText: 'Cancelar',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    showConfirmButton: false
-                });
-            } else {
-                // Mostrar apenas feitiços na mão
-                const spells = playerData.hand.filter(c => c && c.type === 'spell');
-                
-                if (spells.length === 0) {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Sem feitiços',
-                        text: 'Você não tem feitiços na mão',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    return;
-                }
-                
-                let spellsHtml = '';
-                spells.forEach(spell => {
-                    spellsHtml += `
-                        <div class="spell-option" onclick="selectSpell('${spell.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(255, 215, 0, 0.2); border: 1px solid #ffd700; border-radius: 5px; cursor: pointer;">
-                            <strong>${spell.name}</strong><br>
-                            <small>${spell.description}</small>
-                        </div>
-                    `;
-                });
-                
-                Swal.fire({
-                    title: '✨ Seus Feitiços',
-                    html: `<div style="max-height: 400px; overflow-y: auto;">${spellsHtml}</div>`,
-                    showCancelButton: true,
-                    cancelButtonText: 'Cancelar',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    showConfirmButton: false
-                });
-            }
-        });
-
-        document.getElementById('revive-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            const playerData = gameState.players[socket.id];
-            
-            // Contar runas na mão (verificando type='rune' OU id='runa')
-            const runas = playerData.hand.filter(c => 
-                c && (c.type === 'rune' || c.id === 'runa' || c.name.toLowerCase().includes('runa'))
-            );
-            
-            const runasCount = runas.length;
-            document.getElementById('runas-count').textContent = runasCount;
-            
-            if (runasCount < 4) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Runas insuficientes',
-                    html: `<p style="color: #fff;">Você tem <strong style="color: #ffd700;">${runasCount}/4</strong> runas necessárias</p>`,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            if (gameState.graveyard_count === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Cemitério vazio',
-                    text: 'Não há cartas para reviver',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Solicitar lista do cemitério ao servidor
-            socket.emit('get_graveyard', { game_id: gameId });
-        });
-
-        document.getElementById('end-turn-btn').addEventListener('click', function() {
+    const endTurnBtn = document.getElementById('end-turn-btn');
+    if (endTurnBtn) {
+        endTurnBtn.addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
                     icon: 'error',
@@ -2271,8 +1613,11 @@
                 params: {}
             });
         });
+    }
 
-        document.getElementById('oracle-btn').addEventListener('click', function() {
+    const moveModeBtn = document.getElementById('move-mode-btn');
+    if (moveModeBtn) {
+        moveModeBtn.addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
                     icon: 'error',
@@ -2284,61 +1629,36 @@
                 return;
             }
             
-            const players = [];
-            for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId !== socket.id) {
-                    players.push({
-                        id: playerId,
-                        name: playerData.name,
-                        hasTalisman: playerData.talisman_count > 0
-                    });
-                }
-            }
-            
-            if (players.length === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Nenhum alvo',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
+            if (moveMode) {
+                cancelMoveMode();
                 return;
             }
             
-            const selectOptions = players.map(p => 
-                `<option value="${p.id}">${p.name} ${p.hasTalisman ? '🔮' : ''}</option>`
-            ).join('');
+            if (equipMode) {
+                cancelEquipMode();
+            }
+            
+            moveMode = true;
+            firstSelection = null;
+            
+            const indicator = document.getElementById('move-mode-indicator');
+            if (indicator) indicator.style.display = 'flex';
             
             Swal.fire({
-                title: '👁️ Oráculo',
-                html: `
-                    <p>Selecione o alvo (requer elfo em defesa)</p>
-                    <select id="oracle-target" class="swal2-select">
-                        ${selectOptions}
-                    </select>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Usar Oráculo',
-                cancelButtonText: 'Cancelar',
+                title: '🔄 Modo Troca Ativado',
+                text: 'Clique em duas posições (ataque ou defesa) para trocar as cartas',
+                icon: 'info',
+                timer: 2000,
+                showConfirmButton: false,
                 background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                preConfirm: () => {
-                    return document.getElementById('oracle-target').value;
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    socket.emit('player_action', {
-                        game_id: gameId,
-                        action: 'oracle',
-                        params: { target_id: result.value }
-                    });
-                }
+                color: '#fff'
             });
         });
+    }
 
-        document.getElementById('start-game-btn').addEventListener('click', function() {
+    const startGameBtn = document.getElementById('start-game-btn');
+    if (startGameBtn) {
+        startGameBtn.addEventListener('click', function() {
             fetch(`/start-game/${gameId}`, { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
@@ -2354,546 +1674,121 @@
                     }
                 });
         });
+    }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Verificar se acabou de criar uma sala
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('created') === 'true') {
-                const playerName = localStorage.getItem('playerName') || 'Jogador';
-                
-                // Limpar sessão anterior se existir
-                clearSession();
-                
-                // Pequeno delay para garantir que a sala foi criada
-                setTimeout(() => {
-                    socket.emit('join_game', {
-                        game_id: gameId,
-                        player_name: playerName
-                    });
-                }, 500);
-            }
+    // Funções auxiliares
+    function addLogEntry(message) {
+        const logArea = document.querySelector('.log-area');
+        if (!logArea) {
+            const newLogArea = document.createElement('div');
+            newLogArea.className = 'log-area';
+            document.querySelector('.game-container').appendChild(newLogArea);
+        }
+        
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        
+        const existingLog = document.querySelector('.log-area');
+        if (existingLog) {
+            existingLog.appendChild(entry);
+            existingLog.scrollTop = existingLog.scrollHeight;
+        }
+    }
+
+    function showAttackResult(result) {
+        let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
+        
+        if (result.cards_destroyed && result.cards_destroyed.length > 0) {
+            html += `<p style="color: #ff6b6b;">💀 Destruídas: ${result.cards_destroyed.join(', ')}</p>`;
+        }
+        
+        if (result.cards_damaged && result.cards_damaged.length > 0) {
+            html += `<p style="color: #ffa500;">💔 Danificadas: ${result.cards_damaged.join(', ')}</p>`;
+        }
+        
+        if (result.damage_to_player && result.damage_to_player > 0) {
+            html += `<p style="color: #ff4444;">⚔️ Dano direto: ${result.damage_to_player}</p>`;
+        }
+        
+        html += `<p>❤️ Vida restante: ${result.target_life}</p>`;
+        
+        Swal.fire({
+            title: `⚔️ Ataque de ${result.attacker_name}!`,
+            html: html,
+            icon: 'info',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
         });
+    }
 
-        window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } });
-
-        window.selectSpell = function(spellId) {
-            Swal.close();
-            
-            // Se tem Rei Mago ou Mago Negro, pode escolher alvo
-            const playerData = gameState.players[socket.id];
-            let hasReiMago = false;
-            let hasMagoNegro = false;
-            
-            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
-                if (card) {
-                    if (card.id === 'rei_mago') hasReiMago = true;
-                    if (card.id === 'mago_negro') hasMagoNegro = true;
-                }
-            }
-            
-            if (hasReiMago || hasMagoNegro) {
-                // Para feitiços que precisam de alvo
-                if (['feitico_cortes', 'feitico_troca', 'feitico_capitalista'].includes(spellId)) {
-                    showTargetSelection(spellId);
-                } else {
-                    // Usar feitiço sem alvo
-                    socket.emit('player_action', {
-                        game_id: gameId,
-                        action: 'cast_spell',
-                        params: {
-                            spell_id: spellId
-                        }
-                    });
-                }
-            } else {
-                // Usar feitiço normal da mão
-                socket.emit('player_action', {
-                    game_id: gameId,
-                    action: 'cast_spell',
-                    params: {
-                        spell_id: spellId
-                    }
-                });
-            }
-        };
-
-        // Função para mostrar seleção de alvo
-        function showTargetSelection(spellId) {
-            const targets = [];
-            for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId !== socket.id) {
-                    targets.push({
-                        id: playerId,
-                        name: playerData.name
-                    });
-                }
-            }
-            
-            let targetHtml = '';
-            targets.forEach(target => {
-                targetHtml += `
-                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" style="padding: 10px; margin: 5px; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 5px; cursor: pointer;">
-                        <strong>${target.name}</strong>
-                    </div>
-                `;
-            });
-            
+    function showGraveyardList(cards) {
+        if (!cards || cards.length === 0) {
             Swal.fire({
-                title: 'Selecione o alvo',
-                html: `<div style="max-height: 400px; overflow-y: auto;">${targetHtml}</div>`,
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                showConfirmButton: false
-            });
-        }
-
-        // Função para selecionar alvo do feitiço
-        window.selectSpellTarget = function(spellId, targetId) {
-            Swal.close();
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'cast_spell',
-                params: {
-                    spell_id: spellId,
-                    target_player_id: targetId
-                }
-            });
-        };
-
-        // Função para equipar item em criatura
-        window.equipToCreature = function(itemCardId) {
-            // Mostrar lista de criaturas para equipar
-            const playerData = gameState.players[socket.id];
-            const creatures = [];
-            
-            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
-                if (card && card.type === 'creature') {
-                    creatures.push(card);
-                }
-            }
-            
-            if (creatures.length === 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Sem criaturas',
-                    text: 'Você não tem criaturas em campo para equipar',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            let creaturesHtml = '';
-            creatures.forEach(creature => {
-                let equippedItems = '';
-                if (creature.equipped_items && creature.equipped_items.length > 0) {
-                    equippedItems = `<br><small>Equipado: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
-                }
-                
-                creaturesHtml += `
-                    <div class="creature-option" onclick="selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; border-radius: 5px; cursor: pointer;">
-                        <strong>${creature.name}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
-                        ${equippedItems}
-                    </div>
-                `;
-            });
-            
-            Swal.fire({
-                title: 'Selecione a criatura',
-                html: `<div style="max-height: 400px; overflow-y: auto;">${creaturesHtml}</div>`,
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                showConfirmButton: false
-            });
-        };
-
-        function selectCreatureForEquip(itemCardId, creatureId) {
-            console.log('Equipando item', itemCardId, 'em criatura', creatureId);
-            Swal.close();
-            
-            // Mostrar loading
-            Swal.fire({
-                title: 'Equipando...',
-                html: 'Aguarde enquanto o item é equipado',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'equip_item',
-                params: {
-                    item_card_id: itemCardId,
-                    creature_card_id: creatureId
-                }
-            });
-        }
-
-        window.selectItemForEquip = function(itemId) {
-            Swal.close();
-            
-            const playerData = gameState.players[socket.id];
-            selectedItemForEquip = playerData.hand.find(c => c.instance_id === itemId);
-            
-            if (!selectedItemForEquip) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erro',
-                    text: 'Item não encontrado',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            equipMode = true;
-            document.getElementById('equip-mode-indicator').style.display = 'block';
-            
-            Swal.fire({
-                title: `🔰 Item selecionado: ${selectedItemForEquip.name}`,
-                text: 'Agora clique em uma criatura em campo para equipar',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-        };
-        
-        window.cancelMoveMode = function() {
-            console.log('Cancelando modo de troca');
-            moveMode = false;
-            firstSelection = null;
-            document.getElementById('move-mode-indicator').style.display = 'none';
-            
-            // Remover destaque das bases
-            document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
-                slot.classList.remove('selected-for-move');
-            });
-        }
-        window.cancelEquipMode = function() {
-            console.log('Cancelando modo de equipar');
-            equipMode = false;
-            selectedItemForEquip = null;
-            document.getElementById('equip-mode-indicator').style.display = 'none';
-            
-            document.querySelectorAll('.base-slot.selected-for-equip, .base-slot.creature-highlight').forEach(slot => {
-                slot.classList.remove('selected-for-equip', 'creature-highlight');
-            });
-        }
-        
-        // Modificar a função selectCard para incluir opção de equipar
-        function selectCard(card, index) {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            selectedCard = card;
-            actionMode = 'play';
-            
-            // Remover seleção anterior
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-            
-            // Adicionar seleção na carta atual
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('selected');
-            } else {
-                // Se não tiver event (chamada programática), encontrar a carta pelo índice
-                const cards = document.querySelectorAll('.card');
-                if (cards[index]) {
-                    cards[index].classList.add('selected');
-                }
-            }
-            
-            let message = '';
-            let actionButtons = [];
-            
-            if (card.type === 'creature') {
-                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
-            } 
-            else if (card.type === 'trap') {
-                message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
-            } 
-            else if (card.type === 'spell') {
-                message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
-            } 
-            else if (card.type === 'rune') {
-                message = 'Runas são usadas para reviver cartas (4 runas).';
-            } 
-            else if (card.type === 'weapon' || card.type === 'armor') {
-                message = 'Este item pode ser equipado em uma criatura.';
-                actionButtons.push({
-                    name: '⚔️ Equipar em criatura',
-                    callback: function() {
-                        equipToCreature(card.instance_id);
-                    }
-                });
-            }
-            else if (card.type === 'talisman') {
-                message = 'Talismãs são mantidos na mão e ativam automaticamente.';
-            }
-            
-            // Criar HTML dos botões de ação
-            let actionHtml = '';
-            if (actionButtons.length > 0) {
-                actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">';
-                actionButtons.forEach(btn => {
-                    actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 10px 20px;">${btn.name}</button>`;
-                });
-                actionHtml += '</div>';
-            }
-            
-            // Mostrar modal com as opções
-            Swal.fire({
-                title: `📌 ${card.name}`,
-                html: `
-                    <div style="color: #fff; text-align: left;">
-                        <p><strong>Tipo:</strong> ${card.type}</p>
-                        <p><strong>Descrição:</strong> ${card.description}</p>
-                        ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
-                        ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
-                        ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
-                        <p style="margin-top: 15px; color: #ffd700;">${message}</p>
-                        ${actionHtml}
-                    </div>
-                `,
                 icon: 'info',
+                title: '💀 Cemitério vazio',
                 background: '#1a1a2e',
                 color: '#fff',
-                showConfirmButton: true,
-                confirmButtonText: 'Fechar',
                 confirmButtonColor: '#ffd700'
             });
+            return;
         }
-
-        function equipToCreature(itemCardId) {
-            console.log('Tentando equipar item:', itemCardId);
+        
+        let html = '<div style="max-height: 500px; overflow-y: auto; padding: 10px;">';
+        html += `<div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 5px;">
+            <span>Total: <strong style="color: #ffd700;">${cards.length}</strong> cartas</span>
+        </div>`;
+        
+        cards.forEach(card => {
+            let icon = '📦';
+            if (card.type === 'creature') icon = '👤';
+            else if (card.type === 'spell') icon = '✨';
+            else if (card.type === 'weapon') icon = '⚔️';
+            else if (card.type === 'armor') icon = '🛡️';
+            else if (card.type === 'rune' || card.id === 'runa') icon = '🔷';
+            else if (card.type === 'talisman') icon = '🔮';
+            else if (card.type === 'trap') icon = '⚠️';
             
-            const playerData = gameState.players[socket.id];
-            if (!playerData) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Erro',
-                    text: 'Dados do jogador não encontrados',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            const creatures = [];
-            
-            // Coletar todas as criaturas em campo (ataque e defesa)
-            console.log('Bases de ataque:', playerData.attack_bases);
-            console.log('Bases de defesa:', playerData.defense_bases);
-            
-            for (let card of playerData.attack_bases) {
-                if (card && card.type === 'creature') {
-                    creatures.push(card);
-                    console.log('Criatura encontrada no ataque:', card.name);
-                }
-            }
-            for (let card of playerData.defense_bases) {
-                if (card && card.type === 'creature') {
-                    creatures.push(card);
-                    console.log('Criatura encontrada na defesa:', card.name);
-                }
-            }
-            
-            console.log('Total de criaturas disponíveis:', creatures.length);
-            
-            if (creatures.length === 0) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Sem criaturas',
-                    text: 'Você não tem criaturas em campo para equipar este item',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Criar HTML da lista de criaturas
-            let creaturesHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            creatures.forEach(creature => {
-                let equippedItems = '';
-                if (creature.equipped_items && creature.equipped_items.length > 0) {
-                    equippedItems = `<br><small style="color: #4a90e2;">🔰 Itens: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
-                }
-                
-                // Verificar se a criatura pode equipar baseado no tipo
-                let canEquip = true;
-                let restrictions = '';
-                
-                // Adicionar informações de restrição se necessário
-                const itemCard = playerData.hand.find(c => c.instance_id === itemCardId);
-                if (itemCard) {
-                    if (itemCard.id === 'blade_vampires' && !creature.id.includes('vampiro')) {
-                        canEquip = false;
-                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas vampiros</small>';
-                    } else if (itemCard.id === 'blade_dragons' && !['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago'].includes(creature.id)) {
-                        canEquip = false;
-                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
-                    } else if (itemCard.id === 'lamina_almas' && !['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers'].includes(creature.id)) {
-                        canEquip = false;
-                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
-                    }
-                }
-                
-                creaturesHtml += `
-                    <div onclick="${canEquip ? `selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')` : 'event.preventDefault()'}" 
-                        style="padding: 15px; margin: 10px 0; background: ${canEquip ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 68, 68, 0.2)'}; border: 2px solid ${canEquip ? '#4CAF50' : '#ff4444'}; border-radius: 10px; cursor: ${canEquip ? 'pointer' : 'not-allowed'}; transition: all 0.3s;"
-                        ${canEquip ? 'onmouseover="this.style.background=\'rgba(76, 175, 80, 0.4)\'" onmouseout="this.style.background=\'rgba(76, 175, 80, 0.2)\'"' : ''}>
-                        <strong style="color: ${canEquip ? '#4CAF50' : '#ff4444'}; font-size: 16px;">${creature.name}</strong><br>
-                        <span style="color: #fff;">❤️ Vida: ${creature.life || 0} | ⚔️ Ataque: ${creature.attack || 0}</span>
-                        ${equippedItems}
-                        ${restrictions}
+            html += `
+                <div style="padding: 12px; margin: 8px 0; background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 20px;">${icon}</span>
+                            <div>
+                                <strong style="color: #ffd700;">${card.name}</strong>
+                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
+                            </div>
+                        </div>
+                        <div>
+                            ${card.life ? `<span style="color: #ff6b6b; margin-right: 10px;">❤️ ${card.life}</span>` : ''}
+                            ${card.attack ? `<span style="color: #ffa500; margin-right: 10px;">⚔️ ${card.attack}</span>` : ''}
+                        </div>
                     </div>
-                `;
-            });
-            creaturesHtml += '</div>';
-            
-            Swal.fire({
-                title: '🦎 Selecione a criatura',
-                html: creaturesHtml,
-                showCancelButton: true,
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                showConfirmButton: false,
-                width: '600px'
-            });
-        }
-
-        function selectCreatureForEquip(itemCardId, creatureId) {
-            console.log('Equipando item', itemCardId, 'em criatura', creatureId);
-            Swal.close();
-            
-            // Mostrar loading
-            Swal.fire({
-                title: 'Equipando...',
-                html: 'Aguarde enquanto o item é equipado',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'equip_item',
-                params: {
-                    item_card_id: itemCardId,
-                    creature_card_id: creatureId
-                }
-            });
-        }
-
-        // Adicionar handler para ação de equipar
-        socket.on('action_success', function(data) {
-            console.log('Ação bem-sucedida:', data);
-            
-            // Verificar se a primeira rodada terminou
-            /*if (data.result && data.result.first_round_ended) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
-                    html: '<p style="color: #fff;">Todos os jogadores já jogaram!<br><strong style="color: #ffd700;">Agora os ataques estão liberados!</strong></p>',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 3000
-                });
-            }*/
-            
-            requestGameState();
-            
-            if (data.action === 'revive' && data.result) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🔄 Carta Revivida!',
-                    html: `<p style="color: #fff;">${data.result.message}</p>`,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#4CAF50',
-                    timer: 3000
-                });
-            }
-            else if (data.action === 'equip_item' && data.result) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '✅ Item equipado!',
-                    html: `<p style="color: #fff;">${data.result.message || 'Item equipado com sucesso!'}</p>`,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 2000
-                });
-            }
-            else if (data.action === 'swap_positions' && data.result) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🔄 Posições trocadas!',
-                    text: data.result.message || 'Cartas trocadas com sucesso',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-            }
-            else if (data.action === 'attack' && data.result) {
-                showAttackResult(data.result);
-            } else {
-                addLogEntry(`✅ Ação realizada: ${data.action}`);
-            }
+                    <div style="color: #ccc; font-size: 12px; margin-top: 5px; margin-left: 30px;">
+                        ${card.description || 'Sem descrição'}
+                    </div>
+                </div>
+            `;
         });
-        socket.on('action_error', function(data) {
-            console.error('Erro na ação:', data);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erro',
-                text: data.message,
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
+        
+        html += '</div>';
+        
+        Swal.fire({
+            title: '💀 Cemitério',
+            html: html,
+            showCancelButton: false,
+            showConfirmButton: true,
+            confirmButtonText: 'Fechar',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700',
+            width: '800px'
         });
+    }
 
-        setInterval(requestGameState, 3000);
-        setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
-        setInterval(function() {
-            if (socket.connected && currentPlayerId) {
-                socket.emit('ping_game', {
-                    game_id: gameId,
-                    player_id: currentPlayerId
-                });
-            }
-        }, 30000);
-    </script>
+    // Inicialização
+    console.log('Script inicializado com sucesso');
+});</script>
 </body>
 </html>
