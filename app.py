@@ -1065,6 +1065,101 @@ class Game:
         
         return {'success': False, 'message': 'Erro ao reconectar'}
 
+    def get_graveyard_cards(self, player_id=None):
+        """Retorna lista de cartas no cemitério (com informações básicas)"""
+        graveyard_info = []
+        for card in self.graveyard:
+            card_info = {
+                'instance_id': card['instance_id'],
+                'name': card['name'],
+                'type': card.get('type', 'unknown'),
+                'description': card.get('description', ''),
+                'life': card.get('life', 0),
+                'attack': card.get('attack', 0)
+            }
+            graveyard_info.append(card_info)
+        return graveyard_info
+
+    def revive_from_graveyard(self, player_id, target_card_id):
+        """Revive uma carta específica do cemitério usando 4 runas"""
+        print(f"Tentando reviver carta {target_card_id} para jogador {player_id}")
+        
+        player = self.player_data.get(player_id)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+        
+        # Verificar se tem 4 runas na mão
+        runes_in_hand = []
+        for card in player['hand']:
+            if card.get('type') == 'rune' or card.get('id') == 'runa':
+                runes_in_hand.append(card)
+        
+        print(f"Runas na mão: {len(runes_in_hand)}")
+        
+        if len(runes_in_hand) < 4:
+            return {'success': False, 'message': f'Você precisa de 4 runas na mão (tem {len(runes_in_hand)})'}
+        
+        # Encontrar carta no cemitério
+        target_card = None
+        card_index = -1
+        
+        for i, card in enumerate(self.graveyard):
+            if card['instance_id'] == target_card_id:
+                target_card = card
+                card_index = i
+                print(f"Carta encontrada no cemitério: {target_card['name']}")
+                break
+        
+        if not target_card:
+            # Tentar buscar por nome (fallback)
+            for i, card in enumerate(self.graveyard):
+                if card['name'].lower() == target_card_id.lower():
+                    target_card = card
+                    card_index = i
+                    print(f"Carta encontrada por nome: {target_card['name']}")
+                    break
+        
+        if not target_card:
+            return {'success': False, 'message': 'Carta não encontrada no cemitério'}
+        
+        # Remover do cemitério
+        self.graveyard.pop(card_index)
+        
+        # Remover 4 runas da mão
+        runes_removed = 0
+        new_hand = []
+        for card in player['hand']:
+            if (card.get('type') == 'rune' or card.get('id') == 'runa') and runes_removed < 4:
+                runes_removed += 1
+                # Runas vão para o cemitério
+                self.graveyard.append(card)
+                print(f"Runa removida: {card['name']}")
+            else:
+                new_hand.append(card)
+        
+        player['hand'] = new_hand
+        
+        # Restaurar vida da carta (se era criatura)
+        if target_card.get('type') == 'creature':
+            # Restaurar vida original baseada na definição da carta
+            original_card = CARDS.get(target_card['id'], {})
+            if original_card and 'life' in original_card:
+                target_card['life'] = original_card['life']
+        
+        # Adicionar carta revivida à mão
+        player['hand'].append(target_card)
+        
+        print(f"Carta {target_card['name']} revivida com sucesso!")
+        
+        return {
+            'success': True,
+            'card': {
+                'name': target_card['name'],
+                'type': target_card.get('type', 'unknown')
+            },
+            'message': f"{target_card['name']} foi revivido do cemitério!"
+        }
+
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -1198,6 +1293,29 @@ def handle_get_game_state(data):
             emit('game_state', state)
         else:
             emit('error', {'message': 'Jogador não encontrado'})
+
+@socketio.on('get_graveyard')
+def handle_get_graveyard(data):
+    """Retorna lista de cartas no cemitério"""
+    game_id = data['game_id']
+    
+    if game_id not in games:
+        emit('error', {'message': 'Jogo não encontrado'})
+        return
+    
+    game = games[game_id]
+    player_id = request.sid
+    
+    if player_id not in game.player_data:
+        emit('error', {'message': 'Jogador não encontrado'})
+        return
+    
+    graveyard_cards = game.get_graveyard_cards()
+    
+    emit('graveyard_list', {
+        'cards': graveyard_cards,
+        'count': len(graveyard_cards)
+    })
 
 @socketio.on('reconnect_game')
 def handle_reconnect_game(data):
