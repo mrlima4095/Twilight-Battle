@@ -576,6 +576,12 @@
         #graveyard-pile:hover::after {
             bottom: 0;
         }
+
+        .action-buttons .action-btn { display: none; }
+        .action-buttons .action-btn[style*="display: inline-block"] { display: inline-block !important; }
+
+        /* Garantir que o botão Finalizar Turno também seja ocultado */
+        #end-turn-btn { display: none; }
     </style>
 </head>
 <body>
@@ -1124,6 +1130,30 @@
             if (gameState.players[socket.id]) {
                 updatePlayerArea();
             }
+
+            const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
+            const isMyTurn = gameState && gameState.current_turn === socket.id;
+            
+            actionButtons.forEach(btn => {
+                if (isMyTurn) {
+                    btn.style.display = 'inline-block';
+                    btn.disabled = false;
+                } else {
+                    btn.style.display = 'none';
+                    btn.disabled = true;
+                }
+            });
+            
+            // Mostrar o botão Finalizar Turno apenas no turno do jogador
+            const endTurnBtn = document.getElementById('end-turn-btn');
+            if (endTurnBtn) {
+                if (isMyTurn) {
+                    endTurnBtn.style.display = 'inline-block';
+                } else {
+                    endTurnBtn.style.display = 'none';
+                }
+            }
+            showTurnMessage();
         }
 
         function showSessionIndicator() {
@@ -1133,6 +1163,39 @@
                 setTimeout(() => {
                     indicator.style.display = 'none';
                 }, 3000);
+            }
+        }
+        function showTurnMessage() {
+            const playerArea = document.getElementById('player-area');
+            const isMyTurn = gameState && gameState.current_turn === socket.id;
+            
+            // Verificar se já existe uma mensagem de turno
+            let turnMessage = document.getElementById('turn-message');
+            
+            if (!isMyTurn && gameState && gameState.current_turn) {
+                const currentPlayerName = gameState.players[gameState.current_turn].name;
+                
+                if (!turnMessage) {
+                    turnMessage = document.createElement('div');
+                    turnMessage.id = 'turn-message';
+                    turnMessage.style.cssText = `
+                        background: rgba(255, 68, 68, 0.3);
+                        border: 2px solid #ff4444;
+                        border-radius: 10px;
+                        padding: 15px;
+                        margin: 10px 0;
+                        text-align: center;
+                        color: #fff;
+                        font-size: 16px;
+                        backdrop-filter: blur(5px);
+                    `;
+                    playerArea.insertBefore(turnMessage, playerArea.firstChild);
+                }
+                
+                turnMessage.innerHTML = `⏳ Aguardando turno de <strong style="color: #ffd700;">${currentPlayerName}</strong>`;
+                turnMessage.style.display = 'block';
+            } else if (turnMessage) {
+                turnMessage.style.display = 'none';
             }
         }
 
