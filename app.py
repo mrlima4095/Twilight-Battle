@@ -1107,12 +1107,20 @@ def handle_player_action(data):
             result = game.play_card(player_id, params['card_id'], params['position_type'], params['position_index'])
         elif action == 'attack':
             result = game.attack(player_id, params['target_id'])
-        elif action == 'equip_item':  # NOVA AÇÃO
+        elif action == 'equip_item':
             result = game.equip_item_to_creature(player_id, params['item_card_id'], params['creature_card_id'])
         elif action == 'cast_spell':
             result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
         elif action == 'move_card':
             result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
+        elif action == 'swap_positions':  # NOVA AÇÃO
+            result = game.swap_positions(
+                player_id, 
+                params['pos1_type'], 
+                params['pos1_index'], 
+                params['pos2_type'], 
+                params['pos2_index']
+            )
         elif action == 'flip_card':
             result = game.flip_card(player_id, params['position_type'], params['position_index'])
         elif action == 'oracle':

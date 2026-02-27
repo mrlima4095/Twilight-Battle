@@ -478,6 +478,27 @@
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
+
+        .base-slot.selected-for-move {
+            border-color: #4a90e2 !important;
+            box-shadow: 0 0 20px #4a90e2;
+            animation: pulse-blue 1s infinite;
+        }
+        
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 10px #4a90e2; }
+            50% { box-shadow: 0 0 20px #4a90e2; }
+            100% { box-shadow: 0 0 10px #4a90e2; }
+        }
+        
+        .action-btn.move {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+        }
+        
+        .action-btn.move:hover {
+            box-shadow: 0 5px 15px #4a90e2;
+        }
     </style>
 </head>
 <body>
@@ -537,12 +558,19 @@
             </div>
             
             <div class="action-buttons">
-                <button class="action-btn" id="draw-btn">Comprar carta</button>
+                <button class="action-btn" id="draw-btn">📥 Comprar carta</button>
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn trap" id="trap-btn">⚠️ Colocar Armadilha</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas)</button>
+                <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
                 <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
+            </div>
+
+            <!-- Indicador de modo de troca -->
+            <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
+                🔄 Modo Troca ativo - Clique em duas posições para trocar as cartas
+                <button onclick="cancelMoveMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
         </div>
         
@@ -570,6 +598,8 @@
         let gameState = null;
         let selectedCard = null;
         let actionMode = null;
+        let moveMode = false;
+        let firstSelection = null;
         let trapSlots = [null, null];
         
         socket.on('connect', function() {
@@ -868,6 +898,8 @@
         function createBaseSlot(card, type, index, isOpponent) {
             const slot = document.createElement('div');
             slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
+            slot.setAttribute('data-type', type);
+            slot.setAttribute('data-index', index);
             
             if (card) {
                 let lifePercent = 100;
@@ -905,6 +937,9 @@
                 else if (type === 'defense') placeholder = '🛡️';
                 slot.innerHTML = placeholder;
             }
+            
+            // Adicionar evento de clique
+            slot.onclick = () => selectBase(type, index, card);
             
             return slot;
         }
@@ -985,6 +1020,12 @@
         }
         
         function selectBase(type, index, card) {
+            if (moveMode) {
+                // Modo de troca ativo
+                handleMoveSelection(type, index);
+                return;
+            }
+            
             if (!selectedCard && actionMode !== 'move') {
                 return;
             }
@@ -1016,7 +1057,68 @@
                 actionMode = null;
             }
         }
-        
+        function handleMoveSelection(type, index) {
+            if (!firstSelection) {
+                // Primeira seleção
+                firstSelection = { type, index };
+                
+                // Destacar a base selecionada
+                const slot = document.querySelector(`.base-slot.${type}:nth-child(${index + 1})`);
+                if (slot) {
+                    slot.classList.add('selected-for-move');
+                }
+                
+                Swal.fire({
+                    title: 'Primeira posição selecionada',
+                    text: `Agora clique na segunda posição para trocar`,
+                    icon: 'info',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            } else {
+                // Segunda seleção - realizar troca
+                const secondSelection = { type, index };
+                
+                // Remover destaque
+                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                    slot.classList.remove('selected-for-move');
+                });
+                
+                // Se clicou na mesma posição, cancelar
+                if (firstSelection.type === secondSelection.type && 
+                    firstSelection.index === secondSelection.index) {
+                    cancelMoveMode();
+                    Swal.fire({
+                        title: 'Troca cancelada',
+                        text: 'Você selecionou a mesma posição',
+                        icon: 'info',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    return;
+                }
+                
+                // Realizar troca via socket
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'swap_positions',
+                    params: {
+                        pos1_type: firstSelection.type,
+                        pos1_index: firstSelection.index,
+                        pos2_type: secondSelection.type,
+                        pos2_index: secondSelection.index
+                    }
+                });
+                
+                // Desativar modo de troca
+                cancelMoveMode();
+            }
+        }
+
         function selectTrapSlot(index) {
             if (!selectedCard || selectedCard.type !== 'trap') {
                 Swal.fire({
@@ -1167,7 +1269,34 @@
         
         // Event listeners
         document.getElementById('draw-btn').addEventListener('click', drawCard);
-        
+
+        document.getElementById('move-mode-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            moveMode = true;
+            firstSelection = null;
+            document.getElementById('move-mode-indicator').style.display = 'block';
+            
+            Swal.fire({
+                title: '🔄 Modo Troca Ativado',
+                text: 'Clique em duas posições (ataque ou defesa) para trocar as cartas',
+                icon: 'info',
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        });
+
         document.getElementById('spell-btn').addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
@@ -1607,94 +1736,94 @@
         
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
-    if (gameState.current_turn !== socket.id) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Não é seu turno!',
-            background: '#1a1a2e',
-            color: '#fff',
-            confirmButtonColor: '#ffd700'
-        });
-        return;
-    }
-    
-    selectedCard = card;
-    actionMode = 'play';
-    
-    // Remover seleção anterior
-    document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-    
-    // Adicionar seleção na carta atual
-    if (event && event.currentTarget) {
-        event.currentTarget.classList.add('selected');
-    } else {
-        // Se não tiver event (chamada programática), encontrar a carta pelo índice
-        const cards = document.querySelectorAll('.card');
-        if (cards[index]) {
-            cards[index].classList.add('selected');
-        }
-    }
-    
-    let message = '';
-    let actionButtons = [];
-    
-    if (card.type === 'creature') {
-        message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
-    } 
-    else if (card.type === 'trap') {
-        message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
-    } 
-    else if (card.type === 'spell') {
-        message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
-    } 
-    else if (card.type === 'rune') {
-        message = 'Runas são usadas para reviver cartas (4 runas).';
-    } 
-    else if (card.type === 'weapon' || card.type === 'armor') {
-        message = 'Este item pode ser equipado em uma criatura.';
-        actionButtons.push({
-            name: '⚔️ Equipar em criatura',
-            callback: function() {
-                equipToCreature(card.instance_id);
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
             }
-        });
-    }
-    else if (card.type === 'talisman') {
-        message = 'Talismãs são mantidos na mão e ativam automaticamente.';
-    }
-    
-    // Criar HTML dos botões de ação
-    let actionHtml = '';
-    if (actionButtons.length > 0) {
-        actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">';
-        actionButtons.forEach(btn => {
-            actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 10px 20px;">${btn.name}</button>`;
-        });
-        actionHtml += '</div>';
-    }
-    
-    // Mostrar modal com as opções
-    Swal.fire({
-        title: `📌 ${card.name}`,
-        html: `
-            <div style="color: #fff; text-align: left;">
-                <p><strong>Tipo:</strong> ${card.type}</p>
-                <p><strong>Descrição:</strong> ${card.description}</p>
-                ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
-                ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
-                ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
-                <p style="margin-top: 15px; color: #ffd700;">${message}</p>
-                ${actionHtml}
-            </div>
-        `,
-        icon: 'info',
-        background: '#1a1a2e',
-        color: '#fff',
-        showConfirmButton: true,
-        confirmButtonText: 'Fechar',
-        confirmButtonColor: '#ffd700'
-    });
-}
+            
+            selectedCard = card;
+            actionMode = 'play';
+            
+            // Remover seleção anterior
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            
+            // Adicionar seleção na carta atual
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('selected');
+            } else {
+                // Se não tiver event (chamada programática), encontrar a carta pelo índice
+                const cards = document.querySelectorAll('.card');
+                if (cards[index]) {
+                    cards[index].classList.add('selected');
+                }
+            }
+            
+            let message = '';
+            let actionButtons = [];
+            
+            if (card.type === 'creature') {
+                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
+            } 
+            else if (card.type === 'trap') {
+                message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
+            } 
+            else if (card.type === 'spell') {
+                message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
+            } 
+            else if (card.type === 'rune') {
+                message = 'Runas são usadas para reviver cartas (4 runas).';
+            } 
+            else if (card.type === 'weapon' || card.type === 'armor') {
+                message = 'Este item pode ser equipado em uma criatura.';
+                actionButtons.push({
+                    name: '⚔️ Equipar em criatura',
+                    callback: function() {
+                        equipToCreature(card.instance_id);
+                    }
+                });
+            }
+            else if (card.type === 'talisman') {
+                message = 'Talismãs são mantidos na mão e ativam automaticamente.';
+            }
+            
+            // Criar HTML dos botões de ação
+            let actionHtml = '';
+            if (actionButtons.length > 0) {
+                actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">';
+                actionButtons.forEach(btn => {
+                    actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 10px 20px;">${btn.name}</button>`;
+                });
+                actionHtml += '</div>';
+            }
+            
+            // Mostrar modal com as opções
+            Swal.fire({
+                title: `📌 ${card.name}`,
+                html: `
+                    <div style="color: #fff; text-align: left;">
+                        <p><strong>Tipo:</strong> ${card.type}</p>
+                        <p><strong>Descrição:</strong> ${card.description}</p>
+                        ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
+                        ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
+                        ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
+                        <p style="margin-top: 15px; color: #ffd700;">${message}</p>
+                        ${actionHtml}
+                    </div>
+                `,
+                icon: 'info',
+                background: '#1a1a2e',
+                color: '#fff',
+                showConfirmButton: true,
+                confirmButtonText: 'Fechar',
+                confirmButtonColor: '#ffd700'
+            });
+        }
 
         function equipToCreature(itemCardId) {
             console.log('Tentando equipar item:', itemCardId);
@@ -1803,17 +1932,25 @@
                     confirmButtonColor: '#ffd700'
                 });
             }
+            else if (data.action === 'swap_positions' && data.result) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔄 Posições trocadas!',
+                    text: data.result.message || 'Cartas trocadas com sucesso',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
             else if (data.action === 'attack' && data.result) {
                 showAttackResult(data.result);
             } else {
                 addLogEntry(`✅ Ação realizada: ${data.action}`);
             }
         });
-
         setInterval(requestGameState, 3000);
-        setInterval(() => {
-            fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {});
-        }, 60000);
+        setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
     </script>
 </body>
 </html>
