@@ -815,7 +815,15 @@
             const turnIndicator = document.getElementById('turn-indicator');
             if (gameState.current_turn) {
                 const currentPlayer = gameState.players[gameState.current_turn];
-                turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
+                
+                // Adicionar informação da primeira rodada
+                if (gameState.first_round) {
+                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
+                    turnIndicator.style.background = '#ffa500';
+                } else {
+                    turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
+                    turnIndicator.style.background = '#4CAF50';
+                }
                 
                 if (gameState.current_turn === socket.id) {
                     turnIndicator.classList.add('my-turn');
@@ -1339,6 +1347,19 @@
                     icon: 'warning',
                     title: 'Sem cartas de ataque!',
                     text: 'Você precisa de criaturas em posição de ataque',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se é a primeira rodada
+            if (gameState.first_round) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '🛡️ Primeira Rodada',
+                    text: 'Ataques estão bloqueados até que todos os jogadores tenham jogado pelo menos uma vez!',
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#ffd700'
@@ -2239,6 +2260,20 @@
         // Adicionar handler para ação de equipar
         socket.on('action_success', function(data) {
             console.log('Ação bem-sucedida:', data);
+            
+            // Verificar se a primeira rodada terminou
+            /*if (data.result && data.result.first_round_ended) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
+                    html: '<p style="color: #fff;">Todos os jogadores já jogaram!<br><strong style="color: #ffd700;">Agora os ataques estão liberados!</strong></p>',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 3000
+                });
+            }*/
+            
             requestGameState();
             
             if (data.action === 'equip_item' && data.result) {

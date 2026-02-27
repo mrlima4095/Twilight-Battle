@@ -1205,9 +1205,7 @@ def handle_player_action(data):
             result = game.equip_item_to_creature(player_id, params['item_card_id'], params['creature_card_id'])
         elif action == 'cast_spell':
             result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
-        elif action == 'move_card':
-            result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
-        elif action == 'swap_positions':  # NOVA AÇÃO
+        elif action == 'swap_positions':
             result = game.swap_positions(
                 player_id, 
                 params['pos1_type'], 
@@ -1215,6 +1213,8 @@ def handle_player_action(data):
                 params['pos2_type'], 
                 params['pos2_index']
             )
+        elif action == 'move_card':
+            result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
         elif action == 'flip_card':
             result = game.flip_card(player_id, params['position_type'], params['position_index'])
         elif action == 'oracle':
@@ -1226,6 +1226,16 @@ def handle_player_action(data):
             result = {'success': True, 'next_turn': game.players[game.current_turn]}
         
         if result and result.get('success'):
+            # Registrar ação para primeira rodada (exceto end_turn)
+            first_round_ended = False
+            if action != 'end_turn':
+                first_round_ended = game.register_action(player_id, action)
+            
+            if first_round_ended:
+                result['first_round_ended'] = True
+                # Notificar todos que a primeira rodada terminou
+                emit('first_round_ended', {}, room=game_id)
+            
             print(f"Ação {action} bem-sucedida: {result}")
             emit('action_success', {
                 'player_id': player_id,
