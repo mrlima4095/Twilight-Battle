@@ -629,6 +629,19 @@
     
     <script>
         const gameId = '{{ game_id }}';
+        const SESSION_KEY = `twilight_session_${gameId}`;
+
+        let savedSession = localStorage.getItem(SESSION_KEY);
+        if (savedSession) {
+            try {
+                savedSession = JSON.parse(savedSession);
+                console.log('Sessão recuperada:', savedSession);
+            } catch (e) {
+                console.log('Erro ao recuperar sessão:', e);
+                savedSession = null;
+            }
+        }
+
         const socket = io({
             reconnection: true,
             reconnectionAttempts: 5,
@@ -644,42 +657,139 @@
         let equipMode = false;
         let selectedItemForEquip = null;
         let trapSlots = [null, null];
+
+        function saveSession() {
+            if (currentPlayerId) {
+                const session = {
+                    playerId: currentPlayerId,
+                    playerName: localStorage.getItem('playerName'),
+                    gameId: gameId,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                console.log('Sessão salva:', session);
+            }
+        }
+        function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
+
+        function attemptReconnection() {
+            if (reconnectAttempts < 5) {
+                reconnectAttempts++;
+                console.log(`Tentativa de reconexão ${reconnectAttempts}/5...`);
+                
+                socket.connect();
+                
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                }
+                
+                reconnectTimer = setTimeout(() => {
+                    if (!socket.connected) {
+                        console.log('Falha na reconexão, tentando novamente...');
+                        attemptReconnection();
+                    }
+                }, 3000);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro de conexão',
+                    text: 'Não foi possível reconectar ao servidor. Recarregue a página.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    confirmButtonText: 'Recarregar'
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        }
         
         socket.on('connect', function() {
             console.log('Conectado ao servidor');
-            const playerName = localStorage.getItem('playerName') || 'Jogador';
+            reconnectAttempts = 0;
             
-            socket.emit('join_game', {
-                game_id: gameId,
-                player_name: playerName
-            });
+            const playerName = savedSession?.playerName || localStorage.getItem('playerName') || 'Jogador';
+            
+            // Se temos uma sessão, tentar reconectar diretamente
+            if (savedSession) {
+                console.log('Tentando reconectar com sessão existente:', savedSession);
+                socket.emit('reconnect_game', {
+                    game_id: gameId,
+                    player_id: savedSession.playerId,
+                    player_name: playerName
+                });
+            } else {
+                // Primeira conexão
+                socket.emit('join_game', {
+                    game_id: gameId,
+                    player_name: playerName
+                });
+            }
             
             setTimeout(requestGameState, 500);
         });
+        socket.on('connect_error', function(error) {
+            console.error('Erro de conexão:', error);
+            attemptReconnection();
+        });
         
-        socket.on('disconnect', function() {
-            console.log('Desconectado do servidor');
-            Swal.fire({
-                icon: 'warning',
-                title: 'Desconectado',
-                text: 'Tentando reconectar...',
-                background: '#1a1a2e',
-                color: '#fff',
-                showConfirmButton: false,
-                timer: 2000
-            });
+        socket.on('disconnect', function(reason) {
+            console.log('Desconectado do servidor:', reason);
+            
+            if (reason === 'io server disconnect' || reason === 'transport close') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Desconectado',
+                    text: 'Perdeu conexão com o servidor. Tentando reconectar...',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                
+                attemptReconnection();
+            }
         });
         
         socket.on('reconnect', function() {
             console.log('Reconectado ao servidor');
             requestGameState();
         });
+        socket.on('reconnect_success', function(data) {
+            console.log('Reconexão bem-sucedida:', data);
+            currentPlayerId = data.player_id;
+            saveSession();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Reconectado!',
+                text: 'Sua sessão foi restaurada.',
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            requestGameState();
+        });
         
         socket.on('player_joined', function(data) {
             console.log('Jogador entrou:', data);
+            
+            // Se for o próprio jogador, salvar ID
+            if (data.player_name === localStorage.getItem('playerName')) {
+                currentPlayerId = data.player_id;
+                saveSession();
+            }
+            
             updatePlayersList(data.players);
         });
-        
+        socket.on('player_left', function(data) {
+            console.log('Jogador saiu:', data);
+            addLogEntry(`👋 Jogador ${data.player_id} saiu da partida`);
+            requestGameState();
+        });
+
         socket.on('game_started', function(data) {
             console.log('Jogo começou!');
             document.getElementById('waiting-room').style.display = 'none';
@@ -699,9 +809,29 @@
         socket.on('game_state', function(data) {
             console.log('Estado do jogo:', data);
             gameState = data;
+            
+            // Verificar se o jogador ainda está no jogo
+            if (currentPlayerId && !gameState.players[currentPlayerId]) {
+                console.log('Jogador não encontrado no estado do jogo');
+                clearSession();
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sessão expirada',
+                    text: 'Você foi removido do jogo. Voltando para o início...',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 3000
+                }).then(() => {
+                    window.location.href = '/';
+                });
+                return;
+            }
+            
             updateGameUI();
         });
-        
+                
         socket.on('action_success', function(data) {
             console.log('Ação bem-sucedida:', data);
             requestGameState();
@@ -1822,6 +1952,11 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('created') === 'true') {
                 const playerName = localStorage.getItem('playerName') || 'Jogador';
+                
+                // Limpar sessão anterior se existir
+                clearSession();
+                
+                // Pequeno delay para garantir que a sala foi criada
                 setTimeout(() => {
                     socket.emit('join_game', {
                         game_id: gameId,
@@ -1830,6 +1965,8 @@
                 }, 500);
             }
         });
+
+        window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } });
 
         window.selectSpell = function(spellId) {
             Swal.close();
@@ -2318,6 +2455,14 @@
 
         setInterval(requestGameState, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
+        setInterval(function() {
+            if (socket.connected && currentPlayerId) {
+                socket.emit('ping_game', {
+                    game_id: gameId,
+                    player_id: currentPlayerId
+                });
+            }
+        }, 30000);
     </script>
 </body>
 </html>
