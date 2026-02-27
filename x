@@ -344,165 +344,34 @@ document.addEventListener('DOMContentLoaded', function() {
 ```python
 # Adicionar no app.py dentro da classe Game
 
-def reconnect_player(self, player_id, player_name):
-    """Reconecta um jogador existente ao jogo"""
-    print(f"Tentando reconectar jogador {player_name} ({player_id})")
-    
-    if player_id in self.player_data:
-        # Jogador já existe, apenas atualizar status
-        print(f"Jogador {player_name} reconectado com sucesso")
-        return {
-            'success': True,
-            'player_id': player_id,
-            'player_name': player_name,
-            'game_started': self.started
-        }
-    else:
-        # Jogador não encontrado, verificar se pode entrar como novo
-        if len(self.players) >= self.max_players or self.started:
-            print(f"Jogo cheio ou já começou. Não pode reconectar como novo.")
-            return {'success': False, 'message': 'Jogo cheio ou já começou'}
-        
-        # Adicionar como novo jogador
-        if self.add_player(player_id, player_name):
-            print(f"Jogador {player_name} adicionado como novo durante reconexão")
-            return {
-                'success': True,
-                'player_id': player_id,
-                'player_name': player_name,
-                'game_started': self.started
-            }
-    
-    return {'success': False, 'message': 'Erro ao reconectar'}
+
 ```
 
 ```python
 # Adicionar no handle_player_action do app.py
 
-@socketio.on('reconnect_game')
-def handle_reconnect_game(data):
-    """Gerencia reconexão de jogadores"""
-    game_id = data['game_id']
-    player_id = data['player_id']
-    player_name = data['player_name']
-    
-    print(f"Tentativa de reconexão: {player_name} ({player_id}) na sala {game_id}")
-    
-    if game_id not in games:
-        emit('error', {'message': 'Jogo não encontrado'})
-        return
-    
-    game = games[game_id]
-    
-    # Tentar reconectar
-    result = game.reconnect_player(player_id, player_name)
-    
-    if result['success']:
-        # Adicionar à sala
-        join_room(game_id)
-        
-        # Atualizar lista de jogadores
-        players_list = [{'id': p, 'name': game.player_data[p]['name']} for p in game.players]
-        
-        # Notificar todos
-        emit('player_joined', {
-            'player_id': player_id,
-            'player_name': player_name,
-            'players': players_list,
-            'reconnected': True
-        }, room=game_id)
-        
-        # Notificar o jogador reconectado
-        emit('reconnect_success', {
-            'player_id': player_id,
-            'player_name': player_name,
-            'game_started': game.started
-        })
-        
-        print(f"Jogador {player_name} reconectado com sucesso")
-    else:
-        emit('error', {'message': result['message']})
 
-@socketio.on('ping_game')
-def handle_ping_game(data):
-    """Mantém a conexão ativa e verifica se jogador ainda está no jogo"""
-    game_id = data['game_id']
-    player_id = data['player_id']
-    
-    if game_id in games:
-        game = games[game_id]
-        if player_id in game.player_data:
-            # Jogador ainda está no jogo
-            emit('pong_game', {'status': 'ok'})
-        else:
-            emit('pong_game', {'status': 'player_not_found'})
+
+
 ```
 
 ```html
 <!-- Adicionar indicador de sessão no game.html dentro do game-header -->
 
-<div class="game-header" id="game-header">
-    <div class="game-title">
-        Twilight Battle
-        <a href="/rules" style="font-size: 0.5em; margin-left: 20px; color: #ffd700; text-decoration: none;" target="_blank">
-            📜 Regras
-        </a>
-    </div>
-    <div class="game-info" id="game-info">
-        <div class="time-indicator" id="time-indicator">Carregando...</div>
-        <div class="turn-indicator" id="turn-indicator">...</div>
-        <div class="session-indicator" id="session-indicator" style="display: none; background: #4CAF50; padding: 5px 10px; border-radius: 5px; font-size: 12px;">
-            🔄 Sessão ativa
-        </div>
-    </div>
-</div>
+
 ```
 
 ```javascript
 // Adicionar função para mostrar indicador de sessão
-function showSessionIndicator() {
-    const indicator = document.getElementById('session-indicator');
-    if (indicator && currentPlayerId) {
-        indicator.style.display = 'block';
-        setTimeout(() => {
-            indicator.style.display = 'none';
-        }, 3000);
-    }
-}
+
 
 // Chamar quando reconectar
-socket.on('reconnect_success', function(data) {
-    console.log('Reconexão bem-sucedida:', data);
-    currentPlayerId = data.player_id;
-    saveSession();
-    showSessionIndicator();
-    
-    Swal.fire({
-        icon: 'success',
-        title: 'Reconectado!',
-        text: 'Sua sessão foi restaurada.',
-        timer: 2000,
-        showConfirmButton: false,
-        background: '#1a1a2e',
-        color: '#fff'
-    });
-    
-    requestGameState();
-});
+
 
 // Adicionar CSS para o indicador
 const sessionStyle = document.createElement('style');
 sessionStyle.textContent = `
-    .session-indicator {
-        animation: fadeInOut 3s ease-in-out;
-    }
-    
-    @keyframes fadeInOut {
-        0% { opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { opacity: 0; }
-    }
+
 `;
 document.head.appendChild(sessionStyle);
 ```

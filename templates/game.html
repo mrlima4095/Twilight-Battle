@@ -533,15 +533,34 @@
             border-color: #4CAF50;
             background: rgba(76, 175, 80, 0.3);
         }
-    </style>
+
+        .session-indicator {
+            animation: fadeInOut 3s ease-in-out;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        </style>
 </head>
 <body>
     <div class="game-container" id="game-container">
         <div class="game-header" id="game-header">
-            <div class="game-title">Twilight Battle</div>
+            <div class="game-title">
+                Twilight Battle
+                <a href="/rules" style="font-size: 0.5em; margin-left: 20px; color: #ffd700; text-decoration: none;" target="_blank">
+                    📜 Regras
+                </a>
+            </div>
             <div class="game-info" id="game-info">
                 <div class="time-indicator" id="time-indicator">Carregando...</div>
                 <div class="turn-indicator" id="turn-indicator">...</div>
+                <div class="session-indicator" id="session-indicator" style="display: none; background: #4CAF50; padding: 5px 10px; border-radius: 5px; font-size: 12px;">
+                    🔄 Sessão ativa
+                </div>
             </div>
         </div>
         
@@ -759,6 +778,7 @@
             console.log('Reconexão bem-sucedida:', data);
             currentPlayerId = data.player_id;
             saveSession();
+            showSessionIndicator();
             
             Swal.fire({
                 icon: 'success',
@@ -969,6 +989,16 @@
             }
         }
         
+        function showSessionIndicator() {
+            const indicator = document.getElementById('session-indicator');
+            if (indicator && currentPlayerId) {
+                indicator.style.display = 'block';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 3000);
+            }
+        }
+
         function updateOpponentsArea() {
             const opponentsArea = document.getElementById('opponents-area');
             opponentsArea.innerHTML = '';
