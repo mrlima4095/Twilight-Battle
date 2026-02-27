@@ -992,30 +992,87 @@
             selectedCard = card;
             actionMode = 'play';
             
+            // Remover seleção anterior
             document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
-            event.currentTarget.classList.add('selected');
             
-            let message = '';
-            if (card.type === 'creature') {
-                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul)';
-            } else if (card.type === 'trap') {
-                message = 'Clique em um slot de armadilha para colocá-la';
-            } else if (card.type === 'spell') {
-                message = 'Use o botão "Usar Feitiço" para lançá-lo';
-            } else if (card.type === 'rune') {
-                message = 'Runas são usadas para reviver cartas (4 runas)';
+            // Adicionar seleção na carta atual
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('selected');
             } else {
-                message = 'Clique no local apropriado para usar esta carta';
+                // Se não tiver event (chamada programática), encontrar a carta pelo índice
+                const cards = document.querySelectorAll('.card');
+                if (cards[index]) {
+                    cards[index].classList.add('selected');
+                }
             }
             
+            let message = '';
+            let actionButtons = [];
+            
+            // Diagnosticar tipo da carta
+            console.log('Tipo da carta:', card.type, 'ID:', card.id);
+            
+            if (card.type === 'creature') {
+                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
+            } 
+            else if (card.type === 'trap') {
+                message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
+            } 
+            else if (card.type === 'spell') {
+                message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
+            } 
+            else if (card.type === 'rune') {
+                message = 'Runas são usadas para reviver cartas (4 runas).';
+            } 
+            else if (card.type === 'weapon' || card.type === 'armor' || 
+                    card.id === 'lamina_almas' || card.id === 'blade_vampires' || 
+                    card.id === 'blade_dragons' || card.id === 'capacete_trevas') {
+                message = '⚔️ Este item pode ser equipado em uma criatura.';
+                actionButtons.push({
+                    name: '🔰 Equipar em criatura',
+                    callback: function() {
+                        equipToCreature(card.instance_id);
+                    }
+                });
+            }
+            else if (card.type === 'talisman') {
+                message = '🔮 Talismãs são mantidos na mão e ativam automaticamente.';
+            }
+            else {
+                message = '📦 Tipo de carta: ' + (card.type || 'desconhecido');
+            }
+            
+            // Criar HTML dos botões de ação
+            let actionHtml = '';
+            if (actionButtons.length > 0) {
+                actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">';
+                actionButtons.forEach(btn => {
+                    actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 12px 24px; font-size: 16px; background: linear-gradient(45deg, #4CAF50, #45a049);">${btn.name}</button>`;
+                });
+                actionHtml += '</div>';
+            }
+            
+            // Mostrar modal com as opções
             Swal.fire({
-                title: `📌 ${card.name} selecionada`,
-                text: message,
+                title: `📌 ${card.name}`,
+                html: `
+                    <div style="color: #fff; text-align: left;">
+                        <p><strong>Tipo:</strong> ${card.type || 'desconhecido'}</p>
+                        <p><strong>Descrição:</strong> ${card.description || 'Sem descrição'}</p>
+                        ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
+                        ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
+                        ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
+                        <p style="margin-top: 20px; color: #ffd700; font-size: 14px;">${message}</p>
+                        ${actionHtml}
+                    </div>
+                `,
                 icon: 'info',
-                timer: 2000,
-                showConfirmButton: false,
                 background: '#1a1a2e',
-                color: '#fff'
+                color: '#fff',
+                showConfirmButton: true,
+                confirmButtonText: 'Fechar',
+                confirmButtonColor: '#ffd700',
+                width: '500px'
             });
         }
         
@@ -1720,9 +1777,21 @@
             });
         };
         
-        // Função para selecionar criatura para equipar
-        window.selectCreatureForEquip = function(itemCardId, creatureId) {
+        function selectCreatureForEquip(itemCardId, creatureId) {
+            console.log('Equipando item', itemCardId, 'em criatura', creatureId);
             Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Equipando...',
+                html: 'Aguarde enquanto o item é equipado',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
             
             socket.emit('player_action', {
                 game_id: gameId,
@@ -1732,7 +1801,8 @@
                     creature_card_id: creatureId
                 }
             });
-        };
+        }
+
         
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
@@ -1829,27 +1899,44 @@
             console.log('Tentando equipar item:', itemCardId);
             
             const playerData = gameState.players[socket.id];
+            if (!playerData) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Dados do jogador não encontrados',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
             const creatures = [];
             
             // Coletar todas as criaturas em campo (ataque e defesa)
+            console.log('Bases de ataque:', playerData.attack_bases);
+            console.log('Bases de defesa:', playerData.defense_bases);
+            
             for (let card of playerData.attack_bases) {
                 if (card && card.type === 'creature') {
                     creatures.push(card);
+                    console.log('Criatura encontrada no ataque:', card.name);
                 }
             }
             for (let card of playerData.defense_bases) {
                 if (card && card.type === 'creature') {
                     creatures.push(card);
+                    console.log('Criatura encontrada na defesa:', card.name);
                 }
             }
             
-            console.log('Criaturas disponíveis:', creatures);
+            console.log('Total de criaturas disponíveis:', creatures.length);
             
             if (creatures.length === 0) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Sem criaturas',
-                    text: 'Você não tem criaturas em campo para equipar',
+                    text: 'Você não tem criaturas em campo para equipar este item',
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#ffd700'
@@ -1865,14 +1952,33 @@
                     equippedItems = `<br><small style="color: #4a90e2;">🔰 Itens: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
                 }
                 
+                // Verificar se a criatura pode equipar baseado no tipo
+                let canEquip = true;
+                let restrictions = '';
+                
+                // Adicionar informações de restrição se necessário
+                const itemCard = playerData.hand.find(c => c.instance_id === itemCardId);
+                if (itemCard) {
+                    if (itemCard.id === 'blade_vampires' && !creature.id.includes('vampiro')) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas vampiros</small>';
+                    } else if (itemCard.id === 'blade_dragons' && !['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago'].includes(creature.id)) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
+                    } else if (itemCard.id === 'lamina_almas' && !['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers'].includes(creature.id)) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
+                    }
+                }
+                
                 creaturesHtml += `
-                    <div onclick="selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')" 
-                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
-                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
-                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
-                        <strong style="color: #4CAF50; font-size: 16px;">${creature.name}</strong><br>
+                    <div onclick="${canEquip ? `selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')` : 'event.preventDefault()'}" 
+                        style="padding: 15px; margin: 10px 0; background: ${canEquip ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 68, 68, 0.2)'}; border: 2px solid ${canEquip ? '#4CAF50' : '#ff4444'}; border-radius: 10px; cursor: ${canEquip ? 'pointer' : 'not-allowed'}; transition: all 0.3s;"
+                        ${canEquip ? 'onmouseover="this.style.background=\'rgba(76, 175, 80, 0.4)\'" onmouseout="this.style.background=\'rgba(76, 175, 80, 0.2)\'"' : ''}>
+                        <strong style="color: ${canEquip ? '#4CAF50' : '#ff4444'}; font-size: 16px;">${creature.name}</strong><br>
                         <span style="color: #fff;">❤️ Vida: ${creature.life || 0} | ⚔️ Ataque: ${creature.attack || 0}</span>
                         ${equippedItems}
+                        ${restrictions}
                     </div>
                 `;
             });
@@ -1890,7 +1996,7 @@
                 width: '600px'
             });
         }
-
+        
         function selectCreatureForEquip(itemCardId, creatureId) {
             console.log('Equipando item', itemCardId, 'em criatura', creatureId);
             Swal.close();
@@ -1929,7 +2035,8 @@
                     html: `<p style="color: #fff;">${data.result.message || 'Item equipado com sucesso!'}</p>`,
                     background: '#1a1a2e',
                     color: '#fff',
-                    confirmButtonColor: '#ffd700'
+                    confirmButtonColor: '#ffd700',
+                    timer: 2000
                 });
             }
             else if (data.action === 'swap_positions' && data.result) {
@@ -1949,6 +2056,18 @@
                 addLogEntry(`✅ Ação realizada: ${data.action}`);
             }
         });
+        socket.on('action_error', function(data) {
+            console.error('Erro na ação:', data);
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+        });
+
         setInterval(requestGameState, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
     </script>

@@ -865,14 +865,15 @@ class Game:
             if card['instance_id'] == item_card_id:
                 item_card = card
                 item_index = i
+                print(f"Item encontrado na mão: {item_card['name']} (tipo: {item_card.get('type')})")
                 break
         
         if not item_card:
             return {'success': False, 'message': 'Item não encontrado na mão'}
         
-        # Verificar se é um item equipável
-        if item_card.get('type') not in ['weapon', 'armor']:
-            return {'success': False, 'message': 'Esta carta não é um item equipável'}
+        # Verificar se é um item equipável (weapon OU armor)
+        if item_card.get('type') not in ['weapon', 'armor'] and item_card.get('id') not in ['lamina_almas', 'blade_vampires', 'blade_dragons', 'capacete_trevas']:
+            return {'success': False, 'message': f'Esta carta ({item_card.get("type")}) não é um item equipável'}
         
         # Encontrar criatura alvo
         target_creature = None
@@ -883,6 +884,7 @@ class Game:
                 if card and card.get('instance_id') == creature_card_id:
                     target_creature = card
                     creature_location = (base, i)
+                    print(f"Criatura encontrada: {target_creature['name']} na {base}[{i}]")
                     break
             if target_creature:
                 break
@@ -908,13 +910,13 @@ class Game:
             target_creature['equipped_items'] = []
         
         # Verificar limite de itens por tipo
-        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon')
-        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor')
+        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon' or eq.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons'])
+        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor' or eq.get('id') == 'capacete_trevas')
         
-        if item_card.get('type') == 'weapon' and weapon_count >= 1:
+        if (item_card.get('type') == 'weapon' or item_card.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons']) and weapon_count >= 1:
             return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
         
-        if item_card.get('type') == 'armor' and armor_count >= 4:
+        if (item_card.get('type') == 'armor' or item_card.get('id') == 'capacete_trevas') and armor_count >= 4:
             return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
         
         # Remover item da mão
@@ -939,6 +941,7 @@ class Game:
             'item': item_card['name'],
             'message': f"{item_card['name']} equipado em {target_creature['name']}"
         }
+    
     def swap_positions(self, player_id, pos1_type, pos1_index, pos2_type, pos2_index):
         """Troca duas cartas de posição (pode ser entre ataque e defesa)"""
         if not self.can_act(player_id, 'swap'):
