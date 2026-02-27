@@ -576,6 +576,101 @@
         #graveyard-pile:hover::after {
             bottom: 0;
         }
+
+        .trap-slots-container {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 0, 255, 0.1);
+            border-radius: 15px;
+            border: 2px solid #ff00ff;
+        }
+
+        .trap-slots h3 {
+            color: #ff00ff;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #trap-slots {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .trap-slot {
+            width: 120px;
+            height: 140px;
+            background: rgba(255, 0, 255, 0.1);
+            border: 3px dashed #ff00ff;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        .trap-slot.has-trap {
+            background: rgba(255, 0, 255, 0.3);
+            border: 3px solid #ff00ff;
+            border-style: solid;
+            color: white;
+        }
+
+        .trap-slot:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #ff00ff;
+            background: rgba(255, 0, 255, 0.2);
+        }
+
+        .trap-card-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+        }
+
+        .trap-card-name {
+            font-weight: bold;
+            color: #fff;
+            font-size: 12px;
+        }
+
+        .trap-card-desc {
+            font-size: 10px;
+            color: #ccc;
+            text-align: center;
+        }
+
+        .trap-remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .trap-remove-btn:hover {
+            background: #ff0000;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
@@ -642,27 +737,25 @@
                 </div>
             </div>
             
-            <div class="action-buttons">
+            <div class="action-buttons" id="action-buttons">
                 <button class="action-btn" id="draw-btn">📥 Comprar carta</button>
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
-                <button class="action-btn trap" id="trap-btn">⚠️ Colocar Armadilha</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas) - <span id="runas-count">0</span></button>
-                <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
                 <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
             </div>
 
             <!-- Indicador de modo de equipar -->
-            <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
-                🔰 Modo Equipar ativo - Clique em uma criatura para equipar o item selecionado
-                <button onclick="cancelEquipMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
+            <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; display: flex; justify-content: space-between; align-items: center;">
+                <span>🔰 <strong>Modo Equipar ativo</strong> - Clique em uma criatura para equipar o item selecionado</span>
+                <button onclick="cancelEquipMode()" style="padding: 8px 20px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 15px;">✖ Cancelar</button>
             </div>
 
             <!-- Indicador de modo de troca -->
-            <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
-                🔄 Modo Troca ativo - Clique em duas posições para trocar as cartas
-                <button onclick="cancelMoveMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
+            <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center; display: flex; justify-content: space-between; align-items: center;">
+                <span>🔄 <strong>Modo Troca ativo</strong> - Clique em duas posições para trocar as cartas</span>
+                <button onclick="cancelMoveMode()" style="padding: 8px 20px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; margin-left: 15px;">✖ Cancelar</button>
             </div>
         </div>
         
@@ -708,6 +801,7 @@
         let equipMode = false;
         let selectedItemForEquip = null;
         let trapSlots = [null, null];
+        let trapCards = [null, null];
 
         function saveSession() {
             if (currentPlayerId) {
@@ -1103,7 +1197,6 @@
             if (gameState.current_turn) {
                 const currentPlayer = gameState.players[gameState.current_turn];
                 
-                // Adicionar informação da primeira rodada
                 if (gameState.first_round) {
                     turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
                     turnIndicator.style.background = '#ffa500';
@@ -1119,13 +1212,16 @@
                 }
             }
             
+            // Atualizar visibilidade dos botões de ação
+            updateActionButtonsVisibility();
+            
             updateOpponentsArea();
             
             if (gameState.players[socket.id]) {
                 updatePlayerArea();
             }
         }
-
+        
         function showSessionIndicator() {
             const indicator = document.getElementById('session-indicator');
             if (indicator && currentPlayerId) {
@@ -1252,6 +1348,94 @@
                 });
             }
         }
+    
+        function updateActionButtonsVisibility() {
+            const actionButtons = document.getElementById('action-buttons');
+            const moveIndicator = document.getElementById('move-mode-indicator');
+            const equipIndicator = document.getElementById('equip-mode-indicator');
+            
+            if (!gameState || !gameState.current_turn) {
+                actionButtons.style.display = 'none';
+                return;
+            }
+            
+            const isMyTurn = gameState.current_turn === socket.id;
+            
+            if (isMyTurn) {
+                actionButtons.style.display = 'flex';
+            } else {
+                actionButtons.style.display = 'none';
+                // Cancelar modos ativos se não for meu turno
+                if (moveMode) cancelMoveMode();
+                if (equipMode) cancelEquipMode();
+            }
+        }
+
+        function updateTrapSlots() {
+            for (let i = 0; i < 2; i++) {
+                const slot = document.getElementById(`trap-${i}`);
+                const trapCard = trapCards[i];
+                
+                if (trapCard) {
+                    slot.className = 'trap-slot has-trap';
+                    slot.innerHTML = `
+                        <div class="trap-card-content">
+                            <span style="font-size: 24px;">⚠️</span>
+                            <span class="trap-card-name">${trapCard.name}</span>
+                            <span class="trap-card-desc">${trapCard.description.substring(0, 30)}...</span>
+                        </div>
+                        <button class="trap-remove-btn" onclick="removeTrap(${i}, event)">✖</button>
+                    `;
+                } else {
+                    slot.className = 'trap-slot';
+                    slot.innerHTML = '⚠️ Slot ' + (i + 1);
+                }
+            }
+        }
+        function removeTrap(index, event) {
+            event.stopPropagation(); // Impedir que o clique no botão ative o slot
+            
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Remover armadilha?',
+                text: `Deseja remover ${trapCards[index].name} do slot?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sim, remover',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Aqui você pode implementar a lógica para remover a armadilha
+                    // Por enquanto, apenas removemos localmente
+                    trapCards[index] = null;
+                    updateTrapSlots();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Armadilha removida',
+                        text: 'A armadilha voltou para sua mão',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+            });
+        }
 
         function createBaseSlot(card, type, index, isOpponent) {
             const slot = document.createElement('div');
@@ -1354,14 +1538,11 @@
             selectedCard = card;
             actionMode = 'play';
             
-            // Remover seleção anterior
             document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
             
-            // Adicionar seleção na carta atual
             if (event && event.currentTarget) {
                 event.currentTarget.classList.add('selected');
             } else {
-                // Se não tiver event (chamada programática), encontrar a carta pelo índice
                 const cards = document.querySelectorAll('.card');
                 if (cards[index]) {
                     cards[index].classList.add('selected');
@@ -1371,20 +1552,25 @@
             let message = '';
             let actionButtons = [];
             
-            // Diagnosticar tipo da carta
             console.log('Tipo da carta:', card.type, 'ID:', card.id);
             
             if (card.type === 'creature') {
                 message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
             } 
-            else if (card.type === 'trap') {
-                message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
+            else if (card.type === 'trap' || card.id.includes('armadilha')) {
+                message = '⚠️ Clique em um slot de armadilha (roxo) para colocá-la.';
+                actionButtons.push({
+                    name: '⚠️ Colocar em armadilha',
+                    callback: function() {
+                        selectTrapMode(card.instance_id);
+                    }
+                });
             } 
             else if (card.type === 'spell') {
                 message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
             } 
-            else if (card.type === 'rune') {
-                message = 'Runas são usadas para reviver cartas (4 runas).';
+            else if (card.type === 'rune' || card.id === 'runa') {
+                message = '🔷 Runas são usadas para reviver cartas (4 runas).';
             } 
             else if (card.type === 'weapon' || card.type === 'armor' || 
                     card.id === 'lamina_almas' || card.id === 'blade_vampires' || 
@@ -1404,7 +1590,6 @@
                 message = '📦 Tipo de carta: ' + (card.type || 'desconhecido');
             }
             
-            // Criar HTML dos botões de ação
             let actionHtml = '';
             if (actionButtons.length > 0) {
                 actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">';
@@ -1414,7 +1599,6 @@
                 actionHtml += '</div>';
             }
             
-            // Mostrar modal com as opções
             Swal.fire({
                 title: `📌 ${card.name}`,
                 html: `
@@ -1437,45 +1621,16 @@
                 width: '500px'
             });
         }
-
+        
         function selectBase(type, index, card) {
+            if (moveMode) {
+                handleMoveSelection(type, index);
+                return;
+            }
+            
             if (equipMode) {
-                // Modo equipar ativo - clicou em uma criatura
                 if (card && card.type === 'creature') {
-                    // Confirmar equipamento
-                    Swal.fire({
-                        title: 'Equipar item?',
-                        html: `
-                            <div style="color: #fff;">
-                                <p><strong>Item:</strong> ${selectedItemForEquip.name}</p>
-                                <p><strong>Criatura:</strong> ${card.name}</p>
-                                ${selectedItemForEquip.attack ? `<p>⚔️ +${selectedItemForEquip.attack} ataque</p>` : ''}
-                                ${selectedItemForEquip.protection ? `<p>🛡️ +${selectedItemForEquip.protection} proteção</p>` : ''}
-                            </div>
-                        `,
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: '🔰 Equipar',
-                        cancelButtonText: 'Cancelar',
-                        confirmButtonColor: '#4CAF50',
-                        cancelButtonColor: '#ff4444',
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            socket.emit('player_action', {
-                                game_id: gameId,
-                                action: 'equip_item',
-                                params: {
-                                    item_card_id: selectedItemForEquip.instance_id,
-                                    creature_card_id: card.instance_id
-                                }
-                            });
-                            
-                            // Desativar modo equipar
-                            cancelEquipMode();
-                        }
-                    });
+                    confirmEquip(card);
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -1490,13 +1645,6 @@
                 return;
             }
             
-            if (moveMode) {
-                // Modo de troca ativo
-                handleMoveSelection(type, index);
-                return;
-            }
-            
-            // Modo normal (jogar carta)
             if (!selectedCard && actionMode !== 'move') {
                 return;
             }
@@ -1530,18 +1678,20 @@
         }
         function handleMoveSelection(type, index) {
             if (!firstSelection) {
-                // Primeira seleção
                 firstSelection = { type, index };
                 
-                // Destacar a base selecionada
-                const slot = document.querySelector(`.base-slot.${type}:nth-child(${index + 1})`);
+                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                    slot.classList.remove('selected-for-move');
+                });
+                
+                const slot = document.querySelector(`.base-slot.${type}[data-index="${index}"]`);
                 if (slot) {
                     slot.classList.add('selected-for-move');
                 }
                 
                 Swal.fire({
                     title: 'Primeira posição selecionada',
-                    text: `Agora clique na segunda posição para trocar`,
+                    text: 'Agora clique na segunda posição',
                     icon: 'info',
                     timer: 1500,
                     showConfirmButton: false,
@@ -1549,21 +1699,14 @@
                     color: '#fff'
                 });
             } else {
-                // Segunda seleção - realizar troca
                 const secondSelection = { type, index };
                 
-                // Remover destaque
-                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
-                    slot.classList.remove('selected-for-move');
-                });
-                
-                // Se clicou na mesma posição, cancelar
                 if (firstSelection.type === secondSelection.type && 
                     firstSelection.index === secondSelection.index) {
                     cancelMoveMode();
                     Swal.fire({
                         title: 'Troca cancelada',
-                        text: 'Você selecionou a mesma posição',
+                        text: 'Selecionou a mesma posição',
                         icon: 'info',
                         timer: 1500,
                         showConfirmButton: false,
@@ -1573,7 +1716,6 @@
                     return;
                 }
                 
-                // Realizar troca via socket
                 socket.emit('player_action', {
                     game_id: gameId,
                     action: 'swap_positions',
@@ -1585,16 +1727,22 @@
                     }
                 });
                 
-                // Desativar modo de troca
+                // Sair do modo de troca automaticamente
                 cancelMoveMode();
             }
         }
-
-        function selectTrapSlot(index) {
-            if (!selectedCard || selectedCard.type !== 'trap') {
+        
+        function selectTrapMode(cardId) {
+            Swal.close();
+            
+            const playerData = gameState.players[socket.id];
+            const trapCard = playerData.hand.find(c => c.instance_id === cardId);
+            
+            if (!trapCard) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Selecione uma armadilha primeiro',
+                    title: 'Erro',
+                    text: 'Carta não encontrada',
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#ffd700'
@@ -1602,20 +1750,40 @@
                 return;
             }
             
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'play_card',
-                params: {
-                    card_id: selectedCard.instance_id,
-                    position_type: 'trap',
-                    position_index: index
-                }
+            // Verificar se tem slot vazio
+            const emptySlot = trapCards.findIndex(slot => slot === null);
+            if (emptySlot === -1) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Slots cheios',
+                    text: 'Ambos os slots de armadilha estão ocupados',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Colocar armadilha no primeiro slot vazio
+            trapCards[emptySlot] = trapCard;
+            updateTrapSlots();
+            
+            // Remover da mão (localmente - depois o servidor deve confirmar)
+            // Por enquanto, apenas feedback visual
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Armadilha colocada!',
+                text: `${trapCard.name} foi colocada no slot ${emptySlot + 1}`,
+                timer: 1500,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
             });
             
             selectedCard = null;
             actionMode = null;
         }
-
         function selectTarget(targetPlayerId) {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
@@ -1824,9 +1992,20 @@
                 return;
             }
             
+            // Se já está em modo de troca, cancelar
+            if (moveMode) {
+                cancelMoveMode();
+                return;
+            }
+            
+            // Cancelar outros modos se ativos
+            if (equipMode) {
+                cancelEquipMode();
+            }
+            
             moveMode = true;
             firstSelection = null;
-            document.getElementById('move-mode-indicator').style.display = 'block';
+            document.getElementById('move-mode-indicator').style.display = 'flex';
             
             Swal.fire({
                 title: '🔄 Modo Troca Ativado',
@@ -2391,17 +2570,29 @@
                 color: '#fff'
             });
         };
+        
+        window.cancelMoveMode = function() {
+            console.log('Cancelando modo de troca');
+            moveMode = false;
+            firstSelection = null;
+            document.getElementById('move-mode-indicator').style.display = 'none';
+            
+            // Remover destaque das bases
+            document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                slot.classList.remove('selected-for-move');
+            });
+        }
         window.cancelEquipMode = function() {
+            console.log('Cancelando modo de equipar');
             equipMode = false;
             selectedItemForEquip = null;
             document.getElementById('equip-mode-indicator').style.display = 'none';
             
-            // Remover destaque das criaturas
-            document.querySelectorAll('.base-slot.selected-for-equip').forEach(slot => {
-                slot.classList.remove('selected-for-equip');
+            document.querySelectorAll('.base-slot.selected-for-equip, .base-slot.creature-highlight').forEach(slot => {
+                slot.classList.remove('selected-for-equip', 'creature-highlight');
             });
         }
-
+        
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
             if (gameState.current_turn !== socket.id) {
