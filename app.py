@@ -102,6 +102,10 @@ class Game:
         self.max_players = 6
         self.turn_actions_used = {}  # Track actions used per player per turn
         
+        self.first_round = True
+        self.players_acted = set()  # Jogadores que já fizeram uma ação
+        self.attacks_blocked = True  # Ataques bloqueados na primeira rodada
+        
     def add_player(self, player_id, player_name):
         if len(self.players) >= self.max_players or self.started:
             return False
@@ -134,7 +138,30 @@ class Game:
         }
         return True
     
+    def can_attack(self, player_id):
+        """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
+        if self.attacks_blocked:
+            return False, "Ataques bloqueados na primeira rodada. Todos precisam jogar primeiro."
+        return True, ""
+    def register_action(self, player_id, action_type):
+        """Registra que um jogador realizou uma ação"""
+        if self.first_round and action_type not in ['attack', 'end_turn']:
+            self.players_acted.add(player_id)
+            print(f"Jogador {player_id} realizou ação. Jogadores que já agiram: {len(self.players_acted)}/{len(self.players)}")
+            
+            # Verificar se todos já agiram
+            if len(self.players_acted) >= len(self.players):
+                self.first_round = False
+                self.attacks_blocked = False
+                print("🎉 PRIMEIRA RODADA CONCLUÍDA! Ataques liberados!")
+                
+                # Notificar todos os jogadores
+                return True  # Indica que a primeira rodada terminou
+        
+        return False
+
     def next_turn(self):
+        """Avança para o próximo turno"""
         self.current_turn = (self.current_turn + 1) % len(self.players)
         self.turn_actions_used[self.players[self.current_turn]] = set()
         
@@ -142,10 +169,12 @@ class Game:
         self.time_cycle += 1
         if self.time_cycle % 24 == 0:
             self.time_of_day = "night" if self.time_of_day == "day" else "day"
-            
-            # Efeitos de dia/noite
             if self.time_of_day == "day":
                 self.apply_day_effects()
+        
+        # Verificar se todos já agiram na primeira rodada
+        if self.first_round:
+            print(f"Primeira rodada ainda ativa. Jogadores que agiram: {len(self.players_acted)}/{len(self.players)}")
     
     def apply_day_effects(self):
         """Aplica efeitos do dia (zumbis e vampiros morrem)"""
@@ -274,47 +303,56 @@ class Game:
         return {'success': True, 'card': card_to_play}
     
     def attack(self, player_id, target_player_id):
-        """Ataca outro jogador com sistema de dano corrigido"""
+        """Ataca outro jogador com verificação de primeira rodada"""
+        # Verificar se pode atacar
+        can_attack, message = self.can_attack(player_id)
+        if not can_attack:
+            return {'success': False, 'message': message}
+        
         if not self.can_act(player_id, 'attack'):
             return {'success': False, 'message': 'Você já atacou neste turno'}
         
         if target_player_id not in self.players:
             return {'success': False, 'message': 'Jogador alvo inválido'}
         
-        attacker = self.player_data[player_id]
-        defender = self.player_data[target_player_id]
+        attacker = self.player_data.get(player_id)
+        defender = self.player_data.get(target_player_id)
+        
+        if not attacker or not defender:
+            return {'success': False, 'message': 'Dados do jogador não encontrados'}
         
         # Verificar se tem cartas de ataque
         has_attack_cards = False
-        for card in attacker['attack_bases']:
+        attack_power = 0
+        attacking_cards = []
+        
+        for i, card in enumerate(attacker['attack_bases']):
             if card and card.get('type') == 'creature':
                 has_attack_cards = True
-                break
+                card_attack = card.get('attack', 0)
+                attack_power += card_attack
+                attacking_cards.append({
+                    'card': card,
+                    'index': i,
+                    'attack': card_attack
+                })
         
         if not has_attack_cards:
             return {'success': False, 'message': 'Você precisa de criaturas em posição de ataque para atacar'}
-        
-        # Calcular poder de ataque total (apenas criaturas)
-        total_attack = 0
-        attacking_cards = []
-        for card in attacker['attack_bases']:
-            if card and card.get('type') == 'creature':
-                attack_value = card.get('attack', 0)
-                total_attack += attack_value
-                attacking_cards.append(card)
         
         # Adicionar bônus de equipamentos
         if attacker['equipment']['weapon']:
             weapon = attacker['equipment']['weapon']
             if weapon.get('type') == 'weapon':
-                total_attack += weapon.get('attack', 0)
+                weapon_attack = weapon.get('attack', 0)
+                attack_power += weapon_attack
         
         # Talismã Guerreiro
         for talisman in attacker['talismans']:
             if talisman['id'] == 'talisma_guerreiro':
-                total_attack += 1000
+                attack_power += 1000
         
-        # Coletar cartas de defesa com suas vidas
+        # Coletar cartas de defesa
         defense_cards = []
         for i, card in enumerate(defender['defense_bases']):
             if card and card.get('type') == 'creature':
@@ -322,15 +360,18 @@ class Game:
                     'card': card,
                     'index': i,
                     'current_life': card.get('life', 0),
-                    'original_life': card.get('life', 0)
+                    'original_life': card.get('life', 0),
+                    'name': card.get('name', 'Desconhecido')
                 })
         
         # Ordenar cartas de defesa por vida (maior primeiro)
         defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
         
-        # Aplicar dano às cartas de defesa primeiro
-        remaining_damage = total_attack
+        # Aplicar dano às cartas de defesa
+        remaining_damage = attack_power
         damage_log = []
+        cards_destroyed = []
+        cards_damaged = []
         
         for def_card in defense_cards:
             if remaining_damage <= 0:
@@ -340,21 +381,23 @@ class Game:
             card_life = def_card['current_life']
             
             if remaining_damage >= card_life:
-                # Carta morre
                 remaining_damage -= card_life
                 self.graveyard.append(card)
                 defender['defense_bases'][def_card['index']] = None
+                cards_destroyed.append(card['name'])
                 damage_log.append(f"{card['name']} foi destruída")
             else:
-                # Carta leva dano mas sobrevive
                 new_life = card_life - remaining_damage
                 card['life'] = new_life
+                cards_damaged.append(f"{card['name']} (-{remaining_damage}❤️)")
                 damage_log.append(f"{card['name']} recebeu {remaining_damage} de dano (vida restante: {new_life})")
                 remaining_damage = 0
         
         # Dano restante vai para o jogador
+        damage_to_player = 0
         if remaining_damage > 0:
-            # Verificar talismã da imortalidade
+            damage_to_player = remaining_damage
+            
             has_immortality = False
             for talisman in defender['talismans']:
                 if talisman['id'] == 'talisma_imortalidade':
@@ -364,22 +407,33 @@ class Game:
             if has_immortality:
                 defender['life'] = 5000
                 defender['talismans'] = [t for t in defender['talismans'] if t['id'] != 'talisma_imortalidade']
-                damage_log.append("Talismã da Imortalidade salvou o jogador!")
+                damage_log.append("✨ Talismã da Imortalidade salvou o jogador!")
+                damage_to_player = 0
             else:
                 defender['life'] -= remaining_damage
-                damage_log.append(f"Jogador recebeu {remaining_damage} de dano direto")
+                damage_log.append(f"⚔️ Jogador recebeu {remaining_damage} de dano direto")
         
         self.use_action(player_id, 'attack')
         
-        return {
+        if defender['life'] <= 0:
+            damage_log.append(f"💀 {defender['name']} foi derrotado!")
+        
+        result = {
             'success': True,
-            'damage_dealt': total_attack - remaining_damage,
-            'damage_to_player': remaining_damage if remaining_damage > 0 else 0,
+            'total_attack': attack_power,
+            'damage_absorbed': attack_power - remaining_damage,
+            'damage_to_player': damage_to_player,
             'attacker': player_id,
+            'attacker_name': attacker['name'],
             'target': target_player_id,
+            'target_name': defender['name'],
             'target_life': defender['life'],
+            'cards_destroyed': cards_destroyed,
+            'cards_damaged': cards_damaged,
             'log': damage_log
         }
+        
+        return result
     
     def move_card(self, player_id, from_type, from_index, to_type, to_index):
         """Move uma carta entre posições"""
