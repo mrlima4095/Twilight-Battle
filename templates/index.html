@@ -306,7 +306,7 @@
                     .then(data => {
                         loading.classList.remove('active');
                         gameIdInput.value = data.game_id;
-                        alert(`Sala ${data.game_id} criada! Compartilhe o código com seus amigos.`);
+                        window.location.href = `/game/${data.game_id}`
                     })
                     .catch(error => {
                         loading.classList.remove('active');
