@@ -499,6 +499,40 @@
         .action-btn.move:hover {
             box-shadow: 0 5px 15px #4a90e2;
         }
+        .action-btn.equip {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .action-btn.equip:hover {
+            box-shadow: 0 5px 15px #4CAF50;
+        }
+
+        .action-btn.move {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+        }
+
+        .action-btn.move:hover {
+            box-shadow: 0 5px 15px #4a90e2;
+        }
+
+        .base-slot.selected-for-equip {
+            border-color: #4CAF50 !important;
+            box-shadow: 0 0 20px #4CAF50;
+            animation: pulse-green 1s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 10px #4CAF50; }
+            50% { box-shadow: 0 0 20px #4CAF50; }
+            100% { box-shadow: 0 0 10px #4CAF50; }
+        }
+        
+        .base-slot.creature-highlight {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -562,9 +596,16 @@
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn trap" id="trap-btn">⚠️ Colocar Armadilha</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas)</button>
+                <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
                 <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
+            </div>
+
+            <!-- Indicador de modo de equipar -->
+            <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
+                🔰 Modo Equipar ativo - Clique em uma criatura para equipar o item selecionado
+                <button onclick="cancelEquipMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
 
             <!-- Indicador de modo de troca -->
@@ -600,6 +641,8 @@
         let actionMode = null;
         let moveMode = false;
         let firstSelection = null;
+        let equipMode = false;
+        let selectedItemForEquip = null;
         let trapSlots = [null, null];
         
         socket.on('connect', function() {
@@ -893,6 +936,15 @@
             // Montes
             document.getElementById('deck-count').textContent = gameState.deck_count;
             document.getElementById('graveyard-count').textContent = gameState.graveyard_count;
+
+            if (equipMode) {
+                document.querySelectorAll('.base-slot.has-card').forEach(slot => {
+                    // Verificar se é uma criatura (tem card com type creature)
+                    if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
+                        slot.classList.add('creature-highlight');
+                    }
+                });
+            }
         }
         
         function createBaseSlot(card, type, index, isOpponent) {
@@ -940,6 +992,10 @@
             
             // Adicionar evento de clique
             slot.onclick = () => selectBase(type, index, card);
+
+            if (equipMode && card && card.type === 'creature' && !isOpponent) {
+                slot.classList.add('creature-highlight');
+            }
             
             return slot;
         }
@@ -1077,12 +1133,64 @@
         }
         
         function selectBase(type, index, card) {
+            if (equipMode) {
+                // Modo equipar ativo - clicou em uma criatura
+                if (card && card.type === 'creature') {
+                    // Confirmar equipamento
+                    Swal.fire({
+                        title: 'Equipar item?',
+                        html: `
+                            <div style="color: #fff;">
+                                <p><strong>Item:</strong> ${selectedItemForEquip.name}</p>
+                                <p><strong>Criatura:</strong> ${card.name}</p>
+                                ${selectedItemForEquip.attack ? `<p>⚔️ +${selectedItemForEquip.attack} ataque</p>` : ''}
+                                ${selectedItemForEquip.protection ? `<p>🛡️ +${selectedItemForEquip.protection} proteção</p>` : ''}
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '🔰 Equipar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#4CAF50',
+                        cancelButtonColor: '#ff4444',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'equip_item',
+                                params: {
+                                    item_card_id: selectedItemForEquip.instance_id,
+                                    creature_card_id: card.instance_id
+                                }
+                            });
+                            
+                            // Desativar modo equipar
+                            cancelEquipMode();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Alvo inválido',
+                        text: 'Você só pode equipar itens em criaturas',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+                return;
+            }
+            
             if (moveMode) {
                 // Modo de troca ativo
                 handleMoveSelection(type, index);
                 return;
             }
             
+            // Modo normal (jogar carta)
             if (!selectedCard && actionMode !== 'move') {
                 return;
             }
@@ -1351,6 +1459,70 @@
                 showConfirmButton: false,
                 background: '#1a1a2e',
                 color: '#fff'
+            });
+        });
+
+        document.getElementById('equip-mode-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Primeiro, selecionar um item da mão
+            const playerData = gameState.players[socket.id];
+            const equipItems = playerData.hand.filter(c => 
+                c.type === 'weapon' || 
+                c.type === 'armor' || 
+                c.id === 'lamina_almas' || 
+                c.id === 'blade_vampires' || 
+                c.id === 'blade_dragons' || 
+                c.id === 'capacete_trevas'
+            );
+            
+            if (equipItems.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem itens',
+                    text: 'Você não tem itens equipáveis na mão',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            equipItems.forEach(item => {
+                itemsHtml += `
+                    <div onclick="selectItemForEquip('${item.instance_id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
+                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
+                        <strong style="color: #4CAF50;">${item.name}</strong><br>
+                        <span style="color: #fff;">${item.description}</span><br>
+                        ${item.attack ? `<span style="color: #ffd700;">⚔️ Ataque: ${item.attack}</span>` : ''}
+                        ${item.protection ? `<span style="color: #ffd700;">🛡️ Proteção: ${item.protection}</span>` : ''}
+                    </div>
+                `;
+            });
+            itemsHtml += '</div>';
+            
+            Swal.fire({
+                title: '🔰 Selecione um item para equipar',
+                html: itemsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
             });
         });
 
@@ -1803,6 +1975,47 @@
             });
         }
 
+        window.selectItemForEquip = function(itemId) {
+            Swal.close();
+            
+            const playerData = gameState.players[socket.id];
+            selectedItemForEquip = playerData.hand.find(c => c.instance_id === itemId);
+            
+            if (!selectedItemForEquip) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Item não encontrado',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            equipMode = true;
+            document.getElementById('equip-mode-indicator').style.display = 'block';
+            
+            Swal.fire({
+                title: `🔰 Item selecionado: ${selectedItemForEquip.name}`,
+                text: 'Agora clique em uma criatura em campo para equipar',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        };
+        window.cancelEquipMode = function() {
+            equipMode = false;
+            selectedItemForEquip = null;
+            document.getElementById('equip-mode-indicator').style.display = 'none';
+            
+            // Remover destaque das criaturas
+            document.querySelectorAll('.base-slot.selected-for-equip').forEach(slot => {
+                slot.classList.remove('selected-for-equip');
+            });
+        }
         
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
