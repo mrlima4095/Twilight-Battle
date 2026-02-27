@@ -939,6 +939,43 @@ class Game:
             'item': item_card['name'],
             'message': f"{item_card['name']} equipado em {target_creature['name']}"
         }
+    def swap_positions(self, player_id, pos1_type, pos1_index, pos2_type, pos2_index):
+        """Troca duas cartas de posição (pode ser entre ataque e defesa)"""
+        if not self.can_act(player_id, 'swap'):
+            return {'success': False, 'message': 'Você já realizou uma troca neste turno'}
+        
+        player = self.player_data[player_id]
+        
+        # Validar posições
+        positions = {
+            'attack': player['attack_bases'],
+            'defense': player['defense_bases']
+        }
+        
+        if pos1_type not in positions or pos2_type not in positions:
+            return {'success': False, 'message': 'Tipo de posição inválido'}
+        
+        if pos1_index >= len(positions[pos1_type]) or pos2_index >= len(positions[pos2_type]):
+            return {'success': False, 'message': 'Índice de posição inválido'}
+        
+        card1 = positions[pos1_type][pos1_index]
+        card2 = positions[pos2_type][pos2_index]
+        
+        # Se ambas as posições estão vazias, não faz sentido trocar
+        if not card1 and not card2:
+            return {'success': False, 'message': 'Ambas as posições estão vazias'}
+        
+        # Realizar troca
+        positions[pos1_type][pos1_index] = card2
+        positions[pos2_type][pos2_index] = card1
+        
+        self.use_action(player_id, 'swap')
+        
+        return {
+            'success': True,
+            'swapped': True,
+            'message': 'Cartas trocadas com sucesso'
+        }
     
 # Rotas da aplicação
 @app.route('/')
