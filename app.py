@@ -1,15 +1,86 @@
 # app.py
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, make_response, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import random
-import string
-import time
+import uuid, jwt, json, hashlib, hmac, secrets, random, string, time
+from datetime import datetime, timedelta
 from collections import defaultdict
-import uuid
+from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'twilight-battle-secret'
+app.config['JWT_SECRET'] = 'twilight-battle-jwt-secret-key-change-in-production'
+app.config['JWT_EXPIRATION_HOURS'] = 24
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+ACCOUNTS_FILE = 'accounts.json'
+
+def load_accounts():
+    try:
+        with open(ACCOUNTS_FILE, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+def save_accounts(accounts):
+    with open(ACCOUNTS_FILE, 'w') as f:
+        json.dump(accounts, f, indent=4)
+def hash_password(password):
+    salt = secrets.token_hex(16)
+    password_hash = hashlib.pbkdf2_hmac(
+        'sha256',
+        password.encode('utf-8'),
+        salt.encode('utf-8'),
+        100000
+    ).hex()
+    return f"{salt}${password_hash}"
+def verify_password(password, hashed):
+    try:
+        salt, password_hash = hashed.split('$')
+        check_hash = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode('utf-8'),
+            salt.encode('utf-8'),
+            100000
+        ).hex()
+        return hmac.compare_digest(check_hash, password_hash)
+    except:
+        return False
+def create_token(username):
+    payload = {
+        'username': username,
+        'exp': datetime.utcnow() + timedelta(hours=app.config['JWT_EXPIRATION_HOURS']),
+        'iat': datetime.utcnow()
+    }
+    return jwt.encode(payload, app.config['JWT_SECRET'], algorithm='HS256')
+def verify_token(token):
+    try:
+        payload = jwt.decode(token, app.config['JWT_SECRET'], algorithms=['HS256'])
+        return payload['username']
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
+
+def get_current_user():
+    token = request.cookies.get('auth_token')
+    if token:
+        return verify_token(token)
+    return None
+
+def update_user_game(username, game_id):
+    """Atualiza o jogo atual do usuário"""
+    accounts = load_accounts()
+    if username in accounts:
+        accounts[username]['current_game'] = game_id
+        save_accounts(accounts)
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        username = get_current_user()
+        if not username:
+            return redirect('/')
+        return f(username, *args, **kwargs)
+    return decorated_function
 
 # Estruturas de dados do jogo
 games = {}
@@ -376,6 +447,13 @@ CARDS = {
         "type": "trap", 
         "count": 1, 
         "description": "Dobrar o ataque e passar para o próximo jogador na rodada, precisa estar de noite e um mago em campo."
+    },
+    "armadilha_poco": {
+        "id": "armadilha_poco", 
+        "name": "Armadilha - Poço Sem Fundo", 
+        "type": "trap", 
+        "count": 1, 
+        "description": "Quando o oponente atacar, TODAS as 3 criaturas atacantes são destruídas e enviadas para o cemitério. Armadilha é desativada após o uso."
     }
 }
 
@@ -571,23 +649,33 @@ class Game:
         self.players_acted = set()  # Jogadores que já fizeram uma ação
         self.attacks_blocked = True  # Ataques bloqueados na primeira rodada
         
-    def add_player(self, player_id, player_name):
+    def add_player(self, socket_id, username):
+        """Adiciona um jogador ao jogo usando username como identificador"""
         if len(self.players) >= self.max_players or self.started:
             return False
         
-        self.players.append(player_id)
+        # Verificar se username já está no jogo
+        if username in self.players:
+            print(f"Jogador {username} já está no jogo")
+            return False
+        
+        self.players.append(username)
+        self.socket_to_username[socket_id] = username
+        
         # Draw 5 initial cards
         hand = []
         for _ in range(5):
             if self.deck:
                 hand.append(self.deck.pop())
         
-        self.player_data[player_id] = {
-            'name': player_name,
+        self.player_data[username] = {
+            'name': username,  # Nome é o username
+            'username': username,
+            'socket_id': socket_id,
             'life': 5000,
             'hand': hand,
-            'attack_bases': [None, None, None],  # 3 attack bases
-            'defense_bases': [None, None, None, None, None, None],  # 6 defense bases
+            'attack_bases': [None, None, None],
+            'defense_bases': [None, None, None, None, None, None],
             'equipment': {
                 'weapon': None,
                 'helmet': None,
@@ -603,8 +691,49 @@ class Game:
             'dead': False,
             'observer': False
         }
+        
+        print(f"Jogador {username} adicionado ao jogo {self.game_id}")
         return True
-    
+    def remove_player(self, username):
+        """Remove um jogador do jogo usando username"""
+        if username not in self.players or username not in self.player_data:
+            return False
+        
+        print(f"Removendo jogador {username} do jogo {self.game_id}")
+        
+        # Processar morte do jogador
+        self.process_player_death(username)
+        
+        # Encontrar e remover mapeamento socket
+        socket_to_remove = None
+        for socket_id, uname in self.socket_to_username.items():
+            if uname == username:
+                socket_to_remove = socket_id
+                break
+        
+        if socket_to_remove:
+            del self.socket_to_username[socket_to_remove]
+        
+        # Remover das listas
+        self.players.remove(username)
+        
+        # Se não há mais jogadores, marcar para limpeza
+        if len(self.players) == 0:
+            return True
+        
+        # Verificar se há um vencedor
+        alive_players = [p for p in self.players if not self.player_data[p].get('dead', False)]
+        if len(alive_players) == 1:
+            return alive_players[0]  # Retorna o username do vencedor
+        
+        # Se era o turno do jogador que saiu, passar para o próximo
+        if username in self.players:
+            current_index = self.players.index(username)
+            if current_index >= 0 and self.current_turn == current_index:
+                self.next_turn()
+        
+        return True
+
     def can_attack(self, player_id):
         """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
         if self.attacks_blocked:
@@ -638,31 +767,28 @@ class Game:
         
         # Continuar avançando enquanto o jogador estiver morto
         while self.player_data[self.players[next_turn]].get('dead', False):
-            print(f"Pulando jogador morto: {self.player_data[self.players[next_turn]]['name']}")
+            print(f"Pulando jogador morto: {self.players[next_turn]}")
             next_turn = (next_turn + 1) % len(self.players)
             
-            # Se voltou ao original, todos estão mortos (fim de jogo)
             if next_turn == original_turn:
-                # Todos os jogadores restantes estão mortos
                 print("Todos os jogadores restantes estão mortos")
                 break
         
         self.current_turn = next_turn
         self.turn_actions_used = {}
         
-        # Inicializar controle de ações para o novo turno
-        for player_id in self.players:
-            if not self.player_data[player_id].get('dead', False):
-                self.turn_actions_used[player_id] = set()
+        for username in self.players:
+            if not self.player_data[username].get('dead', False):
+                self.turn_actions_used[username] = set()
         
-        # Mudar dia/noite a cada 24 turnos
         self.time_cycle += 1
         if self.time_cycle % 24 == 0:
             self.time_of_day = "night" if self.time_of_day == "day" else "day"
             if self.time_of_day == "day":
                 self.apply_day_effects()
         
-        print(f"Próximo turno: {self.player_data[self.players[self.current_turn]]['name']}")
+        current_player = self.players[self.current_turn]
+        print(f"Próximo turno: {current_player}")
 
     def apply_day_effects(self):
         """Aplica efeitos do dia (zumbis e vampiros morrem)"""
@@ -1567,32 +1693,41 @@ class Game:
             'message': 'Cartas trocadas com sucesso'
         }
 
-    def reconnect_player(self, player_id, player_name):
+    def reconnect_player(self, socket_id, username):
         """Reconecta um jogador existente ao jogo"""
-        print(f"Tentando reconectar jogador {player_name} ({player_id})")
+        print(f"Tentando reconectar jogador {username} com socket {socket_id}")
         
-        if player_id in self.player_data:
-            # Jogador já existe, apenas atualizar status
-            print(f"Jogador {player_name} reconectado com sucesso")
+        if username in self.player_data:
+            # Jogador já existe, atualizar socket
+            # Remover mapeamento antigo se existir
+            old_socket = None
+            for s, u in list(self.socket_to_username.items()):
+                if u == username:
+                    old_socket = s
+                    break
+            
+            if old_socket and old_socket != socket_id:
+                del self.socket_to_username[old_socket]
+            
+            self.socket_to_username[socket_id] = username
+            self.player_data[username]['socket_id'] = socket_id
+            
+            print(f"Jogador {username} reconectado com sucesso")
             return {
                 'success': True,
-                'player_id': player_id,
-                'player_name': player_name,
+                'username': username,
                 'game_started': self.started
             }
         else:
             # Jogador não encontrado, verificar se pode entrar como novo
             if len(self.players) >= self.max_players or self.started:
-                print(f"Jogo cheio ou já começou. Não pode reconectar como novo.")
                 return {'success': False, 'message': 'Jogo cheio ou já começou'}
             
             # Adicionar como novo jogador
-            if self.add_player(player_id, player_name):
-                print(f"Jogador {player_name} adicionado como novo durante reconexão")
+            if self.add_player(socket_id, username):
                 return {
                     'success': True,
-                    'player_id': player_id,
-                    'player_name': player_name,
+                    'username': username,
                     'game_started': self.started
                 }
         
@@ -1828,16 +1963,26 @@ class Game:
 # Rotas da aplicação
 @app.route('/')
 def index():
+    username = get_current_user()
+    if username:
+        accounts = load_accounts()
+        current_game = accounts.get(username, {}).get('current_game')
+        if current_game and current_game in games:
+            return render_template('game.html', game_id=current_game, username=username)
     return render_template('index.html')
 @app.route('/rules')
 def rules():
     return render_template('rules.html')
 
 @app.route('/game/<game_id>')
-def game(game_id):
+@login_required
+def game(username, game_id):
     if game_id not in games:
         return "Jogo não encontrado", 404
-    return render_template('game.html', game_id=game_id)
+
+    update_user_game(username, game_id)
+    
+    return render_template('game.html', game_id=game_id, username=username)
 
 @app.route('/api/games')
 def get_games():
@@ -1873,6 +2018,115 @@ def cleanup_games():
     Game.cleanup_empty_games()
     return jsonify({'success': True})
 
+# Login
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.json
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '').strip()
+    
+    if not username or not password: return jsonify({'success': False, 'message': 'Usuário e senha obrigatórios'})
+    if len(username) < 3 or len(username) > 20: return jsonify({'success': False, 'message': 'Usuário deve ter entre 3 e 20 caracteres'})
+    if len(password) < 4: return jsonify({'success': False, 'message': 'Senha deve ter pelo menos 4 caracteres'})
+    
+    accounts = load_accounts()
+    
+    if username in accounts: return jsonify({'success': False, 'message': 'Usuário já existe'})
+    
+    # Criar nova conta
+    accounts[username] = {
+        'password': hash_password(password),
+        'created_at': datetime.utcnow().isoformat(),
+        'current_game': None  # Nenhum jogo ativo
+    }
+    
+    save_accounts(accounts)
+    
+    # Criar token
+    token = create_token(username)
+    
+    response = jsonify({'success': True, 'username': username})
+    response.set_cookie(
+        'auth_token',
+        token,
+        httponly=True,
+        secure=True,  # True em produção com HTTPS
+        samesite='Lax',
+        max_age=app.config['JWT_EXPIRATION_HOURS'] * 3600
+    )
+    
+    return response
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username', '').strip().lower()
+    password = data.get('password', '').strip()
+    
+    if not username or not password: return jsonify({'success': False, 'message': 'Usuário e senha obrigatórios'})
+    
+    accounts = load_accounts()
+    
+    if username not in accounts: return jsonify({'success': False, 'message': 'Usuário ou senha inválidos'})
+    if not verify_password(password, accounts[username]['password']): return jsonify({'success': False, 'message': 'Usuário ou senha inválidos'})
+    
+    # Criar token
+    token = create_token(username)
+    
+    response = jsonify({
+        'success': True,
+        'username': username,
+        'current_game': accounts[username].get('current_game')
+    })
+    
+    response.set_cookie(
+        'auth_token',
+        token,
+        httponly=True,
+        secure=True,  # True em produção com HTTPS
+        samesite='Lax',
+        max_age=app.config['JWT_EXPIRATION_HOURS'] * 3600
+    )
+    
+    return response
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    response = jsonify({'success': True})
+    response.delete_cookie('auth_token')
+    return response
+
+@app.route('/api/check-auth')
+def check_auth():
+    username = get_current_user()
+    
+    if not username:
+        return jsonify({'authenticated': False})
+    
+    accounts = load_accounts()
+    current_game = accounts.get(username, {}).get('current_game')
+    
+    # Verificar se o jogo ainda existe
+    if current_game and current_game in games:
+        return jsonify({
+            'authenticated': True,
+            'username': username,
+            'current_game': current_game,
+            'game_exists': True
+        })
+    else:
+        # Se o jogo não existe mais, limpar da conta
+        if current_game and username in accounts:
+            accounts[username]['current_game'] = None
+            save_accounts(accounts)
+        
+        return jsonify({
+            'authenticated': True,
+            'username': username,
+            'current_game': None,
+            'game_exists': False
+        })
+
 # Socket.IO events
 @socketio.on('connect')
 def handle_connect():
@@ -1881,19 +2135,31 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     print(f'Client disconnected: {request.sid}')
-    # Remover jogador das salas
+    
+    # Encontrar jogo e jogador
     for game_id, game in games.items():
-        if request.sid in game.players:
-            game.players.remove(request.sid)
-            if request.sid in game.player_data:
-                del game.player_data[request.sid]
-            emit('player_left', {'player_id': request.sid}, room=game_id)
+        username = game.get_player_by_socket(request.sid)
+        if username:
+            # Remover mapeamento socket
+            if request.sid in game.socket_to_username:
+                del game.socket_to_username[request.sid]
+            
+            # Não remover o jogador automaticamente, apenas marcar como offline
+            # O jogador pode reconectar depois
+            emit('player_disconnected', {
+                'username': username
+            }, room=game_id)
             break
 
 @socketio.on('join_game')
 def handle_join_game(data):
     game_id = data['game_id']
-    player_name = data['player_name']
+    
+    # Obter username do token
+    username = get_current_user()
+    if not username:
+        emit('error', {'message': 'Usuário não autenticado'})
+        return
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
@@ -1905,62 +2171,123 @@ def handle_join_game(data):
         emit('error', {'message': 'O jogo já começou'})
         return
     
-    if game.add_player(request.sid, player_name):
+    if game.add_player(request.sid, username):
         join_room(game_id)
+        
+        # Atualizar jogo atual na conta
+        update_user_game(username, game_id)
+        
+        # Lista de jogadores (usernames)
+        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+        
         emit('player_joined', {
-            'player_id': request.sid,
-            'player_name': player_name,
-            'players': [{'id': p, 'name': game.player_data[p]['name']} for p in game.players]
+            'username': username,
+            'players': players_list
         }, room=game_id)
     else:
         emit('error', {'message': 'Não foi possível entrar no jogo'})
 
+@socketio.on('leave_game')
+def handle_leave_game(data):
+    """Jogador sai voluntariamente do jogo"""
+    game_id = data['game_id']
+    
+    # Obter username do token
+    username = get_current_user()
+    if not username:
+        emit('error', {'message': 'Usuário não autenticado'})
+        return
+    
+    if game_id not in games:
+        emit('error', {'message': 'Jogo não encontrado'})
+        return
+    
+    game = games[game_id]
+    
+    if username not in game.player_data:
+        emit('error', {'message': 'Jogador não encontrado'})
+        return
+    
+    # Remover jogador
+    result = game.remove_player(username)
+    
+    # Limpar jogo atual da conta do usuário
+    accounts = load_accounts()
+    if username in accounts and accounts[username].get('current_game') == game_id:
+        accounts[username]['current_game'] = None
+        save_accounts(accounts)
+    
+    # Notificar todos os jogadores
+    emit('player_left', {
+        'username': username,
+        'message': f'{username} saiu do jogo'
+    }, room=game_id)
+    
+    # Se result for um username, é o vencedor
+    if isinstance(result, str):
+        winner = result
+        winner_name = game.player_data[winner]['name']
+        emit('game_over', {
+            'winner': winner,
+            'winner_name': winner_name,
+            'message': f'🏆 {winner_name} VENCEU O JOGO!'
+        }, room=game_id)
+    
+    # Remover da sala
+    leave_room(game_id)
+
 @socketio.on('get_game_state')
 def handle_get_game_state(data):
     game_id = data['game_id']
-    if game_id in games:
-        game = games[game_id]
-        player_id = request.sid
-        
-        if player_id in game.player_data:
-            # Filtrar informações para o jogador
-            state = {
-                'game_id': game_id,
-                'started': game.started,
-                'time_of_day': game.time_of_day,
-                'time_cycle': game.time_cycle,
-                'current_turn': game.players[game.current_turn] if game.players else None,
-                'players': {},
-                'deck_count': len(game.deck),
-                'graveyard_count': len(game.graveyard),
-                'current_player_dead': game.player_data[player_id].get('dead', False)  # Novo campo
+    
+    if game_id not in games:
+        emit('error', {'message': 'Jogo não encontrado'})
+        return
+    
+    game = games[game_id]
+    username = game.get_player_by_socket(request.sid)
+    
+    if not username:
+        emit('error', {'message': 'Jogador não encontrado'})
+        return
+    
+    # Filtrar informações para o jogador
+    state = {
+        'game_id': game_id,
+        'started': game.started,
+        'time_of_day': game.time_of_day,
+        'time_cycle': game.time_cycle,
+        'current_turn': game.players[game.current_turn] if game.players else None,
+        'players': {},
+        'deck_count': len(game.deck),
+        'graveyard_count': len(game.graveyard),
+        'current_player_dead': game.player_data[username].get('dead', False)
+    }
+    
+    # Informações de todos os jogadores (públicas)
+    for uname in game.players:
+        if uname in game.player_data:
+            player_info = {
+                'name': game.player_data[uname]['name'],
+                'username': uname,
+                'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
+                'attack_bases': game.player_data[uname]['attack_bases'],
+                'defense_bases': game.player_data[uname]['defense_bases'],
+                'talisman_count': len(game.player_data[uname]['talismans']),
+                'runes': game.player_data[uname]['runes'],
+                'dead': game.player_data[uname].get('dead', False),
+                'observer': game.player_data[uname].get('observer', False)
             }
             
-            # Informações de todos os jogadores (públicas)
-            for p_id in game.players:
-                if p_id in game.player_data:
-                    player_info = {
-                        'name': game.player_data[p_id]['name'],
-                        'life': game.player_data[p_id]['life'] if not game.player_data[p_id].get('dead', False) else 0,
-                        'attack_bases': game.player_data[p_id]['attack_bases'],
-                        'defense_bases': game.player_data[p_id]['defense_bases'],
-                        'talisman_count': len(game.player_data[p_id]['talismans']),
-                        'runes': game.player_data[p_id]['runes'],
-                        'dead': game.player_data[p_id].get('dead', False),  # Informar se está morto
-                        'observer': game.player_data[p_id].get('observer', False)
-                    }
-                    
-                    # Informações privadas apenas para o próprio jogador
-                    if p_id == player_id and not player_info.get('dead', False):
-                        player_info['hand'] = game.player_data[p_id]['hand']
-                        player_info['equipment'] = game.player_data[p_id]['equipment']
-                        player_info['talismans'] = game.player_data[p_id]['talismans']
-                    
-                    state['players'][p_id] = player_info
+            # Informações privadas apenas para o próprio jogador
+            if uname == username and not player_info.get('dead', False):
+                player_info['hand'] = game.player_data[uname]['hand']
+                player_info['equipment'] = game.player_data[uname]['equipment']
+                player_info['talismans'] = game.player_data[uname]['talismans']
             
-            emit('game_state', state)
-        else:
-            emit('error', {'message': 'Jogador não encontrado'})
+            state['players'][uname] = player_info
+    
+    emit('game_state', state)
 
 @socketio.on('get_graveyard')
 def handle_get_graveyard(data):
@@ -2012,10 +2339,14 @@ def handle_get_rituals(data):
 def handle_reconnect_game(data):
     """Gerencia reconexão de jogadores"""
     game_id = data['game_id']
-    player_id = data['player_id']
-    player_name = data['player_name']
     
-    print(f"Tentativa de reconexão: {player_name} ({player_id}) na sala {game_id}")
+    # Obter username do token
+    username = get_current_user()
+    if not username:
+        emit('error', {'message': 'Usuário não autenticado'})
+        return
+    
+    print(f"Tentativa de reconexão: {username} na sala {game_id}")
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
@@ -2024,31 +2355,32 @@ def handle_reconnect_game(data):
     game = games[game_id]
     
     # Tentar reconectar
-    result = game.reconnect_player(player_id, player_name)
+    result = game.reconnect_player(request.sid, username)
     
     if result['success']:
         # Adicionar à sala
         join_room(game_id)
         
+        # Atualizar jogo atual na conta
+        update_user_game(username, game_id)
+        
         # Atualizar lista de jogadores
-        players_list = [{'id': p, 'name': game.player_data[p]['name']} for p in game.players]
+        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
         
         # Notificar todos
         emit('player_joined', {
-            'player_id': player_id,
-            'player_name': player_name,
+            'username': username,
             'players': players_list,
             'reconnected': True
         }, room=game_id)
         
         # Notificar o jogador reconectado
         emit('reconnect_success', {
-            'player_id': player_id,
-            'player_name': player_name,
+            'username': username,
             'game_started': game.started
         })
         
-        print(f"Jogador {player_name} reconectado com sucesso")
+        print(f"Jogador {username} reconectado com sucesso")
     else:
         emit('error', {'message': result['message']})
 
@@ -2072,33 +2404,42 @@ def handle_player_action(data):
     action = data['action']
     params = data.get('params', {})
     
-    print(f"Ação recebida: {action} no jogo {game_id} do jogador {request.sid}")
+    # Verificar autenticação
+    username = get_current_user()
+    if not username:
+        emit('error', {'message': 'Usuário não autenticado'})
+        return
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
         return
     
     game = games[game_id]
-    player_id = request.sid
+    
+    # Verificar se o socket corresponde ao username
+    socket_username = game.get_player_by_socket(request.sid)
+    if socket_username != username:
+        emit('error', {'message': 'Sessão inválida'})
+        return
     
     if not game.started:
         emit('error', {'message': 'O jogo ainda não começou'})
         return
     
-    if player_id not in game.player_data:
+    if username not in game.player_data:
         emit('error', {'message': 'Jogador não encontrado'})
         return
     
-    if game.player_data[player_id].get('dead', False):
-        emit('error', {'message': 'Você está morto e não pode mais realizar ações. Agora você é um espectador.'})
+    if game.player_data[username].get('dead', False):
+        emit('error', {'message': 'Você está morto e não pode mais realizar ações.'})
         return
-
-    if game.players[game.current_turn] != player_id:
+    
+    if game.players[game.current_turn] != username:
         emit('error', {'message': 'Não é o seu turno'})
         return
 
     result = None
-    player_name = game.player_data[player_id]['name']
+    player_name = username
     timestamp = time.strftime('%H:%M:%S')
     
     try:
@@ -2196,7 +2537,7 @@ def handle_player_action(data):
                 'player_name': player_name,
                 'action': action,
                 'result': result,
-                'log_message': log_message,
+                '\': log_message,
                 'timestamp': timestamp
             }, room=game_id)
             

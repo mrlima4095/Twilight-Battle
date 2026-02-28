@@ -720,6 +720,7 @@
         });
         
         let currentPlayerId = null;
+        let currentUsername = null;
         let gameState = null;
         let selectedCard = null;
         let actionMode = null;
@@ -729,16 +730,53 @@
         let selectedItemForEquip = null;
         let trapSlots = [null, null];
 
+        // Verificar autenticação ao carregar
+        fetch('/api/check-auth')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    window.location.href = '/auth';
+                    return;
+                }
+                currentUsername = data.username;
+                document.getElementById('player-name').textContent = currentUsername;
+                
+                // Verificar se temos uma sessão salva
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            console.log('Sessão recuperada para', currentUsername);
+                            socket.emit('reconnect_game', {
+                                game_id: gameId
+                                // Não precisa enviar username, o servidor pega do token
+                            });
+                        } else {
+                            localStorage.removeItem(SESSION_KEY);
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
+            })
+            .catch(() => {
+                window.location.href = '/auth';
+            });
+
+        // Função saveSession atualizada
         function saveSession() {
-            if (currentPlayerId) {
+            if (currentUsername) {
                 const session = {
-                    playerId: currentPlayerId,
-                    playerName: localStorage.getItem('playerName'),
+                    username: currentUsername,
                     gameId: gameId,
                     timestamp: Date.now()
                 };
                 localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-                console.log('Sessão salva:', session);
+                console.log('Sessão salva para', currentUsername);
             }
         }
         function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
@@ -828,7 +866,6 @@
         });
         socket.on('reconnect_success', function(data) {
             console.log('Reconexão bem-sucedida:', data);
-            currentPlayerId = data.player_id;
             saveSession();
             showSessionIndicator();
             
@@ -848,19 +885,34 @@
         socket.on('player_joined', function(data) {
             console.log('Jogador entrou:', data);
             
-            // Se for o próprio jogador, salvar ID
-            if (data.player_name === localStorage.getItem('playerName')) {
-                currentPlayerId = data.player_id;
+            // Se for o próprio jogador
+            if (data.username === currentUsername) {
                 saveSession();
             }
             
             updatePlayersList(data.players);
         });
         socket.on('player_left', function(data) {
-            console.log('Jogador saiu:', data);
-            requestGameState();
+            if (data.username === currentUsername) {
+                localStorage.removeItem(SESSION_KEY);
+                
+                fetch('/api/logout', { method: 'POST' })
+                    .then(() => {
+                        window.location.href = '/';
+                    });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Jogador saiu',
+                    text: data.message || `${data.username} saiu do jogo`,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
         });
-
+        
         socket.on('player_died', function(data) {
             console.log('Jogador morreu:', data);
             
@@ -1185,14 +1237,11 @@
             
             players.forEach(player => {
                 const li = document.createElement('li');
-                li.textContent = player.name;
+                li.textContent = player.name; // name é o username
                 list.appendChild(li);
-                
-                if (player.id === socket.id) {
-                    currentPlayerId = player.id;
-                }
             });
         }
+
 
         function updateGameUI() {
             if (!gameState) return;
@@ -1289,7 +1338,7 @@
             
 
             const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
-            const isMyTurn = gameState && gameState.current_turn === socket.id && !gameState.current_player_dead;
+            const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead;
             
             actionButtons.forEach(btn => {
                 if (isMyTurn) {
@@ -1912,8 +1961,8 @@
             actionMode = null;
         }
 
-        function selectTarget(targetPlayerId) {
-            if (gameState.current_turn !== socket.id) {
+        function selectTarget(targetUsername) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -1924,7 +1973,7 @@
                 return;
             }
             
-            const targetData = gameState.players[targetPlayerId];
+            const targetData = gameState.players[targetUsername];
             
             // Verificar se o alvo já está morto
             if (targetData.dead) {
@@ -2176,6 +2225,36 @@
             });
         });
         
+        document.getElementById('leave-game-btn').addEventListener('click', function() {
+            Swal.fire({
+                title: 'Sair do jogo?',
+                html: '<p style="color: #fff;">Se você sair, suas cartas serão descartadas e você será considerado morto.</p><p style="color: #ff4444; margin-top: 10px;">Tem certeza?</p>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '🚪 Sair',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Saindo...',
+                        html: 'Processando saída do jogo',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    socket.emit('leave_game', { game_id: gameId });
+                }
+            });
+        });
+
         document.getElementById('equip-mode-btn').addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({

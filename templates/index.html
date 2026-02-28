@@ -210,15 +210,17 @@
         <div class="join-section">
             <h2>Entrar em uma partida</h2>
             <div class="input-group">
-                <label for="player-name">Seu nome</label>
-                <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="20">
-            </div>
-            <div class="input-group">
                 <label for="game-id">Código da sala</label>
                 <input type="text" id="game-id" placeholder="Ex: ABC123">
             </div>
             <button id="join-game-btn">Entrar na sala</button>
             <button id="create-game-btn" class="create-btn">Criar nova sala</button>
+            
+            <!-- Informação do usuário logado -->
+            <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px;">
+                <span style="color: #ffd700;">👤 Logado como: <strong id="logged-username">Carregando...</strong></span>
+                <button id="logout-btn" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">Sair</button>
+            </div>
             
             <!-- LINK PARA REGRAS -->
             <div style="text-align: center; margin-top: 20px;">
@@ -247,13 +249,44 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const playerNameInput = document.getElementById('player-name');
             const gameIdInput = document.getElementById('game-id');
             const joinBtn = document.getElementById('join-game-btn');
             const createBtn = document.getElementById('create-game-btn');
             const refreshBtn = document.getElementById('refresh-games');
             const gamesContainer = document.getElementById('games-container');
             const loading = document.getElementById('loading');
+            const loggedUsername = document.getElementById('logged-username');
+            const logoutBtn = document.getElementById('logout-btn');
+            
+            let currentUsername = null;
+            
+            // Verificar autenticação ao carregar
+            fetch('/api/check-auth')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.authenticated) {
+                        window.location.href = '/auth';
+                        return;
+                    }
+                    
+                    currentUsername = data.username;
+                    loggedUsername.textContent = currentUsername;
+                    
+                    if (data.current_game && data.game_exists) {
+                        window.location.href = `/game/${data.current_game}`;
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/auth';
+                });
+            
+            // Logout
+            logoutBtn.addEventListener('click', function() {
+                fetch('/api/logout', { method: 'POST' })
+                    .then(() => {
+                        window.location.href = '/auth';
+                    });
+            });
             
             // Carregar lista de jogos
             function loadGames() {
@@ -287,18 +320,21 @@
             }
             
             window.joinGame = function(gameId) {
-                const playerName = playerNameInput.value.trim();
-                if (!playerName) {
-                    alert('Digite seu nome primeiro!');
+                // Usar o username atual em vez de pedir nome
+                if (!currentUsername) {
+                    alert('Usuário não autenticado');
                     return;
                 }
                 
-                // Salvar nome e redirecionar
-                localStorage.setItem('playerName', playerName);
                 window.location.href = `/game/${gameId}`;
             };
             
             createBtn.addEventListener('click', function() {
+                if (!currentUsername) {
+                    alert('Usuário não autenticado');
+                    return;
+                }
+                
                 loading.classList.add('active');
                 
                 fetch('/api/create-game', { method: 'POST' })
@@ -306,7 +342,7 @@
                     .then(data => {
                         loading.classList.remove('active');
                         gameIdInput.value = data.game_id;
-                        window.location.href = `/game/${data.game_id}`
+                        window.location.href = `/game/${data.game_id}`;
                     })
                     .catch(error => {
                         loading.classList.remove('active');
@@ -317,15 +353,18 @@
             refreshBtn.addEventListener('click', loadGames);
             
             joinBtn.addEventListener('click', function() {
-                const playerName = playerNameInput.value.trim();
                 const gameId = gameIdInput.value.trim();
                 
-                if (!playerName || !gameId) {
-                    alert('Preencha seu nome e o código da sala!');
+                if (!currentUsername) {
+                    alert('Usuário não autenticado');
                     return;
                 }
                 
-                localStorage.setItem('playerName', playerName);
+                if (!gameId) {
+                    alert('Digite o código da sala!');
+                    return;
+                }
+                
                 window.location.href = `/game/${gameId}`;
             });
             
