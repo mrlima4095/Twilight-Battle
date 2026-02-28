@@ -892,14 +892,14 @@ class Game:
             damage_to_player = remaining_damage
             
             has_immortality = False
-            for talisman in defender['talismans']:
+            for talisman in defender['hand']:
                 if talisman['id'] == 'talisma_imortalidade':
                     has_immortality = True
                     break
             
             if has_immortality:
                 defender['life'] = 5000
-                defender['talismans'] = [t for t in defender['talismans'] if t['id'] != 'talisma_imortalidade']
+                #defender['hand'] = [t for t in defender['hand'] if t['id'] != 'talisma_imortalidade']
                 damage_log.append("✨ Talismã da Imortalidade salvou o jogador!")
                 damage_to_player = 0
             else:
