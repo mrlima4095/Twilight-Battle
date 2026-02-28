@@ -409,22 +409,6 @@
             color: white;
         }
         
-        .log-area {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            max-height: 200px;
-            overflow-y: auto;
-            border: 1px solid #ffd700;
-        }
-        
-        .log-entry {
-            padding: 5px;
-            border-bottom: 1px solid #333;
-            font-size: 12px;
-        }
-        
         .waiting-room {
             text-align: center;
             padding: 50px;
@@ -874,7 +858,6 @@
         });
         socket.on('player_left', function(data) {
             console.log('Jogador saiu:', data);
-            addLogEntry(data.player_id, `👋 Jogador ${data.player_id} saiu da partida`);
             requestGameState();
         });
 
@@ -1135,8 +1118,6 @@
         });
 
         socket.on('game_over', function(data) {
-            addLogEntry(data.winner_name, data.message || '🏆 Jogo terminou!', data.timestrap);
-            
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
                 html: `<h2 style="color: #ffd700;">${data.winner_name} VENCEU!</h2>`,
@@ -2138,35 +2119,6 @@
                 action: 'revive',
                 params: { card_id: cardId }
             });
-        }
-
-        function addLogEntry(playerName = null, message = null, timestamp = null) {
-            const logArea = document.querySelector('.log-area') || createLogArea();
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            
-            // Usar timestamp do servidor se fornecido, senão usar local
-            const timeStr = timestamp || new Date().toLocaleTimeString('pt-BR', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            });
-            
-            entry.innerHTML = `<span style="color: #888;">[${timeStr}]</span> ${message}`;
-            
-            logArea.appendChild(entry);
-            logArea.scrollTop = logArea.scrollHeight;
-            
-            // Manter apenas as últimas 50 entradas
-            while (logArea.children.length > 50) { logArea.removeChild(logArea.firstChild); }
-        }
-        
-
-        function createLogArea() {
-            const logArea = document.createElement('div');
-            logArea.className = 'log-area';
-            document.querySelector('.game-container').appendChild(logArea);
-            return logArea;
         }
 
         // Event listeners
@@ -3272,9 +3224,6 @@
         });
         socket.on('action_error', function(data) {
             console.error('Erro na ação:', data);
-            
-            // Adicionar ao log como erro
-            addLogEntry(data.player_name, data.log_message, data.timestamp);
             
             Swal.fire({
                 icon: 'error',
