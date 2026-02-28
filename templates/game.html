@@ -1343,7 +1343,32 @@ function updateGameUI() {
     // Atualizar visibilidade dos botões de ação
     updateActionButtons();
 }
-
+function updateActionButtons() {
+    const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
+    const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started;
+    
+    console.log('Atualizando botões - isMyTurn:', isMyTurn);
+    
+    actionButtons.forEach(btn => {
+        if (isMyTurn) {
+            btn.style.display = 'inline-block';
+            btn.disabled = false;
+        } else {
+            btn.style.display = 'none';
+            btn.disabled = true;
+        }
+    });
+    
+    // Mostrar o botão Finalizar Turno apenas no turno do jogador vivo
+    const endTurnBtn = document.getElementById('end-turn-btn');
+    if (endTurnBtn) {
+        if (isMyTurn) {
+            endTurnBtn.style.display = 'inline-block';
+        } else {
+            endTurnBtn.style.display = 'none';
+        }
+    }
+}
 
         function showSessionIndicator() {
             const indicator = document.getElementById('session-indicator');
