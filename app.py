@@ -1970,6 +1970,13 @@ def index():
         if current_game and current_game in games:
             return render_template('game.html', game_id=current_game, username=username)
     return render_template('index.html')
+@app.route('/auth')
+def auth_page():
+    # Se já estiver autenticado, redirecionar
+    username = get_current_user()
+    if username:
+        return redirect('/')
+    return render_template('auth.html')
 @app.route('/rules')
 def rules():
     return render_template('rules.html')
