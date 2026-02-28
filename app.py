@@ -1724,20 +1724,27 @@ def handle_get_game_state(data):
         emit('error', {'message': 'Jogador não encontrado'})
         return
     
+    print(f"Enviando game_state para {username}, started: {game.started}")
+    
+    # Determinar o jogador da vez
+    current_turn_username = None
+    if game.players and game.current_turn < len(game.players):
+        current_turn_username = game.players[game.current_turn]
+    
     # Filtrar informações para o jogador
     state = {
         'game_id': game_id,
         'started': game.started,
         'time_of_day': game.time_of_day,
         'time_cycle': game.time_cycle,
-        'current_turn': game.players[game.current_turn] if game.players else None,
+        'current_turn': current_turn_username,  # Agora é o username, não índice
         'players': {},
         'deck_count': len(game.deck),
         'graveyard_count': len(game.graveyard),
         'current_player_dead': game.player_data[username].get('dead', False)
     }
     
-    # Informações de todos os jogadores (públicas)
+    # Informações de todos os jogadores
     for uname in game.players:
         if uname in game.player_data:
             player_info = {
@@ -1757,6 +1764,7 @@ def handle_get_game_state(data):
                 player_info['hand'] = game.player_data[uname]['hand']
                 player_info['equipment'] = game.player_data[uname]['equipment']
                 player_info['talismans'] = game.player_data[uname]['talismans']
+                print(f"Enviando mão para {uname}: {len(player_info['hand'])} cartas")
             
             state['players'][uname] = player_info
     
