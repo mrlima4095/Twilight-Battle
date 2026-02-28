@@ -612,6 +612,44 @@
             50% { opacity: 1; box-shadow: 0 0 15px #4a90e2; }
             100% { opacity: 0.9; }
         }
+
+        .action-btn.prophecy {
+            background: linear-gradient(45deg, #800080, #4b0082);
+            color: white;
+        }
+        .action-btn.prophecy:hover {
+            box-shadow: 0 5px 15px #800080;
+        }
+
+        /* Estilo para cartas com profecia */
+        .base-slot.prophet-doomed {
+            position: relative;
+            animation: doomed-pulse 1.5s infinite;
+            border-color: #800080 !important;
+            box-shadow: 0 0 20px #800080;
+        }
+
+        @keyframes doomed-pulse {
+            0% { box-shadow: 0 0 10px #800080; }
+            50% { box-shadow: 0 0 20px #800080, 0 0 30px #4b0082; }
+            100% { box-shadow: 0 0 10px #800080; }
+        }
+
+        .base-slot.prophet-doomed::before {
+            content: '💀';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 20px;
+            z-index: 20;
+            animation: skull-float 2s infinite;
+        }
+
+        @keyframes skull-float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
@@ -682,6 +720,7 @@
                 <button class="action-btn" id="draw-btn">📥 Comprar carta</button>
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
+                <button class="action-btn prophecy" id="prophecy-btn" style="background: linear-gradient(45deg, #800080, #4b0082); color: white;">🔮 Profetizar Morte</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas) - <span id="runas-count">0</span></button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
@@ -689,16 +728,17 @@
                 <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
             </div>
 
-            <!-- Indicador de modo de equipar -->
             <div id="equip-mode-indicator" style="display: none; background: #4CAF50; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
                 🔰 Modo Equipar ativo - Clique em uma criatura para equipar o item selecionado
                 <button onclick="cancelEquipMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
-
-            <!-- Indicador de modo de troca -->
             <div id="move-mode-indicator" style="display: none; background: #4a90e2; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center;">
                 🔄 Modo Troca ativo - Clique em duas posições para trocar as cartas
                 <button onclick="cancelMoveMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
+            </div>
+            <div id="prophecy-mode-indicator" style="display: none; background: #800080; color: white; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; animation: pulse 1.5s infinite;">
+                🔮 Modo Profecia ativo - Clique em uma criatura inimiga para profetizar sua morte
+                <button onclick="cancelProphecyMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
         </div>
         
@@ -740,10 +780,13 @@
         let selectedCard = null;
         let actionMode = null;
         let moveMode = false;
-        let firstSelection = null;
         let equipMode = false;
+        let prophecyMode = false;
+        let firstSelection = null;
         let selectedItemForEquip = null;
+        let selectedTargetForProphecy = null;
         let trapSlots = [null, null];
+
 
         function saveSession() {
             if (currentPlayerId) {
@@ -1240,6 +1283,60 @@
                 }
             }
             showTurnMessage();
+
+            const prophecyBtn = document.getElementById('prophecy-btn');
+            if (prophecyBtn) {
+                if (isMyTurn) {
+                    // Verificar se tem profeta em campo
+                    const playerData = gameState.players[socket.id];
+                    let hasProphet = false;
+                    
+                    if (playerData) {
+                        for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                            if (card && card.id === 'profeta') {
+                                hasProphet = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    prophecyBtn.style.display = hasProphet ? 'inline-block' : 'none';
+                } else {
+                    prophecyBtn.style.display = 'none';
+                }
+            }
+
+            // Atualizar visuais de profecia
+            setTimeout(updateProphecyVisuals, 100);
+        }
+
+        function updateProphecyVisuals() {
+            // Remover marcações antigas
+            document.querySelectorAll('.base-slot.prophet-doomed').forEach(slot => {
+                slot.classList.remove('prophet-doomed');
+            });
+            
+            // Verificar efeitos ativos nos jogadores
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerData.active_effects) {
+                    for (const effect of playerData.active_effects) {
+                        if (effect.type === 'profecia_morte' && effect.target_player_id === playerId) {
+                            // Encontrar a carta no DOM
+                            const baseId = playerId === socket.id ? 'player-area' : `opp-${effect.target_card_type}-${playerId}`;
+                            const bases = document.querySelectorAll(`#${baseId} .base-slot[data-index="${effect.target_card_index}"]`);
+                            
+                            bases.forEach(slot => {
+                                slot.classList.add('prophet-doomed');
+                                
+                                // Adicionar tooltip
+                                const tooltip = slot.querySelector('.card-tooltip') || document.createElement('div');
+                                tooltip.className = 'card-tooltip';
+                                tooltip.innerHTML += `<br><span style="color: #800080;">💀 PROFECIA: Morrerá em ${effect.rounds_remaining} rodadas</span>`;
+                            });
+                        }
+                    }
+                }
+            }
         }
 
         function showSessionIndicator() {
@@ -2231,6 +2328,66 @@
             socket.emit('get_rituals', { game_id: gameId });
         });
 
+        document.getElementById('prophecy-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem profeta em campo
+            const playerData = gameState.players[socket.id];
+            let hasProphet = false;
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card && card.id === 'profeta') {
+                    hasProphet = true;
+                    break;
+                }
+            }
+            
+            if (!hasProphet) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sem Profeta!',
+                    text: 'Você precisa de um Profeta em campo para usar esta habilidade',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Ativar modo de profecia
+            prophecyMode = true;
+            
+            Swal.fire({
+                title: '🔮 Modo Profecia Ativado',
+                html: '<p style="color: #fff;">Clique em uma carta de criatura de um oponente para profetizar sua morte em 2 rodadas</p>',
+                icon: 'info',
+                timer: 3000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            // Destacar todas as criaturas inimigas
+            document.querySelectorAll('.opponent-card .base-slot.has-card').forEach(slot => {
+                // Verificar se é uma criatura (tem card-tooltip com tipo creature)
+                const tooltip = slot.querySelector('.card-tooltip');
+                if (tooltip && tooltip.innerHTML.includes('Tipo: creature')) {
+                    slot.style.cursor = 'crosshair';
+                    slot.style.boxShadow = '0 0 15px #800080';
+                    slot.style.borderColor = '#800080';
+                }
+            });
+        });
+
         document.getElementById('revive-btn').addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
@@ -2444,7 +2601,6 @@
                 });
             }
         };
-
         window.selectRitual = function(ritualId) {
             Swal.close();
             
@@ -2727,6 +2883,76 @@
             
             console.log('Modo de troca cancelado');
         }
+        window.cancelProphecyMode = function() {
+            prophecyMode = false;
+            selectedTargetForProphecy = null;
+            
+            // Remover destaques
+            document.querySelectorAll('.opponent-card .base-slot.has-card').forEach(slot => {
+                slot.style.cursor = '';
+                slot.style.boxShadow = '';
+                slot.style.borderColor = '';
+            });
+            
+            // Esconder indicador se existir
+            const indicator = document.getElementById('prophecy-mode-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
+        slot.onclick = function(e) {
+            e.stopPropagation();
+            if (prophecyMode && card) {
+                // Verificar se é uma criatura
+                if (card.type === 'creature') {
+                    // Confirmar profecia
+                    Swal.fire({
+                        title: '🔮 Profetizar Morte?',
+                        html: `
+                            <div style="color: #fff;">
+                                <p><strong>Carta:</strong> ${card.name}</p>
+                                <p><strong>Jogador:</strong> ${playerData.name}</p>
+                                <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#800080',
+                        cancelButtonColor: '#ff4444',
+                        confirmButtonText: '🔮 Profetizar',
+                        cancelButtonText: 'Cancelar',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'prophecy',
+                                params: {
+                                    target_player_id: playerId,
+                                    target_card_type: type,
+                                    target_card_index: index
+                                }
+                            });
+                            
+                            // Sair do modo profecia
+                            cancelProphecyMode();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Alvo inválido',
+                        text: 'Só é possível profetizar a morte de criaturas',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+            }
+        };
 
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
@@ -2964,9 +3190,33 @@
                 });
             }
             
-            // Se a ação foi uma troca de posições, sair do modo de troca
+            // Mostrar resultado de profecia
+            if (data.action === 'prophecy' && data.result && data.result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔮 Profecia Lançada!',
+                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#800080',
+                    timer: 3000
+                });
+            }
+            
+            // Mostrar profecia cumprida
+            if (data.result && data.result.prophecy_fulfilled) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '💀 PROFECIA CUMPRIDA!',
+                    html: `<p style="color: #fff;">A carta <strong style="color: #ffd700;">${data.result.target_card_name}</strong> morreu como profetizado por <strong style="color: #800080;">${data.result.caster_name}</strong>!</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#800080',
+                    timer: 4000
+                });
+            }
+            
             if (data.action === 'swap_positions' && data.result && data.result.success) {
-                // Sair do modo de troca
                 if (moveMode) {
                     cancelMoveMode();
                 }
@@ -3021,6 +3271,9 @@
             }
             
             requestGameState();
+            
+            // Atualizar visuais de profecia após atualizar o estado
+            setTimeout(updateProphecyVisuals, 500);
         });
         socket.on('action_error', function(data) {
             console.error('Erro na ação:', data);
