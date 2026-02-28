@@ -2537,7 +2537,7 @@ def handle_player_action(data):
                 'player_name': player_name,
                 'action': action,
                 'result': result,
-                '\': log_message,
+                'log_message': log_message,
                 'timestamp': timestamp
             }, room=game_id)
             
