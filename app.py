@@ -1141,7 +1141,290 @@ class Game:
         for username in self.players:
             player = self.player_data[username]
             for i, card in enumerate(player['defense_bases']):
-                if card and card.get('die
+                if card and card.get('dies_daylight'):
+                    has_protection = False
+                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
+                        has_protection = True
+                    
+                    if not has_protection:
+                        self.graveyard.append(card)
+                        player['defense_bases'][i] = None
+            
+            for i, card in enumerate(player['attack_bases']):
+                if card and card.get('dies_daylight'):
+                    has_protection = False
+                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
+                        has_protection = True
+                    
+                    if not has_protection:
+                        self.graveyard.append(card)
+                        player['attack_bases'][i] = None
+    
+    def swap_positions(self, username, pos1_type, pos1_index, pos2_type, pos2_index):
+        """Troca duas cartas de posição"""
+        if not self.can_act(username, 'swap'):
+            return {'success': False, 'message': 'Você já realizou uma troca neste turno'}
+        
+        player = self.player_data[username]
+        
+        positions = {
+            'attack': player['attack_bases'],
+            'defense': player['defense_bases']
+        }
+        
+        if pos1_type not in positions or pos2_type not in positions:
+            return {'success': False, 'message': 'Tipo de posição inválido'}
+        
+        if pos1_index >= len(positions[pos1_type]) or pos2_index >= len(positions[pos2_type]):
+            return {'success': False, 'message': 'Índice de posição inválido'}
+        
+        card1 = positions[pos1_type][pos1_index]
+        card2 = positions[pos2_type][pos2_index]
+        
+        if not card1 and not card2:
+            return {'success': False, 'message': 'Ambas as posições estão vazias'}
+        
+        positions[pos1_type][pos1_index] = card2
+        positions[pos2_type][pos2_index] = card1
+        
+        self.use_action(username, 'swap')
+        
+        return {
+            'success': True,
+            'swapped': True,
+            'message': 'Cartas trocadas com sucesso'
+        }
+    
+    def equip_item_to_creature(self, username, item_card_id, creature_card_id):
+        """Equipa um item em uma criatura"""
+        print(f"Tentando equipar item {item_card_id} em criatura {creature_card_id}")
+        
+        player = self.player_data.get(username)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+        
+        # Encontrar item na mão
+        item_card = None
+        item_index = -1
+        
+        for i, card in enumerate(player['hand']):
+            if card['instance_id'] == item_card_id:
+                item_card = card
+                item_index = i
+                break
+        
+        if not item_card:
+            return {'success': False, 'message': 'Item não encontrado na mão'}
+        
+        if item_card.get('type') not in ['weapon', 'armor'] and item_card.get('id') not in ['lamina_almas', 'blade_vampires', 'blade_dragons', 'capacete_trevas']:
+            return {'success': False, 'message': f'Esta carta ({item_card.get("type")}) não é um item equipável'}
+        
+        # Encontrar criatura alvo
+        target_creature = None
+        creature_location = None
+        
+        for base in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(player[base]):
+                if card and card.get('instance_id') == creature_card_id:
+                    target_creature = card
+                    creature_location = (base, i)
+                    break
+            if target_creature:
+                break
+        
+        if not target_creature:
+            return {'success': False, 'message': 'Criatura não encontrada em campo'}
+        
+        if target_creature.get('type') != 'creature':
+            return {'success': False, 'message': 'Alvo não é uma criatura'}
+        
+        # Verificar restrições de equipamento
+        if item_card.get('id') == 'blade_vampires' and target_creature.get('id') not in ['vampiro_tayler', 'vampiro_wers']:
+            return {'success': False, 'message': 'Apenas vampiros podem usar a Blade of Vampires'}
+        
+        if item_card.get('id') == 'blade_dragons' and target_creature.get('id') not in ['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago']:
+            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Blade of Dragons'}
+        
+        if item_card.get('id') == 'lamina_almas' and target_creature.get('id') not in ['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers']:
+            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Lâmina das Almas'}
+        
+        if 'equipped_items' not in target_creature:
+            target_creature['equipped_items'] = []
+        
+        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon' or eq.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons'])
+        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor' or eq.get('id') == 'capacete_trevas')
+        
+        if (item_card.get('type') == 'weapon' or item_card.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons']) and weapon_count >= 1:
+            return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
+        
+        if (item_card.get('type') == 'armor' or item_card.get('id') == 'capacete_trevas') and armor_count >= 4:
+            return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
+        
+        # Remover item da mão
+        player['hand'].pop(item_index)
+        
+        # Equipar item
+        target_creature['equipped_items'].append(item_card)
+        
+        if item_card.get('attack'):
+            target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
+        if item_card.get('protection'):
+            target_creature['life'] = target_creature.get('life', 0) + item_card['protection']
+        if item_card.get('life'):
+            target_creature['life'] = target_creature.get('life', 0) + item_card['life']
+        
+        return {
+            'success': True,
+            'creature': target_creature['name'],
+            'item': item_card['name'],
+            'message': f"{item_card['name']} equipado em {target_creature['name']}"
+        }
+    
+    def get_graveyard_cards(self):
+        """Retorna lista de cartas no cemitério"""
+        graveyard_info = []
+        for card in self.graveyard:
+            card_info = {
+                'instance_id': card['instance_id'],
+                'name': card['name'],
+                'type': card.get('type', 'unknown'),
+                'description': card.get('description', ''),
+                'life': card.get('life', 0),
+                'attack': card.get('attack', 0)
+            }
+            graveyard_info.append(card_info)
+        return graveyard_info
+    
+    def revive_from_graveyard(self, username, target_card_id):
+        """Revive uma carta do cemitério usando 4 runas"""
+        print(f"Tentando reviver carta {target_card_id} para jogador {username}")
+        
+        player = self.player_data.get(username)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+        
+        runes_in_hand = []
+        for card in player['hand']:
+            if card.get('type') == 'rune' or card.get('id') == 'runa':
+                runes_in_hand.append(card)
+        
+        if len(runes_in_hand) < 4:
+            return {'success': False, 'message': f'Você precisa de 4 runas na mão (tem {len(runes_in_hand)})'}
+        
+        target_card = None
+        card_index = -1
+        
+        for i, card in enumerate(self.graveyard):
+            if card['instance_id'] == target_card_id:
+                target_card = card
+                card_index = i
+                break
+        
+        if not target_card:
+            for i, card in enumerate(self.graveyard):
+                if card['name'].lower() == target_card_id.lower():
+                    target_card = card
+                    card_index = i
+                    break
+        
+        if not target_card:
+            return {'success': False, 'message': 'Carta não encontrada no cemitério'}
+        
+        self.graveyard.pop(card_index)
+        
+        runes_removed = 0
+        new_hand = []
+        for card in player['hand']:
+            if (card.get('type') == 'rune' or card.get('id') == 'runa') and runes_removed < 4:
+                runes_removed += 1
+                self.graveyard.append(card)
+            else:
+                new_hand.append(card)
+        
+        player['hand'] = new_hand
+        
+        if target_card.get('type') == 'creature':
+            original_card = CARDS.get(target_card['id'], {})
+            if original_card and 'life' in original_card:
+                target_card['life'] = original_card['life']
+        
+        player['hand'].append(target_card)
+        
+        return {
+            'success': True,
+            'card': {
+                'name': target_card['name'],
+                'type': target_card.get('type', 'unknown')
+            },
+            'message': f"{target_card['name']} foi revivido do cemitério!"
+        }
+    
+    # Métodos para rituais
+    def get_available_rituals(self, username):
+        """Retorna lista de rituais disponíveis"""
+        return RitualManager.get_available_rituals(self, username)
+    
+    def perform_ritual(self, username, ritual_id, target_username=None):
+        """Realiza um ritual"""
+        if not self.can_act(username, 'ritual'):
+            return {'success': False, 'message': 'Você já realizou um ritual neste turno'}
+        
+        player = self.player_data[username]
+        
+        has_mago_negro = False
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card['id'] == 'mago_negro':
+                has_mago_negro = True
+                break
+        
+        if not has_mago_negro:
+            ritual_card = None
+            ritual_index = -1
+            for i, card in enumerate(player['hand']):
+                if card['id'] == ritual_id:
+                    ritual_card = card
+                    ritual_index = i
+                    break
+            
+            if not ritual_card:
+                return {'success': False, 'message': 'Você não tem esta carta de ritual'}
+            
+            player['hand'].pop(ritual_index)
+        
+        if ritual_id == 'ritual_157':
+            if not target_username:
+                return {'success': False, 'message': 'Selecione um alvo para o Ritual 157'}
+            
+            can_cast, message = RitualManager.check_ritual_157(self, username)
+            if not can_cast:
+                return {'success': False, 'message': message}
+            
+            result = RitualManager.execute_ritual_157(self, username, target_username)
+            
+        elif ritual_id == 'ritual_amor':
+            if not target_username:
+                return {'success': False, 'message': 'Selecione o alvo da profecia'}
+            
+            can_cast, message = RitualManager.check_ritual_amor(self, username)
+            if not can_cast:
+                return {'success': False, 'message': message}
+            
+            target = self.player_data[target_username]
+            has_profecia = False
+            if target.get('profecia_alvo') or any(effect.get('type') == 'profecia_morte' for effect in target['active_effects']):
+                has_profecia = True
+            
+            if not has_profecia:
+                return {'success': False, 'message': 'O alvo não possui nenhuma profecia ativa'}
+            
+            result = RitualManager.execute_ritual_amor(self, username, target_username)
+        
+        else:
+            return {'success': False, 'message': 'Ritual desconhecido'}
+        
+        self.use_action(username, 'ritual')
+        result['ritual_id'] = ritual_id
+        return result
 
 # Rotas da aplicação
 @app.route('/')
