@@ -2154,30 +2154,6 @@
                 second: '2-digit' 
             });
             
-            // Adicionar ícone baseado no tipo de ação
-            let icon = '✅';
-            if (action) {
-                const actionIcons = {
-                    'draw': '📥',
-                    'play_card': '🎴',
-                    'attack': '⚔️',
-                    'equip_item': '🔰',
-                    'cast_spell': '✨',
-                    'ritual': '📿',
-                    'swap_positions': '🔄',
-                    'move_card': '↔️',
-                    'flip_card': '🔄',
-                    'oracle': '👁️',
-                    'revive': '🔄',
-                    'end_turn': '⏰',
-                    'join': '👋',
-                    'leave': '👋',
-                    'reconnect': '🔄',
-                    'start': '🎮'
-                };
-                icon = actionIcons[action] || '✅';
-            }
-            
             entry.innerHTML = `<span style="color: #888;">[${timeStr}]</span> ${icon} ${message}`;
             
             logArea.appendChild(entry);
