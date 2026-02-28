@@ -874,7 +874,7 @@
         });
         socket.on('player_left', function(data) {
             console.log('Jogador saiu:', data);
-            addLogEntry(`👋 Jogador ${data.player_id} saiu da partida`);
+            addLogEntry(data.player_id, `👋 Jogador ${data.player_id} saiu da partida`);
             requestGameState();
         });
 
@@ -1119,8 +1119,6 @@
             
             if (data.action === 'attack' && data.result) {
                 showAttackResult(data.result);
-            } else {
-                addLogEntry(`✅ Ação realizada: ${data.action}`);
             }
         });
 
@@ -1137,7 +1135,7 @@
         });
 
         socket.on('game_over', function(data) {
-            addLogEntry(data.message || '🏆 Jogo terminou!', data.winner_name, 'game_over');
+            addLogEntry(data.winner_name, data.message || '🏆 Jogo terminou!', data.timestrap);
             
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
