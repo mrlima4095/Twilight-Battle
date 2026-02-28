@@ -967,39 +967,41 @@
                 confirmButtonColor: '#ffd700'
             });
         });
-
-        socket.on('game_state', function(data) {
-            const oldGameState = gameState;
-            gameState = data;
-            
-            // Verificar se o turno mudou e sair do modo de troca se não for mais meu turno
-            if (oldGameState && oldGameState.current_turn !== data.current_turn) {
-                if (data.current_turn !== socket.id && moveMode) {
-                    cancelMoveMode();
-                }
-            }
-            
-            // Verificar se o jogador ainda está no jogo
-            if (currentPlayerId && !gameState.players[currentPlayerId]) {
-                console.log('Jogador não encontrado no estado do jogo');
-                clearSession();
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Sessão expirada',
-                    text: 'Você foi removido do jogo. Voltando para o início...',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 3000
-                }).then(() => {
-                    window.location.href = '/';
-                });
-                return;
-            }
-            
-            updateGameUI();
+socket.on('game_state', function(data) {
+    console.log('Game state recebido:', data);
+    const oldGameState = gameState;
+    gameState = data;
+    
+    // Verificar se o turno mudou
+    if (oldGameState && oldGameState.current_turn !== data.current_turn) {
+        console.log('Turno mudou de', oldGameState.current_turn, 'para', data.current_turn);
+        if (data.current_turn !== currentUsername && moveMode) {
+            cancelMoveMode();
+        }
+    }
+    
+    // Verificar se o jogador ainda está no jogo
+    if (currentUsername && !gameState.players[currentUsername]) {
+        console.log('Jogador não encontrado no estado do jogo');
+        clearSession();
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Sessão expirada',
+            text: 'Você foi removido do jogo. Voltando para o início...',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700',
+            timer: 3000
+        }).then(() => {
+            window.location.href = '/';
         });
+        return;
+    }
+    
+    updateGameUI();
+});
+
 
         socket.on('graveyard_list', function(data) {
             console.log('Cemitério:', data.cards);
