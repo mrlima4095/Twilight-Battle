@@ -295,7 +295,7 @@
         
         // Carregar lista de jogos (apenas amigos)
         function loadGames() {
-            fetch('/api/games')
+            fetch('/game/api/games')
                 .then(response => response.json())
                 .then(games => {
                     const container = document.getElementById('games-container');
@@ -336,7 +336,7 @@
         document.getElementById('create-game-btn').addEventListener('click', function() {
             document.getElementById('loading').classList.add('active');
             
-            fetch('/api/create-game', { method: 'POST' })
+            fetch('/game/api/create-game', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('loading').classList.remove('active');
@@ -376,14 +376,6 @@
         
         // Atualizar lista
         document.getElementById('refresh-games').addEventListener('click', loadGames);
-        
-        // Logout
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            fetch('/api/logout', { method: 'POST' })
-                .then(() => {
-                    window.location.href = 'http://localhost:2048/';
-                });
-        });
         
         // Atualizar a cada 10 segundos
         setInterval(loadGames, 10000);
