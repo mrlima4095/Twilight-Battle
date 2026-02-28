@@ -1249,126 +1249,96 @@
             });
         }
 
-
-        function updateGameUI() {
-            if (!gameState) return;
-            
-            const timeIndicator = document.getElementById('time-indicator');
-            timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
-            timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
-            
-            const turnIndicator = document.getElementById('turn-indicator');
-            if (gameState.current_turn) {
-                const currentPlayer = gameState.players[gameState.current_turn];
-                
-                // Verificar se o jogador da vez está morto (isso não deveria acontecer, mas por segurança)
-                if (currentPlayer && currentPlayer.dead) {
-                    turnIndicator.innerHTML = `⏳ Jogador morto: ${currentPlayer.name} (deveria ser pulado)`;
-                    turnIndicator.style.background = '#666';
-                }
-                // Adicionar informação da primeira rodada
-                else if (gameState.first_round) {
-                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
-                    turnIndicator.style.background = '#ffa500';
-                } else {
-                    turnIndicator.textContent = `Vez de: ${currentPlayer.name}`;
-                    turnIndicator.style.background = '#4CAF50';
-                }
-                
-                if (gameState.current_turn === socket.id) {
-                    turnIndicator.classList.add('my-turn');
-                } else {
-                    turnIndicator.classList.remove('my-turn');
-                }
-            }
-            
-            // SÓ atualizar a área de oponentes se o jogo já começou
-            if (gameState.started) {
-                updateOpponentsArea();
-            } else {
-                // Se o jogo não começou, mostrar uma mensagem de aguardando
-                const opponentsArea = document.getElementById('opponents-area');
-                opponentsArea.innerHTML = '';
-                const waitingMsg = document.createElement('div');
-                waitingMsg.className = 'opponent-card';
-                waitingMsg.style.textAlign = 'center';
-                waitingMsg.style.padding = '30px';
-                waitingMsg.innerHTML = `
-                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
-                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
-                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
-                `;
-                opponentsArea.appendChild(waitingMsg);
-            }
-            
-            // Verificar se o jogador atual está morto
-            if (gameState.current_player_dead) {
-                // Ocultar área do jogador e mostrar mensagem de espectador
-                document.getElementById('player-area').style.display = 'none';
-                
-                // Mostrar mensagem de espectador se não existir
-                let spectatorMsg = document.getElementById('spectator-message');
-                if (!spectatorMsg) {
-                    spectatorMsg = document.createElement('div');
-                    spectatorMsg.id = 'spectator-message';
-                    spectatorMsg.className = 'waiting-room';
-                    spectatorMsg.innerHTML = `
-                        <h2 style="color: #ff4444;">💀 VOCÊ MORREU</h2>
-                        <p style="color: #ffd700; font-size: 18px; margin: 20px 0;">Agora você é um espectador</p>
-                        <p>Suas cartas foram distribuídas:</p>
-                        <p>• Criaturas foram para o cemitério</p>
-                        <p>• Outras cartas voltaram para o monte</p>
-                        <p style="margin-top: 30px; color: #888;">Você pode acompanhar o resto da partida</p>
-                        <button class="start-btn" onclick="window.location.href='/'">🏠 Voltar ao início</button>
-                    `;
-                    document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
-                }
-                spectatorMsg.style.display = 'block';
-            } else if (gameState.players[socket.id]) {
-                // Jogador está vivo, mostrar área normal
-                document.getElementById('player-area').style.display = 'block';
-                
-                // Ocultar mensagem de espectador se existir
-                const spectatorMsg = document.getElementById('spectator-message');
-                if (spectatorMsg) {
-                    spectatorMsg.style.display = 'none';
-                }
-                
-                updatePlayerArea();
-            }
-
-            // Contar quantos oponentes vivos ainda existem
-            const aliveOpponents = Object.entries(gameState.players).filter(([id, data]) => 
-                id !== socket.id && !data.dead
-            ).length;
-            
-
-            const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
-            const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead;
-            
-            actionButtons.forEach(btn => {
-                if (isMyTurn) {
-                    btn.style.display = 'inline-block';
-                    btn.disabled = false;
-                } else {
-                    btn.style.display = 'none';
-                    btn.disabled = true;
-                }
-            });
-            
-            // Mostrar o botão Finalizar Turno apenas no turno do jogador vivo
-            const endTurnBtn = document.getElementById('end-turn-btn');
-            if (endTurnBtn) {
-                if (isMyTurn) {
-                    endTurnBtn.style.display = 'inline-block';
-                } else {
-                    endTurnBtn.style.display = 'none';
-                }
-            }
-            
-            showTurnMessage();
+function updateGameUI() {
+    if (!gameState) return;
+    
+    console.log('Atualizando UI com gameState:', gameState);
+    
+    const timeIndicator = document.getElementById('time-indicator');
+    timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+    timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
+    
+    const turnIndicator = document.getElementById('turn-indicator');
+    if (gameState.current_turn) {
+        const currentPlayerData = gameState.players[gameState.current_turn];
+        const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
+        
+        if (gameState.first_round) {
+            turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayerName}`;
+            turnIndicator.style.background = '#ffa500';
+        } else {
+            turnIndicator.textContent = `Vez de: ${currentPlayerName}`;
+            turnIndicator.style.background = '#4CAF50';
         }
+        
+        // Verificar se é meu turno (comparar com currentUsername)
+        const isMyTurn = gameState.current_turn === currentUsername && !gameState.current_player_dead;
+        console.log('É meu turno?', isMyTurn, 'Current turn:', gameState.current_turn, 'My username:', currentUsername);
+        
+        if (isMyTurn) {
+            turnIndicator.classList.add('my-turn');
+        } else {
+            turnIndicator.classList.remove('my-turn');
+        }
+    }
+    
+    // SÓ atualizar a área de oponentes se o jogo já começou
+    if (gameState.started) {
+        updateOpponentsArea();
+    } else {
+        const opponentsArea = document.getElementById('opponents-area');
+        opponentsArea.innerHTML = '';
+        const waitingMsg = document.createElement('div');
+        waitingMsg.className = 'opponent-card';
+        waitingMsg.style.textAlign = 'center';
+        waitingMsg.style.padding = '30px';
+        waitingMsg.innerHTML = `
+            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+            <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
+            <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
+            <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
+        `;
+        opponentsArea.appendChild(waitingMsg);
+    }
+    
+    // Verificar se o jogador atual está morto
+    if (gameState.current_player_dead) {
+        document.getElementById('player-area').style.display = 'none';
+        
+        let spectatorMsg = document.getElementById('spectator-message');
+        if (!spectatorMsg) {
+            spectatorMsg = document.createElement('div');
+            spectatorMsg.id = 'spectator-message';
+            spectatorMsg.className = 'waiting-room';
+            spectatorMsg.innerHTML = `
+                <h2 style="color: #ff4444;">💀 VOCÊ MORREU</h2>
+                <p style="color: #ffd700; font-size: 18px; margin: 20px 0;">Agora você é um espectador</p>
+                <p>Suas cartas foram distribuídas:</p>
+                <p>• Criaturas foram para o cemitério</p>
+                <p>• Outras cartas voltaram para o monte</p>
+                <p style="margin-top: 30px; color: #888;">Você pode acompanhar o resto da partida</p>
+                <button class="start-btn" onclick="window.location.href='/'">🏠 Voltar ao início</button>
+            `;
+            document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
+        }
+        spectatorMsg.style.display = 'block';
+    } else if (gameState.players[currentUsername]) {
+        // Jogador está vivo, mostrar área normal e atualizar
+        document.getElementById('player-area').style.display = 'block';
+        
+        const spectatorMsg = document.getElementById('spectator-message');
+        if (spectatorMsg) {
+            spectatorMsg.style.display = 'none';
+        }
+        
+        // IMPORTANTE: Chamar updatePlayerArea para renderizar as bases e mão
+        updatePlayerArea();
+    }
+    
+    // Atualizar visibilidade dos botões de ação
+    updateActionButtons();
+}
+
 
         function showSessionIndicator() {
             const indicator = document.getElementById('session-indicator');
