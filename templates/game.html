@@ -820,30 +820,33 @@
             }
         }
 
-        socket.on('connect', function() {
-            console.log('Conectado ao servidor');
-            reconnectAttempts = 0;
-            
-            const playerName = savedSession?.playerName || localStorage.getItem('playerName') || 'Jogador';
-            
-            // Se temos uma sessão, tentar reconectar diretamente
-            if (savedSession) {
-                console.log('Tentando reconectar com sessão existente:', savedSession);
-                socket.emit('reconnect_game', {
-                    game_id: gameId,
-                    player_id: savedSession.playerId,
-                    player_name: playerName
-                });
-            } else {
-                // Primeira conexão
-                socket.emit('join_game', {
-                    game_id: gameId,
-                    player_name: playerName
-                });
+socket.on('connect', function() {
+    console.log('Conectado ao servidor com ID:', socket.id);
+    reconnectAttempts = 0;
+    
+    // Se temos username, tentar reconectar ou entrar
+    if (currentUsername) {
+        const savedSession = localStorage.getItem(SESSION_KEY);
+        if (savedSession) {
+            try {
+                const session = JSON.parse(savedSession);
+                if (session.username === currentUsername) {
+                    console.log('Tentando reconectar com sessão existente');
+                    socket.emit('reconnect_game', { game_id: gameId });
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
+            } catch (e) {
+                socket.emit('join_game', { game_id: gameId });
             }
-            
-            setTimeout(requestGameState, 500);
-        });
+        } else {
+            socket.emit('join_game', { game_id: gameId });
+        }
+    }
+    
+    // Solicitar estado após conectar
+    setTimeout(requestGameState, 500);
+});
         socket.on('connect_error', function(error) {
             console.error('Erro de conexão:', error);
             attemptReconnection();
