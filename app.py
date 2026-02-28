@@ -634,21 +634,33 @@ class RitualManager:
 class Game:
     def __init__(self, game_id):
         self.game_id = game_id
-        self.players = []
-        self.player_data = {}
+        self.players = []  # Lista de usernames
+        self.player_data = {}  # Dict com username como chave
+        self.socket_to_username = {}  # Mapeamento socket.id -> username
         self.deck = create_deck()
         self.graveyard = []
         self.started = False
-        self.current_turn = 0
-        self.time_of_day = "day"  # day or night
+        self.current_turn = 0  # Índice na lista players
+        self.time_of_day = "day"
         self.time_cycle = 0
         self.max_players = 6
-        self.turn_actions_used = {}  # Track actions used per player per turn
+        self.turn_actions_used = {}
         
         self.first_round = True
-        self.players_acted = set()  # Jogadores que já fizeram uma ação
-        self.attacks_blocked = True  # Ataques bloqueados na primeira rodada
-        
+        self.players_acted = set()
+        self.attacks_blocked = True
+    
+    def get_player_by_socket(self, socket_id):
+        """Retorna o username associado a um socket_id"""
+        return self.socket_to_username.get(socket_id)
+    
+    def get_socket_id(self, username):
+        """Retorna o socket_id atual de um username"""
+        for socket_id, uname in self.socket_to_username.items():
+            if uname == username:
+                return socket_id
+        return None
+    
     def add_player(self, socket_id, username):
         """Adiciona um jogador ao jogo usando username como identificador"""
         if len(self.players) >= self.max_players or self.started:
@@ -669,7 +681,7 @@ class Game:
                 hand.append(self.deck.pop())
         
         self.player_data[username] = {
-            'name': username,  # Nome é o username
+            'name': username,
             'username': username,
             'socket_id': socket_id,
             'life': 5000,
@@ -694,6 +706,7 @@ class Game:
         
         print(f"Jogador {username} adicionado ao jogo {self.game_id}")
         return True
+    
     def remove_player(self, username):
         """Remove um jogador do jogo usando username"""
         if username not in self.players or username not in self.player_data:
@@ -733,26 +746,77 @@ class Game:
                 self.next_turn()
         
         return True
-
-    def can_attack(self, player_id):
-        """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
-        if self.attacks_blocked:
-            return False, "Ataques bloqueados na primeira rodada. Todos precisam jogar primeiro."
-        return True, ""
-    def register_action(self, player_id, action_type):
-        """Registra que um jogador realizou uma ação"""
-        if self.first_round and action_type not in ['attack', 'end_turn']:
-            self.players_acted.add(player_id)
-            print(f"Jogador {player_id} realizou ação. Jogadores que já agiram: {len(self.players_acted)}/{len(self.players)}")
+    
+    def reconnect_player(self, socket_id, username):
+        """Reconecta um jogador existente ao jogo"""
+        print(f"Tentando reconectar jogador {username} com socket {socket_id}")
+        
+        if username in self.player_data:
+            # Jogador já existe, atualizar socket
+            # Remover mapeamento antigo se existir
+            old_socket = None
+            for s, u in list(self.socket_to_username.items()):
+                if u == username:
+                    old_socket = s
+                    break
             
-            # Verificar se todos já agiram
+            if old_socket and old_socket != socket_id:
+                del self.socket_to_username[old_socket]
+            
+            self.socket_to_username[socket_id] = username
+            self.player_data[username]['socket_id'] = socket_id
+            
+            print(f"Jogador {username} reconectado com sucesso")
+            return {
+                'success': True,
+                'username': username,
+                'game_started': self.started
+            }
+        else:
+            # Jogador não encontrado, verificar se pode entrar como novo
+            if len(self.players) >= self.max_players or self.started:
+                return {'success': False, 'message': 'Jogo cheio ou já começou'}
+            
+            # Adicionar como novo jogador
+            if self.add_player(socket_id, username):
+                return {
+                    'success': True,
+                    'username': username,
+                    'game_started': self.started
+                }
+        
+        return {'success': False, 'message': 'Erro ao reconectar'}
+    
+    def can_act(self, username, action):
+        """Verifica se o jogador pode realizar uma ação neste turno"""
+        player = self.player_data.get(username, {})
+        
+        if player.get('dead', False):
+            return False
+        
+        if username != self.players[self.current_turn]:
+            return False
+        
+        if username not in self.turn_actions_used:
+            self.turn_actions_used[username] = set()
+        
+        return action not in self.turn_actions_used[username]
+
+    def use_action(self, username, action):
+        """Registra que uma ação foi usada"""
+        self.turn_actions_used[username].add(action)
+    
+    def register_action(self, username, action_type):
+        """Registra que um jogador realizou uma ação na primeira rodada"""
+        if self.first_round and action_type not in ['attack', 'end_turn']:
+            self.players_acted.add(username)
+            print(f"Jogador {username} realizou ação. Jogadores que já agiram: {len(self.players_acted)}/{len(self.players)}")
+            
             if len(self.players_acted) >= len(self.players):
                 self.first_round = False
                 self.attacks_blocked = False
                 print("🎉 PRIMEIRA RODADA CONCLUÍDA! Ataques liberados!")
-                
-                # Notificar todos os jogadores
-                return True  # Indica que a primeira rodada terminou
+                return True
         
         return False
 
@@ -761,7 +825,6 @@ class Game:
         if not self.players:
             return
         
-        # Encontrar próximo jogador vivo
         original_turn = self.current_turn
         next_turn = (self.current_turn + 1) % len(self.players)
         
@@ -789,75 +852,33 @@ class Game:
         
         current_player = self.players[self.current_turn]
         print(f"Próximo turno: {current_player}")
-
-    def apply_day_effects(self):
-        """Aplica efeitos do dia (zumbis e vampiros morrem)"""
-        for player_id in self.players:
-            player = self.player_data[player_id]
-            # Verificar defesa
-            for i, card in enumerate(player['defense_bases']):
-                if card and card.get('dies_daylight'):
-                    # Verificar se tem Capacete das Trevas
-                    has_protection = False
-                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                        has_protection = True
-                    
-                    if not has_protection:
-                        self.graveyard.append(card)
-                        player['defense_bases'][i] = None
-            
-            # Verificar ataque
-            for i, card in enumerate(player['attack_bases']):
-                if card and card.get('dies_daylight'):
-                    has_protection = False
-                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                        has_protection = True
-                    
-                    if not has_protection:
-                        self.graveyard.append(card)
-                        player['attack_bases'][i] = None
     
-    def can_act(self, player_id, action):
-        """Verifica se o jogador pode realizar uma ação neste turno"""
-        player = self.player_data.get(player_id, {})
-        
-        # Jogadores mortos não podem agir
-        if player.get('dead', False):
-            return False
-        
-        if player_id != self.players[self.current_turn]:
-            return False
-        
-        if player_id not in self.turn_actions_used:
-            self.turn_actions_used[player_id] = set()
-        
-        # Cada ação só pode ser feita uma vez por turno
-        return action not in self.turn_actions_used[player_id]
-
-    def use_action(self, player_id, action):
-        """Registra que uma ação foi usada"""
-        self.turn_actions_used[player_id].add(action)
+    def can_attack(self, username):
+        """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
+        if self.attacks_blocked:
+            return False, "Ataques bloqueados na primeira rodada. Todos precisam jogar primeiro."
+        return True, ""
     
-    def draw_card(self, player_id):
+    def draw_card(self, username):
         """Compra uma carta"""
-        if not self.can_act(player_id, 'draw'):
+        if not self.can_act(username, 'draw'):
             return {'success': False, 'message': 'Você já comprou uma carta neste turno'}
         
         if not self.deck:
             return {'success': False, 'message': 'Monte vazio'}
         
         card = self.deck.pop()
-        self.player_data[player_id]['hand'].append(card)
-        self.use_action(player_id, 'draw')
+        self.player_data[username]['hand'].append(card)
+        self.use_action(username, 'draw')
         
         return {'success': True, 'card': card}
     
-    def play_card(self, player_id, card_instance_id, position_type, position_index):
+    def play_card(self, username, card_instance_id, position_type, position_index):
         """Joga uma carta da mão para o campo com validação de tipo"""
-        if not self.can_act(player_id, 'play'):
+        if not self.can_act(username, 'play'):
             return {'success': False, 'message': 'Você já jogou uma carta neste turno'}
         
-        player = self.player_data[player_id]
+        player = self.player_data[username]
         
         # Encontrar carta na mão
         card_to_play = None
@@ -873,28 +894,25 @@ class Game:
         
         # Validar tipo de carta para a posição
         if position_type in ['attack', 'defense']:
-            # Apenas criaturas podem ir para bases de ataque/defesa
             if card_to_play.get('type') != 'creature':
                 return {'success': False, 'message': 'Apenas criaturas podem ser colocadas em bases de ataque ou defesa'}
         
         elif position_type == 'equipment':
-            # Equipamentos vão para slots específicos
             valid_equipment_types = {
                 'weapon': ['weapon'],
                 'helmet': ['armor'],
                 'armor': ['armor'],
                 'boots': ['armor'],
-                'mount': ['creature']  # Montarias podem ser criaturas específicas
+                'mount': ['creature']
             }
             
-            slot_name = position_index  # position_index é o nome do slot aqui
+            slot_name = position_index
             if slot_name not in valid_equipment_types:
                 return {'success': False, 'message': 'Slot de equipamento inválido'}
             
             if card_to_play.get('type') not in valid_equipment_types[slot_name]:
                 return {'success': False, 'message': f'Esta carta não pode ser equipada em {slot_name}'}
             
-            # Verificar se o slot está vazio
             if player['equipment'][slot_name] is not None:
                 return {'success': False, 'message': f'Slot de {slot_name} já está ocupado'}
         
@@ -909,7 +927,7 @@ class Game:
                 if player['attack_bases'][position_index] is not None:
                     return {'success': False, 'message': 'Posição de ataque ocupada'}
                 player['attack_bases'][position_index] = card_to_play
-            else:  # defense
+            else:
                 if position_index >= len(player['defense_bases']):
                     return {'success': False, 'message': 'Posição de defesa inválida'}
                 if player['defense_bases'][position_index] is not None:
@@ -919,28 +937,26 @@ class Game:
         elif position_type == 'equipment':
             player['equipment'][position_index] = card_to_play
         
-        self.use_action(player_id, 'play')
+        self.use_action(username, 'play')
         return {'success': True, 'card': card_to_play}
     
-    def attack(self, player_id, target_player_id):
+    def attack(self, username, target_username):
         """Ataca outro jogador com verificação de primeira rodada"""
-        # Verificar se pode atacar
-        can_attack, message = self.can_attack(player_id)
+        can_attack, message = self.can_attack(username)
         if not can_attack:
             return {'success': False, 'message': message}
         
-        if not self.can_act(player_id, 'attack'):
+        if not self.can_act(username, 'attack'):
             return {'success': False, 'message': 'Você já atacou neste turno'}
         
-        if target_player_id not in self.players:
+        if target_username not in self.players:
             return {'success': False, 'message': 'Jogador alvo inválido'}
         
-        # Verificar se o alvo já está morto
-        if self.player_data[target_player_id].get('dead', False):
+        if self.player_data[target_username].get('dead', False):
             return {'success': False, 'message': 'Este jogador já está morto'}
         
-        attacker = self.player_data.get(player_id)
-        defender = self.player_data.get(target_player_id)
+        attacker = self.player_data.get(username)
+        defender = self.player_data.get(target_username)
         
         if not attacker or not defender:
             return {'success': False, 'message': 'Dados do jogador não encontrados'}
@@ -988,7 +1004,6 @@ class Game:
                     'name': card.get('name', 'Desconhecido')
                 })
         
-        # Ordenar cartas de defesa por vida (maior primeiro)
         defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
         
         # Aplicar dano às cartas de defesa
@@ -1032,36 +1047,27 @@ class Game:
             
             if has_immortality:
                 defender['life'] = 5000
-                #defender['hand'] = [t for t in defender['hand'] if t['id'] != 'talisma_imortalidade']
                 damage_log.append("✨ Talismã da Imortalidade salvou o jogador!")
                 damage_to_player = 0
             else:
                 defender['life'] -= remaining_damage
                 damage_log.append(f"⚔️ Jogador recebeu {remaining_damage} de dano direto")
                 
-                # Verificar se o jogador morreu
                 if defender['life'] <= 0:
                     player_killed = True
-                    self.process_player_death(target_player_id)
+                    self.process_player_death(target_username)
                     damage_log.append(f"💀 {defender['name']} foi derrotado!")
-
-        if player_killed:
-            emit('player_died', {
-                'player_id': target_player_id,
-                'player_name': defender['name'],
-                'message': f"{defender['name']} foi derrotado e agora é um espectador!"
-            }, room=game_id)
         
-        self.use_action(player_id, 'attack')
+        self.use_action(username, 'attack')
         
         result = {
             'success': True,
             'total_attack': attack_power,
             'damage_absorbed': attack_power - remaining_damage,
             'damage_to_player': damage_to_player,
-            'attacker': player_id,
+            'attacker': username,
             'attacker_name': attacker['name'],
-            'target': target_player_id,
+            'target': target_username,
             'target_name': defender['name'],
             'target_life': defender['life'] if defender['life'] > 0 else 0,
             'cards_destroyed': cards_destroyed,
@@ -1071,846 +1077,13 @@ class Game:
         }
         
         return result
-
-    def move_card(self, player_id, from_type, from_index, to_type, to_index):
-        """Move uma carta entre posições"""
-        if not self.can_act(player_id, 'move'):
-            return {'success': False, 'message': 'Você já moveu uma carta neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Validar posições
-        if from_type == 'attack':
-            if from_index >= len(player['attack_bases']):
-                return {'success': False, 'message': 'Posição de origem inválida'}
-            card = player['attack_bases'][from_index]
-            if not card:
-                return {'success': False, 'message': 'Nenhuma carta na posição de origem'}
-        elif from_type == 'defense':
-            if from_index >= len(player['defense_bases']):
-                return {'success': False, 'message': 'Posição de origem inválida'}
-            card = player['defense_bases'][from_index]
-            if not card:
-                return {'success': False, 'message': 'Nenhuma carta na posição de origem'}
-        else:
-            return {'success': False, 'message': 'Tipo de origem inválido'}
-        
-        # Validar destino
-        if to_type == 'attack':
-            if to_index >= len(player['attack_bases']):
-                return {'success': False, 'message': 'Posição de destino inválida'}
-            if player['attack_bases'][to_index] is not None:
-                return {'success': False, 'message': 'Posição de destino ocupada'}
-        elif to_type == 'defense':
-            if to_index >= len(player['defense_bases']):
-                return {'success': False, 'message': 'Posição de destino inválida'}
-            if player['defense_bases'][to_index] is not None:
-                return {'success': False, 'message': 'Posição de destino ocupada'}
-        else:
-            return {'success': False, 'message': 'Tipo de destino inválido'}
-        
-        # Mover carta
-        if from_type == 'attack':
-            player['attack_bases'][from_index] = None
-        else:
-            player['defense_bases'][from_index] = None
-        
-        if to_type == 'attack':
-            player['attack_bases'][to_index] = card
-        else:
-            player['defense_bases'][to_index] = card
-        
-        self.use_action(player_id, 'move')
-        return {'success': True, 'card': card}
     
-    def flip_card(self, player_id, position_type, position_index):
-        """Desvira uma carta (muda de virada para não virada)"""
-        if not self.can_act(player_id, 'flip'):
-            return {'success': False, 'message': 'Você já desvirou uma carta neste turno'}
+    def process_player_death(self, username):
+        """Processa a morte de um jogador"""
+        print(f"Processando morte do jogador {username}")
         
-        player = self.player_data[player_id]
+        player = self.player_data[username]
         
-        if position_type == 'attack':
-            if position_index >= len(player['attack_bases']):
-                return {'success': False, 'message': 'Posição inválida'}
-            # Aqui você implementaria a lógica de "virada" se tiver esse estado
-            # Por enquanto, apenas registra a ação
-        elif position_type == 'defense':
-            if position_index >= len(player['defense_bases']):
-                return {'success': False, 'message': 'Posição inválida'}
-        else:
-            return {'success': False, 'message': 'Tipo de posição inválido'}
-        
-        self.use_action(player_id, 'flip')
-        return {'success': True}
-    
-    def perform_oracle(self, player_id, target_player_id):
-        """Realiza um oráculo com seleção de alvo"""
-        player = self.player_data[player_id]
-        
-        # Verificar se tem elfo em defesa
-        has_elfo_defense = False
-        for card in player['defense_bases']:
-            if card and card['id'] == 'elfo':
-                has_elfo_defense = True
-                break
-        
-        if not has_elfo_defense:
-            return {'success': False, 'message': 'Precisa de um elfo em modo de defesa'}
-        
-        # Verificar se tem oráculo na mão
-        has_oracle = False
-        oracle_index = -1
-        for i, card in enumerate(player['hand']):
-            if card['id'] == 'oraculo':
-                has_oracle = True
-                oracle_index = i
-                break
-        
-        if not has_oracle:
-            return {'success': False, 'message': 'Você não tem o Oráculo'}
-        
-        # Verificar se o alvo tem talismã da imortalidade
-        target_has_immortality = False
-        if target_player_id in self.player_data:
-            for talisman in self.player_data[target_player_id]['talismans']:
-                if talisman['id'] == 'talisma_imortalidade':
-                    target_has_immortality = True
-                    break
-        
-        if not target_has_immortality:
-            return {'success': False, 'message': 'O alvo não possui Talismã da Imortalidade'}
-        
-        # Remover oráculo da mão (volta para o deck)
-        oracle_card = player['hand'].pop(oracle_index)
-        self.deck.insert(0, oracle_card)  # Volta para o topo do deck
-        
-        return {
-            'success': True,
-            'message': f'Jogador {player["name"]} revelou um Oráculo contra {self.player_data[target_player_id]["name"]}!',
-            'oracle_revealed': True,
-            'target': target_player_id
-        }
-
-    def check_winner(self):
-        """Verifica se há um vencedor"""
-        alive_players = []
-        for player_id in self.players:
-            if self.player_data[player_id]['life'] > 0:
-                alive_players.append(player_id)
-        
-        if len(alive_players) == 1:
-            return alive_players[0]
-        return None
-
-    def apply_day_damage(self):
-        """Aplica dano da luz do dia em criaturas noturnas"""
-        for player_id in self.players:
-            player = self.player_data[player_id]
-            
-            # Verificar criaturas em defesa
-            for i, card in enumerate(player['defense_bases']):
-                if card and card.get('dies_daylight'):
-                    self.apply_daylight_damage_to_card(player, card, i, 'defense')
-            
-            # Verificar criaturas em ataque
-            for i, card in enumerate(player['attack_bases']):
-                if card and card.get('dies_daylight'):
-                    self.apply_daylight_damage_to_card(player, card, i, 'attack')
-    
-    def apply_daylight_damage_to_card(self, player, card, index, position_type):
-        """Aplica dano da luz do dia em uma carta"""
-        # Verificar se tem Capacete das Trevas equipado na carta
-        has_protection = False
-        if 'equipped_items' in card:
-            for item in card['equipped_items']:
-                if item and item.get('id') == 'capacete_trevas':
-                    has_protection = True
-                    break
-        
-        if not has_protection:
-            # Aplicar 100 de dano
-            current_life = card.get('life', 0)
-            new_life = current_life - 100
-            
-            if new_life <= 0:
-                # Carta morre
-                self.graveyard.append(card)
-                if position_type == 'defense':
-                    player['defense_bases'][index] = None
-                else:
-                    player['attack_bases'][index] = None
-            else:
-                card['life'] = new_life
-    
-    def apply_spell_effect(self, spell, caster_id, target_player_id, target_card_id, caster_type):
-        """Aplica o efeito específico do feitiço"""
-        spell_id = spell['id']
-        caster = self.player_data[caster_id]
-        
-        # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço mesmo sem ter
-        if caster_type in ['rei_mago', 'mago_negro'] and not target_card_id:
-            # Lista todos os feitiços disponíveis
-            all_spells = [card for card in self.deck + self.graveyard if card.get('type') == 'spell']
-            return {'type': 'list_spells', 'spells': all_spells}
-        
-        # Aplicar efeitos específicos
-        if spell_id == 'feitico_cortes':
-            # Aumenta ataque de um monstro
-            if target_card_id:
-                for player in self.players:
-                    for base in ['attack_bases', 'defense_bases']:
-                        for card in self.player_data[player][base]:
-                            if card and card['instance_id'] == target_card_id:
-                                card['attack'] = card.get('attack', 0) + 1024
-                                return {'type': 'buff', 'target': card['name'], 'effect': '+1024 ataque'}
-        
-        elif spell_id == 'feitico_duro_matar':
-            # Aumenta defesa do jogador
-            if target_player_id:
-                self.player_data[target_player_id]['life'] += 1024
-                return {'type': 'buff', 'target': self.player_data[target_player_id]['name'], 'effect': '+1024 vida'}
-        
-        elif spell_id == 'feitico_troca':
-            # Troca cartas de defesa por ataque
-            if target_player_id:
-                target = self.player_data[target_player_id]
-                attack_bases = target['attack_bases'].copy()
-                defense_bases = target['defense_bases'].copy()
-                target['attack_bases'] = defense_bases
-                target['defense_bases'] = attack_bases
-                return {'type': 'swap', 'target': target['name']}
-        
-        elif spell_id == 'feitico_comunista':
-            # Todas as cartas das mãos voltam para a pilha
-            for player_id in self.players:
-                player = self.player_data[player_id]
-                for card in player['hand']:
-                    self.deck.append(card)
-                player['hand'] = []
-            random.shuffle(self.deck)
-            return {'type': 'reset_hands'}
-        
-        elif spell_id == 'feitico_silencio':
-            # Próximas duas rodadas sem armadilhas
-            for player_id in self.players:
-                self.player_data[player_id]['active_effects'].append({
-                    'type': 'silence',
-                    'duration': 2
-                })
-            return {'type': 'silence', 'duration': 2}
-        
-        elif spell_id == 'feitico_para_sempre':
-            # Reverte efeito Blade of Vampires
-            # Implementar lógica
-            return {'type': 'revert_vampire'}
-        
-        elif spell_id == 'feitico_capitalista':
-            # Troca cartas com outros jogadores
-            if target_player_id:
-                # Implementar lógica de troca
-                return {'type': 'trade', 'target': target_player_id}
-        
-        elif spell_id == 'feitico_cura':
-            # Cura o jogador alvo
-            if target_player_id:
-                heal_amount = 1024
-                self.player_data[target_player_id]['life'] += heal_amount
-                return {
-                    'type': 'heal', 
-                    'target': self.player_data[target_player_id]['name'], 
-                    'amount': heal_amount,
-                    'message': f'{self.player_data[target_player_id]["name"]} recebeu {heal_amount} de cura!'
-                }
-            else:
-                # Se não tiver alvo, cura a si mesmo
-                heal_amount = 1024
-                self.player_data[player_id]['life'] += heal_amount
-                return {
-                    'type': 'heal', 
-                    'target': self.player_data[player_id]['name'], 
-                    'amount': heal_amount,
-                    'message': f'{self.player_data[player_id]["name"]} recebeu {heal_amount} de cura!'
-                }
-
-        return {'type': 'unknown'}
-    
-    def toggle_mage_block(self, player_id, target_player_id, target_card_id):
-        """Rei Mago bloqueia/desbloqueia um mago"""
-        if not self.can_act(player_id, 'block'):
-            return {'success': False, 'message': 'Você já usou esta habilidade neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Verificar se tem Rei Mago
-        has_rei_mago = False
-        for card in player['attack_bases'] + player['defense_bases']:
-            if card and card['id'] == 'rei_mago':
-                has_rei_mago = True
-                break
-        
-        if not has_rei_mago:
-            return {'success': False, 'message': 'Você precisa do Rei Mago em campo'}
-        
-        # Encontrar o mago alvo
-        target_player = self.player_data[target_player_id]
-        target_card = None
-        card_location = None
-        
-        for base in ['attack_bases', 'defense_bases']:
-            for i, card in enumerate(target_player[base]):
-                if card and card['instance_id'] == target_card_id:
-                    target_card = card
-                    card_location = (base, i)
-                    break
-        
-        if not target_card or target_card['id'] not in ['mago', 'rei_mago', 'mago_negro']:
-            return {'success': False, 'message': 'Alvo não é um mago'}
-        
-        # Alternar bloqueio
-        if 'blocked' in target_card and target_card['blocked']:
-            target_card['blocked'] = False
-            message = f"Mago {target_card['name']} desbloqueado"
-        else:
-            target_card['blocked'] = True
-            message = f"Mago {target_card['name']} bloqueado"
-        
-        self.use_action(player_id, 'block')
-        
-        return {
-            'success': True,
-            'message': message,
-            'target_card': target_card['name'],
-            'blocked': target_card.get('blocked', False)
-        }
-    
-    def revive_from_graveyard(self, player_id, target_card_id):
-        """Revive uma carta do cemitério usando 4 runas"""
-        player = self.player_data[player_id]
-        
-        # Verificar se tem 4 runas na mão
-        runes_in_hand = [card for card in player['hand'] if card.get('type') == 'rune']
-        if len(runes_in_hand) < 4:
-            return {'success': False, 'message': 'Você precisa de 4 runas na mão'}
-        
-        # Encontrar carta no cemitério
-        target_card = None
-        for i, card in enumerate(self.graveyard):
-            if card['instance_id'] == target_card_id:
-                target_card = card
-                self.graveyard.pop(i)
-                break
-        
-        if not target_card:
-            return {'success': False, 'message': 'Carta não encontrada no cemitério'}
-        
-        # Remover 4 runas da mão
-        runes_removed = 0
-        new_hand = []
-        for card in player['hand']:
-            if card.get('type') == 'rune' and runes_removed < 4:
-                runes_removed += 1
-                # Runas vão para o cemitério
-                self.graveyard.append(card)
-            else:
-                new_hand.append(card)
-        
-        player['hand'] = new_hand
-        
-        # Adicionar carta revivida à mão
-        player['hand'].append(target_card)
-        
-        return {
-            'success': True,
-            'card': target_card,
-            'message': f"{target_card['name']} foi revivido do cemitério"
-        }
-    
-    def cleanup_empty_games():
-        """Limpa jogos vazios ou abandonados"""
-        games_to_remove = []
-        for game_id, game in games.items():
-            # Se não tem jogadores ou todos desconectaram
-            if len(game.players) == 0:
-                games_to_remove.append(game_id)
-            # Se o jogo começou mas não tem jogadores ativos
-            elif game.started and all(p not in game.player_data for p in game.players):
-                games_to_remove.append(game_id)
-        
-        for game_id in games_to_remove:
-            del games[game_id]
-            print(f"Jogo {game_id} removido por inatividade")
-    
-    def get_available_spells(self, player_id):
-        """Retorna lista de feitiços disponíveis baseado nos magos em campo"""
-        player = self.player_data[player_id]
-        available_spells = []
-        
-        # Verificar tipos de magos em campo
-        has_rei_mago = False
-        has_mago_negro = False
-        has_common_mage = False
-        
-        for card in player['attack_bases'] + player['defense_bases']:
-            if card and card.get('type') == 'creature':
-                if card['id'] == 'rei_mago':
-                    has_rei_mago = True
-                elif card['id'] == 'mago_negro':
-                    has_mago_negro = True
-                elif card['id'] == 'mago':
-                    has_common_mage = True
-        
-        # Se tem Rei Mago ou Mago Negro, pode ver todos os feitiços do jogo
-        if has_rei_mago or has_mago_negro:
-            # Coletar todos os feitiços do deck e cemitério
-            all_spells = []
-            for card in self.deck:
-                if card.get('type') == 'spell' and card not in all_spells:
-                    all_spells.append(card)
-            for card in self.graveyard:
-                if card.get('type') == 'spell' and card not in all_spells:
-                    all_spells.append(card)
-            available_spells = all_spells
-        else:
-            # Apenas feitiços na mão
-            available_spells = [card for card in player['hand'] if card.get('type') == 'spell']
-        
-        return {
-            'success': True,
-            'has_mage': has_common_mage or has_rei_mago or has_mago_negro,
-            'has_rei_mago': has_rei_mago,
-            'has_mago_negro': has_mago_negro,
-            'spells': available_spells,
-            'spells_in_hand': [card for card in player['hand'] if card.get('type') == 'spell']
-        }
-    
-    def cast_spell(self, player_id, spell_card_id, target_player_id=None, target_card_id=None):
-        """Usa um feitiço com suporte para Rei Mago/Mago Negro"""
-        if not self.can_act(player_id, 'spell'):
-            return {'success': False, 'message': 'Você já usou um feitiço neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Verificar se pode usar feitiços
-        can_cast = False
-        caster_type = None
-        mage_card = None
-        
-        for card in player['attack_bases'] + player['defense_bases']:
-            if card and card.get('type') == 'creature':
-                if card['id'] == 'mago' and not card.get('blocked', False):
-                    can_cast = True
-                    caster_type = 'mago'
-                    mage_card = card
-                elif card['id'] == 'rei_mago':
-                    can_cast = True
-                    caster_type = 'rei_mago'
-                    mage_card = card
-                elif card['id'] == 'mago_negro':
-                    can_cast = True
-                    caster_type = 'mago_negro'
-                    mage_card = card
-        
-        if not can_cast:
-            return {'success': False, 'message': 'Você precisa de um Mago em campo para usar feitiços'}
-        
-        # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço (não precisa ter na mão)
-        if caster_type in ['rei_mago', 'mago_negro']:
-            # Procurar o feitiço no deck ou cemitério
-            spell_card = None
-            for card in self.deck + self.graveyard:
-                if card.get('type') == 'spell' and (card['id'] == spell_card_id or card['instance_id'] == spell_card_id):
-                    spell_card = card
-                    break
-            
-            if not spell_card:
-                return {'success': False, 'message': 'Feitiço não encontrado'}
-            
-            # Remover do deck ou cemitério se aplicável
-            if spell_card in self.deck:
-                self.deck.remove(spell_card)
-            elif spell_card in self.graveyard:
-                self.graveyard.remove(spell_card)
-        else:
-            # Procurar feitiço na mão
-            spell_card = None
-            spell_index = -1
-            for i, card in enumerate(player['hand']):
-                if card['instance_id'] == spell_card_id:
-                    spell_card = card
-                    spell_index = i
-                    break
-            
-            if not spell_card:
-                return {'success': False, 'message': 'Feitiço não encontrado na mão'}
-            
-            # Remover da mão
-            player['hand'].pop(spell_index)
-        
-        # Aplicar efeito do feitiço
-        result = self.apply_spell_effect(spell_card, player_id, target_player_id, target_card_id, caster_type)
-        
-        # Feitiço volta para o deck (embaixo)
-        self.deck.append(spell_card)
-        
-        self.use_action(player_id, 'spell')
-        
-        return {
-            'success': True,
-            'spell': spell_card,
-            'effect': result,
-            'caster_type': caster_type
-        }
-    
-    def equip_item_to_creature(self, player_id, item_card_id, creature_card_id):
-        """Equipa um item em uma criatura específica"""
-        print(f"Tentando equipar item {item_card_id} em criatura {creature_card_id}")
-        
-        player = self.player_data.get(player_id)
-        if not player:
-            return {'success': False, 'message': 'Jogador não encontrado'}
-        
-        # Encontrar item na mão
-        item_card = None
-        item_index = -1
-        
-        for i, card in enumerate(player['hand']):
-            if card['instance_id'] == item_card_id:
-                item_card = card
-                item_index = i
-                print(f"Item encontrado na mão: {item_card['name']} (tipo: {item_card.get('type')})")
-                break
-        
-        if not item_card:
-            return {'success': False, 'message': 'Item não encontrado na mão'}
-        
-        # Verificar se é um item equipável (weapon OU armor)
-        if item_card.get('type') not in ['weapon', 'armor'] and item_card.get('id') not in ['lamina_almas', 'blade_vampires', 'blade_dragons', 'capacete_trevas']:
-            return {'success': False, 'message': f'Esta carta ({item_card.get("type")}) não é um item equipável'}
-        
-        # Encontrar criatura alvo
-        target_creature = None
-        creature_location = None
-        
-        for base in ['attack_bases', 'defense_bases']:
-            for i, card in enumerate(player[base]):
-                if card and card.get('instance_id') == creature_card_id:
-                    target_creature = card
-                    creature_location = (base, i)
-                    print(f"Criatura encontrada: {target_creature['name']} na {base}[{i}]")
-                    break
-            if target_creature:
-                break
-        
-        if not target_creature:
-            return {'success': False, 'message': 'Criatura não encontrada em campo'}
-        
-        if target_creature.get('type') != 'creature':
-            return {'success': False, 'message': 'Alvo não é uma criatura'}
-        
-        # Verificar restrições de equipamento
-        if item_card.get('id') == 'blade_vampires' and target_creature.get('id') not in ['vampiro_tayler', 'vampiro_wers']:
-            return {'success': False, 'message': 'Apenas vampiros podem usar a Blade of Vampires'}
-        
-        if item_card.get('id') == 'blade_dragons' and target_creature.get('id') not in ['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago']:
-            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Blade of Dragons'}
-        
-        if item_card.get('id') == 'lamina_almas' and target_creature.get('id') not in ['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers']:
-            return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Lâmina das Almas'}
-        
-        # Inicializar lista de itens equipados se não existir
-        if 'equipped_items' not in target_creature:
-            target_creature['equipped_items'] = []
-        
-        # Verificar limite de itens por tipo
-        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon' or eq.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons'])
-        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor' or eq.get('id') == 'capacete_trevas')
-        
-        if (item_card.get('type') == 'weapon' or item_card.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons']) and weapon_count >= 1:
-            return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
-        
-        if (item_card.get('type') == 'armor' or item_card.get('id') == 'capacete_trevas') and armor_count >= 4:
-            return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
-        
-        # Remover item da mão
-        player['hand'].pop(item_index)
-        
-        # Equipar item
-        target_creature['equipped_items'].append(item_card)
-        
-        # Aplicar bônus do item
-        if item_card.get('attack'):
-            target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
-        if item_card.get('protection'):
-            target_creature['life'] = target_creature.get('life', 0) + item_card['protection']
-        if item_card.get('life'):
-            target_creature['life'] = target_creature.get('life', 0) + item_card['life']
-        
-        print(f"Item {item_card['name']} equipado em {target_creature['name']}")
-        
-        return {
-            'success': True,
-            'creature': target_creature['name'],
-            'item': item_card['name'],
-            'message': f"{item_card['name']} equipado em {target_creature['name']}"
-        }
-    
-    def swap_positions(self, player_id, pos1_type, pos1_index, pos2_type, pos2_index):
-        """Troca duas cartas de posição (pode ser entre ataque e defesa)"""
-        if not self.can_act(player_id, 'swap'):
-            return {'success': False, 'message': 'Você já realizou uma troca neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Validar posições
-        positions = {
-            'attack': player['attack_bases'],
-            'defense': player['defense_bases']
-        }
-        
-        if pos1_type not in positions or pos2_type not in positions:
-            return {'success': False, 'message': 'Tipo de posição inválido'}
-        
-        if pos1_index >= len(positions[pos1_type]) or pos2_index >= len(positions[pos2_type]):
-            return {'success': False, 'message': 'Índice de posição inválido'}
-        
-        card1 = positions[pos1_type][pos1_index]
-        card2 = positions[pos2_type][pos2_index]
-        
-        # Se ambas as posições estão vazias, não faz sentido trocar
-        if not card1 and not card2:
-            return {'success': False, 'message': 'Ambas as posições estão vazias'}
-        
-        # Realizar troca
-        positions[pos1_type][pos1_index] = card2
-        positions[pos2_type][pos2_index] = card1
-        
-        self.use_action(player_id, 'swap')
-        
-        return {
-            'success': True,
-            'swapped': True,
-            'message': 'Cartas trocadas com sucesso'
-        }
-
-    def reconnect_player(self, socket_id, username):
-        """Reconecta um jogador existente ao jogo"""
-        print(f"Tentando reconectar jogador {username} com socket {socket_id}")
-        
-        if username in self.player_data:
-            # Jogador já existe, atualizar socket
-            # Remover mapeamento antigo se existir
-            old_socket = None
-            for s, u in list(self.socket_to_username.items()):
-                if u == username:
-                    old_socket = s
-                    break
-            
-            if old_socket and old_socket != socket_id:
-                del self.socket_to_username[old_socket]
-            
-            self.socket_to_username[socket_id] = username
-            self.player_data[username]['socket_id'] = socket_id
-            
-            print(f"Jogador {username} reconectado com sucesso")
-            return {
-                'success': True,
-                'username': username,
-                'game_started': self.started
-            }
-        else:
-            # Jogador não encontrado, verificar se pode entrar como novo
-            if len(self.players) >= self.max_players or self.started:
-                return {'success': False, 'message': 'Jogo cheio ou já começou'}
-            
-            # Adicionar como novo jogador
-            if self.add_player(socket_id, username):
-                return {
-                    'success': True,
-                    'username': username,
-                    'game_started': self.started
-                }
-        
-        return {'success': False, 'message': 'Erro ao reconectar'}
-
-    def get_graveyard_cards(self, player_id=None):
-        """Retorna lista de cartas no cemitério (com informações básicas)"""
-        graveyard_info = []
-        for card in self.graveyard:
-            card_info = {
-                'instance_id': card['instance_id'],
-                'name': card['name'],
-                'type': card.get('type', 'unknown'),
-                'description': card.get('description', ''),
-                'life': card.get('life', 0),
-                'attack': card.get('attack', 0)
-            }
-            graveyard_info.append(card_info)
-        return graveyard_info
-
-    def revive_from_graveyard(self, player_id, target_card_id):
-        """Revive uma carta específica do cemitério usando 4 runas"""
-        print(f"Tentando reviver carta {target_card_id} para jogador {player_id}")
-        
-        player = self.player_data.get(player_id)
-        if not player:
-            return {'success': False, 'message': 'Jogador não encontrado'}
-        
-        # Verificar se tem 4 runas na mão
-        runes_in_hand = []
-        for card in player['hand']:
-            if card.get('type') == 'rune' or card.get('id') == 'runa':
-                runes_in_hand.append(card)
-        
-        print(f"Runas na mão: {len(runes_in_hand)}")
-        
-        if len(runes_in_hand) < 4:
-            return {'success': False, 'message': f'Você precisa de 4 runas na mão (tem {len(runes_in_hand)})'}
-        
-        # Encontrar carta no cemitério
-        target_card = None
-        card_index = -1
-        
-        for i, card in enumerate(self.graveyard):
-            if card['instance_id'] == target_card_id:
-                target_card = card
-                card_index = i
-                print(f"Carta encontrada no cemitério: {target_card['name']}")
-                break
-        
-        if not target_card:
-            # Tentar buscar por nome (fallback)
-            for i, card in enumerate(self.graveyard):
-                if card['name'].lower() == target_card_id.lower():
-                    target_card = card
-                    card_index = i
-                    print(f"Carta encontrada por nome: {target_card['name']}")
-                    break
-        
-        if not target_card:
-            return {'success': False, 'message': 'Carta não encontrada no cemitério'}
-        
-        # Remover do cemitério
-        self.graveyard.pop(card_index)
-        
-        # Remover 4 runas da mão
-        runes_removed = 0
-        new_hand = []
-        for card in player['hand']:
-            if (card.get('type') == 'rune' or card.get('id') == 'runa') and runes_removed < 4:
-                runes_removed += 1
-                # Runas vão para o cemitério
-                self.graveyard.append(card)
-                print(f"Runa removida: {card['name']}")
-            else:
-                new_hand.append(card)
-        
-        player['hand'] = new_hand
-        
-        # Restaurar vida da carta (se era criatura)
-        if target_card.get('type') == 'creature':
-            # Restaurar vida original baseada na definição da carta
-            original_card = CARDS.get(target_card['id'], {})
-            if original_card and 'life' in original_card:
-                target_card['life'] = original_card['life']
-        
-        # Adicionar carta revivida à mão
-        player['hand'].append(target_card)
-        
-        print(f"Carta {target_card['name']} revivida com sucesso!")
-        
-        return {
-            'success': True,
-            'card': {
-                'name': target_card['name'],
-                'type': target_card.get('type', 'unknown')
-            },
-            'message': f"{target_card['name']} foi revivido do cemitério!"
-        }
-
-    def perform_ritual(self, player_id, ritual_id, target_player_id=None):
-        if not self.can_act(player_id, 'ritual'):
-            return {'success': False, 'message': 'Você já realizou um ritual neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Verificar se tem Mago Negro em campo
-        has_mago_negro = False
-        for card in player['attack_bases'] + player['defense_bases']:
-            if card and card['id'] == 'mago_negro':
-                has_mago_negro = True
-                break
-        
-        # Se não tem Mago Negro, verificar se tem a carta do ritual na mão
-        if not has_mago_negro:
-            ritual_card = None
-            ritual_index = -1
-            for i, card in enumerate(player['hand']):
-                if card['id'] == ritual_id:
-                    ritual_card = card
-                    ritual_index = i
-                    break
-            
-            if not ritual_card:
-                return {'success': False, 'message': 'Você não tem esta carta de ritual'}
-            
-            # Remover ritual da mão
-            player['hand'].pop(ritual_index)
-        else:
-            # Mago Negro pode realizar rituais sem ter a carta
-            print(f"Mago Negro realizando ritual {ritual_id} sem possuir a carta")
-        
-        # Verificar condições específicas do ritual
-        if ritual_id == 'ritual_157':
-            # Precisa de alvo
-            if not target_player_id:
-                return {'success': False, 'message': 'Selecione um alvo para o Ritual 157'}
-            
-            # Verificar condições
-            can_cast, message = RitualManager.check_ritual_157(self, player_id)
-            if not can_cast:
-                return {'success': False, 'message': message}
-            
-            # Executar ritual
-            result = RitualManager.execute_ritual_157(self, player_id, target_player_id)
-            
-        elif ritual_id == 'ritual_amor':
-            # Precisa de alvo (quem tem a profecia)
-            if not target_player_id:
-                return {'success': False, 'message': 'Selecione o alvo da profecia'}
-            
-            # Verificar condições
-            can_cast, message = RitualManager.check_ritual_amor(self, player_id)
-            if not can_cast:
-                return {'success': False, 'message': message}
-            
-            # Verificar se o alvo tem profecia
-            target = self.player_data[target_player_id]
-            has_profecia = False
-            if target.get('profecia_alvo') or any(effect.get('type') == 'profecia_morte' for effect in target['active_effects']):
-                has_profecia = True
-            
-            if not has_profecia:
-                return {'success': False, 'message': 'O alvo não possui nenhuma profecia ativa'}
-            
-            # Executar ritual
-            result = RitualManager.execute_ritual_amor(self, player_id, target_player_id)
-        
-        else:
-            return {'success': False, 'message': 'Ritual desconhecido'}
-        
-        self.use_action(player_id, 'ritual')
-        result['ritual_id'] = ritual_id
-        return result
-    def get_available_rituals(self, player_id): return RitualManager.get_available_rituals(self, player_id)
-
-    def process_player_death(self, player_id):
-        """Processa a morte de um jogador: move cartas para lugares apropriados e marca como morto"""
-        print(f"Processando morte do jogador {player_id}")
-        
-        player = self.player_data[player_id]
-        
-        # Marcar como morto
         player['dead'] = True
         player['observer'] = True
         player['life'] = 0
@@ -1921,44 +1094,54 @@ class Game:
         
         for card in hand_cards:
             if card.get('type') == 'creature':
-                # Criaturas vão para o cemitério
                 self.graveyard.append(card)
                 print(f"Criatura {card['name']} movida para o cemitério")
             else:
-                # Outros tipos de carta voltam para o monte (embaixo)
                 self.deck.append(card)
                 print(f"Carta {card['name']} (tipo: {card.get('type')}) voltou para o monte")
         
-        # Processar cartas em campo (ataque)
+        # Processar cartas em campo
         for i, card in enumerate(player['attack_bases']):
             if card:
                 self.graveyard.append(card)
                 player['attack_bases'][i] = None
-                print(f"Carta de ataque {card['name']} movida para o cemitério")
         
-        # Processar cartas em campo (defesa)
         for i, card in enumerate(player['defense_bases']):
             if card:
                 self.graveyard.append(card)
                 player['defense_bases'][i] = None
-                print(f"Carta de defesa {card['name']} movida para o cemitério")
         
         # Processar equipamentos
         for slot, card in player['equipment'].items():
             if card:
                 self.graveyard.append(card)
                 player['equipment'][slot] = None
-                print(f"Equipamento {card['name']} movido para o cemitério")
         
-        # Processar talismãs (vão para o cemitério também)
+        # Processar talismãs
         for talisman in player['talismans']:
             self.graveyard.append(talisman)
         player['talismans'] = []
         
-        # Embaralhar o monte para misturar as cartas que voltaram
         random.shuffle(self.deck)
+        print(f"Jogador {player['name']} processado como morto")
+    
+    def check_winner(self):
+        """Verifica se há um vencedor"""
+        alive_players = []
+        for username in self.players:
+            if self.player_data[username]['life'] > 0 and not self.player_data[username].get('dead', False):
+                alive_players.append(username)
         
-        print(f"Jogador {player['name']} processado como morto. Monte: {len(self.deck)} cartas, Cemitério: {len(self.graveyard)} cartas")
+        if len(alive_players) == 1:
+            return alive_players[0]
+        return None
+    
+    def apply_day_effects(self):
+        """Aplica efeitos do dia (zumbis e vampiros morrem)"""
+        for username in self.players:
+            player = self.player_data[username]
+            for i, card in enumerate(player['defense_bases']):
+                if card and card.get('die
 
 # Rotas da aplicação
 @app.route('/')
