@@ -878,6 +878,38 @@
             requestGameState();
         });
 
+        socket.on('player_died', function(data) {
+            console.log('Jogador morreu:', data);
+            
+            Swal.fire({
+                icon: 'info',
+                title: '💀 JOGADOR MORTO',
+                html: `<p style="color: #fff;">${data.message}</p>`,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 3000
+            });
+            
+            // Se for o próprio jogador, mostrar mensagem especial
+            if (data.player_id === socket.id) {
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '💀 VOCÊ MORREU',
+                        html: '<p style="color: #fff;">Suas criaturas foram para o cemitério e suas outras cartas voltaram para o monte.<br><br>Agora você é um espectador.</p>',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700',
+                        confirmButtonText: 'Entendi'
+                    });
+                }, 1000);
+            }
+            
+            // Forçar atualização imediata do estado para remover o jogador da área de oponentes
+            requestGameState();
+        });
+
         socket.on('game_started', function(data) {
             console.log('Jogo começou!');
             document.getElementById('waiting-room').style.display = 'none';
@@ -1195,8 +1227,13 @@
             if (gameState.current_turn) {
                 const currentPlayer = gameState.players[gameState.current_turn];
                 
+                // Verificar se o jogador da vez está morto (isso não deveria acontecer, mas por segurança)
+                if (currentPlayer && currentPlayer.dead) {
+                    turnIndicator.innerHTML = `⏳ Jogador morto: ${currentPlayer.name} (deveria ser pulado)`;
+                    turnIndicator.style.background = '#666';
+                }
                 // Adicionar informação da primeira rodada
-                if (gameState.first_round) {
+                else if (gameState.first_round) {
                     turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayer.name}`;
                     turnIndicator.style.background = '#ffa500';
                 } else {
@@ -1211,7 +1248,7 @@
                 }
             }
             
-            updateOpponentsArea();
+            updateOpponentsArea(); // Atualizar área de oponentes (jogadores mortos já serão filtrados)
             
             // Verificar se o jogador atual está morto
             if (gameState.current_player_dead) {
@@ -1249,6 +1286,24 @@
                 updatePlayerArea();
             }
 
+            // Contar quantos oponentes vivos ainda existem
+            const aliveOpponents = Object.entries(gameState.players).filter(([id, data]) => 
+                id !== socket.id && !data.dead
+            ).length;
+            
+            // Se não houver oponentes vivos, mostrar mensagem de vitória
+            if (aliveOpponents === 0 && !gameState.current_player_dead) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🏆 VITÓRIA! 🏆',
+                    text: 'Todos os oponentes foram derrotados!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 5000
+                });
+            }
+
             const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
             const isMyTurn = gameState && gameState.current_turn === socket.id && !gameState.current_player_dead;
             
@@ -1274,7 +1329,6 @@
             
             showTurnMessage();
         }
-        
 
         function showSessionIndicator() {
             const indicator = document.getElementById('session-indicator');
@@ -1323,17 +1377,57 @@
             const opponentsArea = document.getElementById('opponents-area');
             opponentsArea.innerHTML = '';
             
+            let hasAliveOpponents = false;
+            
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                // Pular o próprio jogador
                 if (playerId === socket.id) continue;
                 
+                // Pular jogadores mortos (não mostrar na área de oponentes)
+                if (playerData.dead) {
+                    console.log(`Ocultando jogador morto: ${playerData.name}`);
+                    continue;
+                }
+                
+                hasAliveOpponents = true;
                 const opponentCard = createOpponentCard(playerId, playerData);
                 opponentsArea.appendChild(opponentCard);
             }
+            
+            // Se não houver oponentes vivos, mostrar mensagem
+            if (!hasAliveOpponents) {
+                const noOpponentsMsg = document.createElement('div');
+                noOpponentsMsg.className = 'opponent-card';
+                noOpponentsMsg.style.textAlign = 'center';
+                noOpponentsMsg.style.padding = '30px';
+                noOpponentsMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">🏆</div>
+                    <h3 style="color: #ffd700;">Parabéns!</h3>
+                    <p style="color: #fff;">Todos os oponentes foram derrotados!</p>
+                    <p style="color: #888; margin-top: 20px;">Aguardando fim do jogo...</p>
+                `;
+                opponentsArea.appendChild(noOpponentsMsg);
+            }
         }
-
         function createOpponentCard(playerId, playerData) {
             const div = document.createElement('div');
             div.className = 'opponent-card';
+            
+            // Se por algum motivo um jogador morto aparecer, mostrar versão "fantasma"
+            if (playerData.dead) {
+                div.innerHTML = `
+                    <div class="opponent-header">
+                        <span class="opponent-name" style="color: #888;">${playerData.name}</span>
+                        <span class="opponent-life" style="color: #666;">💀 0</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px; color: #666; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                        <div style="font-size: 32px; margin-bottom: 10px;">💀</div>
+                        <p>Jogador morto</p>
+                    </div>
+                `;
+                return div;
+            }
+            
             div.innerHTML = `
                 <div class="opponent-header">
                     <span class="opponent-name">${playerData.name}</span>
@@ -1831,6 +1925,19 @@
             }
             
             const targetData = gameState.players[targetPlayerId];
+            
+            // Verificar se o alvo já está morto
+            if (targetData.dead) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Alvo inválido',
+                    text: 'Este jogador já está morto!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
             
             // Verificar se tem cartas de ataque
             let hasAttackCards = false;

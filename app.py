@@ -911,6 +911,13 @@ class Game:
                     player_killed = True
                     self.process_player_death(target_player_id)
                     damage_log.append(f"💀 {defender['name']} foi derrotado!")
+
+        if player_killed:
+            emit('player_died', {
+                'player_id': target_player_id,
+                'player_name': defender['name'],
+                'message': f"{defender['name']} foi derrotado e agora é um espectador!"
+            }, room=game_id)
         
         self.use_action(player_id, 'attack')
         
