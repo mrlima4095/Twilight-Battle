@@ -1503,63 +1503,85 @@ function updateGameUI() {
             
             return div;
         }
+function updatePlayerArea() {
+    console.log('Atualizando área do jogador para:', currentUsername);
+    
+    const playerData = gameState.players[currentUsername];
+    if (!playerData) {
+        console.error('Dados do jogador não encontrados para:', currentUsername);
+        return;
+    }
+    
+    console.log('Dados do jogador:', playerData);
+    
+    document.getElementById('player-name').textContent = playerData.name;
+    document.getElementById('player-life').textContent = playerData.life;
+    
+    // Contar runas na mão
+    const runes = playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0;
+    const talismans = playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0;
+    
+    document.getElementById('player-runes').textContent = runes;
+    document.getElementById('player-talismans').textContent = talismans;
+    document.getElementById('runas-count').textContent = runes;
+    
+    // Bases de ataque
+    const attackBases = document.getElementById('attack-bases');
+    attackBases.innerHTML = '';
+    if (playerData.attack_bases) {
+        playerData.attack_bases.forEach((card, index) => {
+            const slot = createBaseSlot(card, 'attack', index, false);
+            slot.onclick = () => selectBase('attack', index, card);
+            attackBases.appendChild(slot);
+        });
+    }
+    
+    // Bases de defesa
+    const defenseBases = document.getElementById('defense-bases');
+    defenseBases.innerHTML = '';
+    if (playerData.defense_bases) {
+        playerData.defense_bases.forEach((card, index) => {
+            const slot = createBaseSlot(card, 'defense', index, false);
+            slot.onclick = () => selectBase('defense', index, card);
+            defenseBases.appendChild(slot);
+        });
+    }
+    
+    // Mão
+    const handCards = document.getElementById('hand-cards');
+    handCards.innerHTML = '';
+    
+    if (playerData.hand && playerData.hand.length > 0) {
+        console.log('Renderizando mão com', playerData.hand.length, 'cartas');
+        playerData.hand.forEach((card, index) => {
+            const cardElement = createCardElement(card, index);
+            cardElement.onclick = () => selectCard(card, index);
+            handCards.appendChild(cardElement);
+        });
+    } else {
+        console.log('Mão vazia');
+        // Mostrar mensagem de mão vazia
+        const emptyMsg = document.createElement('div');
+        emptyMsg.style.cssText = 'width: 100%; text-align: center; padding: 20px; color: #888;';
+        emptyMsg.textContent = '🃏 Mão vazia';
+        handCards.appendChild(emptyMsg);
+    }
+    
+    document.getElementById('hand-count').textContent = playerData.hand ? playerData.hand.length : 0;
+    
+    // Montes
+    document.getElementById('deck-count').textContent = gameState.deck_count || 0;
+    document.getElementById('graveyard-count').textContent = gameState.graveyard_count || 0;
 
-        function updatePlayerArea() {
-            const playerData = gameState.players[socket.id];
-            
-            document.getElementById('player-name').textContent = playerData.name;
-            document.getElementById('player-life').textContent = playerData.life;
-            
-            // Contar runas na mão
-            const runes = playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length;
-            const talismans = playerData.hand.filter(c => c && c.type === 'talisman').length;
-            
-            document.getElementById('player-runes').textContent = runes;
-            document.getElementById('player-talismans').textContent = talismans;
-            document.getElementById('runas-count').textContent = runes;
-            
-            // Bases de ataque
-            const attackBases = document.getElementById('attack-bases');
-            attackBases.innerHTML = '';
-            playerData.attack_bases.forEach((card, index) => {
-                const slot = createBaseSlot(card, 'attack', index, false);
-                slot.onclick = () => selectBase('attack', index, card);
-                attackBases.appendChild(slot);
-            });
-            
-            // Bases de defesa
-            const defenseBases = document.getElementById('defense-bases');
-            defenseBases.innerHTML = '';
-            playerData.defense_bases.forEach((card, index) => {
-                const slot = createBaseSlot(card, 'defense', index, false);
-                slot.onclick = () => selectBase('defense', index, card);
-                defenseBases.appendChild(slot);
-            });
-            
-            // Mão
-            const handCards = document.getElementById('hand-cards');
-            handCards.innerHTML = '';
-            document.getElementById('hand-count').textContent = playerData.hand.length;
-            
-            playerData.hand.forEach((card, index) => {
-                const cardElement = createCardElement(card, index);
-                cardElement.onclick = () => selectCard(card, index);
-                handCards.appendChild(cardElement);
-            });
-            
-            // Montes
-            document.getElementById('deck-count').textContent = gameState.deck_count;
-            document.getElementById('graveyard-count').textContent = gameState.graveyard_count;
-
-            if (equipMode) {
-                document.querySelectorAll('.base-slot.has-card').forEach(slot => {
-                    // Verificar se é uma criatura (tem card com type creature)
-                    if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
-                        slot.classList.add('creature-highlight');
-                    }
-                });
+    if (equipMode) {
+        document.querySelectorAll('.base-slot.has-card').forEach(slot => {
+            if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
+                slot.classList.add('creature-highlight');
             }
-        }
+        });
+    }
+}
+
 
         function createBaseSlot(card, type, index, isOpponent) {
             const slot = document.createElement('div');
