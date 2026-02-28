@@ -1291,18 +1291,6 @@
                 id !== socket.id && !data.dead
             ).length;
             
-            // Se não houver oponentes vivos, mostrar mensagem de vitória
-            if (aliveOpponents === 0 && !gameState.current_player_dead) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🏆 VITÓRIA! 🏆',
-                    text: 'Todos os oponentes foram derrotados!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 5000
-                });
-            }
 
             const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
             const isMyTurn = gameState && gameState.current_turn === socket.id && !gameState.current_player_dead;

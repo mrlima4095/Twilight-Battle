@@ -1795,17 +1795,6 @@ class Game:
         random.shuffle(self.deck)
         
         print(f"Jogador {player['name']} processado como morto. Monte: {len(self.deck)} cartas, Cemitério: {len(self.graveyard)} cartas")
-    def check_winner(self):
-        """Verifica se há um vencedor (apenas jogadores vivos contam)"""
-        alive_players = []
-        for player_id in self.players:
-            player = self.player_data[player_id]
-            if not player.get('dead', False) and player.get('life', 0) > 0:
-                alive_players.append(player_id)
-        
-        if len(alive_players) == 1:
-            return alive_players[0]
-        return None
 
 # Rotas da aplicação
 @app.route('/')
