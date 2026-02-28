@@ -582,6 +582,33 @@
 
         /* Garantir que o botão Finalizar Turno também seja ocultado */
         #end-turn-btn { display: none; }
+
+        .base-slot.selected-for-move {
+            border-color: #4a90e2 !important;
+            box-shadow: 0 0 20px #4a90e2, 0 0 40px rgba(74, 144, 226, 0.5);
+            animation: pulse-blue 1s infinite;
+            transform: scale(1.05);
+            z-index: 100;
+        }
+
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 10px #4a90e2; }
+            50% { box-shadow: 0 0 20px #4a90e2, 0 0 30px #4a90e2; }
+            100% { box-shadow: 0 0 10px #4a90e2; }
+        }
+
+        /* Indicador de modo de troca mais visível */
+        #move-mode-indicator {
+            animation: pulse 1.5s infinite;
+            border: 2px solid #4a90e2;
+            font-weight: bold;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; box-shadow: 0 0 15px #4a90e2; }
+            100% { opacity: 0.9; }
+        }
     </style>
 </head>
 <body>
@@ -865,8 +892,15 @@
         });
 
         socket.on('game_state', function(data) {
-            console.log('Estado do jogo:', data);
+            const oldGameState = gameState;
             gameState = data;
+            
+            // Verificar se o turno mudou e sair do modo de troca se não for mais meu turno
+            if (oldGameState && oldGameState.current_turn !== data.current_turn) {
+                if (data.current_turn !== socket.id && moveMode) {
+                    cancelMoveMode();
+                }
+            }
             
             // Verificar se o jogador ainda está no jogo
             if (currentPlayerId && !gameState.players[currentPlayerId]) {
@@ -1597,7 +1631,7 @@
                 firstSelection = { type, index };
                 
                 // Destacar a base selecionada
-                const slot = document.querySelector(`.base-slot.${type}:nth-child(${index + 1})`);
+                const slot = document.querySelector(`.base-slot[data-type="${type}"][data-index="${index}"]`);
                 if (slot) {
                     slot.classList.add('selected-for-move');
                 }
@@ -1615,15 +1649,17 @@
                 // Segunda seleção - realizar troca
                 const secondSelection = { type, index };
                 
-                // Remover destaque
-                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
-                    slot.classList.remove('selected-for-move');
-                });
-                
                 // Se clicou na mesma posição, cancelar
                 if (firstSelection.type === secondSelection.type && 
                     firstSelection.index === secondSelection.index) {
-                    cancelMoveMode();
+                    
+                    // Remover destaque
+                    document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                        slot.classList.remove('selected-for-move');
+                    });
+                    
+                    firstSelection = null;
+                    
                     Swal.fire({
                         title: 'Troca cancelada',
                         text: 'Você selecionou a mesma posição',
@@ -1635,6 +1671,10 @@
                     });
                     return;
                 }
+                
+                // Desabilitar o botão de modo troca durante a ação
+                const moveBtn = document.getElementById('move-mode-btn');
+                if (moveBtn) moveBtn.disabled = true;
                 
                 // Realizar troca via socket
                 socket.emit('player_action', {
@@ -1648,11 +1688,24 @@
                     }
                 });
                 
-                // Desativar modo de troca
-                cancelMoveMode();
+                // Remover destaque das bases
+                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                    slot.classList.remove('selected-for-move');
+                });
+                
+                // Sair do modo de troca (será confirmado pelo action_success)
+                firstSelection = null;
+                
+                // Pequeno timeout para garantir que a ação foi processada
+                setTimeout(() => {
+                    // Só sai do modo se ainda estiver em modo de troca
+                    if (moveMode) {
+                        cancelMoveMode();
+                    }
+                }, 500);
             }
         }
-
+        
         function selectTrapSlot(index) {
             if (!selectedCard || selectedCard.type !== 'trap') {
                 Swal.fire({
@@ -1887,6 +1940,31 @@
                 return;
             }
             
+            // Se já estiver em modo de troca, cancelar
+            if (moveMode) {
+                cancelMoveMode();
+                return;
+            }
+            
+            // Verificar se há pelo menos duas cartas em campo para trocar
+            const playerData = gameState.players[socket.id];
+            const cardsInField = [
+                ...playerData.attack_bases.filter(c => c),
+                ...playerData.defense_bases.filter(c => c)
+            ];
+            
+            if (cardsInField.length < 2) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem cartas suficientes',
+                    text: 'Você precisa de pelo menos 2 cartas em campo para trocar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
             moveMode = true;
             firstSelection = null;
             document.getElementById('move-mode-indicator').style.display = 'block';
@@ -1901,7 +1979,7 @@
                 color: '#fff'
             });
         });
-
+        
         document.getElementById('equip-mode-btn').addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
@@ -2464,6 +2542,35 @@
                 slot.classList.remove('selected-for-equip');
             });
         }
+        window.cancelMoveMode = function() {
+            console.log('Cancelando modo de troca');
+            moveMode = false;
+            firstSelection = null;
+            
+            // Remover indicador visual
+            const indicator = document.getElementById('move-mode-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+            
+            // Remover destaque de todas as bases
+            document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                slot.classList.remove('selected-for-move');
+            });
+            
+            // Remover destaque de qualquer base selecionada
+            document.querySelectorAll('.base-slot').forEach(slot => {
+                slot.classList.remove('selected-for-move', 'creature-highlight');
+            });
+            
+            // Reabilitar o botão de modo troca
+            const moveBtn = document.getElementById('move-mode-btn');
+            if (moveBtn) {
+                moveBtn.disabled = false;
+            }
+            
+            console.log('Modo de troca cancelado');
+        }
 
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
@@ -2689,7 +2796,7 @@
             console.log('Ação bem-sucedida:', data);
             
             // Verificar se a primeira rodada terminou
-            /*if (data.result && data.result.first_round_ended) {
+            if (data.result && data.result.first_round_ended) {
                 Swal.fire({
                     icon: 'success',
                     title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
@@ -2699,11 +2806,26 @@
                     confirmButtonColor: '#ffd700',
                     timer: 3000
                 });
-            }*/
+            }
             
-            requestGameState();
-            
-            if (data.action === 'revive' && data.result) {
+            // Se a ação foi uma troca de posições, sair do modo de troca
+            if (data.action === 'swap_positions' && data.result && data.result.success) {
+                // Sair do modo de troca
+                if (moveMode) {
+                    cancelMoveMode();
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔄 Posições trocadas!',
+                    text: data.result.message || 'Cartas trocadas com sucesso',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+            else if (data.action === 'revive' && data.result) {
                 Swal.fire({
                     icon: 'success',
                     title: '🔄 Carta Revivida!',
@@ -2725,22 +2847,13 @@
                     timer: 2000
                 });
             }
-            else if (data.action === 'swap_positions' && data.result) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🔄 Posições trocadas!',
-                    text: data.result.message || 'Cartas trocadas com sucesso',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-            }
             else if (data.action === 'attack' && data.result) {
                 showAttackResult(data.result);
             } else {
                 addLogEntry(`✅ Ação realizada: ${data.action}`);
             }
+            
+            requestGameState();
         });
         socket.on('action_error', function(data) {
             console.error('Erro na ação:', data);
