@@ -650,94 +650,6 @@
             50% { transform: translateY(-5px); }
             100% { transform: translateY(0); }
         }
-        .opponent-card.dead {
-            opacity: 0.6;
-            filter: grayscale(80%);
-            border-color: #444 !important;
-            background: rgba(0, 0, 0, 0.8);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .opponent-card.dead::before {
-            content: '💀 MORTO 💀';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-15deg);
-            font-size: 24px;
-            font-weight: bold;
-            color: rgba(255, 0, 0, 0.5);
-            text-shadow: 2px 2px 4px #000;
-            z-index: 10;
-            white-space: nowrap;
-            border: 3px solid rgba(255, 0, 0, 0.5);
-            padding: 5px 15px;
-            border-radius: 50px;
-            background: rgba(0, 0, 0, 0.7);
-            pointer-events: none;
-        }
-
-        .opponent-card.dead .base-slot {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-
-        .opponent-card.dead button {
-            display: none;
-        }
-
-        .player-area.dead {
-            opacity: 0.5;
-            filter: grayscale(80%);
-            border-color: #444 !important;
-            position: relative;
-            pointer-events: none;
-        }
-
-        .player-area.dead::before {
-            content: '💀 VOCÊ ESTÁ MORTO 💀';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-5deg);
-            font-size: 48px;
-            font-weight: bold;
-            color: rgba(255, 0, 0, 0.7);
-            text-shadow: 2px 2px 4px #000;
-            z-index: 1000;
-            white-space: nowrap;
-            border: 5px solid rgba(255, 0, 0, 0.7);
-            padding: 20px 40px;
-            border-radius: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            pointer-events: none;
-            animation: dead-pulse 2s infinite;
-        }
-
-        @keyframes dead-pulse {
-            0% { opacity: 0.7; transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
-            50% { opacity: 1; transform: translate(-50%, -50%) rotate(-5deg) scale(1.05); }
-            100% { opacity: 0.7; transform: translate(-50%, -50%) rotate(-5deg) scale(1); }
-        }
-
-        .dead-message {
-            text-align: center;
-            padding: 20px;
-            margin: 20px 0;
-            background: rgba(255, 0, 0, 0.2);
-            border: 2px solid #ff0000;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 18px;
-            animation: dead-message-pulse 2s infinite;
-        }
-
-        @keyframes dead-message-pulse {
-            0% { background: rgba(255, 0, 0, 0.2); }
-            50% { background: rgba(255, 0, 0, 0.4); }
-            100% { background: rgba(255, 0, 0, 0.2); }
-        }
     </style>
 </head>
 <body>
@@ -1439,22 +1351,12 @@
         function showTurnMessage() {
             const playerArea = document.getElementById('player-area');
             const isMyTurn = gameState && gameState.current_turn === socket.id;
-            const isDead = gameState.dead_players && gameState.dead_players.includes(socket.id);
             
-            // Se estiver morto, não mostrar mensagem de turno
-            if (isDead) {
-                const turnMessage = document.getElementById('turn-message');
-                if (turnMessage) {
-                    turnMessage.style.display = 'none';
-                }
-                return;
-            }
-            
+            // Verificar se já existe uma mensagem de turno
             let turnMessage = document.getElementById('turn-message');
             
             if (!isMyTurn && gameState && gameState.current_turn) {
-                const currentPlayerId = gameState.current_turn;
-                const currentPlayerName = gameState.players[currentPlayerId].name;
+                const currentPlayerName = gameState.players[gameState.current_turn].name;
                 
                 if (!turnMessage) {
                     turnMessage = document.createElement('div');
@@ -1487,17 +1389,17 @@
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
                 if (playerId === socket.id) continue;
                 
-                const isDead = gameState.dead_players && gameState.dead_players.includes(playerId);
-                const opponentCard = createOpponentCard(playerId, playerData, isDead);
+                const opponentCard = createOpponentCard(playerId, playerData);
                 opponentsArea.appendChild(opponentCard);
             }
         }
-        function createOpponentCard(playerId, playerData, isDead = false) {
+
+        function createOpponentCard(playerId, playerData) {
             const div = document.createElement('div');
-            div.className = `opponent-card ${isDead ? 'dead' : ''}`;
+            div.className = 'opponent-card';
             div.innerHTML = `
                 <div class="opponent-header">
-                    <span class="opponent-name">${playerData.name} ${isDead ? '💀' : ''}</span>
+                    <span class="opponent-name">${playerData.name}</span>
                     <span class="opponent-life">❤️ ${playerData.life}</span>
                 </div>
                 <div class="opponent-stats">
@@ -1513,137 +1415,25 @@
                     <div class="bases-row" id="opp-defense-${playerId}"></div>
                 </div>
                 <button class="action-btn" onclick="selectTarget('${playerId}')" 
-                        ${gameState.current_turn !== socket.id || isDead ? 'disabled' : ''}>
+                        ${gameState.current_turn !== socket.id ? 'disabled' : ''}>
                     ⚔️ Atacar
                 </button>
             `;
             
-            // Precisamos de um timeout para garantir que os elementos existam no DOM
             setTimeout(() => {
-                // Bases de ataque
                 const attackRow = document.getElementById(`opp-attack-${playerId}`);
+                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
+                
                 if (attackRow) {
                     playerData.attack_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'attack', index, true);
-                        
-                        // Adicionar evento de clique para profecia
-                        slot.onclick = function(e) {
-                            e.stopPropagation();
-                            if (prophecyMode && card && !isDead) {
-                                // Verificar se é uma criatura
-                                if (card.type === 'creature') {
-                                    // Confirmar profecia
-                                    Swal.fire({
-                                        title: '🔮 Profetizar Morte?',
-                                        html: `
-                                            <div style="color: #fff;">
-                                                <p><strong>Carta:</strong> ${card.name}</p>
-                                                <p><strong>Jogador:</strong> ${playerData.name}</p>
-                                                <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
-                                            </div>
-                                        `,
-                                        icon: 'question',
-                                        showCancelButton: true,
-                                        confirmButtonColor: '#800080',
-                                        cancelButtonColor: '#ff4444',
-                                        confirmButtonText: '🔮 Profetizar',
-                                        cancelButtonText: 'Cancelar',
-                                        background: '#1a1a2e',
-                                        color: '#fff'
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            socket.emit('player_action', {
-                                                game_id: gameId,
-                                                action: 'prophecy',
-                                                params: {
-                                                    target_player_id: playerId,
-                                                    target_card_type: 'attack',
-                                                    target_card_index: index
-                                                }
-                                            });
-                                            
-                                            // Sair do modo profecia
-                                            cancelProphecyMode();
-                                        }
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Alvo inválido',
-                                        text: 'Só é possível profetizar a morte de criaturas',
-                                        timer: 1500,
-                                        showConfirmButton: false,
-                                        background: '#1a1a2e',
-                                        color: '#fff'
-                                    });
-                                }
-                            }
-                        };
-                        
                         attackRow.appendChild(slot);
                     });
                 }
                 
-                // Bases de defesa
-                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
                 if (defenseRow) {
                     playerData.defense_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'defense', index, true);
-                        
-                        // Adicionar evento de clique para profecia
-                        slot.onclick = function(e) {
-                            e.stopPropagation();
-                            if (prophecyMode && card && !isDead) {
-                                // Verificar se é uma criatura
-                                if (card.type === 'creature') {
-                                    // Confirmar profecia
-                                    Swal.fire({
-                                        title: '🔮 Profetizar Morte?',
-                                        html: `
-                                            <div style="color: #fff;">
-                                                <p><strong>Carta:</strong> ${card.name}</p>
-                                                <p><strong>Jogador:</strong> ${playerData.name}</p>
-                                                <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
-                                            </div>
-                                        `,
-                                        icon: 'question',
-                                        showCancelButton: true,
-                                        confirmButtonColor: '#800080',
-                                        cancelButtonColor: '#ff4444',
-                                        confirmButtonText: '🔮 Profetizar',
-                                        cancelButtonText: 'Cancelar',
-                                        background: '#1a1a2e',
-                                        color: '#fff'
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            socket.emit('player_action', {
-                                                game_id: gameId,
-                                                action: 'prophecy',
-                                                params: {
-                                                    target_player_id: playerId,
-                                                    target_card_type: 'defense',
-                                                    target_card_index: index
-                                                }
-                                            });
-                                            
-                                            // Sair do modo profecia
-                                            cancelProphecyMode();
-                                        }
-                                    });
-                                } else {
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Alvo inválido',
-                                        text: 'Só é possível profetizar a morte de criaturas',
-                                        timer: 1500,
-                                        showConfirmButton: false,
-                                        background: '#1a1a2e',
-                                        color: '#fff'
-                                    });
-                                }
-                            }
-                        };
-                        
                         defenseRow.appendChild(slot);
                     });
                 }
@@ -1654,16 +1444,8 @@
 
         function updatePlayerArea() {
             const playerData = gameState.players[socket.id];
-            const isDead = gameState.dead_players && gameState.dead_players.includes(socket.id);
             
-            const playerArea = document.getElementById('player-area');
-            if (isDead) {
-                playerArea.classList.add('dead');
-            } else {
-                playerArea.classList.remove('dead');
-            }
-            
-            document.getElementById('player-name').textContent = playerData.name + (isDead ? ' 💀 (MORTO)' : '');
+            document.getElementById('player-name').textContent = playerData.name;
             document.getElementById('player-life').textContent = playerData.life;
             
             // Contar runas na mão
@@ -1679,9 +1461,7 @@
             attackBases.innerHTML = '';
             playerData.attack_bases.forEach((card, index) => {
                 const slot = createBaseSlot(card, 'attack', index, false);
-                if (!isDead) {
-                    slot.onclick = () => selectBase('attack', index, card);
-                }
+                slot.onclick = () => selectBase('attack', index, card);
                 attackBases.appendChild(slot);
             });
             
@@ -1690,9 +1470,7 @@
             defenseBases.innerHTML = '';
             playerData.defense_bases.forEach((card, index) => {
                 const slot = createBaseSlot(card, 'defense', index, false);
-                if (!isDead) {
-                    slot.onclick = () => selectBase('defense', index, card);
-                }
+                slot.onclick = () => selectBase('defense', index, card);
                 defenseBases.appendChild(slot);
             });
             
@@ -1703,9 +1481,7 @@
             
             playerData.hand.forEach((card, index) => {
                 const cardElement = createCardElement(card, index);
-                if (!isDead) {
-                    cardElement.onclick = () => selectCard(card, index);
-                }
+                cardElement.onclick = () => selectCard(card, index);
                 handCards.appendChild(cardElement);
             });
             
@@ -1715,24 +1491,11 @@
 
             if (equipMode) {
                 document.querySelectorAll('.base-slot.has-card').forEach(slot => {
+                    // Verificar se é uma criatura (tem card com type creature)
                     if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
                         slot.classList.add('creature-highlight');
                     }
                 });
-            }
-            
-            // Mostrar mensagem de morte
-            let deadMessage = document.getElementById('dead-message');
-            if (isDead) {
-                if (!deadMessage) {
-                    deadMessage = document.createElement('div');
-                    deadMessage.id = 'dead-message';
-                    deadMessage.className = 'dead-message';
-                    deadMessage.innerHTML = '💀 VOCÊ FOI ELIMINADO! 💀<br><small>Você pode continuar assistindo o jogo como espectador</small>';
-                    playerArea.insertBefore(deadMessage, playerArea.firstChild);
-                }
-            } else if (deadMessage) {
-                deadMessage.remove();
             }
         }
 
@@ -1922,48 +1685,94 @@
         }
 
         function selectBase(type, index, card) {
-            if (gameState.current_turn !== socket.id) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            if (!selectedCard) {
-                return;
-            }
-            
-            if (selectedCard.type !== 'creature') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Carta inválida',
-                    text: 'Apenas criaturas podem ser colocadas em bases',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'play_card',
-                params: {
-                    card_id: selectedCard.instance_id,
-                    position_type: type,
-                    position_index: index
+            if (equipMode) {
+                // Modo equipar ativo - clicou em uma criatura
+                if (card && card.type === 'creature') {
+                    // Confirmar equipamento
+                    Swal.fire({
+                        title: 'Equipar item?',
+                        html: `
+                            <div style="color: #fff;">
+                                <p><strong>Item:</strong> ${selectedItemForEquip.name}</p>
+                                <p><strong>Criatura:</strong> ${card.name}</p>
+                                ${selectedItemForEquip.attack ? `<p>⚔️ +${selectedItemForEquip.attack} ataque</p>` : ''}
+                                ${selectedItemForEquip.protection ? `<p>🛡️ +${selectedItemForEquip.protection} proteção</p>` : ''}
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '🔰 Equipar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#4CAF50',
+                        cancelButtonColor: '#ff4444',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'equip_item',
+                                params: {
+                                    item_card_id: selectedItemForEquip.instance_id,
+                                    creature_card_id: card.instance_id
+                                }
+                            });
+                            
+                            // Desativar modo equipar
+                            cancelEquipMode();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Alvo inválido',
+                        text: 'Você só pode equipar itens em criaturas',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
                 }
-            });
+                return;
+            }
             
-            selectedCard = null;
-            actionMode = null;
+            if (moveMode) {
+                // Modo de troca ativo
+                handleMoveSelection(type, index);
+                return;
+            }
             
-            // Remover seleção visual das cartas
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            // Modo normal (jogar carta)
+            if (!selectedCard && actionMode !== 'move') {
+                return;
+            }
+            
+            if (actionMode === 'play' && selectedCard) {
+                if (selectedCard.type !== 'creature') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Carta inválida',
+                        text: 'Apenas criaturas podem ser colocadas em bases',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    return;
+                }
+                
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'play_card',
+                    params: {
+                        card_id: selectedCard.instance_id,
+                        position_type: type,
+                        position_index: index
+                    }
+                });
+                
+                selectedCard = null;
+                actionMode = null;
+            }
         }
         function handleMoveSelection(type, index) {
             if (!firstSelection) {
@@ -3045,23 +2854,6 @@
                 slot.classList.remove('selected-for-equip');
             });
         }
-        window.cancelProphecyMode = function() {
-            prophecyMode = false;
-            
-            // Remover destaques visuais
-            document.querySelectorAll('.opponent-card .base-slot').forEach(slot => {
-                slot.style.cursor = '';
-                slot.style.boxShadow = '';
-                slot.style.borderColor = '';
-            });
-            
-            // Esconder indicador
-            const indicator = document.getElementById('prophecy-mode-indicator');
-            if (indicator) {
-                indicator.style.display = 'none';
-            }
-        }
-
         window.cancelMoveMode = function() {
             console.log('Cancelando modo de troca');
             moveMode = false;
@@ -3091,6 +2883,76 @@
             
             console.log('Modo de troca cancelado');
         }
+        window.cancelProphecyMode = function() {
+            prophecyMode = false;
+            selectedTargetForProphecy = null;
+            
+            // Remover destaques
+            document.querySelectorAll('.opponent-card .base-slot.has-card').forEach(slot => {
+                slot.style.cursor = '';
+                slot.style.boxShadow = '';
+                slot.style.borderColor = '';
+            });
+            
+            // Esconder indicador se existir
+            const indicator = document.getElementById('prophecy-mode-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
+        slot.onclick = function(e) {
+            e.stopPropagation();
+            if (prophecyMode && card) {
+                // Verificar se é uma criatura
+                if (card.type === 'creature') {
+                    // Confirmar profecia
+                    Swal.fire({
+                        title: '🔮 Profetizar Morte?',
+                        html: `
+                            <div style="color: #fff;">
+                                <p><strong>Carta:</strong> ${card.name}</p>
+                                <p><strong>Jogador:</strong> ${playerData.name}</p>
+                                <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#800080',
+                        cancelButtonColor: '#ff4444',
+                        confirmButtonText: '🔮 Profetizar',
+                        cancelButtonText: 'Cancelar',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'prophecy',
+                                params: {
+                                    target_player_id: playerId,
+                                    target_card_type: type,
+                                    target_card_index: index
+                                }
+                            });
+                            
+                            // Sair do modo profecia
+                            cancelProphecyMode();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Alvo inválido',
+                        text: 'Só é possível profetizar a morte de criaturas',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+            }
+        };
 
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
@@ -3316,7 +3178,7 @@
             console.log('Ação bem-sucedida:', data);
             
             // Verificar se a primeira rodada terminou
-            /*if (data.result && data.result.first_round_ended) {
+            if (data.result && data.result.first_round_ended) {
                 Swal.fire({
                     icon: 'success',
                     title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
@@ -3326,27 +3188,10 @@
                     confirmButtonColor: '#ffd700',
                     timer: 3000
                 });
-            }*/
-            
-            if (data.result && data.result.player_killed) {
-                const killedPlayerId = data.result.target;
-                const killedPlayerName = data.result.target_name;
-                const killerName = data.result.attacker_name;
-                
-                Swal.fire({
-                    icon: 'error',
-                    title: '💀 JOGADOR ELIMINADO! 💀',
-                    html: `<p style="color: #fff;"><strong style="color: #ffd700;">${killedPlayerName}</strong> foi eliminado por <strong style="color: #ff4444;">${killerName}</strong>!</p>`,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 4000
-                });
-                
-                addLogEntry(`💀 ${killedPlayerName} foi eliminado por ${killerName}!`);
             }
-            else if (data.result && data.result.dead_players && data.result.dead_players.length > 0) { console.log('Jogadores mortos:', data.result.dead_players); }
-            else if (data.action === 'prophecy' && data.result && data.result.success) {
+            
+            // Mostrar resultado de profecia
+            if (data.action === 'prophecy' && data.result && data.result.success) {
                 Swal.fire({
                     icon: 'success',
                     title: '🔮 Profecia Lançada!',
@@ -3357,8 +3202,9 @@
                     timer: 3000
                 });
             }
+            
             // Mostrar profecia cumprida
-            else if (data.result && data.result.prophecy_fulfilled) {
+            if (data.result && data.result.prophecy_fulfilled) {
                 Swal.fire({
                     icon: 'warning',
                     title: '💀 PROFECIA CUMPRIDA!',
@@ -3369,7 +3215,8 @@
                     timer: 4000
                 });
             }
-            else if (data.action === 'swap_positions' && data.result && data.result.success) {
+            
+            if (data.action === 'swap_positions' && data.result && data.result.success) {
                 if (moveMode) {
                     cancelMoveMode();
                 }
