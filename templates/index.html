@@ -340,7 +340,7 @@
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('loading').classList.remove('active');
-                    window.location.href = `/${data.game_id}`;
+                    window.location.href = `/game/${data.game_id}`;
                 })
                 .catch(error => {
                     document.getElementById('loading').classList.remove('active');
