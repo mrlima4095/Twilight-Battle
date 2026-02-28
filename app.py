@@ -315,6 +315,13 @@ CARDS = {
         "count": 1, 
         "description": "Troque cartas com outros jogadores."
     },
+    "feitico_cura": {
+        "id": "feitico_cura", 
+        "name": "Feitiço - Cura", 
+        "type": "spell", 
+        "count": 10, 
+        "description": "Cura 1024 pontos de vida do jogador alvo. Pode ser usado em si mesmo ou em outros jogadores."
+    },
     
     # Oraculo
     "oraculo": {
@@ -1178,6 +1185,28 @@ class Game:
                 # Implementar lógica de troca
                 return {'type': 'trade', 'target': target_player_id}
         
+        elif spell_id == 'feitico_cura':
+            # Cura o jogador alvo
+            if target_player_id:
+                heal_amount = 1024
+                self.player_data[target_player_id]['life'] += heal_amount
+                return {
+                    'type': 'heal', 
+                    'target': self.player_data[target_player_id]['name'], 
+                    'amount': heal_amount,
+                    'message': f'{self.player_data[target_player_id]["name"]} recebeu {heal_amount} de cura!'
+                }
+            else:
+                # Se não tiver alvo, cura a si mesmo
+                heal_amount = 1024
+                self.player_data[player_id]['life'] += heal_amount
+                return {
+                    'type': 'heal', 
+                    'target': self.player_data[player_id]['name'], 
+                    'amount': heal_amount,
+                    'message': f'{self.player_data[player_id]["name"]} recebeu {heal_amount} de cura!'
+                }
+
         return {'type': 'unknown'}
     
     def toggle_mage_block(self, player_id, target_player_id, target_card_id):

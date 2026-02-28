@@ -1248,7 +1248,25 @@
                 }
             }
             
-            updateOpponentsArea(); // Atualizar área de oponentes (jogadores mortos já serão filtrados)
+            // SÓ atualizar a área de oponentes se o jogo já começou
+            if (gameState.started) {
+                updateOpponentsArea();
+            } else {
+                // Se o jogo não começou, mostrar uma mensagem de aguardando
+                const opponentsArea = document.getElementById('opponents-area');
+                opponentsArea.innerHTML = '';
+                const waitingMsg = document.createElement('div');
+                waitingMsg.className = 'opponent-card';
+                waitingMsg.style.textAlign = 'center';
+                waitingMsg.style.padding = '30px';
+                waitingMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
+                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
+                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
+                `;
+                opponentsArea.appendChild(waitingMsg);
+            }
             
             // Verificar se o jogador atual está morto
             if (gameState.current_player_dead) {
@@ -1364,6 +1382,22 @@
         function updateOpponentsArea() {
             const opponentsArea = document.getElementById('opponents-area');
             opponentsArea.innerHTML = '';
+            
+            // Se o jogo não começou, não mostrar oponentes
+            if (!gameState || !gameState.started) {
+                const waitingMsg = document.createElement('div');
+                waitingMsg.className = 'opponent-card';
+                waitingMsg.style.textAlign = 'center';
+                waitingMsg.style.padding = '30px';
+                waitingMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
+                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
+                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
+                `;
+                opponentsArea.appendChild(waitingMsg);
+                return;
+            }
             
             let hasAliveOpponents = false;
             
@@ -2066,6 +2100,25 @@
                 </div>
             `;
         }
+        function createHealAnimation(amount, targetName) {
+            // Encontrar o jogador alvo na interface
+            const playerElement = document.querySelector(`.opponent-card:contains('${targetName}')`) || 
+                                document.getElementById('player-area');
+            
+            if (playerElement) {
+                const healNum = document.createElement('div');
+                healNum.className = 'damage-number';
+                healNum.textContent = `+${amount} ❤️`;
+                healNum.style.color = '#4CAF50';
+                healNum.style.left = '50%';
+                healNum.style.top = '50%';
+                healNum.style.transform = 'translate(-50%, -50%)';
+                healNum.style.animation = 'floatUp 1s ease-out';
+                playerElement.appendChild(healNum);
+                
+                setTimeout(() => healNum.remove(), 1000);
+            }
+        }
 
         function selectCardToRevive(cardId) {
             console.log('Selecionando carta para reviver:', cardId);
@@ -2533,10 +2586,35 @@
 
         window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } });
 
+        window.selectSpellTarget = function(spellId, targetId) {
+            Swal.close();
+            
+            // Para feitiço de cura, mostrar loading e executar
+            if (spellId === 'feitico_cura') {
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'cast_spell',
+                    params: {
+                        spell_id: spellId,
+                        target_player_id: targetId
+                    }
+                });
+            } else {
+                // Para outros feitiços, manter comportamento original
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'cast_spell',
+                    params: {
+                        spell_id: spellId,
+                        target_player_id: targetId
+                    }
+                });
+            }
+        };
+        // Modificar a função selectSpell para incluir o feitiço de cura
         window.selectSpell = function(spellId) {
             Swal.close();
             
-            // Se tem Rei Mago ou Mago Negro, pode escolher alvo
             const playerData = gameState.players[socket.id];
             let hasReiMago = false;
             let hasMagoNegro = false;
@@ -2548,6 +2626,13 @@
                 }
             }
             
+            // Se for feitiço de cura, sempre mostrar seleção de alvo
+            if (spellId === 'feitico_cura') {
+                showTargetSelection(spellId);
+                return;
+            }
+            
+            // Para outros feitiços, manter comportamento original
             if (hasReiMago || hasMagoNegro) {
                 // Para feitiços que precisam de alvo
                 if (['feitico_cortes', 'feitico_troca', 'feitico_capitalista'].includes(spellId)) {
@@ -2665,8 +2750,16 @@
         // Função para mostrar seleção de alvo
         function showTargetSelection(spellId) {
             const targets = [];
+            
+            // Incluir o próprio jogador como opção de alvo
+            targets.push({
+                id: socket.id,
+                name: gameState.players[socket.id].name + " (você)"
+            });
+            
+            // Adicionar outros jogadores
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId !== socket.id) {
+                if (playerId !== socket.id && !playerData.dead) {
                     targets.push({
                         id: playerId,
                         name: playerData.name
@@ -2674,24 +2767,29 @@
                 }
             }
             
-            let targetHtml = '';
+            let targetHtml = '<div style="max-height: 400px; overflow-y: auto;">';
             targets.forEach(target => {
                 targetHtml += `
-                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" style="padding: 10px; margin: 5px; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 5px; cursor: pointer;">
-                        <strong>${target.name}</strong>
+                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
+                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
+                        <strong style="color: #4CAF50; font-size: 16px;">${target.name}</strong>
                     </div>
                 `;
             });
+            targetHtml += '</div>';
             
             Swal.fire({
-                title: 'Selecione o alvo',
-                html: `<div style="max-height: 400px; overflow-y: auto;">${targetHtml}</div>`,
+                title: '🎯 Selecione o alvo da cura',
+                html: targetHtml,
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
-                showConfirmButton: false
+                showConfirmButton: false,
+                width: '500px'
             });
         }
 
@@ -3143,11 +3241,23 @@
                     timer: 2000
                 });
             }
-            else if (data.action === 'attack' && data.result) {
-                showAttackResult(data.result);
-            } else {
-                addLogEntry(`✅ Ação realizada: ${data.action}`);
+            else if (data.action === 'cast_spell' && data.result && data.result.effect) {
+                if (data.result.effect.type === 'heal') {
+                    createHealAnimation(data.result.effect.amount, data.result.effect.target);
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✨ Feitiço de Cura!',
+                        html: `<p style="color: #fff;">${data.result.effect.message}</p>`,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#4CAF50',
+                        timer: 2000
+                    });
+                }
             }
+            else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
+            else { addLogEntry(`✅ Ação realizada: ${data.action}`); }
             
             requestGameState();
         });
