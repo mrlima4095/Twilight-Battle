@@ -1518,6 +1518,7 @@
                 </button>
             `;
             
+            // Adicionar as bases após um pequeno delay para garantir que os elementos existam no DOM
             setTimeout(() => {
                 const attackRow = document.getElementById(`opp-attack-${playerId}`);
                 const defenseRow = document.getElementById(`opp-defense-${playerId}`);
@@ -1525,6 +1526,58 @@
                 if (attackRow) {
                     playerData.attack_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'attack', index, true);
+                        
+                        // Adicionar evento de clique para modo profecia
+                        slot.onclick = function(e) {
+                            e.stopPropagation();
+                            if (prophecyMode && card && card.type === 'creature' && !isDead) {
+                                // Confirmar profecia
+                                Swal.fire({
+                                    title: '🔮 Profetizar Morte?',
+                                    html: `
+                                        <div style="color: #fff;">
+                                            <p><strong>Carta:</strong> ${card.name}</p>
+                                            <p><strong>Jogador:</strong> ${playerData.name}</p>
+                                            <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
+                                        </div>
+                                    `,
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#800080',
+                                    cancelButtonColor: '#ff4444',
+                                    confirmButtonText: '🔮 Profetizar',
+                                    cancelButtonText: 'Cancelar',
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        socket.emit('player_action', {
+                                            game_id: gameId,
+                                            action: 'prophecy',
+                                            params: {
+                                                target_player_id: playerId,
+                                                target_card_type: 'attack',
+                                                target_card_index: index
+                                            }
+                                        });
+                                        
+                                        // Sair do modo profecia
+                                        cancelProphecyMode();
+                                    }
+                                });
+                            } else if (prophecyMode && card) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Alvo inválido',
+                                    text: 'Só é possível profetizar a morte de criaturas',
+                                    timer: 1500,
+                                    showConfirmButton: false,
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                });
+                            }
+                        };
+                        
                         attackRow.appendChild(slot);
                     });
                 }
@@ -1532,6 +1585,58 @@
                 if (defenseRow) {
                     playerData.defense_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'defense', index, true);
+                        
+                        // Adicionar evento de clique para modo profecia
+                        slot.onclick = function(e) {
+                            e.stopPropagation();
+                            if (prophecyMode && card && card.type === 'creature' && !isDead) {
+                                // Confirmar profecia
+                                Swal.fire({
+                                    title: '🔮 Profetizar Morte?',
+                                    html: `
+                                        <div style="color: #fff;">
+                                            <p><strong>Carta:</strong> ${card.name}</p>
+                                            <p><strong>Jogador:</strong> ${playerData.name}</p>
+                                            <p style="color: #ffd700; margin-top: 15px;">Esta carta morrerá em 2 rodadas!</p>
+                                        </div>
+                                    `,
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#800080',
+                                    cancelButtonColor: '#ff4444',
+                                    confirmButtonText: '🔮 Profetizar',
+                                    cancelButtonText: 'Cancelar',
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        socket.emit('player_action', {
+                                            game_id: gameId,
+                                            action: 'prophecy',
+                                            params: {
+                                                target_player_id: playerId,
+                                                target_card_type: 'defense',
+                                                target_card_index: index
+                                            }
+                                        });
+                                        
+                                        // Sair do modo profecia
+                                        cancelProphecyMode();
+                                    }
+                                });
+                            } else if (prophecyMode && card) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Alvo inválido',
+                                    text: 'Só é possível profetizar a morte de criaturas',
+                                    timer: 1500,
+                                    showConfirmButton: false,
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                });
+                            }
+                        };
+                        
                         defenseRow.appendChild(slot);
                     });
                 }
@@ -1539,7 +1644,7 @@
             
             return div;
         }
-        
+
         function updatePlayerArea() {
             const playerData = gameState.players[socket.id];
             const isDead = gameState.dead_players && gameState.dead_players.includes(socket.id);
@@ -2979,6 +3084,23 @@
                 slot.classList.remove('selected-for-equip');
             });
         }
+        window.cancelProphecyMode = function() {
+            prophecyMode = false;
+            
+            // Remover destaques visuais
+            document.querySelectorAll('.opponent-card .base-slot').forEach(slot => {
+                slot.style.cursor = '';
+                slot.style.boxShadow = '';
+                slot.style.borderColor = '';
+            });
+            
+            // Esconder indicador
+            const indicator = document.getElementById('prophecy-mode-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+        }
+
         window.cancelMoveMode = function() {
             console.log('Cancelando modo de troca');
             moveMode = false;
@@ -3008,24 +3130,8 @@
             
             console.log('Modo de troca cancelado');
         }
-        window.cancelProphecyMode = function() {
-            prophecyMode = false;
-            selectedTargetForProphecy = null;
-            
-            // Remover destaques
-            document.querySelectorAll('.opponent-card .base-slot.has-card').forEach(slot => {
-                slot.style.cursor = '';
-                slot.style.boxShadow = '';
-                slot.style.borderColor = '';
-            });
-            
-            // Esconder indicador se existir
-            const indicator = document.getElementById('prophecy-mode-indicator');
-            if (indicator) {
-                indicator.style.display = 'none';
-            }
-        }
 
+        
         slot.onclick = function(e) {
             e.stopPropagation();
             if (prophecyMode && card) {
