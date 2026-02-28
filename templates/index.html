@@ -274,7 +274,7 @@
     <script>
         // Verificar se está logado
         function checkAuth() {
-            fetch('/game/api/auth-status')
+            fetch('/api/auth-status')
                 .then(response => response.json())
                 .then(data => {
                     if (data.logged_in) {
@@ -299,7 +299,7 @@
         
         // Carregar lista de jogos (apenas amigos)
         function loadGames() {
-            fetch('/game/api/games')
+            fetch('/api/games')
                 .then(response => response.json())
                 .then(games => {
                     const container = document.getElementById('games-container');
@@ -333,18 +333,18 @@
         
         // Entrar em um jogo
         window.joinGame = function(gameId) {
-            window.location.href = `/game/${gameId}`;
+            window.location.href = `/${gameId}`;
         };
         
         // Criar nova sala
         document.getElementById('create-game-btn').addEventListener('click', function() {
             document.getElementById('loading').classList.add('active');
             
-            fetch('/game/api/create-game', { method: 'POST' })
+            fetch('/api/create-game', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById('loading').classList.remove('active');
-                    window.location.href = `/game/${data.game_id}`;
+                    window.location.href = `/${data.game_id}`;
                 })
                 .catch(error => {
                     document.getElementById('loading').classList.remove('active');
@@ -375,7 +375,7 @@
                 return;
             }
             
-            window.location.href = `/game/${gameId}`;
+            window.location.href = `/${gameId}`;
         });
         
         // Atualizar lista
@@ -383,7 +383,7 @@
         
         // Logout
         document.getElementById('logout-btn').addEventListener('click', function() {
-            fetch('/game/api/logout', { method: 'POST' })
+            fetch('/api/logout', { method: 'POST' })
                 .then(() => {
                     window.location.href = 'http://localhost:2048/';
                 });

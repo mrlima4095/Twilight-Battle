@@ -1857,7 +1857,7 @@ class Game:
         return None
 
 # Rotas da aplicação
-@app.route('/game/')
+@app.route('/')
 def index():
     token = session.get('token')
     username = session.get('username')
@@ -1878,13 +1878,13 @@ def index():
 @app.route('/rules')
 def rules(): return render_template('rules.html')
 
-@app.route('/game/<game_id>')
+@app.route('/<game_id>')
 def game(game_id):
     if game_id not in games:
         return "Jogo não encontrado", 404
     return render_template('game.html', game_id=game_id)
 
-@app.route('/game/api/games')
+@app.route('/api/games')
 def get_games():
     games_list = []
     for game_id, game in games.items():
@@ -1896,13 +1896,13 @@ def get_games():
         })
     return jsonify(games_list)
 
-@app.route('/game/api/create-game', methods=['POST'])
+@app.route('/api/create-game', methods=['POST'])
 def create_game():
     game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     games[game_id] = Game(game_id)
     return jsonify({'game_id': game_id})
 
-@app.route('/game/start-game/<game_id>', methods=['POST'])
+@app.route('/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):
     if game_id in games:
         game = games[game_id]
@@ -1913,12 +1913,12 @@ def start_game(game_id):
             return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Não foi possível iniciar o jogo'})
 
-@app.route('/game/api/cleanup-games', methods=['POST'])
+@app.route('/api/cleanup-games', methods=['POST'])
 def cleanup_games():
     Game.cleanup_empty_games()
     return jsonify({'success': True})
 
-@app.route('/game/api/auth-status')
+@app.route('/api/auth-status')
 def game_auth_status():
     """Verifica status de autenticação para o jogo"""
     token = session.get('lucy_token')
