@@ -3176,7 +3176,7 @@
         });
 
         setInterval(requestGameState, 3000);
-        setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
+        setInterval(() => { fetch('/game/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
         setInterval(function() {
             if (socket.connected && currentPlayerId) {
                 socket.emit('ping_game', {
