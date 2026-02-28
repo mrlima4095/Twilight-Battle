@@ -2189,9 +2189,7 @@
             logArea.scrollTop = logArea.scrollHeight;
             
             // Manter apenas as últimas 50 entradas
-            while (logArea.children.length > 50) {
-                logArea.removeChild(logArea.firstChild);
-            }
+            while (logArea.children.length > 50) { logArea.removeChild(logArea.firstChild); }
         }
         
 
