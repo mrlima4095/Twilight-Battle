@@ -2508,7 +2508,7 @@
         });
 
         document.getElementById('start-game-btn').addEventListener('click', function() {
-            fetch(`/start-game/${gameId}`, { method: 'POST' })
+            fetch(`/api/start-game/${gameId}`, { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (!data.success) {

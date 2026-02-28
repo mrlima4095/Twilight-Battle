@@ -1900,7 +1900,7 @@ def create_game():
     games[game_id] = Game(game_id)
     return jsonify({'game_id': game_id})
 
-@app.route('/start-game/<game_id>', methods=['POST'])
+@app.route('/api/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):
     if game_id in games:
         game = games[game_id]
