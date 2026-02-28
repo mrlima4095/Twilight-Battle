@@ -564,7 +564,8 @@ class Game:
         self.first_round = True
         self.players_acted = set()  # Jogadores que já fizeram uma ação
         self.attacks_blocked = True  # Ataques bloqueados na primeira rodada
-        
+        self.dead_players = set() 
+
     def add_player(self, player_id, player_name):
         if len(self.players) >= self.max_players or self.started:
             return False
@@ -620,9 +621,31 @@ class Game:
         return False
 
     def next_turn(self):
-        """Avança para o próximo turno (modificado para incluir verificação de profecias)"""
+        """Avança para o próximo turno, pulando jogadores mortos"""
         old_turn_index = self.current_turn
-        self.current_turn = (self.current_turn + 1) % len(self.players)
+        
+        # Encontrar próximo jogador vivo
+        attempts = 0
+        max_attempts = len(self.players) * 2
+        
+        while attempts < max_attempts:
+            self.current_turn = (self.current_turn + 1) % len(self.players)
+            current_player_id = self.players[self.current_turn]
+            
+            # Se o jogador está vivo, sair do loop
+            if current_player_id not in self.dead_players:
+                break
+            
+            attempts += 1
+        
+        # Se todos os jogadores morreram (não deveria acontecer, mas por segurança)
+        if attempts >= max_attempts:
+            # Encontrar qualquer jogador vivo
+            for i, player_id in enumerate(self.players):
+                if player_id not in self.dead_players:
+                    self.current_turn = i
+                    break
+        
         self.turn_actions_used[self.players[self.current_turn]] = set()
         
         # Mudar dia/noite a cada 24 turnos
@@ -680,7 +703,10 @@ class Game:
         
         # Cada ação só pode ser feita uma vez por turno
         return action not in self.turn_actions_used[player_id]
-    
+    def can_player_act(self, player_id):
+        """Verifica se um jogador pode realizar ações (não está morto)"""
+        return player_id not in self.dead_players
+
     def use_action(self, player_id, action):
         """Registra que uma ação foi usada"""
         self.turn_actions_used[player_id].add(action)
@@ -782,6 +808,10 @@ class Game:
         if target_player_id not in self.players:
             return {'success': False, 'message': 'Jogador alvo inválido'}
         
+        # Verificar se o alvo já está morto
+        if target_player_id in self.dead_players:
+            return {'success': False, 'message': 'Este jogador já está morto'}
+        
         attacker = self.player_data.get(player_id)
         defender = self.player_data.get(target_player_id)
         
@@ -862,6 +892,8 @@ class Game:
         
         # Dano restante vai para o jogador
         damage_to_player = 0
+        player_killed = False
+        
         if remaining_damage > 0:
             damage_to_player = remaining_damage
             
@@ -879,11 +911,17 @@ class Game:
             else:
                 defender['life'] -= remaining_damage
                 damage_log.append(f"⚔️ Jogador recebeu {remaining_damage} de dano direto")
+                
+                # Verificar se o jogador morreu
+                if defender['life'] <= 0:
+                    player_killed = True
+                    self.dead_players.add(target_player_id)
+                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
+                    
+                    # Mover todas as cartas do jogador morto para o cemitério
+                    self.move_all_cards_to_graveyard(target_player_id)
         
         self.use_action(player_id, 'attack')
-        
-        if defender['life'] <= 0:
-            damage_log.append(f"💀 {defender['name']} foi derrotado!")
         
         result = {
             'success': True,
@@ -897,11 +935,13 @@ class Game:
             'target_life': defender['life'],
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
-            'log': damage_log
+            'log': damage_log,
+            'player_killed': player_killed,
+            'dead_players': list(self.dead_players)
         }
         
         return result
-    
+
     def move_card(self, player_id, from_type, from_index, to_type, to_index):
         """Move uma carta entre posições"""
         if not self.can_act(player_id, 'move'):
@@ -1832,6 +1872,49 @@ class Game:
         
         return None
 
+    def move_all_cards_to_graveyard(self, player_id):
+        """Move todas as cartas de um jogador morto para o cemitério"""
+        player = self.player_data[player_id]
+        
+        # Mover cartas das bases de ataque
+        for i, card in enumerate(player['attack_bases']):
+            if card:
+                self.graveyard.append(card)
+                player['attack_bases'][i] = None
+        
+        # Mover cartas das bases de defesa
+        for i, card in enumerate(player['defense_bases']):
+            if card:
+                self.graveyard.append(card)
+                player['defense_bases'][i] = None
+        
+        # Mover cartas da mão
+        for card in player['hand']:
+            self.graveyard.append(card)
+        player['hand'] = []
+        
+        # Mover equipamentos
+        for slot, card in player['equipment'].items():
+            if card:
+                self.graveyard.append(card)
+                player['equipment'][slot] = None
+        
+        # Mover talismãs
+        for talisman in player['talismans']:
+            self.graveyard.append(talisman)
+        player['talismans'] = []
+
+    def check_winner(self):
+        """Verifica se há um vencedor (apenas entre jogadores vivos)"""
+        alive_players = []
+        for player_id in self.players:
+            if player_id not in self.dead_players and self.player_data[player_id]['life'] > 0:
+                alive_players.append(player_id)
+        
+        if len(alive_players) == 1:
+            return alive_players[0]
+        return None
+
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -2096,6 +2179,8 @@ def handle_player_action(data):
     if game.players[game.current_turn] != player_id:
         emit('error', {'message': 'Não é o seu turno'})
         return
+    if player_id in self.dead_players:
+        return {'success': False, 'message': 'Você está morto e não pode mais jogar'}
     
     result = None
     
