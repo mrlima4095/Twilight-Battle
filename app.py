@@ -1,20 +1,19 @@
 # app.py
-from flask import Flask, render_template, session, redirect, url_for, request, jsonify
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import random, string, time, uuid, json, requests
+import random
+import string
+import time
 from collections import defaultdict
-from functools import wraps
+import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'twilight-battle-secret'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-LUCY_API_URL = "http://localhost:2048"
-
 # Estruturas de dados do jogo
 games = {}
 players = {}
-player_game_map = {} 
 waiting_players = []
 
 # Definição das cartas
@@ -271,49 +270,49 @@ CARDS = {
         "id": "feitico_cortes", 
         "name": "Feitiço - Cortes", 
         "type": "spell", 
-        "count": 4, 
+        "count": 1, 
         "description": "Aumenta ataque de um monstro em 1024 pontos por duas rodadas."
     },
     "feitico_duro_matar": {
         "id": "feitico_duro_matar", 
         "name": "Feitiço - Duro de matar", 
         "type": "spell", 
-        "count": 4, 
+        "count": 1, 
         "description": "Aumenta defesa do jogador em 1024 pontos por duas rodadas."
     },
-    "feitico_troca": { 
+    "feitico_troca": {
         "id": "feitico_troca", 
         "name": "Feitiço - Troca", 
         "type": "spell", 
-        "count": 2, 
+        "count": 1, 
         "description": "Troca as cartas de outro Jogador de ataque para defesa e vice-versa."
     },
     "feitico_comunista": {
         "id": "feitico_comunista", 
         "name": "Feitiço - Comunista", 
         "type": "spell", 
-        "count": 2, 
+        "count": 1, 
         "description": "Faz as cartas das mãos dos jogadores irem de volta para a pilha."
     },
     "feitico_silencio": {
         "id": "feitico_silencio", 
         "name": "Feitiço - Silêncio", 
         "type": "spell", 
-        "count": 5, 
+        "count": 1, 
         "description": "Os ataques das próximas duas rodadas não ativam armadilhas."
     },
     "feitico_para_sempre": {
         "id": "feitico_para_sempre", 
         "name": "Feitiço - Para Sempre", 
         "type": "spell", 
-        "count": 5, 
+        "count": 1, 
         "description": "Reverte o efeito da espada Blade of Vampires."
     },
     "feitico_capitalista": {
         "id": "feitico_capitalista", 
         "name": "Feitiço - Capitalista", 
         "type": "spell", 
-        "count": 2, 
+        "count": 1, 
         "description": "Troque cartas com outros jogadores."
     },
     
@@ -547,54 +546,6 @@ class RitualManager:
                 available_rituals.append(ritual)
         
         return available_rituals
-class GameAuth:
-    @staticmethod
-    def validate_token(token):
-        try:
-            cookies = { 'session': { 'token': token } } if token else {}
-            response = requests.get(
-                f"{LUCY_API_URL}/api/auth/validate",
-                cookies=cookies,
-                timeout=5
-            )
-            return response.status_code == 200
-        except Exception as e:
-            print(f"Erro ao validar token: {e}")
-            return False
-    
-    @staticmethod
-    def get_user_info(token):
-        """Obtém informações do usuário usando o token da session"""
-        try:
-            cookies = { 'session': { 'token': token } } if token else {}
-            response = requests.get(
-                f"{LUCY_API_URL}/api/auth/status",
-                cookies=cookies,
-                timeout=5
-            )
-            if response.status_code == 200:
-                return response.json().get('user')
-            return None
-        except Exception as e:
-            print(f"Erro ao obter user info: {e}")
-            return None
-    
-    @staticmethod
-    def get_user_friends(token):
-        try:
-            cookies = { 'session': { 'token': token } } if token else {}
-            # Endpoint que usa a session para identificar o usuário
-            response = requests.get(
-                f"{LUCY_API_URL}/api/user/friends",
-                cookies=cookies,
-                timeout=5
-            )
-            if response.status_code == 200:
-                return response.json().get('friends', [])
-            return []
-        except Exception as e:
-            print(f"Erro ao obter amigos: {e}")
-            return []
 class Game:
     def __init__(self, game_id):
         self.game_id = game_id
@@ -1859,24 +1810,12 @@ class Game:
 # Rotas da aplicação
 @app.route('/')
 def index():
-    token = session.get('token')
-    username = session.get('username')
-
-    if token and username:
-        if GameAuth.validate_token(token):
-            # Verificar se já está em uma sala
-            if username in player_game_map:
-                game_id = player_game_map[username]
-                if game_id in games:
-                    # Já está em uma sala, redirecionar para ela
-                    return redirect(url_for('game', game_id=game_id))
-
-    # Se não estiver em nenhuma sala, mostrar página de entrada
     return render_template('index.html')
 @app.route('/rules')
-def rules(): return render_template('rules.html')
+def rules():
+    return render_template('rules.html')
 
-@app.route('/<game_id>')
+@app.route('/game/<game_id>')
 def game(game_id):
     if game_id not in games:
         return "Jogo não encontrado", 404
@@ -1900,7 +1839,7 @@ def create_game():
     games[game_id] = Game(game_id)
     return jsonify({'game_id': game_id})
 
-@app.route('/api/start-game/<game_id>', methods=['POST'])
+@app.route('/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):
     if game_id in games:
         game = games[game_id]
@@ -1915,20 +1854,6 @@ def start_game(game_id):
 def cleanup_games():
     Game.cleanup_empty_games()
     return jsonify({'success': True})
-
-@app.route('/api/auth-status')
-def game_auth_status():
-    """Verifica status de autenticação para o jogo"""
-    token = session.get('lucy_token')
-    username = session.get('username')
-    
-    if token and username and GameAuth.validate_token(token):
-        return jsonify({
-            'logged_in': True,
-            'username': username
-        })
-    
-    return jsonify({'logged_in': False})
 
 # Socket.IO events
 @socketio.on('connect')

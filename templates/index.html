@@ -1,11 +1,13 @@
-<!-- templates/game_index.html -->
+<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Entrar</title>
+    <title>Twilight Battle - RPG de Cartas</title>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
         * {
             margin: 0;
@@ -46,25 +48,6 @@
             text-align: center;
             margin-bottom: 40px;
             font-style: italic;
-        }
-        
-        .user-info {
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid #ffd700;
-            text-align: center;
-        }
-        
-        .user-info h2 {
-            color: #ffd700;
-            margin-bottom: 10px;
-        }
-        
-        .user-info p {
-            color: #fff;
-            font-size: 1.2em;
         }
         
         .join-section {
@@ -192,15 +175,6 @@
             font-weight: bold;
         }
         
-        .logout-btn {
-            background: linear-gradient(45deg, #ff4444, #cc0000);
-            color: white;
-            margin-top: 20px;
-            width: auto;
-            padding: 10px 20px;
-            display: inline-block;
-        }
-        
         .loading {
             display: none;
             text-align: center;
@@ -231,14 +205,14 @@
     <div class="container">
         <h1>Twilight Battle</h1>
         <p class="subtitle">O RPG de cartas onde a noite e o dia decidem seu destino</p>
-        
-        <div class="user-info" id="user-info">
-            <h2>Bem-vindo, <span id="username-display">Carregando...</span>!</h2>
-            <p>Conectado via Lucy</p>
-        </div>
-        
+        <!-- Adicionar link para regras no index.html dentro do join-section -->
+
         <div class="join-section">
             <h2>Entrar em uma partida</h2>
+            <div class="input-group">
+                <label for="player-name">Seu nome</label>
+                <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="20">
+            </div>
             <div class="input-group">
                 <label for="game-id">Código da sala</label>
                 <input type="text" id="game-id" placeholder="Ex: ABC123">
@@ -246,142 +220,121 @@
             <button id="join-game-btn">Entrar na sala</button>
             <button id="create-game-btn" class="create-btn">Criar nova sala</button>
             
+            <!-- LINK PARA REGRAS -->
             <div style="text-align: center; margin-top: 20px;">
-                <a href="/rules" style="color: #ffd700; text-decoration: none; font-size: 1.1em;" target="_blank">
+                <a href="/rules" style="color: #ffd700; text-decoration: none; font-size: 1.1em;">
                     📜 Ver Regras do Jogo
                 </a>
             </div>
         </div>
+
         
         <div class="games-list">
-            <h2>Salas dos seus amigos</h2>
+            <h2>Salas disponíveis</h2>
             <div id="games-container">
-                <div class="game-item">Carregando salas dos amigos...</div>
+                <div class="game-item">
+                    <div class="game-info">Carregando salas...</div>
+                </div>
             </div>
             <button id="refresh-games">Atualizar lista</button>
         </div>
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>Carregando...</p>
+            <p>Conectando ao servidor...</p>
         </div>
     </div>
     
     <script>
-        // Verificar se está logado
-        function checkAuth() {
-            fetch('https://chat.opentty.xyz/api/auth/status')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.logged_in) {
-                        document.getElementById('username-display').textContent = data.username;
-                        loadGames();
-                    } else {
-                        // Redirecionar para login da Lucy
-                        window.location.href = 'http://localhost:2048/';
-                    }
-                })
-                .catch(() => {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erro de autenticação',
-                        text: 'Não foi possível conectar ao sistema Lucy',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                });
-        }
-        
-        // Carregar lista de jogos (apenas amigos)
-        function loadGames() {
-            fetch('/game/api/games')
-                .then(response => response.json())
-                .then(games => {
-                    const container = document.getElementById('games-container');
-                    
-                    if (games.length === 0) {
-                        container.innerHTML = '<div class="game-item">Nenhum dos seus amigos está em uma sala no momento.</div>';
-                        return;
-                    }
-                    
-                    container.innerHTML = '';
-                    games.forEach(game => {
-                        const gameElement = document.createElement('div');
-                        gameElement.className = 'game-item';
-                        gameElement.innerHTML = `
-                            <div class="game-info">
-                                <strong>Sala: ${game.id}</strong><br>
-                                Jogadores: ${game.players}/${game.max_players}<br>
-                                <small>Criado por: ${game.created_by || 'Desconhecido'}</small>
-                            </div>
-                            <span class="game-status ${game.started ? 'status-playing' : 'status-waiting'}">
-                                ${game.started ? 'Em andamento' : 'Aguardando'}
-                            </span>
-                            <button class="join-game-btn" onclick="joinGame('${game.id}')" ${game.started ? 'disabled' : ''}>
-                                Entrar
-                            </button>
-                        `;
-                        container.appendChild(gameElement);
-                    });
-                });
-        }
-        
-        // Entrar em um jogo
-        window.joinGame = function(gameId) {
-            window.location.href = `/game/${gameId}`;
-        };
-        
-        // Criar nova sala
-        document.getElementById('create-game-btn').addEventListener('click', function() {
-            document.getElementById('loading').classList.add('active');
+        document.addEventListener('DOMContentLoaded', function() {
+            const playerNameInput = document.getElementById('player-name');
+            const gameIdInput = document.getElementById('game-id');
+            const joinBtn = document.getElementById('join-game-btn');
+            const createBtn = document.getElementById('create-game-btn');
+            const refreshBtn = document.getElementById('refresh-games');
+            const gamesContainer = document.getElementById('games-container');
+            const loading = document.getElementById('loading');
             
-            fetch('/game/api/create-game', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading').classList.remove('active');
-                    window.location.href = `/game/${data.game_id}`;
-                })
-                .catch(error => {
-                    document.getElementById('loading').classList.remove('active');
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Erro',
-                        text: 'Erro ao criar sala',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
+            // Carregar lista de jogos
+            function loadGames() {
+                fetch('/api/games')
+                    .then(response => response.json())
+                    .then(games => {
+                        if (games.length === 0) {
+                            gamesContainer.innerHTML = '<div class="game-item">Nenhuma sala disponível. Crie uma!</div>';
+                            return;
+                        }
+                        
+                        gamesContainer.innerHTML = '';
+                        games.forEach(game => {
+                            const gameElement = document.createElement('div');
+                            gameElement.className = 'game-item';
+                            gameElement.innerHTML = `
+                                <div class="game-info">
+                                    <strong>Sala: ${game.id}</strong><br>
+                                    Jogadores: ${game.players}/${game.max_players}
+                                </div>
+                                <span class="game-status ${game.started ? 'status-playing' : 'status-waiting'}">
+                                    ${game.started ? 'Em andamento' : 'Aguardando'}
+                                </span>
+                                <button class="join-game-btn" onclick="joinGame('${game.id}')" ${game.started ? 'disabled' : ''}>
+                                    Entrar
+                                </button>
+                            `;
+                            gamesContainer.appendChild(gameElement);
+                        });
                     });
-                });
-        });
-        
-        // Entrar em sala por código
-        document.getElementById('join-game-btn').addEventListener('click', function() {
-            const gameId = document.getElementById('game-id').value.trim();
-            
-            if (!gameId) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Código da sala',
-                    text: 'Digite o código da sala!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
             }
             
-            window.location.href = `/${gameId}`;
+            window.joinGame = function(gameId) {
+                const playerName = playerNameInput.value.trim();
+                if (!playerName) {
+                    alert('Digite seu nome primeiro!');
+                    return;
+                }
+                
+                // Salvar nome e redirecionar
+                localStorage.setItem('playerName', playerName);
+                window.location.href = `/game/${gameId}`;
+            };
+            
+            createBtn.addEventListener('click', function() {
+                loading.classList.add('active');
+                
+                fetch('/api/create-game', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        loading.classList.remove('active');
+                        gameIdInput.value = data.game_id;
+                        window.location.href = `/game/${data.game_id}`
+                    })
+                    .catch(error => {
+                        loading.classList.remove('active');
+                        alert('Erro ao criar sala');
+                    });
+            });
+            
+            refreshBtn.addEventListener('click', loadGames);
+            
+            joinBtn.addEventListener('click', function() {
+                const playerName = playerNameInput.value.trim();
+                const gameId = gameIdInput.value.trim();
+                
+                if (!playerName || !gameId) {
+                    alert('Preencha seu nome e o código da sala!');
+                    return;
+                }
+                
+                localStorage.setItem('playerName', playerName);
+                window.location.href = `/game/${gameId}`;
+            });
+            
+            // Carregar lista inicial
+            loadGames();
+            
+            // Atualizar a cada 10 segundos
+            setInterval(loadGames, 10000);
         });
-        
-        // Atualizar lista
-        document.getElementById('refresh-games').addEventListener('click', loadGames);
-        
-        // Atualizar a cada 10 segundos
-        setInterval(loadGames, 10000);
-        
-        // Iniciar
-        checkAuth();
     </script>
 </body>
 </html>
