@@ -19,62 +19,359 @@ waiting_players = []
 # Definição das cartas
 CARDS = {
     # Criaturas
-    "elfo": {"id": "elfo", "name": "Elfo", "type": "creature", "life": 512, "attack": 512, "count": 40, "description": "Não ataca outros elfos. Use para realizar oraculos."},
-    "zumbi": {"id": "zumbi", "name": "Zumbi", "type": "creature", "life": 100, "attack": 100, "count": 30, "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", "dies_daylight": True},
-    "medusa": {"id": "medusa", "name": "Medusa", "type": "creature", "life": 1024, "attack": 150, "count": 1, "description": "Seu ataque transforma personagens em pedra. Cartas com maior vida são imunes."},
-    "vampiro_tayler": {"id": "vampiro_tayler", "name": "Vampiro - Necrothic Tayler", "type": "creature", "life": 512, "attack": 100, "count": 1, "description": "Rouba a vida do oponente para recuperar a vida de seu jogador.", "dies_daylight": True},
-    "vampiro_wers": {"id": "vampiro_wers", "name": "Vampiro - Benjamim Wers", "type": "creature", "life": 512, "attack": 250, "count": 1, "description": "Mata todos os centauros em campo dos oponentes e entrega a vida a jogador.", "dies_daylight": True},
-    "profeta": {"id": "profeta", "name": "Profeta", "type": "creature", "life": 256, "attack": 50, "count": 1, "description": "Anuncia a morte de um monstro para duas rodadas a frente. A maldição pode ser retirada caso o jogador seja derrotado."},
-    "mago_negro": {"id": "mago_negro", "name": "Mago Negro", "type": "creature", "life": 2000, "attack": 1500, "count": 1, "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta"},
-    "apollo": {"id": "apollo", "name": "Apollo", "type": "creature", "life": 8200, "attack": 2000, "count": 1, "description": "Ataques sofridos com menos de 5k de dano recuperam a vida do jogador se colocado na defesa, não pode ficar na defesa por mais de 5 rodadas. Durante o dia pode revelar cartas em jogo do oponente."},
-    "apofis": {"id": "apofis", "name": "Apofis", "type": "creature", "life": 32500, "attack": 5000, "count": 1, "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."},
-    "leviatan": {"id": "leviatan", "name": "Leviatã", "type": "creature", "life": 15000, "attack": 15000, "count": 1, "description": "Imune a elementais de fogo. Só pode ser domado por deuses e magos supremos."},
-    "mago": {"id": "mago", "name": "Mago", "type": "creature", "life": 800, "attack": 300, "count": 25, "description": "Use-o para invocar feitiços."},
-    "ninfa": {"id": "ninfa", "name": "Ninfa - Belly Lorem", "type": "creature", "life": 512, "attack": 128, "count": 1, "description": "Torna o jogador imune a rituais."},
-    "centauro": {"id": "centauro", "name": "Centauro", "type": "creature", "life": 512, "attack": 150, "count": 35, "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."},
-    "super_centauro": {"id": "super_centauro", "name": "Super Centauro", "type": "creature", "life": 600, "attack": 256, "count": 5, "description": "Apenas ataques diretos. Pode encantar centauros de outros jogadores e pegar eles para a sua mão (os centauros que estão em campo)"},
-    "rei_mago": {"id": "rei_mago", "name": "Rei Mago", "type": "creature", "life": 2000, "attack": 1500, "count": 1, "description": "Pode impedir outros magos de realizar feitiços. Realiza feitiços sem possuir a carta."},
-    "dragao": {"id": "dragao", "name": "Dragão", "type": "creature", "life": 5000, "attack": 1500, "count": 3, "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."},
-    "fenix": {"id": "fenix", "name": "Fênix", "type": "creature", "life": 32500, "attack": 10000, "count": 1, "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."},
+    # - Tropas
+    "elfo": {
+        "id": "elfo",
+        "name": "Elfo",
+        "type": "creature",
+        "life": 512, 
+        "attack": 512,
+        "count": 40, 
+        "description": "Não ataca outros elfos. Use para realizar oraculos."
+    },
+    
+    "zumbi": {
+        "id": "zumbi", 
+        "name": "Zumbi",
+        "type": "creature",
+        "life": 100, 
+        "attack": 100,
+        "count": 40, 
+        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
+        "dies_daylight": True
+    },
+    
+    "centauro": {
+        "id": "centauro",
+        "name": "Centauro", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 150, 
+        "count": 40, 
+        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
+    },
+    
+    "mago": {
+        "id": "mago",
+        "name": "Mago",
+        "type": "creature", 
+        "life": 800, 
+        "attack": 250, 
+        "count": 40, 
+        "description": "Use-o para invocar feitiços."
+    },
+    
+    # -- Especiais
+    "vampiro_wers": {
+        "id": "vampiro_wers", 
+        "name": "Vampiro - Benjamim Wers", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 250, 
+        "count": 1, 
+        "description": "Mata todos os centauros em campo dos oponentes e entrega a vida a jogador.", 
+        "dies_daylight": True
+    },
+    "vampiro_tayler": {
+        "id": "vampiro_tayler", 
+        "name": "Vampiro - Necrothic Tayler", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 100, 
+        "count": 1, 
+        "description": "Rouba a vida do oponente para recuperar a vida de seu jogador.", 
+        "dies_daylight": True
+    },
+    
+    "ninfa_lorem": {
+        "id": "ninfa", 
+        "name": "Ninfa - Belly Lorem", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 128, 
+        "count": 1, 
+        "description": "Torna o jogador imune a rituais."
+    },
+    
+    # - Mestres
+    "rei_mago": {
+        "id": "rei_mago", 
+        "name": "Rei Mago", 
+        "type": "creature", 
+        "life": 2000, 
+        "attack": 1500, 
+        "count": 1, 
+        "description": "Pode impedir outros magos de realizar feitiços. Realiza feitiços sem possuir a carta."
+    },
+    "mago_negro": {
+        "id": "mago_negro", 
+        "name": "Mago Negro", 
+        "type": "creature", 
+        "life": 2000, 
+        "attack": 1500, 
+        "count": 1, 
+        "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta"
+    },
+    
+    "apollo": {
+        "id": "apollo", 
+        "name": "Apollo", 
+        "type": "creature", 
+        "life": 8200, 
+        "attack": 2000, 
+        "count": 1, 
+        "description": "Ataques sofridos com menos de 5k de dano recuperam a vida do jogador se colocado na defesa, não pode ficar na defesa por mais de 5 rodadas."
+    },
+    
+    # - Bestas
+    "dragao": {
+        "id": "dragao", 
+        "name": "Dragão", 
+        "type": "creature", 
+        "life": 5000, 
+        "attack": 1500, 
+        "count": 10, 
+        "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
+    },
+    "leviatan": {
+        "id": "leviatan", 
+        "name": "Leviatã", 
+        "type": "creature", 
+        "life": 15000, 
+        "attack": 15000, 
+        "count": 1, 
+        "description": "Só pode ser domado por deuses e magos supremos."
+    },
+    "apofis": {
+        "id": "apofis", 
+        "name": "Apofis", 
+        "type": "creature", 
+        "life": 32500, 
+        "attack": 5000, 
+        "count": 1, 
+        "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."
+    },
+    "fenix": {
+        "id": "fenix", 
+        "name": "Fênix", 
+        "type": "creature", 
+        "life": 32500, 
+        "attack": 10000, 
+        "count": 1, 
+        "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."
+    },
+
+    "medusa": {
+        "id": "medusa", 
+        "name": "Medusa", 
+        "type": "creature", 
+        "life": 1024, 
+        "attack": 512, 
+        "count": 1, 
+        "description": "Seu ataque transforma personagens em pedra. Cartas com maior vida são imunes."
+    },
+    
+    "profeta": {
+        "id": "profeta", 
+        "name": "Profeta", 
+        "type": "creature", 
+        "life": 256, 
+        "attack": 50, 
+        "count": 1, 
+        "description": "Anuncia a morte de um monstro para duas rodadas a frente. A maldição pode ser retirada caso o jogador seja derrotado."
+    },
+    
+    "super_centauro": {
+        "id": "super_centauro", 
+        "name": "Super Centauro", 
+        "type": "creature", 
+        "life": 600, 
+        "attack": 256, 
+        "count": 5, 
+        "description": "Apenas ataques diretos. Pode encantar centauros de outros jogadores e pegar eles para a sua mão (os centauros que estão em campo)"
+    },
     
     # Itens/Espadas
-    "lamina_almas": {"id": "lamina_almas", "name": "Lâmina das Almas", "type": "weapon", "attack": 0, "count": 1, "description": "Assume o dano de uma carta do cemitério. Só pode ser equipado por Elfos, magos e vampiros."},
-    "blade_vampires": {"id": "blade_vampires", "name": "Blade of Vampires", "type": "weapon", "attack": 5000, "count": 1, "description": "Só pode ser usada por um vampiro. Seu ataque torna o oponente noturno (morre de dia)"},
-    "blade_dragons": {"id": "blade_dragons", "name": "Blade of Dragons", "type": "weapon", "attack": 5000, "count": 1, "description": "Usada apenas por elfos ou vampiros. Seu ataque pode eliminar personagens permanentemente tornando impossíveis de reviver ou ser invocados de volta do cemitério."},
+    "lamina_almas": {
+        "id": "lamina_almas", 
+        "name": "Lâmina das Almas", 
+        "type": "weapon", 
+        "attack": 0, 
+        "count": 1, 
+        "description": "Assume o dano de uma carta do cemitério. Só pode ser equipado por Elfos, magos e vampiros."
+    },
+    
+    "blade_vampires": {
+        "id": "blade_vampires", 
+        "name": "Blade of Vampires", 
+        "type": "weapon", 
+        "attack": 5000, 
+        "count": 1, 
+        "description": "Só pode ser usada por um vampiro. Seu ataque torna o oponente noturno (morre de dia)"
+    },
+    "blade_dragons": {
+        "id": "blade_dragons", 
+        "name": "Blade of Dragons", 
+        "type": "weapon", 
+        "attack": 5000, 
+        "count": 1, 
+        "description": "Usada apenas por elfos ou vampiros. Seu ataque pode eliminar personagens permanentemente tornando impossíveis de reviver ou ser invocados de volta do cemitério."
+    },
     
     # Armaduras/Equipamentos
-    "capacete_trevas": {"id": "capacete_trevas", "name": "Capacete das Trevas", "type": "armor", "protection": 800, "count": 15, "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada a carta."},
+    "capacete_trevas": {
+        "id": "capacete_trevas", 
+        "name": "Capacete das Trevas", 
+        "type": "armor", 
+        "protection": 800, 
+        "count": 20, 
+        "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada a carta."
+    },
     
     # Talismãs (não podem ser jogados, apenas segurados)
-    "talisma_ordem": {"id": "talisma_ordem", "name": "Talismã - Ordem", "type": "talisman", "count": 1, "description": "Imunidade ao Caos."},
-    "talisma_imortalidade": {"id": "talisma_imortalidade", "name": "Talismã - Imortalidade", "type": "talisman", "count": 1, "description": "Se o jogador for morto com este item em mãos ele terá seus pontos de vida restaurados."},
-    "talisma_verdade": {"id": "talisma_verdade", "name": "Talismã - Verdade", "type": "talisman", "count": 1, "description": "Imunidade a feitiços e oráculos."},
-    "talisma_guerreiro": {"id": "talisma_guerreiro", "name": "Talismã - Guerreiro", "type": "talisman", "count": 1, "description": "Aumenta em 1000 pontos o ataque e defesa do jogador."},
+    "talisma_ordem": {
+        "id": "talisma_ordem", 
+        "name": "Talismã - Ordem", 
+        "type": "talisman", 
+        "count": 1, 
+        "description": "Imunidade ao Caos."
+    },
+    "talisma_imortalidade": {
+        "id": "talisma_imortalidade", 
+        "name": "Talismã - Imortalidade", 
+        "type": "talisman", 
+        "count": 1, 
+        "description": "Se o jogador for morto com este item em mãos ele terá seus pontos de vida restaurados."
+    },
+    "talisma_verdade": {
+        "id": "talisma_verdade", 
+        "name": "Talismã - Verdade", 
+        "type": "talisman", 
+        "count": 1, 
+        "description": "Imunidade a feitiços e oráculos."
+    },
+    "talisma_guerreiro": {
+        "id": "talisma_guerreiro", 
+        "name": "Talismã - Guerreiro", 
+        "type": "talisman", 
+        "count": 1, 
+        "description": "Aumenta em 1024 pontos o ataque e defesa do jogador."
+    },
     
     # Runas
-    "runa": {"id": "runa", "name": "Runa", "type": "rune", "count": 20, "description": "Colete quatro runas para realizar uma invocação de um personagem do cemitério."},
+    "runa": {
+        "id": "runa", 
+        "name": "Runa", 
+        "type": "rune",
+        "count": 40, 
+        "description": "Colete quatro runas para realizar uma invocação de um personagem do cemitério."
+    },
     
     # Feitiços
-    "feitico_cortes": {"id": "feitico_cortes", "name": "Feitiço - Cortes", "type": "spell", "count": 1, "description": "Aumenta ataque de um monstro em 1024 pontos."},
-    "feitico_duro_matar": {"id": "feitico_duro_matar", "name": "Feitiço - Duro de matar", "type": "spell", "count": 1, "description": "Aumenta defesa do jogador em 1024 pontos."},
-    "feitico_troca": {"id": "feitico_troca", "name": "Feitiço - Troca", "type": "spell", "count": 1, "description": "Troca as cartas do Jogador de defesa para ataque e vice-versa de um jogador."},
-    "feitico_comunista": {"id": "feitico_comunista", "name": "Feitiço - Comunista", "type": "spell", "count": 1, "description": "Faz as cartas das mãos dos jogadores irem de volta para a pilha."},
-    "feitico_silencio": {"id": "feitico_silencio", "name": "Feitiço - Silêncio", "type": "spell", "count": 1, "description": "Os ataques das próximas duas rodadas não ativam armadilhas."},
-    "feitico_para_sempre": {"id": "feitico_para_sempre", "name": "Feitiço - Para Sempre", "type": "spell", "count": 1, "description": "Reverte o efeito da espada Blade of Vampires."},
-    "feitico_capitalista": {"id": "feitico_capitalista", "name": "Feitiço - Capitalista", "type": "spell", "count": 1, "description": "Troque cartas com outros jogadores."},
+    "feitico_cortes": {
+        "id": "feitico_cortes", 
+        "name": "Feitiço - Cortes", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Aumenta ataque de um monstro em 1024 pontos por duas rodadas."
+    },
+    "feitico_duro_matar": {
+        "id": "feitico_duro_matar", 
+        "name": "Feitiço - Duro de matar", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Aumenta defesa do jogador em 1024 pontos por duas rodadas."
+    },
+    "feitico_troca": {
+        "id": "feitico_troca", 
+        "name": "Feitiço - Troca", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Troca as cartas de outro Jogador de ataque para defesa e vice-versa."
+    },
+    "feitico_comunista": {
+        "id": "feitico_comunista", 
+        "name": "Feitiço - Comunista", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Faz as cartas das mãos dos jogadores irem de volta para a pilha."
+    },
+    "feitico_silencio": {
+        "id": "feitico_silencio", 
+        "name": "Feitiço - Silêncio", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Os ataques das próximas duas rodadas não ativam armadilhas."
+    },
+    "feitico_para_sempre": {
+        "id": "feitico_para_sempre", 
+        "name": "Feitiço - Para Sempre", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Reverte o efeito da espada Blade of Vampires."
+    },
+    "feitico_capitalista": {
+        "id": "feitico_capitalista", 
+        "name": "Feitiço - Capitalista", 
+        "type": "spell", 
+        "count": 1, 
+        "description": "Troque cartas com outros jogadores."
+    },
     
     # Oraculo
-    "oraculo": {"id": "oraculo", "name": "Oráculo", "type": "oracle", "count": 1, "description": "Mate o oponente com o talismã da imortalidade três vezes para que ele seja derrotado permanentemente, seja rápido antes que ele junte todos os talismãs."},
+    "oraculo": {
+        "id": "oraculo", 
+        "name": "Oráculo", 
+        "type": "oracle", 
+        "count": 1, 
+        "description": "Mate o oponente com o talismã da imortalidade três vezes para que ele seja derrotado permanentemente, seja rápido antes que ele junte todos os talismãs."
+    },
     
     # Rituais (requerem condições específicas)
-    "ritual_157": {"id": "ritual_157", "name": "Ritual 157", "type": "ritual", "count": 1, "description": "Requer Apofis, Mago Negro, 6 zumbis e 2 elfos em modo de defesa. Todos os talismãs da mão do jogador escolhido são roubados."},
-    "ritual_amor": {"id": "ritual_amor", "name": "Ritual Amor", "type": "ritual", "count": 1, "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."},
+    "ritual_157": {
+        "id": "ritual_157", 
+        "name": "Ritual 157", 
+        "type": "ritual", 
+        "count": 1, 
+        "description": "Requer Apofis, Mago Negro, 6 zumbis e 2 elfos em modo de defesa. Todos os talismãs da mão do jogador escolhido são roubados."
+    },
+    "ritual_amor": {
+        "id": "ritual_amor", 
+        "name": "Ritual Amor", 
+        "type": "ritual", 
+        "count": 1, 
+        "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."
+    },
     
     # Armadilhas
-    "armadilha_51": {"id": "armadilha_51", "name": "Armadilha 51", "type": "trap", "count": 1, "description": "Faz o exército do outro jogador ficar bêbado e atacar aliados."},
-    "armadilha_171": {"id": "armadilha_171", "name": "Armadilha 171", "type": "trap", "count": 1, "description": "Rouba a carta que te dá um golpe crítico."},
-    "armadilha_espelho": {"id": "armadilha_espelho", "name": "Armadilha Espelho", "type": "trap", "count": 1, "description": "Reverte ataques e magia."},
-    "armadilha_cheat": {"id": "armadilha_cheat", "name": "Armadilha Cheat", "type": "trap", "count": 1, "description": "Dobrar o ataque e passar para o próximo jogador na rodada, precisa estar de noite e um mago em campo."}
+    "armadilha_51": {
+        "id": "armadilha_51", 
+        "name": "Armadilha 51", 
+        "type": "trap", 
+        "count": 1, 
+        "description": "Faz o exército do outro jogador ficar bêbado e atacar aliados."
+    },
+    "armadilha_171": {
+        "id": "armadilha_171", 
+        "name": "Armadilha 171", 
+        "type": "trap", 
+        "count": 1, 
+        "description": "Rouba a carta que te dá um golpe crítico."
+    },
+    "armadilha_espelho": {
+        "id": "armadilha_espelho", 
+        "name": "Armadilha Espelho", 
+        "type": "trap", 
+        "count": 1, 
+        "description": "Reverte ataques e magia."
+    },    
+    "armadilha_cheat": {
+        "id": "armadilha_cheat", 
+        "name": "Armadilha Cheat", 
+        "type": "trap", 
+        "count": 1, 
+        "description": "Dobrar o ataque e passar para o próximo jogador na rodada, precisa estar de noite e um mago em campo."
+    }
 }
 
 def create_deck():
