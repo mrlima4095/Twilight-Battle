@@ -1875,7 +1875,7 @@ def index():
 
     # Se não estiver em nenhuma sala, mostrar página de entrada
     return render_template('index.html')
-@app.route('/game/rules')
+@app.route('/rules')
 def rules(): return render_template('rules.html')
 
 @app.route('/game/<game_id>')
