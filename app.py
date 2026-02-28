@@ -2098,20 +2098,44 @@ def handle_player_action(data):
         return
 
     result = None
+    player_name = game.player_data[player_id]['name']
+    timestamp = time.strftime('%H:%M:%S')
     
     try:
         if action == 'draw':
             result = game.draw_card(player_id)
+            if result and result.get('success'):
+                log_message = f"📥 {player_name} comprou uma carta"
+                
         elif action == 'play_card':
             result = game.play_card(player_id, params['card_id'], params['position_type'], params['position_index'])
+            if result and result.get('success'):
+                card_name = result.get('card', {}).get('name', 'uma carta')
+                log_message = f"🎴 {player_name} jogou {card_name}"
+                
         elif action == 'attack':
             result = game.attack(player_id, params['target_id'])
+            if result and result.get('success'):
+                target_name = result.get('target_name', 'um oponente')
+                damage = result.get('damage_to_player', 0)
+                log_message = f"⚔️ {player_name} atacou {target_name} causando {damage} de dano"
+                
         elif action == 'equip_item':
             result = game.equip_item_to_creature(player_id, params['item_card_id'], params['creature_card_id'])
+            if result and result.get('success'):
+                log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
+                
         elif action == 'cast_spell':
             result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
+            if result and result.get('success'):
+                spell_name = result.get('spell', {}).get('name', 'um feitiço')
+                log_message = f"✨ {player_name} usou {spell_name}"
+                
         elif action == 'ritual':
             result = game.perform_ritual(player_id, params['ritual_id'], params.get('target_player_id'))
+            if result and result.get('success'):
+                log_message = f"📿 {player_name} realizou {result.get('message', 'um ritual')}"
+                
         elif action == 'swap_positions':
             result = game.swap_positions(
                 player_id, 
@@ -2120,17 +2144,36 @@ def handle_player_action(data):
                 params['pos2_type'], 
                 params['pos2_index']
             )
+            if result and result.get('success'):
+                log_message = f"🔄 {player_name} trocou posições das cartas"
+                
         elif action == 'move_card':
             result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
+            if result and result.get('success'):
+                log_message = f"↔️ {player_name} moveu uma carta"
+                
         elif action == 'flip_card':
             result = game.flip_card(player_id, params['position_type'], params['position_index'])
+            if result and result.get('success'):
+                log_message = f"🔄 {player_name} desvirou uma carta"
+                
         elif action == 'oracle':
             result = game.perform_oracle(player_id, params['target_id'])
+            if result and result.get('success'):
+                log_message = f"👁️ {player_name} realizou um oráculo"
+                
         elif action == 'revive':
             result = game.revive_from_graveyard(player_id, params.get('card_id'))
+            if result and result.get('success'):
+                card_name = result.get('card', {}).get('name', 'uma carta')
+                log_message = f"🔄 {player_name} reviveu {card_name} do cemitério"
+                
         elif action == 'end_turn':
             game.next_turn()
-            result = {'success': True, 'next_turn': game.players[game.current_turn]}
+            next_player_id = game.players[game.current_turn]
+            next_player_name = game.player_data[next_player_id]['name']
+            result = {'success': True, 'next_turn': next_player_id}
+            log_message = f"⏰ {player_name} finalizou o turno (próximo: {next_player_name})"
         
         if result and result.get('success'):
             # Registrar ação para primeira rodada (exceto end_turn)
@@ -2141,28 +2184,50 @@ def handle_player_action(data):
             if first_round_ended:
                 result['first_round_ended'] = True
                 # Notificar todos que a primeira rodada terminou
-                emit('first_round_ended', {}, room=game_id)
+                emit('first_round_ended', {
+                    'message': '🎉 PRIMEIRA RODADA CONCLUÍDA! Todos já jogaram, ataques liberados!'
+                }, room=game_id)
             
             print(f"Ação {action} bem-sucedida: {result}")
+            
+            # Emitir ação com todas as informações para o log
             emit('action_success', {
                 'player_id': player_id,
+                'player_name': player_name,
                 'action': action,
-                'result': result
+                'result': result,
+                'log_message': log_message,
+                'timestamp': timestamp
             }, room=game_id)
             
             winner = game.check_winner()
             if winner:
-                emit('game_over', {'winner': winner}, room=game_id)
+                winner_name = game.player_data[winner]['name']
+                emit('game_over', {
+                    'winner': winner,
+                    'winner_name': winner_name,
+                    'message': f'🏆 {winner_name} VENCEU O JOGO!'
+                }, room=game_id)
         else:
             error_msg = result['message'] if result else 'Ação inválida'
             print(f"Erro na ação {action}: {error_msg}")
-            emit('action_error', {'message': error_msg})
+            emit('action_error', {
+                'message': error_msg,
+                'player_name': player_name,
+                'action': action,
+                'timestamp': timestamp
+            })
             
     except Exception as e:
         print(f"Exceção na ação {action}: {str(e)}")
         import traceback
         traceback.print_exc()
-        emit('action_error', {'message': f'Erro interno: {str(e)}'})
+        emit('action_error', {
+            'message': f'Erro interno: {str(e)}',
+            'player_name': player_name,
+            'action': action,
+            'timestamp': timestamp
+        })
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)

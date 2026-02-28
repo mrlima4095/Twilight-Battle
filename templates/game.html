@@ -1137,12 +1137,11 @@
         });
 
         socket.on('game_over', function(data) {
-            const winner = data.winner;
-            const winnerName = gameState.players[winner].name;
+            addLogEntry(data.message || '🏆 Jogo terminou!', data.winner_name, 'game_over');
             
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
-                html: `<h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>`,
+                html: `<h2 style="color: #ffd700;">${data.winner_name} VENCEU!</h2>`,
                 icon: 'success',
                 background: '#1a1a2e',
                 color: '#fff',
@@ -2143,14 +2142,58 @@
             });
         }
 
-        function addLogEntry(message) {
+        function addLogEntry(message, playerName = null, action = null, timestamp = null) {
             const logArea = document.querySelector('.log-area') || createLogArea();
             const entry = document.createElement('div');
             entry.className = 'log-entry';
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            // Usar timestamp do servidor se fornecido, senão usar local
+            const timeStr = timestamp || new Date().toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
+            // Adicionar ícone baseado no tipo de ação
+            let icon = '✅';
+            if (action) {
+                const actionIcons = {
+                    'draw': '📥',
+                    'play_card': '🎴',
+                    'attack': '⚔️',
+                    'equip_item': '🔰',
+                    'cast_spell': '✨',
+                    'ritual': '📿',
+                    'swap_positions': '🔄',
+                    'move_card': '↔️',
+                    'flip_card': '🔄',
+                    'oracle': '👁️',
+                    'revive': '🔄',
+                    'end_turn': '⏰',
+                    'join': '👋',
+                    'leave': '👋',
+                    'reconnect': '🔄',
+                    'start': '🎮'
+                };
+                icon = actionIcons[action] || '✅';
+            }
+            
+            // Se tiver nome do jogador, incluir no formato [Nome]
+            if (playerName) {
+                entry.innerHTML = `<span style="color: #888;">[${timeStr}]</span> ${icon} <span style="color: #ffd700;">[${playerName}]</span> ${message}`;
+            } else {
+                entry.innerHTML = `<span style="color: #888;">[${timeStr}]</span> ${icon} ${message}`;
+            }
+            
             logArea.appendChild(entry);
             logArea.scrollTop = logArea.scrollHeight;
+            
+            // Manter apenas as últimas 50 entradas
+            while (logArea.children.length > 50) {
+                logArea.removeChild(logArea.firstChild);
+            }
         }
+        
 
         function createLogArea() {
             const logArea = document.createElement('div');
@@ -3179,7 +3222,7 @@
             console.log('Ação bem-sucedida:', data);
             
             // Verificar se a primeira rodada terminou
-            if (data.result && data.result.first_round_ended) {
+            /*if (data.result && data.result.first_round_ended) {
                 Swal.fire({
                     icon: 'success',
                     title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
@@ -3189,7 +3232,7 @@
                     confirmButtonColor: '#ffd700',
                     timer: 3000
                 });
-            }
+            }*/
             
             // Se a ação foi uma troca de posições, sair do modo de troca
             if (data.action === 'swap_positions' && data.result && data.result.success) {
@@ -3257,12 +3300,15 @@
                 }
             }
             else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
-            else { addLogEntry(`✅ Ação realizada: ${data.action}`); }
             
             requestGameState();
         });
         socket.on('action_error', function(data) {
             console.error('Erro na ação:', data);
+            
+            // Adicionar ao log como erro
+            addLogEntry(`❌ Erro: ${data.message}`, data.player_name, 'error', data.timestamp);
+            
             Swal.fire({
                 icon: 'error',
                 title: 'Erro',
