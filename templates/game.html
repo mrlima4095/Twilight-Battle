@@ -771,8 +771,16 @@
 
         const socket = io({
             reconnection: true,
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000,
+            transports: ['websocket', 'polling'], // Tenta websocket primeiro, depois polling
+            upgrade: true,
+            rememberUpgrade: true,
+            path: '/socket.io/',
+            secure: true,
+            rejectUnauthorized: false
         });
         
         let currentPlayerId = null;
@@ -858,9 +866,19 @@
             
             setTimeout(requestGameState, 500);
         });
-        socket.on('connect_error', function(error) {
-            console.error('Erro de conexão:', error);
-            attemptReconnection();
+
+        socket.on('connect_error', (error) => {
+            console.error('Erro de conexão detalhado:', error);
+            
+            // Tenta reconectar com transporte polling como fallback
+            if (socket.io.opts.transports[0] === 'websocket') {
+                console.log('Tentando fallback para polling...');
+                socket.io.opts.transports = ['polling', 'websocket'];
+            }
+        });
+
+        socket.on('reconnect_attempt', (attempt) => {
+            console.log(`Tentativa de reconexão ${attempt}`);
         });
 
         socket.on('disconnect', function(reason) {
