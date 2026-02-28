@@ -2259,4 +2259,4 @@ def handle_player_action(data):
         emit('action_error', {'message': f'Erro interno: {str(e)}'})
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, port=5000)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
