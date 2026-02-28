@@ -577,6 +577,9 @@
             bottom: 0;
         }
 
+        .action-btn.ritual { background: linear-gradient(45deg, #9370db, #8a2be2); color: white; }
+        .action-btn.ritual:hover { box-shadow: 0 5px 15px #9370db; }
+
         .action-buttons .action-btn { display: none; }
         .action-buttons .action-btn[style*="display: inline-block"] { display: inline-block !important; }
 
@@ -678,7 +681,7 @@
             <div class="action-buttons">
                 <button class="action-btn" id="draw-btn">📥 Comprar carta</button>
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
-                <button class="action-btn trap" id="trap-btn">⚠️ Colocar Armadilha</button>
+                <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas) - <span id="runas-count">0</span></button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
@@ -1028,7 +1031,56 @@
                 width: '800px'
             });
         });
-        
+        socket.on('rituals_list', function(data) {
+            console.log('Rituais disponíveis:', data);
+            
+            if (data.rituals.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem rituais disponíveis',
+                    text: 'Você não tem rituais disponíveis no momento',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let ritualsHtml = '<div style="max-height: 500px; overflow-y: auto;">';
+            
+            data.rituals.forEach(ritual => {
+                const statusColor = ritual.conditions_met ? '#4CAF50' : '#ff4444';
+                const statusIcon = ritual.conditions_met ? '✅' : '❌';
+                
+                ritualsHtml += `
+                    <div class="ritual-option" onclick="${ritual.conditions_met ? `selectRitual('${ritual.id}')` : 'event.preventDefault()'}" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(147, 112, 219, 0.2); border: 2px solid ${statusColor}; border-radius: 10px; cursor: ${ritual.conditions_met ? 'pointer' : 'not-allowed'}; transition: all 0.3s;"
+                        ${ritual.conditions_met ? 'onmouseover="this.style.background=\'rgba(147, 112, 219, 0.4)\'" onmouseout="this.style.background=\'rgba(147, 112, 219, 0.2)\'"' : ''}>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: #ffd700; font-size: 16px;">${ritual.name}</strong>
+                            <span style="color: ${statusColor};">${statusIcon}</span>
+                        </div>
+                        <p style="color: #fff; margin: 5px 0;">${ritual.description}</p>
+                        <p style="color: ${statusColor}; font-size: 12px; margin-top: 5px;">${ritual.message}</p>
+                    </div>
+                `;
+            });
+            
+            ritualsHtml += '</div>';
+            
+            Swal.fire({
+                title: '📿 Rituais Disponíveis',
+                html: ritualsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        });
+
         socket.on('action_success', function(data) {
             console.log('Ação bem-sucedida:', data);
             requestGameState();
@@ -2163,6 +2215,22 @@
             }
         });
 
+        document.getElementById('ritual-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== socket.id) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Solicitar lista de rituais disponíveis
+            socket.emit('get_rituals', { game_id: gameId });
+        });
+
         document.getElementById('revive-btn').addEventListener('click', function() {
             if (gameState.current_turn !== socket.id) {
                 Swal.fire({
@@ -2375,6 +2443,94 @@
                     }
                 });
             }
+        };
+
+        window.selectRitual = function(ritualId) {
+            Swal.close();
+            
+            // Se for ritual que precisa de alvo
+            if (ritualId === 'ritual_157' || ritualId === 'ritual_amor') {
+                // Listar jogadores para selecionar alvo
+                const targets = [];
+                for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                    if (playerId !== socket.id) {
+                        targets.push({
+                            id: playerId,
+                            name: playerData.name
+                        });
+                    }
+                }
+                
+                if (targets.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Sem alvos',
+                        text: 'Não há outros jogadores para alvo',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    return;
+                }
+                
+                let targetHtml = '';
+                targets.forEach(target => {
+                    targetHtml += `
+                        <div class="target-option" onclick="selectRitualTarget('${ritualId}', '${target.id}')" 
+                            style="padding: 15px; margin: 10px 0; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 10px; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255, 68, 68, 0.4)'" 
+                            onmouseout="this.style.background='rgba(255, 68, 68, 0.2)'">
+                            <strong style="color: #ffd700;">${target.name}</strong>
+                        </div>
+                    `;
+                });
+                
+                Swal.fire({
+                    title: 'Selecione o alvo',
+                    html: `<div style="max-height: 400px; overflow-y: auto;">${targetHtml}</div>`,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    showConfirmButton: false
+                });
+            } else {
+                // Ritual sem alvo
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'ritual',
+                    params: {
+                        ritual_id: ritualId
+                    }
+                });
+            }
+        };
+
+        // Função para selecionar alvo do ritual
+        window.selectRitualTarget = function(ritualId, targetId) {
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Realizando ritual...',
+                html: 'Aguarde enquanto o ritual é realizado',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'ritual',
+                params: {
+                    ritual_id: ritualId,
+                    target_player_id: targetId
+                }
+            });
         };
 
         // Função para mostrar seleção de alvo
@@ -2833,6 +2989,17 @@
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#4CAF50',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'ritual' && data.result) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '📿 Ritual Realizado!',
+                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#9370db',
                     timer: 3000
                 });
             }
