@@ -1,0 +1,347 @@
+<!-- templates/auth.html -->
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle - Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .auth-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #a8a8a8;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+        
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+            border-color: #ffd700;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #fff;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ffd700;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+        }
+        
+        input::placeholder {
+            color: #888;
+        }
+        
+        .auth-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: #1a1a2e;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .error-message {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #fff;
+            margin-top: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #ffd700;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .info-text {
+            color: #a8a8a8;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1>Twilight Battle</h1>
+        <p class="subtitle">Faça login para continuar</p>
+        
+        <div class="tab-buttons">
+            <button class="tab-btn active" id="login-tab">Login</button>
+            <button class="tab-btn" id="register-tab">Registrar</button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="login-form">
+            <div class="form-group">
+                <label for="login-username">Usuário</label>
+                <input type="text" id="login-username" placeholder="Digite seu usuário" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="login-password">Senha</label>
+                <input type="password" id="login-password" placeholder="Digite sua senha">
+            </div>
+            <div class="error-message" id="login-error"></div>
+            <button class="auth-btn" id="login-btn">Entrar</button>
+        </div>
+        
+        <!-- Register Form -->
+        <div id="register-form" style="display: none;">
+            <div class="form-group">
+                <label for="register-username">Usuário (minúsculas, 3-20 caracteres)</label>
+                <input type="text" id="register-username" placeholder="ex: jogador123" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="register-password">Senha (mínimo 4 caracteres)</label>
+                <input type="password" id="register-password" placeholder="Digite sua senha">
+            </div>
+            <div class="form-group">
+                <label for="register-confirm">Confirmar senha</label>
+                <input type="password" id="register-confirm" placeholder="Confirme sua senha">
+            </div>
+            <div class="error-message" id="register-error"></div>
+            <button class="auth-btn" id="register-btn">Criar conta</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Conectando...</p>
+        </div>
+        
+        <p class="info-text">Seus dados são armazenados com segurança</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginTab = document.getElementById('login-tab');
+            const registerTab = document.getElementById('register-tab');
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const loginBtn = document.getElementById('login-btn');
+            const registerBtn = document.getElementById('register-btn');
+            const loading = document.getElementById('loading');
+            const loginError = document.getElementById('login-error');
+            const registerError = document.getElementById('register-error');
+            
+            // Alternar entre tabs
+            loginTab.addEventListener('click', function() {
+                loginTab.classList.add('active');
+                registerTab.classList.remove('active');
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                loginError.style.display = 'none';
+                registerError.style.display = 'none';
+            });
+            
+            registerTab.addEventListener('click', function() {
+                registerTab.classList.add('active');
+                loginTab.classList.remove('active');
+                registerForm.style.display = 'block';
+                loginForm.style.display = 'none';
+                loginError.style.display = 'none';
+                registerError.style.display = 'none';
+            });
+            
+            // Login
+            loginBtn.addEventListener('click', function() {
+                const username = document.getElementById('login-username').value.trim().toLowerCase();
+                const password = document.getElementById('login-password').value;
+                
+                if (!username || !password) {
+                    loginError.textContent = 'Preencha todos os campos';
+                    loginError.style.display = 'block';
+                    return;
+                }
+                
+                loading.classList.add('active');
+                loginError.style.display = 'none';
+                
+                fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.classList.remove('active');
+                    
+                    if (data.success) {
+                        if (data.current_game) {
+                            window.location.href = `/game/${data.current_game}`;
+                        } else {
+                            window.location.href = '/';
+                        }
+                    } else {
+                        loginError.textContent = data.message;
+                        loginError.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    loading.classList.remove('active');
+                    loginError.textContent = 'Erro ao conectar ao servidor';
+                    loginError.style.display = 'block';
+                });
+            });
+            
+            // Registro
+            registerBtn.addEventListener('click', function() {
+                const username = document.getElementById('register-username').value.trim().toLowerCase();
+                const password = document.getElementById('register-password').value;
+                const confirm = document.getElementById('register-confirm').value;
+                
+                if (!username || !password || !confirm) {
+                    registerError.textContent = 'Preencha todos os campos';
+                    registerError.style.display = 'block';
+                    return;
+                }
+                
+                if (password !== confirm) {
+                    registerError.textContent = 'As senhas não coincidem';
+                    registerError.style.display = 'block';
+                    return;
+                }
+                
+                if (username.length < 3 || username.length > 20) {
+                    registerError.textContent = 'Usuário deve ter entre 3 e 20 caracteres';
+                    registerError.style.display = 'block';
+                    return;
+                }
+                
+                if (password.length < 4) {
+                    registerError.textContent = 'Senha deve ter pelo menos 4 caracteres';
+                    registerError.style.display = 'block';
+                    return;
+                }
+                
+                loading.classList.add('active');
+                registerError.style.display = 'none';
+                
+                fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.classList.remove('active');
+                    
+                    if (data.success) {
+                        window.location.href = '/';
+                    } else {
+                        registerError.textContent = data.message;
+                        registerError.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    loading.classList.remove('active');
+                    registerError.textContent = 'Erro ao conectar ao servidor';
+                    registerError.style.display = 'block';
+                });
+            });
+            
+            // Enter key
+            document.getElementById('login-password').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') loginBtn.click();
+            });
+            
+            document.getElementById('register-confirm').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') registerBtn.click();
+            });
+        });
+    </script>
+</body>
+</html>
