@@ -599,8 +599,7 @@
     </style>
 </head>
 <body>
-    <div class="game-container" id="game-container">
-        <div class="game-header" id="game-header">
+    <div class="game-container" id="game-container"><div class="game-header" id="game-header">
             <div class="game-title">
                 Twilight Battle
                 <a href="/rules" style="font-size: 0.5em; margin-left: 20px; color: #ffd700; text-decoration: none;" target="_blank">
@@ -614,7 +613,15 @@
                     🔄 Sessão ativa
                 </div>
             </div>
+            
+            <!-- BOTÃO DE SAIR - ADICIONAR AQUI -->
+            <div class="header-actions" style="display: flex; gap: 10px; margin-left: auto;">
+                <button class="action-btn" id="leave-game-btn" style="background: linear-gradient(45deg, #ff4444, #cc0000); color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;">
+                    🚪 Sair do jogo
+                </button>
+            </div>
         </div>
+
         
         <div id="opponents-area" class="opponents-area"></div>
         
