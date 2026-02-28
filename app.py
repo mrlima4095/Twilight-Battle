@@ -564,8 +564,7 @@ class Game:
         self.first_round = True
         self.players_acted = set()  # Jogadores que já fizeram uma ação
         self.attacks_blocked = True  # Ataques bloqueados na primeira rodada
-        self.dead_players = set() 
-
+        
     def add_player(self, player_id, player_name):
         if len(self.players) >= self.max_players or self.started:
             return False
@@ -621,31 +620,8 @@ class Game:
         return False
 
     def next_turn(self):
-        """Avança para o próximo turno, pulando jogadores mortos"""
-        old_turn_index = self.current_turn
-        
-        # Encontrar próximo jogador vivo
-        attempts = 0
-        max_attempts = len(self.players) * 2
-        
-        while attempts < max_attempts:
-            self.current_turn = (self.current_turn + 1) % len(self.players)
-            current_player_id = self.players[self.current_turn]
-            
-            # Se o jogador está vivo, sair do loop
-            if current_player_id not in self.dead_players:
-                break
-            
-            attempts += 1
-        
-        # Se todos os jogadores morreram (não deveria acontecer, mas por segurança)
-        if attempts >= max_attempts:
-            # Encontrar qualquer jogador vivo
-            for i, player_id in enumerate(self.players):
-                if player_id not in self.dead_players:
-                    self.current_turn = i
-                    break
-        
+        """Avança para o próximo turno"""
+        self.current_turn = (self.current_turn + 1) % len(self.players)
         self.turn_actions_used[self.players[self.current_turn]] = set()
         
         # Mudar dia/noite a cada 24 turnos
@@ -655,17 +631,10 @@ class Game:
             if self.time_of_day == "day":
                 self.apply_day_effects()
         
-        # Verificar profecias (quando completa uma rodada)
-        prophecy_result = None
-        if self.current_turn == 0:  # Quando volta para o primeiro jogador (rodada completa)
-            prophecy_result = self.check_prophecies()
-        
         # Verificar se todos já agiram na primeira rodada
         if self.first_round:
             print(f"Primeira rodada ainda ativa. Jogadores que agiram: {len(self.players_acted)}/{len(self.players)}")
-        
-        return prophecy_result
-
+    
     def apply_day_effects(self):
         """Aplica efeitos do dia (zumbis e vampiros morrem)"""
         for player_id in self.players:
@@ -703,10 +672,7 @@ class Game:
         
         # Cada ação só pode ser feita uma vez por turno
         return action not in self.turn_actions_used[player_id]
-    def can_player_act(self, player_id):
-        """Verifica se um jogador pode realizar ações (não está morto)"""
-        return player_id not in self.dead_players
-
+    
     def use_action(self, player_id, action):
         """Registra que uma ação foi usada"""
         self.turn_actions_used[player_id].add(action)
@@ -808,10 +774,6 @@ class Game:
         if target_player_id not in self.players:
             return {'success': False, 'message': 'Jogador alvo inválido'}
         
-        # Verificar se o alvo já está morto
-        if target_player_id in self.dead_players:
-            return {'success': False, 'message': 'Este jogador já está morto'}
-        
         attacker = self.player_data.get(player_id)
         defender = self.player_data.get(target_player_id)
         
@@ -892,8 +854,6 @@ class Game:
         
         # Dano restante vai para o jogador
         damage_to_player = 0
-        player_killed = False
-        
         if remaining_damage > 0:
             damage_to_player = remaining_damage
             
@@ -911,17 +871,11 @@ class Game:
             else:
                 defender['life'] -= remaining_damage
                 damage_log.append(f"⚔️ Jogador recebeu {remaining_damage} de dano direto")
-                
-                # Verificar se o jogador morreu
-                if defender['life'] <= 0:
-                    player_killed = True
-                    self.dead_players.add(target_player_id)
-                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
-                    
-                    # Mover todas as cartas do jogador morto para o cemitério
-                    self.move_all_cards_to_graveyard(target_player_id)
         
         self.use_action(player_id, 'attack')
+        
+        if defender['life'] <= 0:
+            damage_log.append(f"💀 {defender['name']} foi derrotado!")
         
         result = {
             'success': True,
@@ -935,13 +889,11 @@ class Game:
             'target_life': defender['life'],
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
-            'log': damage_log,
-            'player_killed': player_killed,
-            'dead_players': list(self.dead_players)
+            'log': damage_log
         }
         
         return result
-
+    
     def move_card(self, player_id, from_type, from_index, to_type, to_index):
         """Move uma carta entre posições"""
         if not self.can_act(player_id, 'move'):
@@ -1743,178 +1695,6 @@ class Game:
         return result
     def get_available_rituals(self, player_id): return RitualManager.get_available_rituals(self, player_id)
 
-    def activate_prophecy(self, player_id, target_player_id, target_card_type, target_card_index):
-        """Ativa a profecia do profeta em uma carta alvo"""
-        if not self.can_act(player_id, 'prophecy'):
-            return {'success': False, 'message': 'Você já usou a profecia neste turno'}
-        
-        player = self.player_data[player_id]
-        
-        # Verificar se tem profeta em campo
-        has_prophet = False
-        prophet_card = None
-        
-        for base in ['attack_bases', 'defense_bases']:
-            for card in player[base]:
-                if card and card.get('id') == 'profeta':
-                    has_prophet = True
-                    prophet_card = card
-                    break
-            if has_prophet:
-                break
-        
-        if not has_prophet:
-            return {'success': False, 'message': 'Você precisa de um Profeta em campo'}
-        
-        if target_player_id not in self.player_data:
-            return {'success': False, 'message': 'Jogador alvo inválido'}
-        
-        target_player = self.player_data[target_player_id]
-        
-        # Encontrar carta alvo
-        target_card = None
-        card_location = None
-        
-        if target_card_type == 'attack':
-            if target_card_index < len(target_player['attack_bases']):
-                target_card = target_player['attack_bases'][target_card_index]
-                card_location = ('attack_bases', target_card_index)
-        elif target_card_type == 'defense':
-            if target_card_index < len(target_player['defense_bases']):
-                target_card = target_player['defense_bases'][target_card_index]
-                card_location = ('defense_bases', target_card_index)
-        
-        if not target_card:
-            return {'success': False, 'message': 'Carta alvo não encontrada'}
-        
-        if target_card.get('type') != 'creature':
-            return {'success': False, 'message': 'Só é possível profetizar a morte de criaturas'}
-        
-        # Verificar se já tem profecia ativa
-        for effect in target_player.get('active_effects', []):
-            if effect.get('type') == 'profecia_morte' and effect.get('target_card_id') == target_card['instance_id']:
-                return {'success': False, 'message': 'Esta carta já tem uma profecia ativa'}
-        
-        # Criar efeito de profecia
-        prophecy_effect = {
-            'type': 'profecia_morte',
-            'caster_id': player_id,
-            'caster_name': player['name'],
-            'target_player_id': target_player_id,
-            'target_card_id': target_card['instance_id'],
-            'target_card_name': target_card['name'],
-            'target_card_type': target_card_type,
-            'target_card_index': target_card_index,
-            'rounds_remaining': 2,  # 2 rodadas completas
-            'original_life': target_card.get('life', 0)
-        }
-        
-        # Adicionar efeito ao jogador alvo
-        if 'active_effects' not in target_player:
-            target_player['active_effects'] = []
-        
-        target_player['active_effects'].append(prophecy_effect)
-        
-        # Registrar uso da habilidade
-        self.use_action(player_id, 'prophecy')
-        
-        return {
-            'success': True,
-            'prophecy': prophecy_effect,
-            'message': f"Profecia lançada! {target_card['name']} morrerá em 2 rodadas"
-        }
-    def check_prophecies(self):
-        """Verifica profecias ativas e aplica mortes quando necessário"""
-        prophecies_to_remove = []
-        
-        for player_id, player in self.player_data.items():
-            if 'active_effects' in player:
-                for effect in player['active_effects']:
-                    if effect.get('type') == 'profecia_morte':
-                        # Reduzir rodadas restantes
-                        effect['rounds_remaining'] -= 0.5  # Meia rodada (depois de cada jogador)
-                        
-                        # Se chegou a zero, aplicar morte
-                        if effect['rounds_remaining'] <= 0:
-                            # Encontrar e matar a carta
-                            target_player_id = effect['target_player_id']
-                            target_player = self.player_data[target_player_id]
-                            
-                            card_type = effect['target_card_type']
-                            card_index = effect['target_card_index']
-                            
-                            if card_type == 'attack':
-                                card = target_player['attack_bases'][card_index]
-                                if card and card['instance_id'] == effect['target_card_id']:
-                                    self.graveyard.append(card)
-                                    target_player['attack_bases'][card_index] = None
-                                    prophecies_to_remove.append(effect)
-                            elif card_type == 'defense':
-                                card = target_player['defense_bases'][card_index]
-                                if card and card['instance_id'] == effect['target_card_id']:
-                                    self.graveyard.append(card)
-                                    target_player['defense_bases'][card_index] = None
-                                    prophecies_to_remove.append(effect)
-        
-        # Remover profecias cumpridas
-        for effect in prophecies_to_remove:
-            for player in self.player_data.values():
-                if 'active_effects' in player and effect in player['active_effects']:
-                    player['active_effects'].remove(effect)
-                    break
-            
-            # Notificar sobre a morte profetizada
-            return {
-                'prophecy_fulfilled': True,
-                'target_card_name': effect['target_card_name'],
-                'caster_name': effect['caster_name']
-            }
-        
-        return None
-
-    def move_all_cards_to_graveyard(self, player_id):
-        """Move todas as cartas de um jogador morto para o cemitério"""
-        player = self.player_data[player_id]
-        
-        # Mover cartas das bases de ataque
-        for i, card in enumerate(player['attack_bases']):
-            if card:
-                self.graveyard.append(card)
-                player['attack_bases'][i] = None
-        
-        # Mover cartas das bases de defesa
-        for i, card in enumerate(player['defense_bases']):
-            if card:
-                self.graveyard.append(card)
-                player['defense_bases'][i] = None
-        
-        # Mover cartas da mão
-        for card in player['hand']:
-            self.graveyard.append(card)
-        player['hand'] = []
-        
-        # Mover equipamentos
-        for slot, card in player['equipment'].items():
-            if card:
-                self.graveyard.append(card)
-                player['equipment'][slot] = None
-        
-        # Mover talismãs
-        for talisman in player['talismans']:
-            self.graveyard.append(talisman)
-        player['talismans'] = []
-
-    def check_winner(self):
-        """Verifica se há um vencedor (apenas entre jogadores vivos)"""
-        alive_players = []
-        for player_id in self.players:
-            if player_id not in self.dead_players and self.player_data[player_id]['life'] > 0:
-                alive_players.append(player_id)
-        
-        if len(alive_players) == 1:
-            return alive_players[0]
-        return None
-
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -2179,8 +1959,6 @@ def handle_player_action(data):
     if game.players[game.current_turn] != player_id:
         emit('error', {'message': 'Não é o seu turno'})
         return
-    if player_id in self.dead_players:
-        return {'success': False, 'message': 'Você está morto e não pode mais jogar'}
     
     result = None
     
@@ -2197,13 +1975,6 @@ def handle_player_action(data):
             result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
         elif action == 'ritual':
             result = game.perform_ritual(player_id, params['ritual_id'], params.get('target_player_id'))
-        elif action == 'prophecy':
-            result = game.activate_prophecy(
-                player_id, 
-                params['target_player_id'], 
-                params['target_card_type'], 
-                params['target_card_index']
-            )
         elif action == 'swap_positions':
             result = game.swap_positions(
                 player_id, 
@@ -2221,10 +1992,8 @@ def handle_player_action(data):
         elif action == 'revive':
             result = game.revive_from_graveyard(player_id, params.get('card_id'))
         elif action == 'end_turn':
-            prophecy_result = game.next_turn()
+            game.next_turn()
             result = {'success': True, 'next_turn': game.players[game.current_turn]}
-            if prophecy_result:
-                result['prophecy_fulfilled'] = prophecy_result
         
         if result and result.get('success'):
             # Registrar ação para primeira rodada (exceto end_turn)
@@ -2259,4 +2028,4 @@ def handle_player_action(data):
         emit('action_error', {'message': f'Erro interno: {str(e)}'})
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
+    socketio.run(app, debug=True, port=5000)
