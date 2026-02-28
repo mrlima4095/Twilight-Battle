@@ -1870,8 +1870,6 @@ def index():
                 if game_id in games:
                     # Já está em uma sala, redirecionar para ela
                     return redirect(url_for('game', game_id=game_id))
-    else:
-        return redirect("/")
 
     # Se não estiver em nenhuma sala, mostrar página de entrada
     return render_template('index.html')
