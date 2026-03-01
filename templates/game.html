@@ -673,6 +673,7 @@
                 <button class="action-btn" id="draw-btn">📥 Comprar carta</button>
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
+                <button class="action-btn" id="prophet-curse-btn" style="background: linear-gradient(45deg, #800080, #4b0082); color: white;">🔮 Profetizar</button>
                 <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas) - <span id="runas-count">0</span></button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
@@ -1141,6 +1142,29 @@
                 showConfirmButton: false,
                 width: '600px'
             });
+        });
+
+        socket.on('prophet_curses_executed', function(data) {
+            console.log('Maldições executadas:', data);
+            
+            let html = '<ul style="color: #fff; text-align: left;">';
+            data.destroyed.forEach(item => {
+                html += `<li>💀 <strong style="color: #800080;">${item.card_name}</strong> de ${item.player} foi destruída pela maldição do Profeta</li>`;
+            });
+            html += '</ul>';
+            
+            Swal.fire({
+                icon: 'info',
+                title: '🔮 Maldições do Profeta',
+                html: html,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                timer: 3000
+            });
+            
+            // Atualizar UI
+            requestGameState();
         });
 
         socket.on('game_over', function(data) {
@@ -2326,6 +2350,90 @@
             });
         });
 
+        document.getElementById('prophet-curse-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Profeta em campo
+            const playerData = gameState.players[currentUsername];
+            let hasProphet = false;
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card && card.id === 'profeta') {
+                    hasProphet = true;
+                    break;
+                }
+            }
+            
+            if (!hasProphet) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Profeta não encontrado',
+                    text: 'Você precisa ter um Profeta em campo para usar esta habilidade',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Mostrar oponentes para selecionar alvo
+            const targets = [];
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== currentUsername && !playerData.dead) {
+                    targets.push({
+                        id: playerId,
+                        name: playerData.name
+                    });
+                }
+            }
+            
+            if (targets.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem alvos',
+                    text: 'Não há outros jogadores vivos',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let targetHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            targets.forEach(target => {
+                targetHtml += `
+                    <div onclick="selectProphetTarget('${target.id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(128, 0, 128, 0.4)'" 
+                        onmouseout="this.style.background='rgba(128, 0, 128, 0.2)'">
+                        <strong style="color: #800080; font-size: 16px;">${target.name}</strong>
+                    </div>
+                `;
+            });
+            targetHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione o jogador alvo',
+                html: targetHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                showConfirmButton: false,
+                width: '500px'
+            });
+        });
+
         document.getElementById('spell-btn').addEventListener('click', function() {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
@@ -2791,6 +2899,88 @@
                 params: {
                     ritual_id: ritualId,
                     target_player_id: targetId
+                }
+            });
+        };
+
+        window.selectProphetTarget = function(targetPlayerId) {
+            Swal.close();
+            
+            // Mostrar cartas do oponente para selecionar
+            const targetData = gameState.players[targetPlayerId];
+            const cards = [];
+            
+            for (let card of [...targetData.attack_bases, ...targetData.defense_bases]) {
+                if (card) {
+                    cards.push(card);
+                }
+            }
+            
+            if (cards.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem cartas',
+                    text: 'O oponente não tem cartas em campo',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let cardsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            cards.forEach(card => {
+                let typeIcon = getTypeIcon(card.type);
+                cardsHtml += `
+                    <div onclick="selectCardForProphetCurse('${targetPlayerId}', '${card.instance_id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(128, 0, 128, 0.4)'" 
+                        onmouseout="this.style.background='rgba(128, 0, 128, 0.2)'">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">${typeIcon}</span>
+                            <div>
+                                <strong style="color: #800080; font-size: 16px;">${card.name}</strong><br>
+                                <span style="color: #fff;">❤️ ${card.life || 0} | ⚔️ ${card.attack || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            cardsHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione a carta para amaldiçoar',
+                html: cardsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        };
+        window.selectCardForProphetCurse = function(targetPlayerId, cardInstanceId) {
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: '🔮 Aplicando maldição...',
+                html: 'A carta será destruída em duas rodadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'prophet_curse',
+                params: {
+                    target_player_id: targetPlayerId,
+                    target_card_id: cardInstanceId
                 }
             });
         };

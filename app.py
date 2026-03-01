@@ -837,14 +837,15 @@ class Game:
         
         # Retornar limite de ações
         return {
-            'play': 2 if has_sabedoria else 1,  # Pode jogar 2 cartas com Talismã da Sabedoria
+            'play': 2 if has_sabedoria else 1,
             'draw': 1,
             'attack': 1,
             'swap': 1,
             'spell': 1,
             'ritual': 1,
             'block': 1,
-            'oracle': 1
+            'oracle': 1,
+            'prophet_curse': 1  # Adicionar limite para a habilidade do Profeta
         }
 
     def use_action(self, username, action):
@@ -865,7 +866,7 @@ class Game:
     
     def register_action(self, username, action_type):
         """Registra que um jogador realizou uma ação na primeira rodada"""
-        if self.first_round and action_type not in ['attack', 'end_turn']:
+        if self.first_round and action_type not in ['attack', 'end_turn', 'prophet_curse']:
             self.players_acted.add(username)
             print(f"Jogador {username} realizou ação. Jogadores que já agiram: {len(self.players_acted)}/{len(self.players)}")
             
@@ -881,6 +882,14 @@ class Game:
         """Avança para o próximo turno, pulando jogadores mortos"""
         if not self.players:
             return
+        
+        # Processar maldições do Profeta ANTES de mudar de turno
+        destroyed_cards = self.process_prophet_curses()
+        
+        # Se alguma carta foi destruída, notificar
+        if destroyed_cards:
+            for info in destroyed_cards:
+                print(f"  💀 Carta {info['card_name']} de {info['player']} destruída pela maldição do Profeta")
         
         original_turn = self.current_turn
         next_turn = (self.current_turn + 1) % len(self.players)
@@ -910,6 +919,15 @@ class Game:
         
         current_player = self.players[self.current_turn]
         print(f"Próximo turno: {current_player}")
+        
+        # Se cartas foram destruídas, notificar
+        if destroyed_cards:
+            destroyed_messages = [f"{d['card_name']} de {d['player']}" for d in destroyed_cards]
+            # Podemos emitir um evento aqui se quiser notificar os jogadores
+            socketio.emit('prophet_curses_executed', {
+                'destroyed': destroyed_cards,
+                'message': f'💀 Maldições do Profeta executadas: {", ".join(destroyed_messages)}'
+            }, room=self.game_id)
 
     def can_attack(self, username):
         """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
@@ -1782,6 +1800,135 @@ class Game:
             'blocked': target_card.get('blocked', False)
         }
 
+    def prophet_curse(self, username, target_player_id, target_card_id):
+        """Aplica a maldição do Profeta - carta morre em 2 rodadas"""
+        print(f"Profeta curse: {username} amaldiçoando carta {target_card_id} de {target_player_id}")
+        
+        if not self.can_act(username, 'prophet_curse'):
+            return {'success': False, 'message': 'Você já usou a habilidade do Profeta neste turno'}
+        
+        player = self.player_data.get(username)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+        
+        # Verificar se tem Profeta em campo
+        has_prophet = False
+        prophet_card = None
+        prophet_location = None
+        
+        for base_type in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(player[base_type]):
+                if card and card['id'] == 'profeta':
+                    has_prophet = True
+                    prophet_card = card
+                    prophet_location = (base_type, i)
+                    break
+            if has_prophet:
+                break
+        
+        if not has_prophet:
+            return {'success': False, 'message': 'Você precisa ter um Profeta em campo'}
+        
+        # Encontrar a carta alvo
+        target_player = self.player_data.get(target_player_id)
+        if not target_player or target_player.get('dead', False):
+            return {'success': False, 'message': 'Jogador alvo inválido'}
+        
+        target_card = None
+        target_location = None
+        
+        for base_type in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(target_player[base_type]):
+                if card and card['instance_id'] == target_card_id:
+                    target_card = card
+                    target_location = (base_type, i)
+                    break
+            if target_card:
+                break
+        
+        if not target_card:
+            return {'success': False, 'message': 'Carta alvo não encontrada em campo'}
+        
+        # Adicionar efeito de maldição na carta
+        if 'effects' not in target_card:
+            target_card['effects'] = []
+        
+        # Verificar se já tem maldição
+        for effect in target_card['effects']:
+            if effect.get('type') == 'prophet_curse':
+                return {'success': False, 'message': 'Esta carta já está amaldiçoada'}
+        
+        # Adicionar maldição
+        curse_effect = {
+            'type': 'prophet_curse',
+            'caster': username,
+            'turns_remaining': 2,  # 2 rodadas completas (todos jogam 2 vezes)
+            'applied_at_turn': self.current_turn,
+            'applied_at_cycle': self.time_cycle
+        }
+        target_card['effects'].append(curse_effect)
+        
+        # Adicionar efeito no jogador para rastrear
+        target_player.setdefault('active_effects', []).append({
+            'type': 'prophet_curse_target',
+            'target_card_id': target_card_id,
+            'target_card_name': target_card['name'],
+            'caster': username,
+            'turns_remaining': 2
+        })
+        
+        self.use_action(username, 'prophet_curse')
+        
+        return {
+            'success': True,
+            'message': f'🔮 Maldição do Profeta aplicada! {target_card["name"]} será destruído em 2 rodadas',
+            'target_card': target_card['name'],
+            'target_player': target_player['name']
+        }
+    def process_prophet_curses(self):
+        """Processa as maldições do Profeta no início de cada turno"""
+        print("Processando maldições do Profeta...")
+        
+        cards_to_destroy = []
+        
+        for username, player in self.player_data.items():
+            if player.get('dead', False):
+                continue
+            
+            # Processar maldições em cartas
+            for base_type in ['attack_bases', 'defense_bases']:
+                for i, card in enumerate(player[base_type]):
+                    if card and 'effects' in card:
+                        for effect in card['effects'][:]:  # Copiar para poder remover
+                            if effect.get('type') == 'prophet_curse':
+                                effect['turns_remaining'] -= 1
+                                print(f"  Carta {card['name']}: {effect['turns_remaining']} rodadas restantes")
+                                
+                                if effect['turns_remaining'] <= 0:
+                                    cards_to_destroy.append({
+                                        'player': username,
+                                        'base_type': base_type,
+                                        'index': i,
+                                        'card': card,
+                                        'caster': effect['caster']
+                                    })
+                                    card['effects'].remove(effect)
+        
+        # Destruir as cartas
+        destroyed_info = []
+        for item in cards_to_destroy:
+            player = self.player_data[item['player']]
+            player[item['base_type']][item['index']] = None
+            self.graveyard.append(item['card'])
+            destroyed_info.append({
+                'player': item['player'],
+                'card_name': item['card']['name'],
+                'caster': item['caster']
+            })
+            print(f"  💀 Carta {item['card']['name']} de {item['player']} destruída pela maldição do Profeta")
+        
+        return destroyed_info
+
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -2333,7 +2480,16 @@ def handle_player_action(data):
             result = game.move_card(player_name, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
             if result and result.get('success'):
                 log_message = f"↔️ {player_name} moveu uma carta"
-                
+
+        elif action == 'prophet_curse':
+            result = game.prophet_curse(
+                player_name, 
+                params['target_player_id'], 
+                params['target_card_id']
+            )
+            if result and result.get('success'):
+                log_message = f"🔮 {player_name} amaldiçoou {result.get('target_card', 'uma carta')} de {result.get('target_player', 'um oponente')} (morre em 2 rodadas)"
+
         elif action == 'flip_card':
             result = game.flip_card(player_name, params['position_type'], params['position_index'])
             if result and result.get('success'):
