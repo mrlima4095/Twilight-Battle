@@ -904,6 +904,8 @@ socket.on('connect', function() {
         });
         socket.on('player_left', function(data) {
             if (data.username !== currentUsername) {
+                window.location.href = "/";
+            } else {
                 Swal.fire({
                     icon: 'info',
                     title: 'Jogador saiu',
