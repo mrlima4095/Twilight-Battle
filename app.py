@@ -1364,7 +1364,6 @@ class Game:
     def get_available_rituals(self, username):
         """Retorna lista de rituais disponíveis"""
         return RitualManager.get_available_rituals(self, username)
-    
     def perform_ritual(self, username, ritual_id, target_username=None):
         """Realiza um ritual"""
         if not self.can_act(username, 'ritual'):
@@ -1426,6 +1425,299 @@ class Game:
         self.use_action(username, 'ritual')
         result['ritual_id'] = ritual_id
         return result
+
+    # Métodos para magias
+    def cast_spell(self, username, spell_card_id, target_username=None, target_card_id=None):
+        """Usa um feitiço com suporte para Rei Mago/Mago Negro"""
+        print(f"cast_spell: {username} usando {spell_card_id}")
+        
+        if not self.can_act(username, 'spell'):
+            return {'success': False, 'message': 'Você já usou um feitiço neste turno'}
+        
+        player = self.player_data[username]
+        
+        # Verificar se pode usar feitiços
+        can_cast = False
+        caster_type = None
+        mage_card = None
+        
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card.get('type') == 'creature':
+                if card['id'] == 'mago' and not card.get('blocked', False):
+                    can_cast = True
+                    caster_type = 'mago'
+                    mage_card = card
+                elif card['id'] == 'rei_mago':
+                    can_cast = True
+                    caster_type = 'rei_mago'
+                    mage_card = card
+                elif card['id'] == 'mago_negro':
+                    can_cast = True
+                    caster_type = 'mago_negro'
+                    mage_card = card
+        
+        if not can_cast:
+            return {'success': False, 'message': 'Você precisa de um Mago em campo para usar feitiços'}
+        
+        # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço (não precisa ter na mão)
+        if caster_type in ['rei_mago', 'mago_negro']:
+            # Procurar o feitiço no deck ou cemitério
+            spell_card = None
+            for card in self.deck + self.graveyard:
+                if card.get('type') == 'spell' and (card['id'] == spell_card_id or card['instance_id'] == spell_card_id):
+                    spell_card = card
+                    break
+            
+            if not spell_card:
+                return {'success': False, 'message': 'Feitiço não encontrado'}
+            
+            # Remover do deck ou cemitério se aplicável
+            if spell_card in self.deck:
+                self.deck.remove(spell_card)
+            elif spell_card in self.graveyard:
+                self.graveyard.remove(spell_card)
+        else:
+            # Procurar feitiço na mão
+            spell_card = None
+            spell_index = -1
+            for i, card in enumerate(player['hand']):
+                if card['instance_id'] == spell_card_id:
+                    spell_card = card
+                    spell_index = i
+                    break
+            
+            if not spell_card:
+                return {'success': False, 'message': 'Feitiço não encontrado na mão'}
+            
+            # Remover da mão
+            player['hand'].pop(spell_index)
+        
+        # Aplicar efeito do feitiço
+        result = self.apply_spell_effect(spell_card, username, target_username, target_card_id, caster_type)
+        
+        # Feitiço volta para o deck (embaixo)
+        self.deck.append(spell_card)
+        
+        self.use_action(username, 'spell')
+        
+        return {
+            'success': True,
+            'spell': spell_card,
+            'effect': result,
+            'caster_type': caster_type
+        }
+    def apply_spell_effect(self, spell, caster_username, target_username=None, target_card_id=None, caster_type=None):
+        """Aplica o efeito específico do feitiço"""
+        spell_id = spell['id']
+        caster = self.player_data[caster_username]
+        
+        print(f"apply_spell_effect: {spell_id} por {caster_username}")
+        
+        # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço mesmo sem ter
+        if caster_type in ['rei_mago', 'mago_negro'] and not target_card_id:
+            # Lista todos os feitiços disponíveis
+            all_spells = [card for card in self.deck + self.graveyard if card.get('type') == 'spell']
+            return {'type': 'list_spells', 'spells': all_spells}
+        
+        # Aplicar efeitos específicos
+        if spell_id == 'feitico_cortes':
+            # Aumenta ataque de um monstro
+            if target_card_id:
+                for player_uname in self.players:
+                    for base in ['attack_bases', 'defense_bases']:
+                        for card in self.player_data[player_uname][base]:
+                            if card and card['instance_id'] == target_card_id:
+                                card['attack'] = card.get('attack', 0) + 1024
+                                return {'type': 'buff', 'target': card['name'], 'effect': '+1024 ataque'}
+        
+        elif spell_id == 'feitico_duro_matar':
+            # Aumenta defesa do jogador
+            if target_username:
+                self.player_data[target_username]['life'] += 1024
+                return {'type': 'buff', 'target': self.player_data[target_username]['name'], 'effect': '+1024 vida'}
+        
+        elif spell_id == 'feitico_troca':
+            # Troca cartas de defesa por ataque
+            if target_username:
+                target = self.player_data[target_username]
+                attack_bases = target['attack_bases'].copy()
+                defense_bases = target['defense_bases'].copy()
+                target['attack_bases'] = defense_bases
+                target['defense_bases'] = attack_bases
+                return {'type': 'swap', 'target': target['name']}
+        
+        elif spell_id == 'feitico_comunista':
+            # Todas as cartas das mãos voltam para a pilha
+            for player_uname in self.players:
+                player = self.player_data[player_uname]
+                for card in player['hand']:
+                    self.deck.append(card)
+                player['hand'] = []
+            random.shuffle(self.deck)
+            return {'type': 'reset_hands'}
+        
+        elif spell_id == 'feitico_silencio':
+            # Próximas duas rodadas sem armadilhas
+            for player_uname in self.players:
+                self.player_data[player_uname]['active_effects'].append({
+                    'type': 'silence',
+                    'duration': 2
+                })
+            return {'type': 'silence', 'duration': 2}
+        
+        elif spell_id == 'feitico_para_sempre':
+            # Reverte efeito Blade of Vampires
+            # Procurar criaturas com efeito de vampiro
+            for player_uname in self.players:
+                player = self.player_data[player_uname]
+                for base in ['attack_bases', 'defense_bases']:
+                    for card in player[base]:
+                        if card and card.get('vampire_effect'):
+                            card['vampire_effect'] = False
+                            if 'dies_daylight' in card:
+                                del card['dies_daylight']
+            return {'type': 'revert_vampire', 'message': 'Efeito de vampiro revertido'}
+        
+        elif spell_id == 'feitico_capitalista':
+            # Troca cartas com outros jogadores
+            if target_username:
+                # Implementar lógica de troca simples
+                source_player = caster
+                target_player = self.player_data[target_username]
+                
+                if len(source_player['hand']) > 0 and len(target_player['hand']) > 0:
+                    # Trocar uma carta aleatória
+                    import random
+                    source_card = random.choice(source_player['hand'])
+                    target_card = random.choice(target_player['hand'])
+                    
+                    source_player['hand'].remove(source_card)
+                    target_player['hand'].remove(target_card)
+                    
+                    source_player['hand'].append(target_card)
+                    target_player['hand'].append(source_card)
+                    
+                    return {
+                        'type': 'trade', 
+                        'target': target_username,
+                        'message': f'Cartas trocadas entre {caster_username} e {target_username}'
+                    }
+            return {'type': 'trade_failed', 'message': 'Não foi possível trocar cartas'}
+        
+        elif spell_id == 'feitico_cura':
+            # Cura o jogador alvo
+            heal_amount = 1024
+            if target_username:
+                self.player_data[target_username]['life'] += heal_amount
+                return {
+                    'type': 'heal', 
+                    'target': self.player_data[target_username]['name'], 
+                    'amount': heal_amount,
+                    'message': f'{self.player_data[target_username]["name"]} recebeu {heal_amount} de cura!'
+                }
+            else:
+                # Se não tiver alvo, cura a si mesmo
+                self.player_data[caster_username]['life'] += heal_amount
+                return {
+                    'type': 'heal', 
+                    'target': self.player_data[caster_username]['name'], 
+                    'amount': heal_amount,
+                    'message': f'{self.player_data[caster_username]["name"]} recebeu {heal_amount} de cura!'
+                }
+
+        return {'type': 'unknown', 'message': 'Efeito desconhecido'}
+
+    def get_available_spells(self, username):
+        """Retorna lista de feitiços disponíveis baseado nos magos em campo"""
+        player = self.player_data[username]
+        available_spells = []
+        
+        # Verificar tipos de magos em campo
+        has_rei_mago = False
+        has_mago_negro = False
+        has_common_mage = False
+        
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card.get('type') == 'creature':
+                if card['id'] == 'rei_mago':
+                    has_rei_mago = True
+                elif card['id'] == 'mago_negro':
+                    has_mago_negro = True
+                elif card['id'] == 'mago':
+                    has_common_mage = True
+        
+        # Se tem Rei Mago ou Mago Negro, pode ver todos os feitiços do jogo
+        if has_rei_mago or has_mago_negro:
+            # Coletar todos os feitiços do deck e cemitério
+            all_spells = []
+            for card in self.deck:
+                if card.get('type') == 'spell' and card not in all_spells:
+                    all_spells.append(card)
+            for card in self.graveyard:
+                if card.get('type') == 'spell' and card not in all_spells:
+                    all_spells.append(card)
+            available_spells = all_spells
+        else:
+            # Apenas feitiços na mão
+            available_spells = [card for card in player['hand'] if card.get('type') == 'spell']
+        
+        return {
+            'success': True,
+            'has_mage': has_common_mage or has_rei_mago or has_mago_negro,
+            'has_rei_mago': has_rei_mago,
+            'has_mago_negro': has_mago_negro,
+            'spells': available_spells,
+            'spells_in_hand': [card for card in player['hand'] if card.get('type') == 'spell']
+        }
+
+    def toggle_mage_block(self, username, target_username, target_card_id):
+        """Rei Mago bloqueia/desbloqueia um mago"""
+        if not self.can_act(username, 'block'):
+            return {'success': False, 'message': 'Você já usou esta habilidade neste turno'}
+        
+        player = self.player_data[username]
+        
+        # Verificar se tem Rei Mago
+        has_rei_mago = False
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card['id'] == 'rei_mago':
+                has_rei_mago = True
+                break
+        
+        if not has_rei_mago:
+            return {'success': False, 'message': 'Você precisa do Rei Mago em campo'}
+        
+        # Encontrar o mago alvo
+        target_player = self.player_data[target_username]
+        target_card = None
+        card_location = None
+        
+        for base in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(target_player[base]):
+                if card and card['instance_id'] == target_card_id:
+                    target_card = card
+                    card_location = (base, i)
+                    break
+        
+        if not target_card or target_card['id'] not in ['mago', 'rei_mago', 'mago_negro']:
+            return {'success': False, 'message': 'Alvo não é um mago'}
+        
+        # Alternar bloqueio
+        if 'blocked' in target_card and target_card['blocked']:
+            target_card['blocked'] = False
+            message = f"Mago {target_card['name']} desbloqueado"
+        else:
+            target_card['blocked'] = True
+            message = f"Mago {target_card['name']} bloqueado"
+        
+        self.use_action(username, 'block')
+        
+        return {
+            'success': True,
+            'message': message,
+            'target_card': target_card['name'],
+            'blocked': target_card.get('blocked', False)
+        }
 
 # Rotas da aplicação
 @app.route('/')
