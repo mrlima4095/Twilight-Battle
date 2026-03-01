@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, jsonify, make_response, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import uuid, jwt, json, hashlib, hmac, secrets, random, string, time
+import cmd, uuid, jwt, json, hashlib, hmac, secrets, random, string, sys, shlex, time, threading
 from datetime import datetime, timedelta
 from collections import defaultdict
 from functools import wraps
