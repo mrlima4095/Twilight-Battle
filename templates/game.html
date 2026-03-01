@@ -970,40 +970,40 @@ socket.on('connect', function() {
                 confirmButtonColor: '#ffd700'
             });
         });
-socket.on('game_state', function(data) {
-    console.log('Game state recebido:', data);
-    const oldGameState = gameState;
-    gameState = data;
-    
-    // Verificar se o turno mudou
-    if (oldGameState && oldGameState.current_turn !== data.current_turn) {
-        console.log('Turno mudou de', oldGameState.current_turn, 'para', data.current_turn);
-        if (data.current_turn !== currentUsername && moveMode) {
-            cancelMoveMode();
-        }
-    }
-    
-    // Verificar se o jogador ainda está no jogo
-    if (currentUsername && !gameState.players[currentUsername]) {
-        console.log('Jogador não encontrado no estado do jogo');
-        clearSession();
-        
-        Swal.fire({
-            icon: 'error',
-            title: 'Sessão expirada',
-            text: 'Você foi removido do jogo. Voltando para o início...',
-            background: '#1a1a2e',
-            color: '#fff',
-            confirmButtonColor: '#ffd700',
-            timer: 3000
-        }).then(() => {
-            window.location.href = '/';
+        socket.on('game_state', function(data) {
+            console.log('Game state recebido:', data);
+            const oldGameState = gameState;
+            gameState = data;
+            
+            // Verificar se o turno mudou
+            if (oldGameState && oldGameState.current_turn !== data.current_turn) {
+                console.log('Turno mudou de', oldGameState.current_turn, 'para', data.current_turn);
+                if (data.current_turn !== currentUsername && moveMode) {
+                    cancelMoveMode();
+                }
+            }
+            
+            // Verificar se o jogador ainda está no jogo
+            if (currentUsername && !gameState.players[currentUsername]) {
+                console.log('Jogador não encontrado no estado do jogo');
+                clearSession();
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sessão expirada',
+                    text: 'Você foi removido do jogo. Voltando para o início...',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 3000
+                }).then(() => {
+                    window.location.href = '/';
+                });
+                return;
+            }
+            
+            updateGameUI();
         });
-        return;
-    }
-    
-    updateGameUI();
-});
 
 
         socket.on('graveyard_list', function(data) {
@@ -1258,6 +1258,10 @@ function updateGameUI() {
     if (!gameState) return;
     
     console.log('Atualizando UI com gameState:', gameState);
+    console.log('Atualizando UI - Turno atual:', gameState.current_turn);
+    console.log('Meu username:', currentUsername);
+    console.log('É meu turno?', gameState.current_turn === currentUsername);
+    
     
     const timeIndicator = document.getElementById('time-indicator');
     timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
@@ -1435,18 +1439,21 @@ function updateActionButtons() {
             
             let hasAliveOpponents = false;
             
-            for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                // Pular o próprio jogador
-                if (playerId === socket.id) continue;
+            for (const [playerUsername, playerData] of Object.entries(gameState.players)) {
+                // Pular o próprio jogador (comparar com currentUsername)
+                if (playerUsername === currentUsername) {
+                    console.log('Pulando próprio jogador:', playerUsername);
+                    continue;
+                }
                 
-                // Pular jogadores mortos (não mostrar na área de oponentes)
+                // Pular jogadores mortos
                 if (playerData.dead) {
-                    console.log(`Ocultando jogador morto: ${playerData.name}`);
+                    console.log('Pulando jogador morto:', playerUsername);
                     continue;
                 }
                 
                 hasAliveOpponents = true;
-                const opponentCard = createOpponentCard(playerId, playerData);
+                const opponentCard = createOpponentCard(playerUsername, playerData);
                 opponentsArea.appendChild(opponentCard);
             }
             
