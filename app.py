@@ -1749,7 +1749,7 @@ def rules():
 @login_required
 def game(username, game_id):
     if game_id not in games:
-        return "Jogo não encontrado", 404
+        return redirect("/")
 
     update_user_game(username, game_id)
     
