@@ -755,10 +755,8 @@
                         const session = JSON.parse(savedSession);
                         if (session.username === currentUsername) {
                             console.log('Sessão recuperada para', currentUsername);
-                            socket.emit('reconnect_game', {
-                                game_id: gameId
-                                // Não precisa enviar username, o servidor pega do token
-                            });
+                            socket.emit('reconnect_game', { game_id: gameId });
+
                         } else {
                             localStorage.removeItem(SESSION_KEY);
                             socket.emit('join_game', { game_id: gameId });
@@ -888,7 +886,8 @@
                 background: '#1a1a2e',
                 color: '#fff'
             });
-            
+        
+            document.getElementById('waiting-room').style.display = 'none';
             requestGameState();
         });
 
@@ -999,7 +998,6 @@
             
             updateGameUI();
         });
-
 
         socket.on('graveyard_list', function(data) {
             console.log('Cemitério recebido:', data);
@@ -1145,27 +1143,6 @@
             });
         });
 
-        socket.on('action_success', function(data) {
-            console.log('Ação bem-sucedida:', data);
-            requestGameState();
-            
-            if (data.action === 'attack' && data.result) {
-                showAttackResult(data.result);
-            }
-        });
-
-        socket.on('action_error', function(data) {
-            console.error('Erro na ação:', data);
-            Swal.fire({
-                icon: 'error',
-                title: 'Erro',
-                text: data.message,
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-        });
-
         socket.on('game_over', function(data) {
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
@@ -1239,125 +1216,125 @@
             });
         }
 
-function updateGameUI() {
-    if (!gameState) return;
-    
-    console.log('Atualizando UI com gameState:', gameState);
-    console.log('Atualizando UI - Turno atual:', gameState.current_turn);
-    console.log('Meu username:', currentUsername);
-    console.log('É meu turno?', gameState.current_turn === currentUsername);
-    
-    
-    const timeIndicator = document.getElementById('time-indicator');
-    timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
-    timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
-    
-    const turnIndicator = document.getElementById('turn-indicator');
-    if (gameState.current_turn) {
-        const currentPlayerData = gameState.players[gameState.current_turn];
-        const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
-        
-        if (gameState.first_round) {
-            turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayerName}`;
-            turnIndicator.style.background = '#ffa500';
-        } else {
-            turnIndicator.textContent = `Vez de: ${currentPlayerName}`;
-            turnIndicator.style.background = '#4CAF50';
+        function updateGameUI() {
+            if (!gameState) return;
+            
+            console.log('Atualizando UI com gameState:', gameState);
+            console.log('Atualizando UI - Turno atual:', gameState.current_turn);
+            console.log('Meu username:', currentUsername);
+            console.log('É meu turno?', gameState.current_turn === currentUsername);
+            
+            
+            const timeIndicator = document.getElementById('time-indicator');
+            timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+            timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
+            
+            const turnIndicator = document.getElementById('turn-indicator');
+            if (gameState.current_turn) {
+                const currentPlayerData = gameState.players[gameState.current_turn];
+                const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
+                
+                if (gameState.first_round) {
+                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayerName}`;
+                    turnIndicator.style.background = '#ffa500';
+                } else {
+                    turnIndicator.textContent = `Vez de: ${currentPlayerName}`;
+                    turnIndicator.style.background = '#4CAF50';
+                }
+                
+                // Verificar se é meu turno (comparar com currentUsername)
+                const isMyTurn = gameState.current_turn === currentUsername && !gameState.current_player_dead;
+                console.log('É meu turno?', isMyTurn, 'Current turn:', gameState.current_turn, 'My username:', currentUsername);
+                
+                if (isMyTurn) {
+                    turnIndicator.classList.add('my-turn');
+                } else {
+                    turnIndicator.classList.remove('my-turn');
+                }
+            }
+            
+            // SÓ atualizar a área de oponentes se o jogo já começou
+            if (gameState.started) {
+                updateOpponentsArea();
+            } else {
+                const opponentsArea = document.getElementById('opponents-area');
+                opponentsArea.innerHTML = '';
+                const waitingMsg = document.createElement('div');
+                waitingMsg.className = 'opponent-card';
+                waitingMsg.style.textAlign = 'center';
+                waitingMsg.style.padding = '30px';
+                waitingMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
+                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
+                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
+                `;
+                opponentsArea.appendChild(waitingMsg);
+            }
+            
+            // Verificar se o jogador atual está morto
+            if (gameState.current_player_dead) {
+                document.getElementById('player-area').style.display = 'none';
+                
+                let spectatorMsg = document.getElementById('spectator-message');
+                if (!spectatorMsg) {
+                    spectatorMsg = document.createElement('div');
+                    spectatorMsg.id = 'spectator-message';
+                    spectatorMsg.className = 'waiting-room';
+                    spectatorMsg.innerHTML = `
+                        <h2 style="color: #ff4444;">💀 VOCÊ MORREU</h2>
+                        <p style="color: #ffd700; font-size: 18px; margin: 20px 0;">Agora você é um espectador</p>
+                        <p>Suas cartas foram distribuídas:</p>
+                        <p>• Criaturas foram para o cemitério</p>
+                        <p>• Outras cartas voltaram para o monte</p>
+                        <p style="margin-top: 30px; color: #888;">Você pode acompanhar o resto da partida</p>
+                        <button class="start-btn" onclick="window.location.href='/'">🏠 Voltar ao início</button>
+                    `;
+                    document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
+                }
+                spectatorMsg.style.display = 'block';
+            } else if (gameState.players[currentUsername]) {
+                // Jogador está vivo, mostrar área normal e atualizar
+                document.getElementById('player-area').style.display = 'block';
+                
+                const spectatorMsg = document.getElementById('spectator-message');
+                if (spectatorMsg) {
+                    spectatorMsg.style.display = 'none';
+                }
+                
+                // IMPORTANTE: Chamar updatePlayerArea para renderizar as bases e mão
+                updatePlayerArea();
+            }
+            
+            // Atualizar visibilidade dos botões de ação
+            updateActionButtons();
         }
-        
-        // Verificar se é meu turno (comparar com currentUsername)
-        const isMyTurn = gameState.current_turn === currentUsername && !gameState.current_player_dead;
-        console.log('É meu turno?', isMyTurn, 'Current turn:', gameState.current_turn, 'My username:', currentUsername);
-        
-        if (isMyTurn) {
-            turnIndicator.classList.add('my-turn');
-        } else {
-            turnIndicator.classList.remove('my-turn');
+        function updateActionButtons() {
+            const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
+            const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started;
+            
+            console.log('Atualizando botões - isMyTurn:', isMyTurn);
+            
+            actionButtons.forEach(btn => {
+                if (isMyTurn) {
+                    btn.style.display = 'inline-block';
+                    btn.disabled = false;
+                } else {
+                    btn.style.display = 'none';
+                    btn.disabled = true;
+                }
+            });
+            
+            // Mostrar o botão Finalizar Turno apenas no turno do jogador vivo
+            const endTurnBtn = document.getElementById('end-turn-btn');
+            if (endTurnBtn) {
+                if (isMyTurn) {
+                    endTurnBtn.style.display = 'inline-block';
+                } else {
+                    endTurnBtn.style.display = 'none';
+                }
+            }
         }
-    }
-    
-    // SÓ atualizar a área de oponentes se o jogo já começou
-    if (gameState.started) {
-        updateOpponentsArea();
-    } else {
-        const opponentsArea = document.getElementById('opponents-area');
-        opponentsArea.innerHTML = '';
-        const waitingMsg = document.createElement('div');
-        waitingMsg.className = 'opponent-card';
-        waitingMsg.style.textAlign = 'center';
-        waitingMsg.style.padding = '30px';
-        waitingMsg.innerHTML = `
-            <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-            <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
-            <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
-            <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
-        `;
-        opponentsArea.appendChild(waitingMsg);
-    }
-    
-    // Verificar se o jogador atual está morto
-    if (gameState.current_player_dead) {
-        document.getElementById('player-area').style.display = 'none';
-        
-        let spectatorMsg = document.getElementById('spectator-message');
-        if (!spectatorMsg) {
-            spectatorMsg = document.createElement('div');
-            spectatorMsg.id = 'spectator-message';
-            spectatorMsg.className = 'waiting-room';
-            spectatorMsg.innerHTML = `
-                <h2 style="color: #ff4444;">💀 VOCÊ MORREU</h2>
-                <p style="color: #ffd700; font-size: 18px; margin: 20px 0;">Agora você é um espectador</p>
-                <p>Suas cartas foram distribuídas:</p>
-                <p>• Criaturas foram para o cemitério</p>
-                <p>• Outras cartas voltaram para o monte</p>
-                <p style="margin-top: 30px; color: #888;">Você pode acompanhar o resto da partida</p>
-                <button class="start-btn" onclick="window.location.href='/'">🏠 Voltar ao início</button>
-            `;
-            document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
-        }
-        spectatorMsg.style.display = 'block';
-    } else if (gameState.players[currentUsername]) {
-        // Jogador está vivo, mostrar área normal e atualizar
-        document.getElementById('player-area').style.display = 'block';
-        
-        const spectatorMsg = document.getElementById('spectator-message');
-        if (spectatorMsg) {
-            spectatorMsg.style.display = 'none';
-        }
-        
-        // IMPORTANTE: Chamar updatePlayerArea para renderizar as bases e mão
-        updatePlayerArea();
-    }
-    
-    // Atualizar visibilidade dos botões de ação
-    updateActionButtons();
-}
-function updateActionButtons() {
-    const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
-    const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started;
-    
-    console.log('Atualizando botões - isMyTurn:', isMyTurn);
-    
-    actionButtons.forEach(btn => {
-        if (isMyTurn) {
-            btn.style.display = 'inline-block';
-            btn.disabled = false;
-        } else {
-            btn.style.display = 'none';
-            btn.disabled = true;
-        }
-    });
-    
-    // Mostrar o botão Finalizar Turno apenas no turno do jogador vivo
-    const endTurnBtn = document.getElementById('end-turn-btn');
-    if (endTurnBtn) {
-        if (isMyTurn) {
-            endTurnBtn.style.display = 'inline-block';
-        } else {
-            endTurnBtn.style.display = 'none';
-        }
-    }
-}
 
         function showSessionIndicator() {
             const indicator = document.getElementById('session-indicator');
@@ -1520,85 +1497,84 @@ function updateActionButtons() {
             
             return div;
         }
-function updatePlayerArea() {
-    console.log('Atualizando área do jogador para:', currentUsername);
-    
-    const playerData = gameState.players[currentUsername];
-    if (!playerData) {
-        console.error('Dados do jogador não encontrados para:', currentUsername);
-        return;
-    }
-    
-    console.log('Dados do jogador:', playerData);
-    
-    document.getElementById('player-name').textContent = playerData.name;
-    document.getElementById('player-life').textContent = playerData.life;
-    
-    // Contar runas na mão
-    const runes = playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0;
-    const talismans = playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0;
-    
-    document.getElementById('player-runes').textContent = runes;
-    document.getElementById('player-talismans').textContent = talismans;
-    document.getElementById('runas-count').textContent = runes;
-    
-    // Bases de ataque
-    const attackBases = document.getElementById('attack-bases');
-    attackBases.innerHTML = '';
-    if (playerData.attack_bases) {
-        playerData.attack_bases.forEach((card, index) => {
-            const slot = createBaseSlot(card, 'attack', index, false);
-            slot.onclick = () => selectBase('attack', index, card);
-            attackBases.appendChild(slot);
-        });
-    }
-    
-    // Bases de defesa
-    const defenseBases = document.getElementById('defense-bases');
-    defenseBases.innerHTML = '';
-    if (playerData.defense_bases) {
-        playerData.defense_bases.forEach((card, index) => {
-            const slot = createBaseSlot(card, 'defense', index, false);
-            slot.onclick = () => selectBase('defense', index, card);
-            defenseBases.appendChild(slot);
-        });
-    }
-    
-    // Mão
-    const handCards = document.getElementById('hand-cards');
-    handCards.innerHTML = '';
-    
-    if (playerData.hand && playerData.hand.length > 0) {
-        console.log('Renderizando mão com', playerData.hand.length, 'cartas');
-        playerData.hand.forEach((card, index) => {
-            const cardElement = createCardElement(card, index);
-            cardElement.onclick = () => selectCard(card, index);
-            handCards.appendChild(cardElement);
-        });
-    } else {
-        console.log('Mão vazia');
-        // Mostrar mensagem de mão vazia
-        const emptyMsg = document.createElement('div');
-        emptyMsg.style.cssText = 'width: 100%; text-align: center; padding: 20px; color: #888;';
-        emptyMsg.textContent = '🃏 Mão vazia';
-        handCards.appendChild(emptyMsg);
-    }
-    
-    document.getElementById('hand-count').textContent = playerData.hand ? playerData.hand.length : 0;
-    
-    // Montes
-    document.getElementById('deck-count').textContent = gameState.deck_count || 0;
-    document.getElementById('graveyard-count').textContent = gameState.graveyard_count || 0;
-
-    if (equipMode) {
-        document.querySelectorAll('.base-slot.has-card').forEach(slot => {
-            if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
-                slot.classList.add('creature-highlight');
+        function updatePlayerArea() {
+            console.log('Atualizando área do jogador para:', currentUsername);
+            
+            const playerData = gameState.players[currentUsername];
+            if (!playerData) {
+                console.error('Dados do jogador não encontrados para:', currentUsername);
+                return;
             }
-        });
-    }
-}
+            
+            console.log('Dados do jogador:', playerData);
+            
+            document.getElementById('player-name').textContent = playerData.name;
+            document.getElementById('player-life').textContent = playerData.life;
+            
+            // Contar runas na mão
+            const runes = playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0;
+            const talismans = playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0;
+            
+            document.getElementById('player-runes').textContent = runes;
+            document.getElementById('player-talismans').textContent = talismans;
+            document.getElementById('runas-count').textContent = runes;
+            
+            // Bases de ataque
+            const attackBases = document.getElementById('attack-bases');
+            attackBases.innerHTML = '';
+            if (playerData.attack_bases) {
+                playerData.attack_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'attack', index, false);
+                    slot.onclick = () => selectBase('attack', index, card);
+                    attackBases.appendChild(slot);
+                });
+            }
+            
+            // Bases de defesa
+            const defenseBases = document.getElementById('defense-bases');
+            defenseBases.innerHTML = '';
+            if (playerData.defense_bases) {
+                playerData.defense_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'defense', index, false);
+                    slot.onclick = () => selectBase('defense', index, card);
+                    defenseBases.appendChild(slot);
+                });
+            }
+            
+            // Mão
+            const handCards = document.getElementById('hand-cards');
+            handCards.innerHTML = '';
+            
+            if (playerData.hand && playerData.hand.length > 0) {
+                console.log('Renderizando mão com', playerData.hand.length, 'cartas');
+                playerData.hand.forEach((card, index) => {
+                    const cardElement = createCardElement(card, index);
+                    cardElement.onclick = () => selectCard(card, index);
+                    handCards.appendChild(cardElement);
+                });
+            } else {
+                console.log('Mão vazia');
+                // Mostrar mensagem de mão vazia
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'width: 100%; text-align: center; padding: 20px; color: #888;';
+                emptyMsg.textContent = '🃏 Mão vazia';
+                handCards.appendChild(emptyMsg);
+            }
+            
+            document.getElementById('hand-count').textContent = playerData.hand ? playerData.hand.length : 0;
+            
+            // Montes
+            document.getElementById('deck-count').textContent = gameState.deck_count || 0;
+            document.getElementById('graveyard-count').textContent = gameState.graveyard_count || 0;
 
+            if (equipMode) {
+                document.querySelectorAll('.base-slot.has-card').forEach(slot => {
+                    if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
+                        slot.classList.add('creature-highlight');
+                    }
+                });
+            }
+        }
 
         function createBaseSlot(card, type, index, isOpponent) {
             const slot = document.createElement('div');
