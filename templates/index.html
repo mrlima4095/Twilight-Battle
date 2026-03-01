@@ -265,7 +265,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (!data.authenticated) {
-                        window.location.href = '/auth';
                         return;
                     }
                     
@@ -277,14 +276,14 @@
                     }
                 })
                 .catch(() => {
-                    window.location.href = '/auth';
+                    window.location.reload();
                 });
             
             // Logout
             logoutBtn.addEventListener('click', function() {
                 fetch('/api/logout', { method: 'POST' })
                     .then(() => {
-                        window.location.href = '/auth';
+                        window.location.reload();
                     });
             });
             
