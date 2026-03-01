@@ -1106,26 +1106,30 @@ class Game:
             if card:
                 self.graveyard.append(card)
                 player['attack_bases'][i] = None
+                print(f"Carta de ataque {card['name']} movida para o cemitério")
         
         for i, card in enumerate(player['defense_bases']):
             if card:
                 self.graveyard.append(card)
                 player['defense_bases'][i] = None
+                print(f"Carta de defesa {card['name']} movida para o cemitério")
         
         # Processar equipamentos
         for slot, card in player['equipment'].items():
             if card:
                 self.graveyard.append(card)
                 player['equipment'][slot] = None
+                print(f"Equipamento {card['name']} movido para o cemitério")
         
         # Processar talismãs
         for talisman in player['talismans']:
             self.graveyard.append(talisman)
+            print(f"Talismã {talisman['name']} movido para o cemitério")
         player['talismans'] = []
         
         random.shuffle(self.deck)
-        print(f"Jogador {player['name']} processado como morto")
-    
+        print(f"Jogador {player['name']} processado como morto. Cemitério agora tem {len(self.graveyard)} cartas")
+
     def check_winner(self):
         """Verifica se há um vencedor"""
         alive_players = []
@@ -1286,16 +1290,18 @@ class Game:
         graveyard_info = []
         for card in self.graveyard:
             card_info = {
-                'instance_id': card['instance_id'],
-                'name': card['name'],
+                'instance_id': card.get('instance_id', str(uuid.uuid4())[:8]),
+                'name': card.get('name', 'Carta sem nome'),
                 'type': card.get('type', 'unknown'),
                 'description': card.get('description', ''),
                 'life': card.get('life', 0),
-                'attack': card.get('attack', 0)
+                'attack': card.get('attack', 0),
+                'protection': card.get('protection', 0),
+                'id': card.get('id', 'unknown')
             }
             graveyard_info.append(card_info)
         return graveyard_info
-    
+
     def revive_from_graveyard(self, username, target_card_id):
         """Revive uma carta do cemitério usando 4 runas"""
         print(f"Tentando reviver carta {target_card_id} para jogador {username}")
@@ -2066,16 +2072,27 @@ def handle_get_graveyard(data):
     """Retorna lista de cartas no cemitério"""
     game_id = data['game_id']
     
+    print(f"get_graveyard chamado para jogo: {game_id}")
+    
     if game_id not in games:
+        print(f"ERRO: Jogo {game_id} não encontrado")
         emit('error', {'message': 'Jogo não encontrado'})
         return
     
     game = games[game_id]
-    player_id = request.sid
+    username = game.get_player_by_socket(request.sid)
     
-    if player_id not in game.player_data:
+    if not username:
+        print("ERRO: Jogador não encontrado pelo socket")
         emit('error', {'message': 'Jogador não encontrado'})
         return
+    
+    print(f"Jogador {username} solicitou cemitério")
+    print(f"Cemitério tem {len(game.graveyard)} cartas")
+    
+    # Mostrar as cartas no console para debug
+    for i, card in enumerate(game.graveyard):
+        print(f"  Carta {i+1}: {card.get('name')} - {card.get('type')}")
     
     graveyard_cards = game.get_graveyard_cards()
     

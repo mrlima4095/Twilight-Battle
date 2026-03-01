@@ -1007,7 +1007,7 @@ socket.on('connect', function() {
 
 
         socket.on('graveyard_list', function(data) {
-            console.log('Cemitério:', data.cards);
+            console.log('Cemitério recebido:', data);
             
             if (!data.cards || data.cards.length === 0) {
                 Swal.fire({
@@ -1020,7 +1020,7 @@ socket.on('connect', function() {
                 return;
             }
             
-            // Organizar cards por tipo para melhor visualização
+            // Organizar cards por tipo
             const creatures = data.cards.filter(c => c.type === 'creature');
             const spells = data.cards.filter(c => c.type === 'spell');
             const weapons = data.cards.filter(c => c.type === 'weapon');
@@ -1028,9 +1028,6 @@ socket.on('connect', function() {
             const runes = data.cards.filter(c => c.type === 'rune' || c.id === 'runa');
             const talismans = data.cards.filter(c => c.type === 'talisman');
             const traps = data.cards.filter(c => c.type === 'trap');
-            const others = data.cards.filter(c => 
-                !['creature', 'spell', 'weapon', 'armor', 'rune', 'talisman', 'trap'].includes(c.type)
-            );
             
             let html = `
                 <div style="max-height: 500px; overflow-y: auto; padding: 10px;">
@@ -1085,13 +1082,6 @@ socket.on('connect', function() {
             if (traps.length > 0) {
                 html += '<h3 style="color: #ff00ff; margin: 15px 0 5px; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">⚠️ Armadilhas</h3>';
                 traps.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
-                });
-            }
-            
-            if (others.length > 0) {
-                html += '<h3 style="color: #a8a8a8; margin: 15px 0 5px; border-bottom: 1px solid #a8a8a8; padding-bottom: 5px;">📦 Outros</h3>';
-                others.forEach(card => {
                     html += createGraveyardCardHTML(card, false);
                 });
             }
@@ -2107,7 +2097,15 @@ function updatePlayerArea() {
         }
 
         function showGraveyard() {
-            if (!gameState || gameState.graveyard_count === 0) {
+            console.log('showGraveyard chamado');
+            console.log('gameState:', gameState);
+            
+            if (!gameState) {
+                console.log('gameState não definido');
+                return;
+            }
+            
+            if (gameState.graveyard_count === 0) {
                 Swal.fire({
                     icon: 'info',
                     title: '💀 Cemitério vazio',
@@ -2119,11 +2117,13 @@ function updatePlayerArea() {
                 return;
             }
             
-            // Solicitar lista do cemitério ao servidor
+            console.log('Solicitando lista do cemitério ao servidor');
             socket.emit('get_graveyard', { game_id: gameId });
         }
 
         function createGraveyardCardHTML(card, clickable = false) {
+            console.log('createGraveyardCardHTML:', card);
+            
             // Ícone baseado no tipo
             let icon = '📦';
             if (card.type === 'creature') icon = '👤';
