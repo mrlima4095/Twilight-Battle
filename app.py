@@ -2490,6 +2490,23 @@ def handle_player_action(data):
             if result and result.get('success'):
                 log_message = f"🔮 {player_name} amaldiçoou {result.get('target_card', 'uma carta')} de {result.get('target_player', 'um oponente')} (morre em 2 rodadas)"
 
+        elif action == 'revive':
+            # Verificar se params['card_id'] existe
+            card_id = params.get('card_id') or params.get('target_card_id')
+            if not card_id:
+                emit('action_error', {
+                    'message': 'ID da carta não fornecido',
+                    'player_name': player_name,
+                    'action': action,
+                    'timestamp': timestamp
+                })
+                return
+            
+            result = game.revive_from_graveyard(player_name, card_id)
+            if result and result.get('success'):
+                card_name = result.get('card', {}).get('name', 'uma carta')
+                log_message = f"🔄 {player_name} reviveu {card_name} do cemitério"
+
         elif action == 'flip_card':
             result = game.flip_card(player_name, params['position_type'], params['position_index'])
             if result and result.get('success'):
@@ -2499,13 +2516,7 @@ def handle_player_action(data):
             result = game.perform_oracle(player_name, params['target_id'])
             if result and result.get('success'):
                 log_message = f"👁️ {player_name} realizou um oráculo"
-                
-        elif action == 'revive':
-            result = game.revive_from_graveyard(player_name, params.get('card_id'))
-            if result and result.get('success'):
-                card_name = result.get('card', {}).get('name', 'uma carta')
-                log_message = f"🔄 {player_name} reviveu {card_name} do cemitério"
-                
+
         elif action == 'end_turn':
             game.next_turn()
             next_player_name = game.players[game.current_turn]

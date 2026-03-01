@@ -674,7 +674,6 @@
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
                 <button class="action-btn" id="prophet-curse-btn" style="background: linear-gradient(45deg, #800080, #4b0082); color: white;">🔮 Profetizar</button>
-                <button class="action-btn revive" id="revive-btn">🔄 Reviver (4 runas) - <span id="runas-count">0</span></button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
@@ -1034,49 +1033,49 @@
             if (creatures.length > 0) {
                 html += '<h3 style="color: #ff6b6b; margin: 15px 0 5px; border-bottom: 1px solid #ff6b6b; padding-bottom: 5px;">👤 Criaturas</h3>';
                 creatures.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (spells.length > 0) {
                 html += '<h3 style="color: #9370db; margin: 15px 0 5px; border-bottom: 1px solid #9370db; padding-bottom: 5px;">✨ Feitiços</h3>';
                 spells.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (weapons.length > 0) {
                 html += '<h3 style="color: #ffa500; margin: 15px 0 5px; border-bottom: 1px solid #ffa500; padding-bottom: 5px;">⚔️ Armas</h3>';
                 weapons.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (armors.length > 0) {
                 html += '<h3 style="color: #4a90e2; margin: 15px 0 5px; border-bottom: 1px solid #4a90e2; padding-bottom: 5px;">🛡️ Armaduras</h3>';
                 armors.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (runes.length > 0) {
                 html += '<h3 style="color: #4CAF50; margin: 15px 0 5px; border-bottom: 1px solid #4CAF50; padding-bottom: 5px;">🔷 Runas</h3>';
                 runes.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (talismans.length > 0) {
                 html += '<h3 style="color: #ffd700; margin: 15px 0 5px; border-bottom: 1px solid #ffd700; padding-bottom: 5px;">🔮 Talismãs</h3>';
                 talismans.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
             if (traps.length > 0) {
                 html += '<h3 style="color: #ff00ff; margin: 15px 0 5px; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">⚠️ Armadilhas</h3>';
                 traps.forEach(card => {
-                    html += createGraveyardCardHTML(card, false);
+                    html += createGraveyardCardHTML(card);
                 });
             }
             
@@ -1085,12 +1084,12 @@
             Swal.fire({
                 title: '💀 Cemitério',
                 html: html,
-                showCancelButton: false,
-                showConfirmButton: true,
-                confirmButtonText: 'Fechar',
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Fechar',
+                cancelButtonColor: '#ffd700',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#ffd700',
                 width: '800px'
             });
         });
@@ -2093,7 +2092,6 @@
 
         function showGraveyard() {
             console.log('showGraveyard chamado');
-            console.log('gameState:', gameState);
             
             if (!gameState) {
                 console.log('gameState não definido');
@@ -2112,11 +2110,22 @@
                 return;
             }
             
-            console.log('Solicitando lista do cemitério ao servidor');
+            // Mostrar loading enquanto busca
+            Swal.fire({
+                title: 'Carregando cemitério...',
+                html: 'Aguarde enquanto as cartas são carregadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
             socket.emit('get_graveyard', { game_id: gameId });
         }
-
-        function createGraveyardCardHTML(card, clickable = false) {
+        
+        function createGraveyardCardHTML(card) {
             console.log('createGraveyardCardHTML:', card);
             
             // Ícone baseado no tipo
@@ -2129,20 +2138,16 @@
             else if (card.type === 'talisman') icon = '🔮';
             else if (card.type === 'trap') icon = '⚠️';
             
-            const clickHandler = clickable ? `onclick="selectCardToRevive('${card.instance_id}')"` : '';
-            const cursorStyle = clickable ? 'pointer' : 'default';
-            const hoverStyle = clickable ? 'this.style.background="rgba(255, 215, 0, 0.3)"' : '';
-            const hoverOutStyle = clickable ? 'this.style.background="rgba(255, 215, 0, 0.1)"' : '';
-            
             return `
-                <div ${clickHandler} 
-                    style="padding: 12px; margin: 8px 0; background: rgba(255, 215, 0, 0.1); border: 1px solid #ffd700; border-radius: 8px; cursor: ${cursorStyle}; transition: all 0.3s;"
-                    ${clickable ? `onmouseover="${hoverStyle}" onmouseout="${hoverOutStyle}"` : ''}>
+                <div onclick="selectGraveyardCard('${card.instance_id}', '${card.name.replace(/'/g, "\\'")}')" 
+                    style="padding: 15px; margin: 10px 0; background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                    onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'" 
+                    onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 20px;">${icon}</span>
+                            <span style="font-size: 24px;">${icon}</span>
                             <div>
-                                <strong style="color: #ffd700;">${card.name}</strong>
+                                <strong style="color: #ffd700; font-size: 16px;">${card.name}</strong>
                                 <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
                             </div>
                         </div>
@@ -2154,6 +2159,11 @@
                     </div>
                     <div style="color: #ccc; font-size: 12px; margin-top: 5px; margin-left: 30px;">
                         ${card.description || 'Sem descrição'}
+                    </div>
+                    <div style="margin-top: 8px; text-align: right;">
+                        <span style="color: #4CAF50; font-size: 12px; background: rgba(76, 175, 80, 0.2); padding: 3px 8px; border-radius: 5px;">
+                            👆 Clique para reviver
+                        </span>
                     </div>
                 </div>
             `;
