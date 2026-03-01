@@ -903,14 +903,7 @@ socket.on('connect', function() {
             updatePlayersList(data.players);
         });
         socket.on('player_left', function(data) {
-            if (data.username === currentUsername) {
-                localStorage.removeItem(SESSION_KEY);
-                
-                fetch('/api/logout', { method: 'POST' })
-                    .then(() => {
-                        window.location.href = '/';
-                    });
-            } else {
+            if (data.username !== currentUsername) {
                 Swal.fire({
                     icon: 'info',
                     title: 'Jogador saiu',
