@@ -1792,7 +1792,7 @@ def index():
         if current_game and current_game in games:
             return render_template('game.html', game_id=current_game, username=username)
     else:
-        render_template('auth.html')
+        return render_template('auth.html')
     return render_template('index.html')
 @app.route('/rules')
 def rules():
