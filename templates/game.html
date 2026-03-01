@@ -1338,13 +1338,54 @@
             
             console.log('Atualizando botões - isMyTurn:', isMyTurn);
             
+            // Verificar se tem Profeta em campo (para mostrar/esconder o botão de profecia)
+            let hasProphet = false;
+            if (gameState && gameState.players[currentUsername]) {
+                const playerData = gameState.players[currentUsername];
+                
+                // Verificar em bases de ataque
+                if (playerData.attack_bases) {
+                    for (let card of playerData.attack_bases) {
+                        if (card && (card.id === 'profeta' || card.name.toLowerCase().includes('profeta'))) {
+                            hasProphet = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Verificar em bases de defesa se não encontrou ainda
+                if (!hasProphet && playerData.defense_bases) {
+                    for (let card of playerData.defense_bases) {
+                        if (card && (card.id === 'profeta' || card.name.toLowerCase().includes('profeta'))) {
+                            hasProphet = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            console.log('Tem Profeta em campo?', hasProphet);
+            
             actionButtons.forEach(btn => {
-                if (isMyTurn) {
-                    btn.style.display = 'inline-block';
-                    btn.disabled = false;
+                // Verificar se é o botão do profeta
+                if (btn.id === 'prophet-curse-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver um profeta em campo
+                    if (isMyTurn && hasProphet) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
                 } else {
-                    btn.style.display = 'none';
-                    btn.disabled = true;
+                    // Para os outros botões, manter comportamento normal
+                    if (isMyTurn) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
                 }
             });
             

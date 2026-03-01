@@ -246,7 +246,7 @@ CARDS = {
         "type": "creature", 
         "life": 256, 
         "attack": 50, 
-        "count": 1, 
+        "count": 2, 
         "description": "Anuncia a morte de um monstro para duas rodadas a frente. A maldição pode ser retirada caso o jogador seja derrotado."
     },
     
