@@ -326,6 +326,13 @@ CARDS = {
         "count": 1, 
         "description": "Aumenta em 1024 pontos o ataque e defesa do jogador."
     },
+    "talisma_sabedoria": {
+        "id": "talisma_sabedoria", 
+        "name": "Talismã - Sabedoria", 
+        "type": "talisman", 
+        "count": 1, 
+        "description": "Permite jogar duas cartas por turno (em vez de uma)."
+    },
     
     # Runas
     "runa": {
@@ -645,7 +652,8 @@ class Game:
         self.time_cycle = 0
         self.max_players = 6
         self.turn_actions_used = {}
-        
+        self.turn_extra_actions = {}
+
         self.first_round = True
         self.players_acted = set()
         self.attacks_blocked = True
@@ -653,7 +661,6 @@ class Game:
     def get_player_by_socket(self, socket_id):
         """Retorna o username associado a um socket_id"""
         return self.socket_to_username.get(socket_id)
-    
     def get_socket_id(self, username):
         """Retorna o socket_id atual de um username"""
         for socket_id, uname in self.socket_to_username.items():
@@ -797,14 +804,64 @@ class Game:
         if username != self.players[self.current_turn]:
             return False
         
+        # Inicializar contadores se necessário
         if username not in self.turn_actions_used:
-            self.turn_actions_used[username] = set()
+            self.turn_actions_used[username] = {}
         
-        return action not in self.turn_actions_used[username]
+        if action not in self.turn_actions_used[username]:
+            self.turn_actions_used[username][action] = 0
+        
+        # Obter limite máximo para esta ação
+        max_actions = self.get_max_actions(username)
+        action_limit = max_actions.get(action, 1)
+        
+        # Verificar se já usou o número máximo de vezes
+        return self.turn_actions_used[username][action] < action_limit
+    def get_max_actions(self, username):
+        """Retorna o número máximo de ações de um determinado tipo que o jogador pode realizar"""
+        player = self.player_data.get(username, {})
+        
+        # Verificar se tem Talismã da Sabedoria
+        has_sabedoria = False
+        for talisman in player.get('talismans', []):
+            if talisman and talisman.get('id') == 'talisma_sabedoria':
+                has_sabedoria = True
+                break
+        
+        # Verificar se tem Talismã da Sabedoria na mão também (ativado automaticamente)
+        if not has_sabedoria:
+            for card in player.get('hand', []):
+                if card and card.get('id') == 'talisma_sabedoria':
+                    has_sabedoria = True
+                    break
+        
+        # Retornar limite de ações
+        return {
+            'play': 2 if has_sabedoria else 1,  # Pode jogar 2 cartas com Talismã da Sabedoria
+            'draw': 1,
+            'attack': 1,
+            'swap': 1,
+            'spell': 1,
+            'ritual': 1,
+            'block': 1,
+            'oracle': 1
+        }
 
     def use_action(self, username, action):
         """Registra que uma ação foi usada"""
-        self.turn_actions_used[username].add(action)
+        if username not in self.turn_actions_used:
+            self.turn_actions_used[username] = {}
+        
+        if action not in self.turn_actions_used[username]:
+            self.turn_actions_used[username][action] = 0
+        
+        self.turn_actions_used[username][action] += 1
+        
+        # Log para debug
+        max_actions = self.get_max_actions(username)
+        action_limit = max_actions.get(action, 1)
+        used = self.turn_actions_used[username][action]
+        print(f"Jogador {username} usou {action} ({used}/{action_limit})")
     
     def register_action(self, username, action_type):
         """Registra que um jogador realizou uma ação na primeira rodada"""
@@ -838,11 +895,12 @@ class Game:
                 break
         
         self.current_turn = next_turn
-        self.turn_actions_used = {}
+        self.turn_actions_used = {}  # Resetar todas as ações
+        self.turn_extra_actions = {}  # Resetar ações extras
         
         for username in self.players:
             if not self.player_data[username].get('dead', False):
-                self.turn_actions_used[username] = set()
+                self.turn_actions_used[username] = {}
         
         self.time_cycle += 1
         if self.time_cycle % 24 == 0:
@@ -852,7 +910,7 @@ class Game:
         
         current_player = self.players[self.current_turn]
         print(f"Próximo turno: {current_player}")
-    
+
     def can_attack(self, username):
         """Verifica se o jogador pode atacar (bloqueado na primeira rodada)"""
         if self.attacks_blocked:
