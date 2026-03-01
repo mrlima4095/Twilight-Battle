@@ -2081,7 +2081,7 @@ function updatePlayerArea() {
                     socket.emit('player_action', {
                         game_id: gameId,
                         action: 'attack',
-                        params: { target_id: targetPlayerId }
+                        params: { target_id: targetUsername }
                     });
                 }
             });
