@@ -2713,6 +2713,42 @@ class AdminShell(cmd.Cmd):
         """removecard [jogador] [id_carta] [quantidade] - Remover carta da mão"""
         self.do_take(arg)
     
+    def do_toggle_time(self, arg):
+        """toggle-time [game-id] - Muda o ciclo de dia/noite do jogo"""
+        args = shlex.split(arg)
+        if not args:
+            print("❌ Uso: toggle-time [game-id]")
+            return
+        
+        game_id = args[0]
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        # Alternar o ciclo
+        old_time = game.time_of_day
+        game.time_of_day = "night" if game.time_of_day == "day" else "day"
+        
+        print(f"🌓 Jogo {game_id}: {old_time.upper()} → {game.time_of_day.upper()}")
+        
+        # Aplicar efeitos do dia se mudou para dia
+        if game.time_of_day == "day":
+            game.apply_day_effects()
+            print("   ⚰️ Efeitos do dia aplicados (zumbis e vampiros morreram)")
+        
+        # Notificar todos os jogadores
+        socketio.emit('time_changed', {
+            'type': 'time_change',
+            'new_time': game.time_of_day,
+            'old_time': old_time,
+            'message': f'🌓 Admin alterou o ciclo: {old_time.upper()} → {game.time_of_day.upper()}'
+        }, room=game_id)
+        
+        print(f"   ✅ Jogadores notificados")
+
     def do_list(self, arg):
         """list games - Listar jogos | list players - Listar jogadores online"""
         args = shlex.split(arg)
@@ -2756,30 +2792,70 @@ class AdminShell(cmd.Cmd):
                     print(f"  • {username} - Jogo: {game_id} [⚠️ não na partida]")
     
     def do_sync(self, arg):
-        """sync [jogador] - Força sincronização do jogo para um jogador específico"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: sync [jogador]")
+        """sync [game-id] - Força sincronização do jogo para todos os jogadores na sala"""
+        args = shlex.split(arg)
+        if not args:
+            print("❌ Uso: sync [game-id]")
             return
         
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
+        game_id = args[0]
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
             return
         
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
+        game = games[game_id]
         
-        # Enviar estado atualizado para TODOS os jogadores na sala
-        for player in game.players:
-            socket_id = game.get_socket_id(player)
-            if socket_id:
-                player_state = game.get_player_game_state(player)
-                if player_state:
-                    socketio.emit('game_state', player_state, room=socket_id)
+        # Enviar estado atualizado para cada jogador na sala
+        players_updated = 0
+        for username in game.players:
+            socket_id = game.get_socket_id(username)
+            if socket_id and username in game.player_data:
+                # Construir estado específico para cada jogador
+                current_turn_username = None
+                if game.players and game.current_turn < len(game.players):
+                    current_turn_username = game.players[game.current_turn]
+                
+                state = {
+                    'game_id': game_id,
+                    'started': game.started,
+                    'time_of_day': game.time_of_day,
+                    'time_cycle': game.time_cycle,
+                    'current_turn': current_turn_username,
+                    'players': {},
+                    'deck_count': len(game.deck),
+                    'graveyard_count': len(game.graveyard),
+                    'current_player_dead': game.player_data[username].get('dead', False)
+                }
+                
+                # Informações de todos os jogadores
+                for uname in game.players:
+                    if uname in game.player_data:
+                        player_info = {
+                            'name': game.player_data[uname]['name'],
+                            'username': uname,
+                            'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
+                            'attack_bases': game.player_data[uname]['attack_bases'],
+                            'defense_bases': game.player_data[uname]['defense_bases'],
+                            'talisman_count': len(game.player_data[uname]['talismans']),
+                            'runes': game.player_data[uname]['runes'],
+                            'dead': game.player_data[uname].get('dead', False),
+                            'observer': game.player_data[uname].get('observer', False)
+                        }
+                        
+                        # Informações privadas apenas para o próprio jogador
+                        if uname == username and not player_info.get('dead', False):
+                            player_info['hand'] = game.player_data[uname]['hand']
+                            player_info['equipment'] = game.player_data[uname]['equipment']
+                            player_info['talismans'] = game.player_data[uname]['talismans']
+                        
+                        state['players'][uname] = player_info
+                
+                # Enviar estado para o jogador específico
+                socketio.emit('game_state', state, room=socket_id)
+                players_updated += 1
         
-        print(f"✅ Sincronização forçada para todos os jogadores na sala {game.game_id}")
+        print(f"✅ Sincronização forçada para {players_updated} jogadores no jogo {game_id}")
 
     def do_reset(self, arg):
         """reset - Resetar todos os jogos (CUIDADO!)"""
