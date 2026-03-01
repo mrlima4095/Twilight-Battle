@@ -2579,56 +2579,6 @@
             socket.emit('get_rituals', { game_id: gameId });
         });
 
-        document.getElementById('revive-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== currentUsername) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Não é seu turno!',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            const playerData = gameState.players[currentUsername];
-            
-            // Contar runas na mão (verificando type='rune' OU id='runa')
-            const runas = playerData.hand.filter(c => 
-                c && (c.type === 'rune' || c.id === 'runa' || c.name.toLowerCase().includes('runa'))
-            );
-            
-            const runasCount = runas.length;
-            document.getElementById('runas-count').textContent = runasCount;
-            
-            if (runasCount < 4) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Runas insuficientes',
-                    html: `<p style="color: #fff;">Você tem <strong style="color: #ffd700;">${runasCount}/4</strong> runas necessárias</p>`,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            if (gameState.graveyard_count === 0) {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Cemitério vazio',
-                    text: 'Não há cartas para reviver',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Solicitar lista do cemitério ao servidor
-            socket.emit('get_graveyard', { game_id: gameId });
-        });
-
         document.getElementById('end-turn-btn').addEventListener('click', function() {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
