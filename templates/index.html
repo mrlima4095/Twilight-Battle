@@ -276,14 +276,14 @@
                     }
                 })
                 .catch(() => {
-                    window.location.reload();
+                    location.reload();
                 });
             
             // Logout
             logoutBtn.addEventListener('click', function() {
                 fetch('/api/logout', { method: 'POST' })
                     .then(() => {
-                        window.location.reload();
+                        location.reload();
                     });
             });
             
