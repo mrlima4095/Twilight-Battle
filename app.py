@@ -1924,42 +1924,42 @@ def handle_player_action(data):
     
     try:
         if action == 'draw':
-            result = game.draw_card(player_id)
+            result = game.draw_card(player_name)
             if result and result.get('success'):
                 log_message = f"📥 {player_name} comprou uma carta"
                 
         elif action == 'play_card':
-            result = game.play_card(player_id, params['card_id'], params['position_type'], params['position_index'])
+            result = game.play_card(player_name, params['card_id'], params['position_type'], params['position_index'])
             if result and result.get('success'):
                 card_name = result.get('card', {}).get('name', 'uma carta')
                 log_message = f"🎴 {player_name} jogou {card_name}"
                 
         elif action == 'attack':
-            result = game.attack(player_id, params['target_id'])
+            result = game.attack(player_name, params['target_id'])
             if result and result.get('success'):
                 target_name = result.get('target_name', 'um oponente')
                 damage = result.get('damage_to_player', 0)
                 log_message = f"⚔️ {player_name} atacou {target_name} causando {damage} de dano"
                 
         elif action == 'equip_item':
-            result = game.equip_item_to_creature(player_id, params['item_card_id'], params['creature_card_id'])
+            result = game.equip_item_to_creature(player_name, params['item_card_id'], params['creature_card_id'])
             if result and result.get('success'):
                 log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
                 
         elif action == 'cast_spell':
-            result = game.cast_spell(player_id, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
+            result = game.cast_spell(player_name, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
             if result and result.get('success'):
                 spell_name = result.get('spell', {}).get('name', 'um feitiço')
                 log_message = f"✨ {player_name} usou {spell_name}"
                 
         elif action == 'ritual':
-            result = game.perform_ritual(player_id, params['ritual_id'], params.get('target_player_id'))
+            result = game.perform_ritual(player_name, params['ritual_id'], params.get('target_player_id'))
             if result and result.get('success'):
                 log_message = f"📿 {player_name} realizou {result.get('message', 'um ritual')}"
                 
         elif action == 'swap_positions':
             result = game.swap_positions(
-                player_id, 
+                player_name, 
                 params['pos1_type'], 
                 params['pos1_index'], 
                 params['pos2_type'], 
@@ -1969,38 +1969,38 @@ def handle_player_action(data):
                 log_message = f"🔄 {player_name} trocou posições das cartas"
                 
         elif action == 'move_card':
-            result = game.move_card(player_id, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
+            result = game.move_card(player_name, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
             if result and result.get('success'):
                 log_message = f"↔️ {player_name} moveu uma carta"
                 
         elif action == 'flip_card':
-            result = game.flip_card(player_id, params['position_type'], params['position_index'])
+            result = game.flip_card(player_name, params['position_type'], params['position_index'])
             if result and result.get('success'):
                 log_message = f"🔄 {player_name} desvirou uma carta"
                 
         elif action == 'oracle':
-            result = game.perform_oracle(player_id, params['target_id'])
+            result = game.perform_oracle(player_name, params['target_id'])
             if result and result.get('success'):
                 log_message = f"👁️ {player_name} realizou um oráculo"
                 
         elif action == 'revive':
-            result = game.revive_from_graveyard(player_id, params.get('card_id'))
+            result = game.revive_from_graveyard(player_name, params.get('card_id'))
             if result and result.get('success'):
                 card_name = result.get('card', {}).get('name', 'uma carta')
                 log_message = f"🔄 {player_name} reviveu {card_name} do cemitério"
                 
         elif action == 'end_turn':
             game.next_turn()
-            next_player_id = game.players[game.current_turn]
-            next_player_name = game.player_data[next_player_id]['name']
-            result = {'success': True, 'next_turn': next_player_id}
+            next_player_name = game.players[game.current_turn]
+            next_player_name = game.player_data[next_player_name]['name']
+            result = {'success': True, 'next_turn': next_player_name}
             log_message = f"⏰ {player_name} finalizou o turno (próximo: {next_player_name})"
         
         if result and result.get('success'):
             # Registrar ação para primeira rodada (exceto end_turn)
             first_round_ended = False
             if action != 'end_turn':
-                first_round_ended = game.register_action(player_id, action)
+                first_round_ended = game.register_action(player_name, action)
             
             if first_round_ended:
                 result['first_round_ended'] = True
@@ -2013,7 +2013,7 @@ def handle_player_action(data):
             
             # Emitir ação com todas as informações para o log
             emit('action_success', {
-                'player_id': player_id,
+                'player_id': player_name,
                 'player_name': player_name,
                 'action': action,
                 'result': result,
