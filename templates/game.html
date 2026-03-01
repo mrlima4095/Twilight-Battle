@@ -821,7 +821,7 @@
         }
 
 socket.on('connect', function() {
-    console.log('Conectado ao servidor com ID:', socket.id);
+    console.log('Conectado ao servidor com ID:', currentUsername);
     reconnectAttempts = 0;
     
     // Se temos username, tentar reconectar ou entrar
@@ -937,7 +937,7 @@ socket.on('connect', function() {
             });
             
             // Se for o próprio jogador, mostrar mensagem especial
-            if (data.player_id === socket.id) {
+            if (data.player_id === currentUsername) {
                 setTimeout(() => {
                     Swal.fire({
                         icon: 'error',
@@ -1385,7 +1385,7 @@ function updateActionButtons() {
         }
         function showTurnMessage() {
             const playerArea = document.getElementById('player-area');
-            const isMyTurn = gameState && gameState.current_turn === socket.id;
+            const isMyTurn = gameState && gameState.current_turn === currentUsername;
             
             // Verificar se já existe uma mensagem de turno
             let turnMessage = document.getElementById('turn-message');
@@ -1509,7 +1509,7 @@ function updateActionButtons() {
                     <div class="bases-row" id="opp-defense-${playerId}"></div>
                 </div>
                 <button class="action-btn" onclick="selectTarget('${playerId}')" 
-                        ${gameState.current_turn !== socket.id ? 'disabled' : ''}>
+                        ${gameState.current_turn !== currentUsername ? 'disabled' : ''}>
                     ⚔️ Atacar
                 </button>
             `;
@@ -1702,7 +1702,7 @@ function updatePlayerArea() {
         }
 
         function selectCard(card, index) {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2026,7 +2026,7 @@ function updatePlayerArea() {
             
             // Verificar se tem cartas de ataque
             let hasAttackCards = false;
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             for (let card of playerData.attack_bases) {
                 if (card && card.type === 'creature') {
                     hasAttackCards = true;
@@ -2088,7 +2088,7 @@ function updatePlayerArea() {
         }
 
         function drawCard() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2210,7 +2210,7 @@ function updatePlayerArea() {
         document.getElementById('draw-btn').addEventListener('click', drawCard);
 
         document.getElementById('move-mode-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2228,7 +2228,7 @@ function updatePlayerArea() {
             }
             
             // Verificar se há pelo menos duas cartas em campo para trocar
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             const cardsInField = [
                 ...playerData.attack_bases.filter(c => c),
                 ...playerData.defense_bases.filter(c => c)
@@ -2292,7 +2292,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('equip-mode-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2304,7 +2304,7 @@ function updatePlayerArea() {
             }
             
             // Primeiro, selecionar um item da mão
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             const equipItems = playerData.hand.filter(c => 
                 c.type === 'weapon' || 
                 c.type === 'armor' || 
@@ -2356,7 +2356,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('spell-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2367,7 +2367,7 @@ function updatePlayerArea() {
                 return;
             }
             
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             let hasMage = false;
             let hasReiMago = false;
             let hasMagoNegro = false;
@@ -2475,7 +2475,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('ritual-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2491,7 +2491,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('revive-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2502,7 +2502,7 @@ function updatePlayerArea() {
                 return;
             }
             
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             
             // Contar runas na mão (verificando type='rune' OU id='runa')
             const runas = playerData.hand.filter(c => 
@@ -2541,7 +2541,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('end-turn-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2560,7 +2560,7 @@ function updatePlayerArea() {
         });
 
         document.getElementById('oracle-btn').addEventListener('click', function() {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -2573,7 +2573,7 @@ function updatePlayerArea() {
             
             const players = [];
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId !== socket.id) {
+                if (playerId !== currentUsername) {
                     players.push({
                         id: playerId,
                         name: playerData.name,
@@ -2692,7 +2692,7 @@ function updatePlayerArea() {
         window.selectSpell = function(spellId) {
             Swal.close();
             
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             let hasReiMago = false;
             let hasMagoNegro = false;
             
@@ -2744,7 +2744,7 @@ function updatePlayerArea() {
                 // Listar jogadores para selecionar alvo
                 const targets = [];
                 for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                    if (playerId !== socket.id) {
+                    if (playerId !== currentUsername) {
                         targets.push({
                             id: playerId,
                             name: playerData.name
@@ -2830,13 +2830,13 @@ function updatePlayerArea() {
             
             // Incluir o próprio jogador como opção de alvo
             targets.push({
-                id: socket.id,
-                name: gameState.players[socket.id].name + " (você)"
+                id: currentUsername,
+                name: gameState.players[currentUsername].name + " (você)"
             });
             
             // Adicionar outros jogadores
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
-                if (playerId !== socket.id && !playerData.dead) {
+                if (playerId !== currentUsername && !playerData.dead) {
                     targets.push({
                         id: playerId,
                         name: playerData.name
@@ -2887,7 +2887,7 @@ function updatePlayerArea() {
         // Função para equipar item em criatura
         window.equipToCreature = function(itemCardId) {
             // Mostrar lista de criaturas para equipar
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             const creatures = [];
             
             for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
@@ -2964,7 +2964,7 @@ function updatePlayerArea() {
         window.selectItemForEquip = function(itemId) {
             Swal.close();
             
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             selectedItemForEquip = playerData.hand.find(c => c.instance_id === itemId);
             
             if (!selectedItemForEquip) {
@@ -3034,7 +3034,7 @@ function updatePlayerArea() {
 
         // Modificar a função selectCard para incluir opção de equipar
         function selectCard(card, index) {
-            if (gameState.current_turn !== socket.id) {
+            if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Não é seu turno!',
@@ -3126,7 +3126,7 @@ function updatePlayerArea() {
         function equipToCreature(itemCardId) {
             console.log('Tentando equipar item:', itemCardId);
             
-            const playerData = gameState.players[socket.id];
+            const playerData = gameState.players[currentUsername];
             if (!playerData) {
                 Swal.fire({
                     icon: 'error',
