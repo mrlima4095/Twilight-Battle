@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, jsonify, make_response, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import uuid, jwt, json, hashlib, hmac, secrets, random, string, time
+import uuid, jwt, json, hashlib, hmac, logging, secrets, random, string, time
 from datetime import datetime, timedelta
 from collections import defaultdict
 from functools import wraps
@@ -10,7 +10,8 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'twilight-battle-secret'
 app.config['JWT_SECRET'] = 'twilight-battle-jwt-secret-key-change-in-production'
 app.config['JWT_EXPIRATION_HOURS'] = 24
-socketio = SocketIO(app, cors_allowed_origins="*")
+logging.basicConfig(level=logging.INFO)
+socketio = SocketIO(app, cors_allowed_origins="*", logger=False, engineio_logger=False)
 
 ACCOUNTS_FILE = 'accounts.json'
 
