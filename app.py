@@ -1487,9 +1487,7 @@ def start_game(game_id):
     return jsonify({'success': False, 'message': 'Não foi possível iniciar o jogo'})
 
 @app.route('/api/cleanup-games', methods=['POST'])
-def cleanup_games():
-    Game.cleanup_empty_games()
-    return jsonify({'success': True})
+def cleanup_games(): return jsonify({'success': True})
 
 # Login
 @app.route('/api/register', methods=['POST'])
