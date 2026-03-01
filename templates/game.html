@@ -1783,6 +1783,86 @@
             });
         }
 
+        function selectGraveyardCard(cardId, cardName) {
+            console.log('Carta do cemitério selecionada:', cardId, cardName);
+            
+            // Verificar se é o turno do jogador
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    text: 'Você só pode reviver cartas no seu turno',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se o jogador tem 4 runas
+            const playerData = gameState.players[currentUsername];
+            const runas = playerData.hand.filter(c => 
+                c && (c.type === 'rune' || c.id === 'runa' || c.name.toLowerCase().includes('runa'))
+            );
+            const runasCount = runas.length;
+            
+            if (runasCount < 4) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Runas insuficientes',
+                    html: `<p style="color: #fff;">Você precisa de <strong style="color: #ffd700;">4 runas</strong> para reviver uma carta.<br>Você tem apenas <strong style="color: #ff4444;">${runasCount}</strong> runa(s).</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Perguntar se quer reviver
+            Swal.fire({
+                title: '🔄 Reviver carta?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Deseja reviver <strong style="color: #ffd700;">${cardName}</strong>?</p>
+                        <p style="color: #4CAF50;">✨ Você tem ${runasCount} runas</p>
+                        <p style="color: #888; font-size: 12px; margin-top: 10px;">(4 runas serão consumidas)</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🔄 Sim, reviver!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Revivendo...',
+                        html: 'Aguarde enquanto a carta é revivida',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    // Enviar comando para reviver
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'revive',
+                        params: {
+                            target_card_id: cardId  // Usar target_card_id para corresponder ao backend
+                        }
+                    });
+                }
+            });
+        }
+
         function selectBase(type, index, card) {
             if (equipMode) {
                 // Modo equipar ativo - clicou em uma criatura
