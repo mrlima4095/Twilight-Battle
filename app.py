@@ -2755,6 +2755,32 @@ class AdminShell(cmd.Cmd):
                 else:
                     print(f"  • {username} - Jogo: {game_id} [⚠️ não na partida]")
     
+    def do_sync(self, arg):
+        """sync [jogador] - Força sincronização do jogo para um jogador específico"""
+        username = arg.strip().lower()
+        if not username:
+            print("❌ Uso: sync [jogador]")
+            return
+        
+        game, error = self.get_player_game(username)
+        if error:
+            print(f"❌ {error}")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não está neste jogo")
+            return
+        
+        # Enviar estado atualizado para TODOS os jogadores na sala
+        for player in game.players:
+            socket_id = game.get_socket_id(player)
+            if socket_id:
+                player_state = game.get_player_game_state(player)
+                if player_state:
+                    socketio.emit('game_state', player_state, room=socket_id)
+        
+        print(f"✅ Sincronização forçada para todos os jogadores na sala {game.game_id}")
+
     def do_reset(self, arg):
         """reset - Resetar todos os jogos (CUIDADO!)"""
         confirm = input("⚠️ Tem certeza que quer resetar TODOS os jogos? (s/N): ")
