@@ -742,7 +742,7 @@
             .then(response => response.json())
             .then(data => {
                 if (!data.authenticated) {
-                    window.location.href = '/auth';
+                    window.location.href = '/';
                     return;
                 }
                 currentUsername = data.username;
@@ -771,7 +771,7 @@
                 }
             })
             .catch(() => {
-                window.location.href = '/auth';
+                window.location.href = '/';
             });
 
         // Função saveSession atualizada
@@ -820,33 +820,33 @@
             }
         }
 
-socket.on('connect', function() {
-    console.log('Conectado ao servidor com ID:', currentUsername);
-    reconnectAttempts = 0;
-    
-    // Se temos username, tentar reconectar ou entrar
-    if (currentUsername) {
-        const savedSession = localStorage.getItem(SESSION_KEY);
-        if (savedSession) {
-            try {
-                const session = JSON.parse(savedSession);
-                if (session.username === currentUsername) {
-                    console.log('Tentando reconectar com sessão existente');
-                    socket.emit('reconnect_game', { game_id: gameId });
+        socket.on('connect', function() {
+            console.log('Conectado ao servidor com ID:', currentUsername);
+            reconnectAttempts = 0;
+            
+            // Se temos username, tentar reconectar ou entrar
+            if (currentUsername) {
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            console.log('Tentando reconectar com sessão existente');
+                            socket.emit('reconnect_game', { game_id: gameId });
+                        } else {
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
                 } else {
                     socket.emit('join_game', { game_id: gameId });
                 }
-            } catch (e) {
-                socket.emit('join_game', { game_id: gameId });
             }
-        } else {
-            socket.emit('join_game', { game_id: gameId });
-        }
-    }
-    
-    // Solicitar estado após conectar
-    setTimeout(requestGameState, 500);
-});
+            
+            // Solicitar estado após conectar
+            setTimeout(requestGameState, 500);
+        });
         socket.on('connect_error', function(error) {
             console.error('Erro de conexão:', error);
             attemptReconnection();
