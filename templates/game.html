@@ -1402,6 +1402,8 @@
             let hasMage = false;
             // Verificar se tem ritual na mão
             let hasRitual = hasRitualInHand();
+            // Verificar se tem armaduras ou armas na mão
+            let hasEquippable = hasEquippableItems();;
             
             if (gameState && gameState.players[currentUsername]) {
                 const playerData = gameState.players[currentUsername];
@@ -1434,6 +1436,16 @@
                 if (btn.id === 'prophet-curse-btn') {
                     // Só mostrar se for turno do jogador E ele tiver um profeta em campo
                     if (isMyTurn && hasProphet) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'equip-mode-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver itens equipáveis na mão
+                    if (isMyTurn && hasEquippable) {
                         btn.style.display = 'inline-block';
                         btn.disabled = false;
                     } else {
@@ -2488,20 +2500,59 @@
             return false;
         }
         function hasEquippableItems() {
-            if (!gameState || !gameState.players[currentUsername]) return false;
+            if (!gameState || !gameState.players[currentUsername]) {
+                console.log('hasEquippableItems: gameState ou player não disponível');
+                return false;
+            }
             
             const playerData = gameState.players[currentUsername];
+            
+            console.log('Verificando itens equipáveis na mão de', currentUsername);
+            console.log('Mão atual:', playerData.hand.map(c => c?.name));
             
             // Lista de tipos e IDs de cartas que são equipáveis
             for (let card of playerData.hand) {
                 if (!card) continue;
                 
+                // Log para debug
+                console.log(`Analisando carta: ${card.name} (ID: ${card.id}, Tipo: ${card.type})`);
+                
                 // Verificar por tipo
-                if (card.type === 'weapon' || card.type === 'armor') {
+                if (card.type === 'weapon') {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (weapon)`);
                     return true;
+                }
+                
+                if (card.type === 'armor') {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (armor)`);
+                    return true;
+                }
+                
+                // Verificar por IDs específicos de itens
+                const equippableIds = [
+                    'lamina_almas', 
+                    'blade_vampires', 
+                    'blade_dragons', 
+                    'capacete_trevas'
+                ];
+                
+                if (equippableIds.includes(card.id)) {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (ID especial)`);
+                    return true;
+                }
+                
+                // Verificar por nome (fallback para cartas que podem não ter tipo definido)
+                const itemKeywords = ['espada', 'lâmina', 'blade', 'capacete', 'armadura', 'armor', 'weapon'];
+                const cardName = card.name.toLowerCase();
+                for (let keyword of itemKeywords) {
+                    if (cardName.includes(keyword)) {
+                        console.log(`✅ Item equipável encontrado por palavra-chave: ${card.name} (contém "${keyword}")`);
+                        return true;
+                    }
                 }
             }
             
+            console.log('❌ Nenhum item equipável encontrado na mão');
             return false;
         }
 
