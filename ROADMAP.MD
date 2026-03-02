@@ -1,28 +1,37 @@
-Tutorial Interativo
-Balanceamento inicial
+# Geral
+
+Pilha de Logs
+
+# Temporadas
+
+Cosmeticos
+Passes de Temporadas
+Afetar o modo historia
+Mudar cartas de inicio de batalha
+
+# Social
+
 Amigos
 Guildas
-App mobile
-    WebApplication
+
+# Jogabilidade
+
+Tutorial Interativo
+Balanceamento inicial
 Modo espectador
-Cosmeticos
-Temporadas
-    Afetar o modo historia
-    Mudar cartas de inicio de batalha
-Passes de Temporadas
-Modo Historia
-    Criar Lore base
-    Bots
-    Desafios diarios
-    Mundo aberto
-    Modos de dificuldade
-    Conquistas
-    Experiência
-    Capitulos
-    Raça & nome de personagem
-    Gênero de personagem
-    Duelos
-    Modo Hardcore
 Anti-Cheat
-Modo 3D
-Pilha de Logs
+
+# Modo Historia
+
+Criar Lore base
+Bots
+Desafios diarios
+Mundo aberto
+Modos de dificuldade
+Conquistas
+Experiência
+Capitulos
+Raça & nome de personagem
+Gênero de personagem
+Duelos
+Modo Hardcore
