@@ -675,7 +675,6 @@ class Game:
         
         # Verificar se username já está no jogo
         if username in self.players:
-            print(f"Jogador {username} já está no jogo")
             return False
         
         self.players.append(username)
@@ -711,16 +710,13 @@ class Game:
             'observer': False
         }
         
-        print(f"Jogador {username} adicionado ao jogo {self.game_id}")
         return True
     
     def remove_player(self, username):
         """Remove um jogador do jogo usando username"""
         if username not in self.players or username not in self.player_data:
             return False
-        
-        print(f"Removendo jogador {username} do jogo {self.game_id}")
-        
+    
         # Processar morte do jogador
         self.process_player_death(username)
         
@@ -755,9 +751,7 @@ class Game:
         return True
     
     def reconnect_player(self, socket_id, username):
-        """Reconecta um jogador existente ao jogo"""
-        print(f"Tentando reconectar jogador {username} com socket {socket_id}")
-        
+        """Reconecta um jogador existente ao jogo"""        
         if username in self.player_data:
             # Jogador já existe, atualizar socket
             # Remover mapeamento antigo se existir
@@ -773,7 +767,6 @@ class Game:
             self.socket_to_username[socket_id] = username
             self.player_data[username]['socket_id'] = socket_id
             
-            print(f"Jogador {username} reconectado com sucesso")
             return {
                 'success': True,
                 'username': username,
@@ -862,18 +855,15 @@ class Game:
         max_actions = self.get_max_actions(username)
         action_limit = max_actions.get(action, 1)
         used = self.turn_actions_used[username][action]
-        print(f"Jogador {username} usou {action} ({used}/{action_limit})")
     
     def register_action(self, username, action_type):
         """Registra que um jogador realizou uma ação na primeira rodada"""
         if self.first_round and action_type not in ['attack', 'end_turn', 'prophet_curse']:
             self.players_acted.add(username)
-            print(f"Jogador {username} realizou ação. Jogadores que já agiram: {len(self.players_acted)}/{len(self.players)}")
-            
+
             if len(self.players_acted) >= len(self.players):
                 self.first_round = False
                 self.attacks_blocked = False
-                print("🎉 PRIMEIRA RODADA CONCLUÍDA! Ataques liberados!")
                 return True
         
         return False
@@ -886,21 +876,14 @@ class Game:
         # Processar maldições do Profeta ANTES de mudar de turno
         destroyed_cards = self.process_prophet_curses()
         
-        # Se alguma carta foi destruída, notificar
-        if destroyed_cards:
-            for info in destroyed_cards:
-                print(f"  💀 Carta {info['card_name']} de {info['player']} destruída pela maldição do Profeta")
-        
         original_turn = self.current_turn
         next_turn = (self.current_turn + 1) % len(self.players)
         
         # Continuar avançando enquanto o jogador estiver morto
         while self.player_data[self.players[next_turn]].get('dead', False):
-            print(f"Pulando jogador morto: {self.players[next_turn]}")
             next_turn = (next_turn + 1) % len(self.players)
             
             if next_turn == original_turn:
-                print("Todos os jogadores restantes estão mortos")
                 break
         
         self.current_turn = next_turn
@@ -918,7 +901,6 @@ class Game:
                 self.apply_day_effects()
         
         current_player = self.players[self.current_turn]
-        print(f"Próximo turno: {current_player}")
         
         # Se cartas foram destruídas, notificar
         if destroyed_cards:
@@ -1156,7 +1138,6 @@ class Game:
     
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
-        print(f"Processando morte do jogador {username}")
         
         player = self.player_data[username]
         
@@ -1171,40 +1152,22 @@ class Game:
         for card in hand_cards:
             if card.get('type') == 'creature':
                 self.graveyard.append(card)
-                print(f"Criatura {card['name']} movida para o cemitério")
             else:
                 self.deck.append(card)
-                print(f"Carta {card['name']} (tipo: {card.get('type')}) voltou para o monte")
         
         # Processar cartas em campo
         for i, card in enumerate(player['attack_bases']):
             if card:
                 self.graveyard.append(card)
                 player['attack_bases'][i] = None
-                print(f"Carta de ataque {card['name']} movida para o cemitério")
         
         for i, card in enumerate(player['defense_bases']):
             if card:
                 self.graveyard.append(card)
                 player['defense_bases'][i] = None
-                print(f"Carta de defesa {card['name']} movida para o cemitério")
-        
-        # Processar equipamentos
-        for slot, card in player['equipment'].items():
-            if card:
-                self.graveyard.append(card)
-                player['equipment'][slot] = None
-                print(f"Equipamento {card['name']} movido para o cemitério")
-        
-        # Processar talismãs
-        for talisman in player['talismans']:
-            self.graveyard.append(talisman)
-            print(f"Talismã {talisman['name']} movido para o cemitério")
-        player['talismans'] = []
-        
-        random.shuffle(self.deck)
-        print(f"Jogador {player['name']} processado como morto. Cemitério agora tem {len(self.graveyard)} cartas")
 
+        random.shuffle(self.deck)
+ 
     def check_winner(self):
         """Verifica se há um vencedor"""
         alive_players = []
@@ -1277,8 +1240,7 @@ class Game:
     
     def equip_item_to_creature(self, username, item_card_id, creature_card_id):
         """Equipa um item em uma criatura"""
-        print(f"Tentando equipar item {item_card_id} em criatura {creature_card_id}")
-        
+
         player = self.player_data.get(username)
         if not player:
             return {'success': False, 'message': 'Jogador não encontrado'}
@@ -1379,8 +1341,7 @@ class Game:
 
     def revive_from_graveyard(self, username, target_card_id):
         """Revive uma carta do cemitério usando 4 runas"""
-        print(f"Tentando reviver carta {target_card_id} para jogador {username}")
-        
+
         player = self.player_data.get(username)
         if not player:
             return {'success': False, 'message': 'Jogador não encontrado'}
@@ -1510,7 +1471,6 @@ class Game:
     # Métodos para magias
     def cast_spell(self, username, spell_card_id, target_username=None, target_card_id=None):
         """Usa um feitiço com suporte para Rei Mago/Mago Negro"""
-        print(f"cast_spell: {username} usando {spell_card_id}")
         
         if not self.can_act(username, 'spell'):
             return {'success': False, 'message': 'Você já usou um feitiço neste turno'}
@@ -1591,8 +1551,6 @@ class Game:
         """Aplica o efeito específico do feitiço"""
         spell_id = spell['id']
         caster = self.player_data[caster_username]
-        
-        print(f"apply_spell_effect: {spell_id} por {caster_username}")
         
         # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço mesmo sem ter
         if caster_type in ['rei_mago', 'mago_negro'] and not target_card_id:
@@ -1802,8 +1760,6 @@ class Game:
 
     def prophet_curse(self, username, target_player_id, target_card_id):
         """Aplica a maldição do Profeta - carta morre em 2 rodadas"""
-        print(f"Profeta curse: {username} amaldiçoando carta {target_card_id} de {target_player_id}")
-        
         if not self.can_act(username, 'prophet_curse'):
             return {'success': False, 'message': 'Você já usou a habilidade do Profeta neste turno'}
         
@@ -1886,9 +1842,6 @@ class Game:
             'target_player': target_player['name']
         }
     def process_prophet_curses(self):
-        """Processa as maldições do Profeta no início de cada turno"""
-        print("Processando maldições do Profeta...")
-        
         cards_to_destroy = []
         
         for username, player in self.player_data.items():
@@ -1902,7 +1855,6 @@ class Game:
                         for effect in card['effects'][:]:  # Copiar para poder remover
                             if effect.get('type') == 'prophet_curse':
                                 effect['turns_remaining'] -= 1
-                                print(f"  Carta {card['name']}: {effect['turns_remaining']} rodadas restantes")
                                 
                                 if effect['turns_remaining'] <= 0:
                                     cards_to_destroy.append({
@@ -1925,7 +1877,6 @@ class Game:
                 'card_name': item['card']['name'],
                 'caster': item['caster']
             })
-            print(f"  💀 Carta {item['card']['name']} de {item['player']} destruída pela maldição do Profeta")
         
         return destroyed_info
 
@@ -2098,13 +2049,10 @@ def check_auth():
 
 # Socket.IO events
 @socketio.on('connect')
-def handle_connect():
-    print(f'Client connected: {request.sid}')
+def handle_connect(): pass
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f'Client disconnected: {request.sid}')
-    
     # Encontrar jogo e jogador
     for game_id, game in games.items():
         username = game.get_player_by_socket(request.sid)
@@ -2220,8 +2168,6 @@ def handle_get_game_state(data):
         emit('error', {'message': 'Jogador não encontrado'})
         return
     
-    print(f"Enviando game_state para {username}, started: {game.started}")
-    
     # Determinar o jogador da vez
     current_turn_username = None
     if game.players and game.current_turn < len(game.players):
@@ -2260,7 +2206,6 @@ def handle_get_game_state(data):
                 player_info['hand'] = game.player_data[uname]['hand']
                 player_info['equipment'] = game.player_data[uname]['equipment']
                 player_info['talismans'] = game.player_data[uname]['talismans']
-                print(f"Enviando mão para {uname}: {len(player_info['hand'])} cartas")
             
             state['players'][uname] = player_info
     
@@ -2270,11 +2215,8 @@ def handle_get_game_state(data):
 def handle_get_graveyard(data):
     """Retorna lista de cartas no cemitério"""
     game_id = data['game_id']
-    
-    print(f"get_graveyard chamado para jogo: {game_id}")
-    
+
     if game_id not in games:
-        print(f"ERRO: Jogo {game_id} não encontrado")
         emit('error', {'message': 'Jogo não encontrado'})
         return
     
@@ -2282,16 +2224,8 @@ def handle_get_graveyard(data):
     username = game.get_player_by_socket(request.sid)
     
     if not username:
-        print("ERRO: Jogador não encontrado pelo socket")
         emit('error', {'message': 'Jogador não encontrado'})
         return
-    
-    print(f"Jogador {username} solicitou cemitério")
-    print(f"Cemitério tem {len(game.graveyard)} cartas")
-    
-    # Mostrar as cartas no console para debug
-    for i, card in enumerate(game.graveyard):
-        print(f"  Carta {i+1}: {card.get('name')} - {card.get('type')}")
     
     graveyard_cards = game.get_graveyard_cards()
     
@@ -2333,9 +2267,7 @@ def handle_reconnect_game(data):
     if not username:
         emit('error', {'message': 'Usuário não autenticado'})
         return
-    
-    print(f"Tentativa de reconexão: {username} na sala {game_id}")
-    
+
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
         return
@@ -2367,8 +2299,6 @@ def handle_reconnect_game(data):
             'username': username,
             'game_started': game.started
         })
-        
-        print(f"Jogador {username} reconectado com sucesso")
     else:
         emit('error', {'message': result['message']})
 
@@ -2537,8 +2467,6 @@ def handle_player_action(data):
                     'message': '🎉 PRIMEIRA RODADA CONCLUÍDA! Todos já jogaram, ataques liberados!'
                 }, room=game_id)
             
-            print(f"Ação {action} bem-sucedida: {result}")
-            
             # Emitir ação com todas as informações para o log
             emit('action_success', {
                 'player_id': player_name,
@@ -2559,7 +2487,6 @@ def handle_player_action(data):
                 }, room=game_id)
         else:
             error_msg = result['message'] if result else 'Ação inválida'
-            print(f"Erro na ação {action}: {error_msg}")
             emit('action_error', {
                 'message': error_msg,
                 'player_name': player_name,
@@ -2568,7 +2495,6 @@ def handle_player_action(data):
             })
             
     except Exception as e:
-        print(f"Exceção na ação {action}: {str(e)}")
         import traceback
         traceback.print_exc()
         emit('action_error', {
