@@ -48,8 +48,6 @@ Lâmina do Tempo
 Tchaco
 Cajado do Profeta
 
-
-
 # Modo Historia
 
 Criar Lore base
