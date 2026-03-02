@@ -1396,13 +1396,10 @@
             
             console.log('Atualizando botões - isMyTurn:', isMyTurn);
             
-            // Verificar se tem Profeta em campo
             let hasProphet = false;
-            // Verificar se tem mago em campo
-            let hasMage = false;
-            // Verificar se tem ritual na mão
+            let hasWitch = false;
+            let hasMage = hasSpellInHand();
             let hasRitual = hasRitualInHand();
-            // Verificar se tem armaduras ou armas na mão
             let hasEquippable = hasEquippableItems();;
             
             if (gameState && gameState.players[currentUsername]) {
@@ -1413,23 +1410,11 @@
                 
                 for (let card of allBases) {
                     if (card) {
-                        // Verificar Profeta
-                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) {
-                            hasProphet = true;
-                        }
-                        
-                        // Verificar Mago (qualquer tipo de mago)
-                        if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || 
-                            card.name.toLowerCase().includes('mago')) {
-                            hasMage = true;
-                        }
+                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) { hasProphet = true; }
+                        if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
                     }
                 }
             }
-            
-            console.log('Tem Profeta?', hasProphet);
-            console.log('Tem Mago?', hasMage);
-            console.log('Tem Ritual na mão?', hasRitual);
             
             actionButtons.forEach(btn => {
                 // Verificar cada botão específico
@@ -1455,7 +1440,7 @@
                 }
                 else if (btn.id === 'spell-btn') {
                     // Só mostrar se for turno do jogador E ele tiver um mago em campo
-                    if (isMyTurn && hasMage) {
+                    if (isMyTurn && hasMage && hasWitch) {
                         btn.style.display = 'inline-block';
                         btn.disabled = false;
                     } else {
