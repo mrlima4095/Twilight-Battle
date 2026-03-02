@@ -402,8 +402,8 @@ CARDS = {
     },
     
     # Oraculo
-    "oraculo": {
-        "id": "oraculo", 
+    "oraculo_imortalidade": {
+        "id": "oraculo_imortalidade", 
         "name": "Oráculo", 
         "type": "oracle", 
         "count": 1, 
@@ -1406,6 +1406,29 @@ class Game:
     def get_available_rituals(self, username):
         """Retorna lista de rituais disponíveis"""
         return RitualManager.get_available_rituals(self, username)
+    def has_available_rituals(self, username):
+        """Verifica se o jogador tem rituais disponíveis (na mão ou por Mago Negro)"""
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return False
+        
+        # Verificar se tem Mago Negro em campo
+        has_mago_negro = False
+        for card in player['attack_bases'] + player['defense_bases']:
+            if card and card.get('id') == 'mago_negro':
+                has_mago_negro = True
+                break
+        
+        # Se tem Mago Negro, sempre pode realizar rituais
+        if has_mago_negro:
+            return True
+        
+        # Verificar se tem carta de ritual na mão
+        for card in player['hand']:
+            if card and card.get('type') == 'ritual':
+                return True
+        
+        return False
     def perform_ritual(self, username, ritual_id, target_username=None):
         """Realiza um ritual"""
         if not self.can_act(username, 'ritual'):
