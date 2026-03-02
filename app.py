@@ -1502,21 +1502,22 @@ class Game:
         
         # Se for Rei Mago ou Mago Negro, pode usar qualquer feitiço (não precisa ter na mão)
         if caster_type in ['rei_mago', 'mago_negro']:
-            # Procurar o feitiço no deck ou cemitério
-            spell_card = None
-            for card in self.deck + self.graveyard:
-                if card.get('type') == 'spell' and (card['id'] == spell_card_id or card['instance_id'] == spell_card_id):
-                    spell_card = card
-                    break
-            
-            if not spell_card:
-                return {'success': False, 'message': 'Feitiço não encontrado'}
-            
-            # Remover do deck ou cemitério se aplicável
-            if spell_card in self.deck:
-                self.deck.remove(spell_card)
-            elif spell_card in self.graveyard:
-                self.graveyard.remove(spell_card)
+            # Procurar o feitiço pelo ID na definição de cartas
+            if spell_card_id in CARDS:
+                spell_info = CARDS[spell_card_id].copy()
+                spell_info['instance_id'] = str(uuid.uuid4())[:8]
+                spell_card = spell_info
+            else:
+                # Se não encontrar pelo ID, procurar pelo nome
+                spell_card = None
+                for card in self.deck + self.graveyard:
+                    if card.get('type') == 'spell' and (card['id'] == spell_card_id or card['instance_id'] == spell_card_id):
+                        spell_card = card.copy()  # Copiar para não modificar o original
+                        spell_card['instance_id'] = str(uuid.uuid4())[:8]
+                        break
+                
+                if not spell_card:
+                    return {'success': False, 'message': 'Feitiço não encontrado'}
         else:
             # Procurar feitiço na mão
             spell_card = None
@@ -1685,16 +1686,15 @@ class Game:
                 elif card['id'] == 'mago':
                     has_common_mage = True
         
-        # Se tem Rei Mago ou Mago Negro, pode ver todos os feitiços do jogo
+        # Se tem Rei Mago ou Mago Negro, listar TODOS os feitiços da definição CARDS
         if has_rei_mago or has_mago_negro:
-            # Coletar todos os feitiços do deck e cemitério
+            # Coletar todos os feitiços da definição CARDS
             all_spells = []
-            for card in self.deck:
-                if card.get('type') == 'spell' and card not in all_spells:
-                    all_spells.append(card)
-            for card in self.graveyard:
-                if card.get('type') == 'spell' and card not in all_spells:
-                    all_spells.append(card)
+            for card_id, card_info in CARDS.items():
+                if card_info.get('type') == 'spell':
+                    spell = card_info.copy()
+                    spell['instance_id'] = f"spell_{card_id}"  # ID virtual para referência
+                    all_spells.append(spell)
             available_spells = all_spells
         else:
             # Apenas feitiços na mão
@@ -1708,7 +1708,6 @@ class Game:
             'spells': available_spells,
             'spells_in_hand': [card for card in player['hand'] if card.get('type') == 'spell']
         }
-
     def toggle_mage_block(self, username, target_username, target_card_id):
         """Rei Mago bloqueia/desbloqueia um mago"""
         if not self.can_act(username, 'block'):
@@ -2233,6 +2232,26 @@ def handle_get_graveyard(data):
         'cards': graveyard_cards,
         'count': len(graveyard_cards)
     })
+
+@socketio.on('get_spells')
+def handle_get_spells(data):
+    """Retorna lista de feitiços disponíveis para o jogador"""
+    game_id = data['game_id']
+    
+    if game_id not in games:
+        emit('error', {'message': 'Jogo não encontrado'})
+        return
+    
+    game = games[game_id]
+    username = game.get_player_by_socket(request.sid)
+    
+    if not username:
+        emit('error', {'message': 'Jogador não encontrado'})
+        return
+    
+    spells_data = game.get_available_spells(username)
+    
+    emit('spells_list', spells_data)
 
 @socketio.on('get_rituals')
 def handle_get_rituals(data):
