@@ -622,7 +622,6 @@
             </div>
         </div>
 
-        
         <div id="opponents-area" class="opponents-area"></div>
         
         <div class="player-area" id="player-area" style="display: none;">
@@ -677,7 +676,7 @@
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
-                <button class="action-btn" id="oracle-btn" style="display: none;">👁️ Oráculo</button>
+                <button class="action-btn" id="oracle-btn" style="display: none; visibility: hidden;">👁️ Oráculo</button>
             </div>
 
             <!-- Indicador de modo de equipar -->
@@ -2488,6 +2487,23 @@
             
             return false;
         }
+        function hasEquippableItems() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Lista de tipos e IDs de cartas que são equipáveis
+            for (let card of playerData.hand) {
+                if (!card) continue;
+                
+                // Verificar por tipo
+                if (card.type === 'weapon' || card.type === 'armor') {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
 
         // Event listeners
         document.getElementById('draw-btn').addEventListener('click', drawCard);
@@ -2588,14 +2604,7 @@
             
             // Primeiro, selecionar um item da mão
             const playerData = gameState.players[currentUsername];
-            const equipItems = playerData.hand.filter(c => 
-                c.type === 'weapon' || 
-                c.type === 'armor' || 
-                c.id === 'lamina_almas' || 
-                c.id === 'blade_vampires' || 
-                c.id === 'blade_dragons' || 
-                c.id === 'capacete_trevas'
-            );
+            const equipItems = playerData.hand.filter(c => c.type === 'weapon' || c.type === 'armor');
             
             if (equipItems.length === 0) {
                 Swal.fire({
