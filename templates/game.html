@@ -677,7 +677,7 @@
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
-                <button class="action-btn" id="oracle-btn">👁️ Oráculo</button>
+                <button class="action-btn" id="oracle-btn" style="display: none;">👁️ Oráculo</button>
             </div>
 
             <!-- Indicador de modo de equipar -->
@@ -1397,36 +1397,41 @@
             
             console.log('Atualizando botões - isMyTurn:', isMyTurn);
             
-            // Verificar se tem Profeta em campo (para mostrar/esconder o botão de profecia)
+            // Verificar se tem Profeta em campo
             let hasProphet = false;
+            // Verificar se tem mago em campo
+            let hasMage = false;
+            // Verificar se tem ritual na mão
+            let hasRitual = hasRitualInHand();
+            
             if (gameState && gameState.players[currentUsername]) {
                 const playerData = gameState.players[currentUsername];
                 
-                // Verificar em bases de ataque
-                if (playerData.attack_bases) {
-                    for (let card of playerData.attack_bases) {
-                        if (card && (card.id === 'profeta' || card.name.toLowerCase().includes('profeta'))) {
-                            hasProphet = true;
-                            break;
-                        }
-                    }
-                }
+                // Verificar em bases de ataque e defesa
+                const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
                 
-                // Verificar em bases de defesa se não encontrou ainda
-                if (!hasProphet && playerData.defense_bases) {
-                    for (let card of playerData.defense_bases) {
-                        if (card && (card.id === 'profeta' || card.name.toLowerCase().includes('profeta'))) {
+                for (let card of allBases) {
+                    if (card) {
+                        // Verificar Profeta
+                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) {
                             hasProphet = true;
-                            break;
+                        }
+                        
+                        // Verificar Mago (qualquer tipo de mago)
+                        if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || 
+                            card.name.toLowerCase().includes('mago')) {
+                            hasMage = true;
                         }
                     }
                 }
             }
             
-            console.log('Tem Profeta em campo?', hasProphet);
+            console.log('Tem Profeta?', hasProphet);
+            console.log('Tem Mago?', hasMage);
+            console.log('Tem Ritual na mão?', hasRitual);
             
             actionButtons.forEach(btn => {
-                // Verificar se é o botão do profeta
+                // Verificar cada botão específico
                 if (btn.id === 'prophet-curse-btn') {
                     // Só mostrar se for turno do jogador E ele tiver um profeta em campo
                     if (isMyTurn && hasProphet) {
@@ -1436,7 +1441,28 @@
                         btn.style.display = 'none';
                         btn.disabled = true;
                     }
-                } else {
+                }
+                else if (btn.id === 'spell-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver um mago em campo
+                    if (isMyTurn && hasMage) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'ritual-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver ritual na mão
+                    if (isMyTurn && hasRitual && hasRitualInHand()) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else {
                     // Para os outros botões, manter comportamento normal
                     if (isMyTurn) {
                         btn.style.display = 'inline-block';
@@ -2433,6 +2459,34 @@
                 action: 'revive',
                 params: { card_id: cardId }
             });
+        }
+
+        function hasRitualInHand() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar se tem carta de ritual na mão
+            for (let card of playerData.hand) {
+                if (card && card.type === 'ritual') {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        function hasSpellInHand() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            for (let card of playerData.hand) {
+                if (card && card.type === 'spell') {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         // Event listeners
