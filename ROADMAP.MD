@@ -5,7 +5,6 @@ Guildas
 App mobile
     WebApplication
 Modo espectador
-Controle de Jogos (Admin)
 Cosmeticos
 Temporadas
     Afetar o modo historia
@@ -19,6 +18,11 @@ Modo Historia
     Modos de dificuldade
     Conquistas
     Experiência
+    Capitulos
+    Raça & nome de personagem
+    Gênero de personagem
+    Duelos
+    Modo Hardcore
 Anti-Cheat
 Modo 3D
-
+Pilha de Logs
