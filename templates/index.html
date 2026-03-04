@@ -147,12 +147,14 @@
         
         .game-info {
             color: #fff;
+            flex: 1;
         }
         
         .game-status {
             padding: 5px 10px;
             border-radius: 5px;
             font-size: 14px;
+            margin: 0 10px;
         }
         
         .status-waiting {
@@ -165,6 +167,11 @@
             color: white;
         }
         
+        .game-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
         .join-game-btn {
             padding: 8px 15px;
             background: #ffd700;
@@ -173,6 +180,22 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .join-game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 10px rgba(255, 215, 0, 0.4);
+        }
+        
+        .spectate-btn {
+            background: #4a90e2 !important;
+            color: white !important;
+        }
+        
+        .spectate-btn:hover {
+            box-shadow: 0 2px 10px rgba(74, 144, 226, 0.4) !important;
         }
         
         .loading {
@@ -199,13 +222,51 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Tooltip para explicar os botões */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -60px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            border: 1px solid #ffd700;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .game-full-badge {
+            background: #888;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Twilight Battle</h1>
         <p class="subtitle">O RPG de cartas onde a noite e o dia decidem seu destino</p>
-        <!-- Adicionar link para regras no index.html dentro do join-section -->
 
         <div class="join-section">
             <h2>Entrar em uma partida</h2>
@@ -302,31 +363,84 @@
                         games.forEach(game => {
                             const gameElement = document.createElement('div');
                             gameElement.className = 'game-item';
+                            
+                            const isFull = game.players >= game.max_players;
+                            
                             gameElement.innerHTML = `
                                 <div class="game-info">
-                                    <strong>Sala: ${game.id}</strong><br>
+                                    <strong>Sala: ${game.id}</strong>
+                                    ${isFull ? '<span class="game-full-badge">🔴 Lotada</span>' : ''}
+                                    <br>
                                     Jogadores: ${game.players}/${game.max_players}
                                 </div>
                                 <span class="game-status ${game.started ? 'status-playing' : 'status-waiting'}">
-                                    ${game.started ? 'Em andamento' : 'Aguardando'}
+                                    ${game.started ? '⚔️ Em andamento' : '⏳ Aguardando'}
                                 </span>
-                                <button class="join-game-btn" onclick="joinGame('${game.id}')" ${game.started ? 'disabled' : ''}>
-                                    Entrar
-                                </button>
+                                <div class="game-actions">
+                                    ${generateGameButtons(game)}
+                                </div>
                             `;
+                            
                             gamesContainer.appendChild(gameElement);
                         });
                     });
             }
             
+            // Função para gerar os botões baseado no status do jogo
+            function generateGameButtons(game) {
+                const isFull = game.players >= game.max_players;
+                
+                // Se o jogo estiver em andamento
+                if (game.started) {
+                    return `
+                        <div class="tooltip">
+                            <button class="join-game-btn spectate-btn" onclick="spectateGame('${game.id}')">
+                                👁️ Espectar
+                            </button>
+                            <span class="tooltiptext">Assistir à partida em andamento</span>
+                        </div>
+                    `;
+                }
+                
+                // Se o jogo estiver aguardando jogadores
+                if (!game.started) {
+                    // Se estiver lotado, mostrar apenas "Lotada" desabilitado
+                    if (isFull) {
+                        return `
+                            <button class="join-game-btn" disabled style="opacity: 0.5; background: #888;">
+                                🔴 Lotada
+                            </button>
+                        `;
+                    }
+                    
+                    // Sala disponível para entrar
+                    return `
+                        <div class="tooltip">
+                            <button class="join-game-btn" onclick="joinGame('${game.id}')">
+                                🎮 Entrar
+                            </button>
+                            <span class="tooltiptext">Entrar na sala para jogar</span>
+                        </div>
+                    `;
+                }
+            }
+            
             window.joinGame = function(gameId) {
-                // Usar o username atual em vez de pedir nome
                 if (!currentUsername) {
                     alert('Usuário não autenticado');
                     return;
                 }
                 
                 window.location.href = `/game/${gameId}`;
+            };
+            
+            window.spectateGame = function(gameId) {
+                if (!currentUsername) {
+                    alert('Usuário não autenticado');
+                    return;
+                }
+                
+                window.location.href = `/spectate/${gameId}`;
             };
             
             createBtn.addEventListener('click', function() {
@@ -365,14 +479,51 @@
                     return;
                 }
                 
-                window.location.href = `/game/${gameId}`;
+                // Verificar se a sala existe e está disponível antes de redirecionar
+                fetch('/api/games')
+                    .then(response => response.json())
+                    .then(games => {
+                        const game = games.find(g => g.id === gameId);
+                        
+                        if (!game) {
+                            alert('Sala não encontrada!');
+                            return;
+                        }
+                        
+                        if (game.started) {
+                            // Se já começou, perguntar se quer espectar
+                            Swal.fire({
+                                title: '⚔️ Jogo em andamento',
+                                html: `
+                                    <p style="color: #fff;">Esta partida já começou.</p>
+                                    <p style="color: #ffd700;">Deseja assistir como espectador?</p>
+                                `,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#4a90e2',
+                                cancelButtonColor: '#ff4444',
+                                confirmButtonText: '👁️ Sim, assistir',
+                                cancelButtonText: 'Cancelar',
+                                background: '#1a1a2e',
+                                color: '#fff'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = `/spectate/${gameId}`;
+                                }
+                            });
+                        } else if (game.players >= game.max_players) {
+                            alert('Sala lotada!');
+                        } else {
+                            window.location.href = `/game/${gameId}`;
+                        }
+                    });
             });
             
             // Carregar lista inicial
             loadGames();
             
-            // Atualizar a cada 10 segundos
-            setInterval(loadGames, 10000);
+            // Atualizar a cada 5 segundos
+            setInterval(loadGames, 5000);
         });
     </script>
 </body>
