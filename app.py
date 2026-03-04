@@ -1938,13 +1938,11 @@ def index():
         return render_template('auth.html')
     return render_template('index.html')
 @app.route('/rules')
-def rules():
-    return render_template('rules.html')
+def rules(): return render_template('rules.html')
 
 @app.route('/story')
 @login_required
-def story():
-    return render_template('story.html')
+def story(): return render_template('story.html')
 
 @app.route('/game/<game_id>')
 @login_required
