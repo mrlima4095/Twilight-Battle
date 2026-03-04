@@ -9,6 +9,5 @@
             "type": "spawm|buy|sell|spell|equip|battle|duel|kill|die",
             "content": ""
         }
-    ],
-    "$schema": 
+    ]
 }
