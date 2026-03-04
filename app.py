@@ -1941,6 +1941,11 @@ def index():
 def rules():
     return render_template('rules.html')
 
+@app.route('/story')
+@login_required
+def story():
+    return render_template('story.html')
+
 @app.route('/game/<game_id>')
 @login_required
 def game(username, game_id):
