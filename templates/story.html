@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Modo História</title>
+    <title>Twilight Battle - Modo História (Hardcore)</title>
     <style>
         * {
             margin: 0;
@@ -160,6 +160,12 @@
             font-weight: bold;
         }
 
+        .inventory-slot.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
         .trash-bin {
             margin-top: 10px;
             padding: 10px;
@@ -180,6 +186,11 @@
             background: rgba(255, 68, 68, 0.5);
             border-color: #ff0000;
             transform: scale(1.05);
+        }
+
+        .trash-bin.disabled {
+            opacity: 0.3;
+            pointer-events: none;
         }
 
         /* Equipment slots */
@@ -234,6 +245,12 @@
             font-size: 10px;
         }
 
+        .equipment-slot.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
         /* Center panel */
         .game-panel {
             background: rgba(0, 0, 0, 0.5);
@@ -275,9 +292,15 @@
             transition: all 0.3s;
         }
 
-        .action-btn:hover {
+        .action-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(100%);
         }
 
         .action-btn.danger {
@@ -319,7 +342,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -402,6 +425,10 @@
             color: #fff;
         }
 
+        .input-group input:disabled {
+            opacity: 0.5;
+        }
+
         .gender-selector {
             display: flex;
             gap: 20px;
@@ -446,9 +473,14 @@
             transition: all 0.3s;
         }
 
-        .save-btn:hover, .load-btn:hover {
+        .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .save-btn:disabled, .load-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
         .death-screen {
@@ -468,6 +500,12 @@
             margin-bottom: 30px;
         }
 
+        .death-screen .warning {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
         .restart-btn {
             padding: 15px 40px;
             background: #ffd700;
@@ -483,6 +521,47 @@
         .restart-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 0 30px #ffd700;
+        }
+
+        /* Death overlay */
+        .death-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .death-overlay.active {
+            display: flex;
+            pointer-events: all;
+        }
+
+        .death-message {
+            background: #1a1a2e;
+            border: 3px solid #ff4444;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .death-message h1 {
+            color: #ff4444;
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .death-message p {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 30px;
         }
 
         /* Tooltip */
@@ -518,6 +597,17 @@
 </head>
 <body>
     <div class="game-container">
+        <!-- Death Overlay -->
+        <div class="death-overlay" id="death-overlay">
+            <div class="death-message">
+                <h1>💀 MORTO</h1>
+                <p>Seu personagem faleceu em batalha.</p>
+                <p>Este save está permanentemente bloqueado.</p>
+                <p class="warning">Não é possível interagir ou carregar este personagem.</p>
+                <button class="restart-btn" onclick="restartGame()">Criar Novo Personagem</button>
+            </div>
+        </div>
+
         <!-- Character Creation Modal -->
         <div class="modal" id="character-creation-modal">
             <div class="modal-content">
@@ -566,7 +656,7 @@
         <!-- Main Game UI -->
         <div class="game-header">
             <div class="game-title">
-                Twilight Battle - Modo História
+                Twilight Battle - Modo História (Hardcore)
             </div>
             <div class="player-info" id="player-info">
                 <div class="location-badge" id="current-location">Reino da Aurora</div>
@@ -586,8 +676,8 @@
                 </div>
             </div>
             <div class="save-load-buttons">
-                <button class="save-btn" onclick="saveGame()">💾 Salvar</button>
-                <button class="load-btn" onclick="loadGame()">📂 Carregar</button>
+                <button class="save-btn" id="save-btn" onclick="saveGame()">💾 Salvar</button>
+                <button class="load-btn" id="load-btn" onclick="loadGame()">📂 Carregar</button>
             </div>
         </div>
 
@@ -675,7 +765,8 @@
                 offhand: null
             },
             combatLog: ['Bem-vindo ao Reino da Aurora!'],
-            currentEnemy: null
+            currentEnemy: null,
+            isDead: false // Flag para personagem morto
         };
 
         // Race definitions
@@ -706,7 +797,7 @@
             botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', defense: 10, description: 'Calçado simples' },
             botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', defense: 20, description: 'Calçado reforçado' },
 
-            // Food
+            // Food (APENAS COMIDAS RECUPERAM VIDA)
             maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
@@ -800,12 +891,14 @@
 
         // UI Functions
         function selectRace(race) {
+            if (gameState.isDead) return;
             document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
             document.querySelector(`[data-race="${race}"]`).classList.add('selected');
             gameState.selectedRace = race;
         }
 
         function selectGender(gender) {
+            if (gameState.isDead) return;
             document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
             document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
             gameState.selectedGender = gender;
@@ -840,8 +933,10 @@
                 exp: 0,
                 gold: 200 // Starting gold
             };
+            gameState.isDead = false;
 
             document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('death-overlay').classList.remove('active');
             
             // Add starter items
             addItemToInventory('maca', 3);
@@ -855,6 +950,17 @@
             if (!gameState.character) {
                 document.getElementById('character-creation-modal').classList.add('active');
                 return;
+            }
+
+            // Se estiver morto, mostrar overlay e desabilitar tudo
+            if (gameState.isDead) {
+                document.getElementById('death-overlay').classList.add('active');
+                document.getElementById('save-btn').disabled = true;
+                document.getElementById('load-btn').disabled = true;
+            } else {
+                document.getElementById('death-overlay').classList.remove('active');
+                document.getElementById('save-btn').disabled = false;
+                document.getElementById('load-btn').disabled = false;
             }
 
             // Update player stats
@@ -890,8 +996,8 @@
             for (let i = 0; i < 18; i++) {
                 const item = gameState.inventory[i];
                 const slot = document.createElement('div');
-                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''}`;
-                slot.setAttribute('draggable', !!item);
+                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                slot.setAttribute('draggable', !!item && !gameState.isDead);
                 slot.setAttribute('data-index', i);
                 
                 if (item) {
@@ -899,14 +1005,26 @@
                         <span class="item-name">${item.name}</span>
                         ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                     `;
-                    slot.setAttribute('ondragstart', 'dragItem(event)');
+                    if (!gameState.isDead) {
+                        slot.setAttribute('ondragstart', 'dragItem(event)');
+                    }
                 }
 
-                slot.setAttribute('ondragover', 'handleDragOver(event)');
-                slot.setAttribute('ondrop', 'handleDrop(event)');
-                slot.setAttribute('onclick', 'useItem(' + i + ')');
+                if (!gameState.isDead) {
+                    slot.setAttribute('ondragover', 'handleDragOver(event)');
+                    slot.setAttribute('ondrop', 'handleDrop(event)');
+                    slot.setAttribute('onclick', 'useItem(' + i + ')');
+                }
                 
                 grid.appendChild(slot);
+            }
+
+            // Update trash bin
+            const trashBin = document.getElementById('trash-bin');
+            if (gameState.isDead) {
+                trashBin.classList.add('disabled');
+            } else {
+                trashBin.classList.remove('disabled');
             }
         }
 
@@ -917,12 +1035,14 @@
             gameState.inventory.forEach((item, index) => {
                 if (item && item.type === 'food') {
                     const slot = document.createElement('div');
-                    slot.className = 'inventory-slot has-item food-item';
+                    slot.className = `inventory-slot has-item food-item ${gameState.isDead ? 'disabled' : ''}`;
                     slot.innerHTML = `
                         <span class="item-name">${item.name}</span>
                         ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                     `;
-                    slot.setAttribute('onclick', `useFood(${index})`);
+                    if (!gameState.isDead) {
+                        slot.setAttribute('onclick', `useFood(${index})`);
+                    }
                     grid.appendChild(slot);
                 }
             });
@@ -932,7 +1052,8 @@
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
                 document.getElementById(`${slot}-item`).textContent = item ? item.name : 'Vazio';
-                document.getElementById(`slot-${slot}`).className = `equipment-slot ${item ? 'has-item' : ''}`;
+                const element = document.getElementById(`slot-${slot}`);
+                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
             }
         }
 
@@ -947,15 +1068,19 @@
             `;
 
             location.actions.forEach(action => {
-                html += `<button class="action-btn" onclick="${action.action}()">${action.name}</button>`;
+                html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
             });
 
-            if (gameState.currentEnemy) {
+            if (gameState.currentEnemy && !gameState.isDead) {
                 html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
                     <h3 style="color: #ff4444;">⚔️ COMBATE!</h3>
                     <p>${gameState.currentEnemy.name} - ❤️ ${gameState.currentEnemy.life}</p>
                     <button class="action-btn danger" onclick="attack()">⚔️ Atacar</button>
                     <button class="action-btn warning" onclick="run()">🏃 Fugir</button>
+                </div>`;
+            } else if (gameState.currentEnemy && gameState.isDead) {
+                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
+                    <h3 style="color: #888;">⚔️ Combate interrompido (personagem morto)</h3>
                 </div>`;
             }
 
@@ -973,6 +1098,8 @@
 
         // Inventory Functions
         function addItemToInventory(itemId, quantity = 1) {
+            if (gameState.isDead) return;
+            
             const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
             
             for (let i = 0; i < quantity; i++) {
@@ -1002,6 +1129,8 @@
         }
 
         function removeItemFromInventory(index) {
+            if (gameState.isDead) return;
+            
             if (gameState.inventory[index]) {
                 if (gameState.inventory[index].quantity > 1) {
                     gameState.inventory[index].quantity--;
@@ -1013,6 +1142,8 @@
         }
 
         function useItem(index) {
+            if (gameState.isDead) return;
+            
             const item = gameState.inventory[index];
             if (!item) return;
 
@@ -1024,6 +1155,8 @@
         }
 
         function useFood(index) {
+            if (gameState.isDead) return;
+            
             const item = gameState.inventory[index];
             if (!item || item.type !== 'food') return;
 
@@ -1034,6 +1167,8 @@
         }
 
         function equipItemFromInventory(index) {
+            if (gameState.isDead) return;
+            
             const item = gameState.inventory[index];
             if (!item || !item.slot) return;
 
@@ -1058,6 +1193,8 @@
         }
 
         function equipItem(slot) {
+            if (gameState.isDead) return;
+            
             // This function is called when clicking on equipment slot
             // It will unequip the item if there's one
             if (gameState.equipment[slot]) {
@@ -1078,14 +1215,24 @@
         let draggedItemIndex = null;
 
         function dragItem(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
             draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
         }
 
         function handleDragOver(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
             event.preventDefault();
         }
 
         function handleDrop(event) {
+            if (gameState.isDead) return;
+            
             event.preventDefault();
             const targetIndex = event.target.closest('.inventory-slot').dataset.index;
             
@@ -1101,6 +1248,8 @@
         }
 
         function handleDropToTrash(event) {
+            if (gameState.isDead) return;
+            
             event.preventDefault();
             if (draggedItemIndex !== null) {
                 gameState.inventory[draggedItemIndex] = null;
@@ -1112,48 +1261,56 @@
 
         // Location Actions
         function goHome() {
+            if (gameState.isDead) return;
             gameState.location = 'home';
             updateUI();
             addLog('🏠 Você entrou em sua casa.');
         }
 
         function goCastle() {
+            if (gameState.isDead) return;
             gameState.location = 'castle';
             updateUI();
             addLog('🏰 Você chegou ao castelo.');
         }
 
         function goWeaponShop() {
+            if (gameState.isDead) return;
             gameState.location = 'weaponshop';
             updateUI();
             addLog('⚔️ Bem-vindo à loja de armas.');
         }
 
         function goArmorShop() {
+            if (gameState.isDead) return;
             gameState.location = 'armorshop';
             updateUI();
             addLog('🛡️ Bem-vindo à loja de armaduras.');
         }
 
         function goMarket() {
+            if (gameState.isDead) return;
             gameState.location = 'market';
             updateUI();
             addLog('🍖 Você está no mercado.');
         }
 
         function leaveKingdom() {
+            if (gameState.isDead) return;
             gameState.location = 'outside';
             updateUI();
             addLog('🚪 Você saiu do reino. Tenha cuidado!');
         }
 
         function goToAurora() {
+            if (gameState.isDead) return;
             gameState.location = 'aurora';
             updateUI();
             addLog('🏰 Você voltou ao Reino da Aurora.');
         }
 
         function rest() {
+            if (gameState.isDead) return;
             const heal = 200;
             gameState.character.life = Math.min(gameState.character.life + heal, gameState.character.maxLife);
             addLog(`😴 Você descansou e recuperou ${heal} de vida.`);
@@ -1161,11 +1318,14 @@
         }
 
         function showInventory() {
+            if (gameState.isDead) return;
             addLog('📦 Abra o inventário para gerenciar seus itens.');
         }
 
         // Shop Functions
         function buyItem(itemId, cost) {
+            if (gameState.isDead) return;
+            
             if (gameState.character.gold >= cost) {
                 gameState.character.gold -= cost;
                 addItemToInventory(itemId);
@@ -1189,15 +1349,19 @@
         function buyPotion() { buyItem('pocoes', 50); }
 
         function talkToKing() {
+            if (gameState.isDead) return;
             addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"');
         }
 
         function acceptQuest() {
+            if (gameState.isDead) return;
             addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.');
         }
 
         // Exploration
         function exploreForest() {
+            if (gameState.isDead) return;
+            
             if (Math.random() < 0.6) { // 60% chance of encounter
                 const monsters = ['goblin', 'lobo', 'orc'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
@@ -1215,6 +1379,8 @@
         }
 
         function goMountains() {
+            if (gameState.isDead) return;
+            
             if (Math.random() < 0.5) {
                 const monsters = ['orc', 'troll'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
@@ -1229,6 +1395,8 @@
         }
 
         function goRuins() {
+            if (gameState.isDead) return;
+            
             if (Math.random() < 0.4) {
                 gameState.currentEnemy = { ...MONSTERS['dragao'], id: 'dragao' };
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
@@ -1244,7 +1412,7 @@
 
         // Combat
         function attack() {
-            if (!gameState.currentEnemy) return;
+            if (gameState.isDead || !gameState.currentEnemy) return;
 
             const playerAttack = parseInt(document.getElementById('player-attack').textContent);
             const enemyDefense = gameState.currentEnemy.defense;
@@ -1255,7 +1423,7 @@
             addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
 
             if (gameState.currentEnemy.life <= 0) {
-                // Victory
+                // Victory - NÃO GANHA VIDA EXTRA!
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
                 gameState.character.gold += gameState.currentEnemy.gold;
@@ -1266,7 +1434,7 @@
                     levelUp();
                 }
                 
-                // Chance to drop item
+                // Chance to drop item (comida, não cura automaticamente)
                 if (Math.random() < 0.3) {
                     const drops = ['maca', 'pao', 'carne'];
                     const drop = drops[Math.floor(Math.random() * drops.length)];
@@ -1293,6 +1461,8 @@
         }
 
         function run() {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+            
             if (Math.random() < 0.5) {
                 gameState.currentEnemy = null;
                 addLog('🏃 Você conseguiu fugir!');
@@ -1318,25 +1488,21 @@
             gameState.character.maxLife += 100;
             gameState.character.attack += 50;
             gameState.character.defense += 20;
-            gameState.character.life = gameState.character.maxLife;
+            // NÃO recupera vida automaticamente no level up também
+            // (opcional, mas mantendo consistência com "só comida cura")
             
             addLog(`✨ LEVEL UP! Agora você é nível ${gameState.character.level}!`);
         }
 
         function playerDeath() {
             gameState.character.life = 0;
+            gameState.isDead = true;
+            gameState.currentEnemy = null; // Remove enemy on death
             
-            const content = document.getElementById('game-content');
-            content.innerHTML = `
-                <div class="death-screen">
-                    <h2>💀 VOCÊ MORREU</h2>
-                    <p>Sua jornada chegou ao fim...</p>
-                    <p>Nível: ${gameState.character.level} | EXP: ${gameState.character.exp}</p>
-                    <button class="restart-btn" onclick="restartGame()">Recomeçar Jornada</button>
-                </div>
-            `;
+            addLog('💀 VOCÊ MORREU!');
+            addLog('❌ Todas as ações estão bloqueadas.');
             
-            addLog('💀 GAME OVER - Você morreu!');
+            updateUI();
         }
 
         function restartGame() {
@@ -1349,15 +1515,22 @@
                     boots: null, mainhand: null, offhand: null
                 },
                 combatLog: ['Bem-vindo ao Reino da Aurora!'],
-                currentEnemy: null
+                currentEnemy: null,
+                isDead: false
             };
             
             document.getElementById('character-creation-modal').classList.add('active');
+            document.getElementById('death-overlay').classList.remove('active');
             updateUI();
         }
 
         // Save/Load
         function saveGame() {
+            if (gameState.isDead) {
+                alert('❌ Personagens mortos não podem ser salvos!');
+                return;
+            }
+            
             const saveData = JSON.stringify(gameState, null, 2);
             const blob = new Blob([saveData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -1377,8 +1550,23 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     try {
-                        gameState = JSON.parse(e.target.result);
+                        const loadedState = JSON.parse(e.target.result);
+                        
+                        // VERIFICAÇÃO CRÍTICA: Se o personagem estava morto no save, BLOQUEAR
+                        if (loadedState.isDead) {
+                            alert('❌ Este save é de um personagem MORTO e não pode ser carregado!\n\nPersonagens mortos são permanentemente bloqueados.');
+                            return;
+                        }
+                        
+                        // Verificar se a vida está zerada (outra forma de detectar morte)
+                        if (loadedState.character && loadedState.character.life <= 0) {
+                            alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!\n\nPersonagens mortos são permanentemente bloqueados.');
+                            return;
+                        }
+                        
+                        gameState = loadedState;
                         document.getElementById('character-creation-modal').classList.remove('active');
+                        document.getElementById('death-overlay').classList.remove('active');
                         updateUI();
                         addLog('📂 Jogo carregado!');
                     } catch (err) {
@@ -1394,9 +1582,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             updateUI();
             
-            // Auto-save every 5 minutes
+            // Check for autosave
+            const autosave = localStorage.getItem('twilight_autosave');
+            if (autosave) {
+                try {
+                    const saved = JSON.parse(autosave);
+                    if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        if (confirm('Deseja carregar o autosave?')) {
+                            gameState = saved;
+                            updateUI();
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            // Auto-save every 5 minutes (only if alive)
             setInterval(() => {
-                if (gameState.character) {
+                if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
                     localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
                 }
             }, 300000);
