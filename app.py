@@ -1942,7 +1942,7 @@ def rules(): return render_template('rules.html')
 
 @app.route('/journey')
 @login_required
-def journey(): return render_template('story.html')
+def journey(x): return render_template('story.html')
 
 @app.route('/game/<game_id>')
 @login_required
