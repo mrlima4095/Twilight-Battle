@@ -711,7 +711,40 @@ class Game:
         }
         
         return True
-    
+    def add_spectator(self, socket_id, username):
+        """Adiciona um espectador ao jogo"""
+        if username in self.players or username in self.player_data:
+            return False, "Jogador já está na partida"
+        
+        # Adicionar como espectador
+        self.socket_to_username[socket_id] = username
+        
+        self.player_data[username] = {
+            'name': username,
+            'username': username,
+            'socket_id': socket_id,
+            'life': 0,
+            'hand': [],
+            'attack_bases': [None, None, None],
+            'defense_bases': [None, None, None, None, None, None],
+            'equipment': {
+                'weapon': None,
+                'helmet': None,
+                'armor': None,
+                'boots': None,
+                'mount': None
+            },
+            'talismans': [],
+            'runes': 0,
+            'active_effects': [],
+            'profecia_alvo': None,
+            'profecia_rodadas': 0,
+            'dead': False,
+            'observer': True,  # Marcar como observador/espectador
+            'spectator': True
+        }
+        
+        return True, "Espectador adicionado com sucesso"
     def remove_player(self, username):
         """Remove um jogador do jogo usando username"""
         if username not in self.players or username not in self.player_data:
@@ -751,10 +784,9 @@ class Game:
         return True
     
     def reconnect_player(self, socket_id, username):
-        """Reconecta um jogador existente ao jogo"""        
+        """Reconecta um jogador ou espectador existente ao jogo"""        
         if username in self.player_data:
             # Jogador já existe, atualizar socket
-            # Remover mapeamento antigo se existir
             old_socket = None
             for s, u in list(self.socket_to_username.items()):
                 if u == username:
@@ -770,23 +802,12 @@ class Game:
             return {
                 'success': True,
                 'username': username,
-                'game_started': self.started
+                'game_started': self.started,
+                'spectator': self.player_data[username].get('spectator', False)
             }
-        else:
-            # Jogador não encontrado, verificar se pode entrar como novo
-            if len(self.players) >= self.max_players or self.started:
-                return {'success': False, 'message': 'Jogo cheio ou já começou'}
-            
-            # Adicionar como novo jogador
-            if self.add_player(socket_id, username):
-                return {
-                    'success': True,
-                    'username': username,
-                    'game_started': self.started
-                }
         
-        return {'success': False, 'message': 'Erro ao reconectar'}
-    
+        return {'success': False, 'message': 'Jogador não encontrado'}
+
     def can_act(self, username, action):
         """Verifica se o jogador pode realizar uma ação neste turno"""
         player = self.player_data.get(username, {})
@@ -1928,6 +1949,17 @@ def game(username, game_id):
     
     return render_template('game.html', game_id=game_id, username=username)
 
+@app.route('/spectate/<game_id>')
+@login_required
+def spectate_game(username, game_id):
+    if game_id not in games:
+        return redirect("/")
+    
+    # Não atualiza current_game para espectadores (opcional)
+    # update_user_game(username, game_id)
+    
+    return render_template('spectate.html', game_id=game_id, username=username)
+
 @app.route('/api/games')
 def get_games():
     games_list = []
@@ -2195,18 +2227,30 @@ def handle_get_game_state(data):
     if game.players and game.current_turn < len(game.players):
         current_turn_username = game.players[game.current_turn]
     
+    # Verificar se é espectador
+    is_spectator = game.player_data[username].get('spectator', False)
+    
     # Filtrar informações para o jogador
     state = {
         'game_id': game_id,
         'started': game.started,
         'time_of_day': game.time_of_day,
         'time_cycle': game.time_cycle,
-        'current_turn': current_turn_username,  # Agora é o username, não índice
+        'current_turn': current_turn_username,
         'players': {},
         'deck_count': len(game.deck),
         'graveyard_count': len(game.graveyard),
-        'current_player_dead': game.player_data[username].get('dead', False)
+        'is_spectator': is_spectator,
+        'spectators': []  # Lista de espectadores
     }
+    
+    # Coletar lista de espectadores
+    for uname, data in game.player_data.items():
+        if data.get('spectator', False) and uname != username:
+            state['spectators'].append({
+                'username': uname,
+                'name': data['name']
+            })
     
     # Informações de todos os jogadores
     for uname in game.players:
@@ -2223,8 +2267,8 @@ def handle_get_game_state(data):
                 'observer': game.player_data[uname].get('observer', False)
             }
             
-            # Informações privadas apenas para o próprio jogador
-            if uname == username and not player_info.get('dead', False):
+            # Informações privadas apenas para o próprio jogador (não para espectadores)
+            if uname == username and not is_spectator and not player_info.get('dead', False):
                 player_info['hand'] = game.player_data[uname]['hand']
                 player_info['equipment'] = game.player_data[uname]['equipment']
                 player_info['talismans'] = game.player_data[uname]['talismans']
@@ -2298,6 +2342,69 @@ def handle_get_rituals(data):
         'rituals': rituals,
         'count': len(rituals)
     })
+
+@socketio.on('spectate_game')
+def handle_spectate_game(data):
+    """Entrar como espectador em um jogo em andamento"""
+    game_id = data['game_id']
+    
+    # Obter username do token
+    username = get_current_user()
+    if not username:
+        emit('error', {'message': 'Usuário não autenticado'})
+        return
+    
+    if game_id not in games:
+        emit('error', {'message': 'Jogo não encontrado'})
+        return
+    
+    game = games[game_id]
+    
+    # Verificar se já está como jogador
+    if username in game.players:
+        # Já é jogador, fazer reconnect normal
+        socketio.emit('reconnect_game', {'game_id': game_id})
+        return
+    
+    # Verificar se já é espectador
+    if username in game.player_data and game.player_data[username].get('spectator', False):
+        # Atualizar socket
+        game.reconnect_player(request.sid, username)
+        join_room(game_id)
+        emit('spectate_success', {
+            'username': username,
+            'game_started': game.started,
+            'spectator': True
+        })
+        return
+    
+    # Adicionar como novo espectador
+    success, message = game.add_spectator(request.sid, username)
+    
+    if success:
+        join_room(game_id)
+        
+        # Atualizar jogo atual na conta (opcional para espectadores)
+        update_user_game(username, game_id)
+        
+        # Lista de jogadores para o espectador
+        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+        
+        # Notificar todos que um espectador entrou
+        emit('spectator_joined', {
+            'username': username,
+            'players': players_list,
+            'spectator': True
+        }, room=game_id)
+        
+        # Notificar o espectador
+        emit('spectate_success', {
+            'username': username,
+            'game_started': game.started,
+            'spectator': True
+        })
+    else:
+        emit('error', {'message': message})
 
 @socketio.on('reconnect_game')
 def handle_reconnect_game(data):
