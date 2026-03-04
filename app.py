@@ -1940,9 +1940,9 @@ def index():
 @app.route('/rules')
 def rules(): return render_template('rules.html')
 
-@app.route('/story')
+@app.route('/journey')
 @login_required
-def story(): return render_template('story.html')
+def journey(): return render_template('story.html')
 
 @app.route('/game/<game_id>')
 @login_required
