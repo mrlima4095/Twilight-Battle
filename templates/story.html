@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Modo História (Hardcore)</title>
+    <title>Twilight Battle - Modo História (Atributos Fixos)</title>
     <style>
         * {
             margin: 0;
@@ -76,6 +76,27 @@
             padding: 10px 20px;
             border-radius: 10px;
             font-weight: bold;
+        }
+
+        /* Profile Button */
+        .profile-btn {
+            background: #9370db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #9370db;
         }
 
         /* Main layout */
@@ -357,8 +378,10 @@
             border: 2px solid #ffd700;
             border-radius: 20px;
             padding: 40px;
-            max-width: 600px;
+            max-width: 700px;
             width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-title {
@@ -416,7 +439,7 @@
             margin-bottom: 5px;
         }
 
-        .input-group input, .input-group select {
+        .input-group input, .input-group select, .input-group textarea {
             width: 100%;
             padding: 10px;
             background: rgba(255, 255, 255, 0.1);
@@ -425,7 +448,12 @@
             color: #fff;
         }
 
-        .input-group input:disabled {
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .input-group input:disabled, .input-group textarea:disabled {
             opacity: 0.5;
         }
 
@@ -483,6 +511,7 @@
             cursor: not-allowed;
         }
 
+        /* Death screen */
         .death-screen {
             text-align: center;
             padding: 50px;
@@ -564,6 +593,94 @@
             margin-bottom: 30px;
         }
 
+        /* Profile Modal */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 3px solid #ffd700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 32px;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .profile-race {
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .profile-stat {
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 20px;
+            color: #ffd700;
+        }
+
+        .profile-stat-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .profile-bio {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-bio h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .profile-bio p {
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .edit-profile-btn {
+            width: 100%;
+            padding: 15px;
+            background: #9370db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .edit-profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px #9370db;
+        }
+
         /* Tooltip */
         .tooltip {
             position: relative;
@@ -642,6 +759,11 @@
                 </div>
 
                 <div class="input-group">
+                    <label for="character-age">Idade</label>
+                    <input type="number" id="character-age" min="1" max="1000" value="25">
+                </div>
+
+                <div class="input-group">
                     <label>Gênero</label>
                     <div class="gender-selector">
                         <div class="gender-option" data-gender="masculino" onclick="selectGender('masculino')">♂️ Masculino</div>
@@ -649,14 +771,83 @@
                     </div>
                 </div>
 
+                <div class="input-group">
+                    <label for="character-bio">Biografia / História</label>
+                    <textarea id="character-bio" placeholder="Conte a história do seu personagem..."></textarea>
+                </div>
+
                 <button class="action-btn success" onclick="createCharacter()" style="width: 100%;">Iniciar Jornada</button>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div class="modal" id="profile-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Perfil do Personagem</h2>
+                
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profile-avatar">🧝</div>
+                    <div class="profile-info">
+                        <div class="profile-name" id="profile-name">Nome</div>
+                        <div class="profile-race" id="profile-race">Raça</div>
+                        <div class="profile-stats">
+                            <div class="profile-stat">
+                                <div class="profile-stat-value" id="profile-age">25</div>
+                                <div class="profile-stat-label">Idade</div>
+                            </div>
+                            <div class="profile-stat">
+                                <div class="profile-stat-value" id="profile-gender">♂️</div>
+                                <div class="profile-stat-label">Gênero</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-bio">
+                    <h3>📜 Biografia</h3>
+                    <p id="profile-bio-text">...</p>
+                </div>
+
+                <div class="profile-bio" id="profile-equipment-stats" style="display: none;">
+                    <h3>⚔️ Bônus de Equipamentos</h3>
+                    <p id="equipment-bonus-text">Nenhum equipamento equipado</p>
+                </div>
+
+                <button class="edit-profile-btn" onclick="showEditProfile()">✏️ Editar Perfil</button>
+                <button class="action-btn" onclick="closeProfile()" style="margin-top: 10px; width: 100%;">Fechar</button>
+            </div>
+        </div>
+
+        <!-- Edit Profile Modal -->
+        <div class="modal" id="edit-profile-modal">
+            <div class="modal-content">
+                <h2 class="modal-title">Editar Perfil</h2>
+
+                <div class="input-group">
+                    <label for="edit-name">Nome</label>
+                    <input type="text" id="edit-name">
+                </div>
+
+                <div class="input-group">
+                    <label for="edit-age">Idade</label>
+                    <input type="number" id="edit-age" min="1" max="1000">
+                </div>
+
+                <div class="input-group">
+                    <label for="edit-bio">Biografia</label>
+                    <textarea id="edit-bio"></textarea>
+                </div>
+
+                <button class="action-btn success" onclick="saveProfileEdit()">💾 Salvar Alterações</button>
+                <button class="action-btn" onclick="closeEditProfile()" style="margin-top: 10px;">Cancelar</button>
             </div>
         </div>
 
         <!-- Main Game UI -->
         <div class="game-header">
             <div class="game-title">
-                Twilight Battle - Modo História (Hardcore)
+                Twilight Battle - Modo História
+                <button class="profile-btn" onclick="showProfile()" id="profile-button">👤</button>
             </div>
             <div class="player-info" id="player-info">
                 <div class="location-badge" id="current-location">Reino da Aurora</div>
@@ -672,6 +863,10 @@
                     <div class="stat">
                         <div class="stat-value" id="player-defense">0</div>
                         <div class="stat-label">🛡️ Defesa</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="player-gold">0</div>
+                        <div class="stat-label">💰 Ouro</div>
                     </div>
                 </div>
             </div>
@@ -741,6 +936,10 @@
                     <h4 style="color: #ffd700; margin-bottom: 10px;">🍖 Comidas</h4>
                     <div class="inventory-grid" id="food-grid"></div>
                 </div>
+                <div style="margin-top: 20px; text-align: center; color: #888; font-size: 12px;">
+                    <p>⚔️ Atk Base: <span id="base-attack">0</span> | 🛡️ Def Base: <span id="base-defense">0</span></p>
+                    <p>➕ Bônus: ⚔️ <span id="bonus-attack">0</span> | 🛡️ <span id="bonus-defense">0</span></p>
+                </div>
             </div>
         </div>
 
@@ -766,38 +965,66 @@
             },
             combatLog: ['Bem-vindo ao Reino da Aurora!'],
             currentEnemy: null,
-            isDead: false // Flag para personagem morto
+            isDead: false
         };
 
-        // Race definitions
+        // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
         const RACES = {
-            elfo: { name: 'Elfo', life: 512, attack: 512, defense: 50, skill: 'esquiva' },
-            mago: { name: 'Mago', life: 800, attack: 250, defense: 30, skill: 'magia' },
-            centauro: { name: 'Centauro', life: 600, attack: 256, defense: 80, skill: 'carga' },
-            ninfa: { name: 'Ninfa', life: 512, attack: 128, defense: 60, skill: 'cura' }
+            elfo: { 
+                name: 'Elfo', 
+                baseLife: 512, 
+                baseAttack: 512, 
+                baseDefense: 50, 
+                skill: 'esquiva',
+                icon: '🧝'
+            },
+            mago: { 
+                name: 'Mago', 
+                baseLife: 800, 
+                baseAttack: 250, 
+                baseDefense: 30, 
+                skill: 'magia',
+                icon: '🔮'
+            },
+            centauro: { 
+                name: 'Centauro', 
+                baseLife: 600, 
+                baseAttack: 256, 
+                baseDefense: 80, 
+                skill: 'carga',
+                icon: '🏹'
+            },
+            ninfa: { 
+                name: 'Ninfa', 
+                baseLife: 512, 
+                baseAttack: 128, 
+                baseDefense: 60, 
+                skill: 'cura',
+                icon: '🌸'
+            }
         };
 
-        // Items database
+        // Items database - APENAS EQUIPAMENTOS AUMENTAM ATRIBUTOS
         const ITEMS = {
             // Weapons
-            espada_simples: { name: 'Espada Simples', type: 'weapon', slot: 'mainhand', attack: 50, description: 'Uma espada básica' },
-            espada_longa: { name: 'Espada Longa', type: 'weapon', slot: 'mainhand', attack: 100, description: 'Espada de bom alcance' },
+            espada_simples: { name: 'Espada Simples', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
+            espada_longa: { name: 'Espada Longa', type: 'weapon', slot: 'mainhand', attack: 100, defense: 0, description: 'Espada de bom alcance' },
             adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 10, description: 'Pequena e rápida' },
-            escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', defense: 50, description: 'Proteção básica' },
-            arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 80, description: 'Ataque à distância' },
-            cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, magic: 50, description: 'Foco mágico' },
+            escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, description: 'Proteção básica' },
+            arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 80, defense: 0, description: 'Ataque à distância' },
+            cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
 
             // Armor
-            capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', defense: 20, description: 'Proteção leve' },
-            capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', defense: 40, description: 'Proteção pesada' },
-            peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', defense: 30, description: 'Armadura leve' },
-            peitoral_ferro: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', defense: 60, description: 'Armadura pesada' },
-            calcas_couro: { name: 'Calças de Couro', type: 'armor', slot: 'pants', defense: 15, description: 'Proteção para as pernas' },
-            calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', defense: 30, description: 'Proteção reforçada' },
-            botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', defense: 10, description: 'Calçado simples' },
-            botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', defense: 20, description: 'Calçado reforçado' },
+            capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, description: 'Proteção leve' },
+            capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, description: 'Proteção pesada' },
+            peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', attack: 0, defense: 30, description: 'Armadura leve' },
+            peitoral_ferro: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, description: 'Armadura pesada' },
+            calcas_couro: { name: 'Calças de Couro', type: 'armor', slot: 'pants', attack: 0, defense: 15, description: 'Proteção para as pernas' },
+            calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, description: 'Proteção reforçada' },
+            botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, description: 'Calçado simples' },
+            botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, description: 'Calçado reforçado' },
 
-            // Food (APENAS COMIDAS RECUPERAM VIDA)
+            // Food (APENAS CURAM, NÃO AUMENTAM MÁXIMO)
             maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
@@ -840,9 +1067,9 @@
                 name: 'Loja de Armas',
                 description: 'Armas de qualidade para aventureiros.',
                 actions: [
-                    { name: '⚔️ Comprar Espada Simples (50 moedas)', action: 'buySword' },
-                    { name: '⚔️ Comprar Espada Longa (100 moedas)', action: 'buyLongsword' },
-                    { name: '🏹 Comprar Arco (80 moedas)', action: 'buyBow' },
+                    { name: '⚔️ Comprar Espada Simples (50💰)', action: 'buySword' },
+                    { name: '⚔️ Comprar Espada Longa (100💰)', action: 'buyLongsword' },
+                    { name: '🏹 Comprar Arco (80💰)', action: 'buyBow' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -850,10 +1077,10 @@
                 name: 'Loja de Armaduras',
                 description: 'As melhores proteções para sua jornada.',
                 actions: [
-                    { name: '🧢 Capacete de Couro (30 moedas)', action: 'buyLeatherHelmet' },
-                    { name: '👕 Peitoral de Couro (50 moedas)', action: 'buyLeatherChest' },
-                    { name: '👖 Calças de Couro (40 moedas)', action: 'buyLeatherPants' },
-                    { name: '👢 Botas de Couro (20 moedas)', action: 'buyLeatherBoots' },
+                    { name: '🧢 Capacete de Couro (30💰)', action: 'buyLeatherHelmet' },
+                    { name: '👕 Peitoral de Couro (50💰)', action: 'buyLeatherChest' },
+                    { name: '👖 Calças de Couro (40💰)', action: 'buyLeatherPants' },
+                    { name: '👢 Botas de Couro (20💰)', action: 'buyLeatherBoots' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -861,10 +1088,10 @@
                 name: 'Mercado Central',
                 description: 'Comidas e suprimentos para sua jornada.',
                 actions: [
-                    { name: '🍎 Maçã (10 moedas)', action: 'buyApple' },
-                    { name: '🍞 Pão (15 moedas)', action: 'buyBread' },
-                    { name: '🥩 Carne (30 moedas)', action: 'buyMeat' },
-                    { name: '🧪 Poção de Cura (50 moedas)', action: 'buyPotion' },
+                    { name: '🍎 Maçã (10💰)', action: 'buyApple' },
+                    { name: '🍞 Pão (15💰)', action: 'buyBread' },
+                    { name: '🥩 Carne (30💰)', action: 'buyMeat' },
+                    { name: '🧪 Poção de Cura (50💰)', action: 'buyPotion' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -906,6 +1133,9 @@
 
         function createCharacter() {
             const name = document.getElementById('character-name').value.trim();
+            const age = document.getElementById('character-age').value;
+            const bio = document.getElementById('character-bio').value.trim();
+            
             if (!name) {
                 alert('Digite um nome para seu personagem!');
                 return;
@@ -918,20 +1148,24 @@
                 alert('Selecione um gênero!');
                 return;
             }
+            if (!age || age < 1) {
+                alert('Digite uma idade válida!');
+                return;
+            }
 
             const race = RACES[gameState.selectedRace];
             gameState.character = {
                 name: name,
                 race: gameState.selectedRace,
+                raceData: race,
                 gender: gameState.selectedGender,
-                life: race.life,
-                maxLife: race.life,
-                attack: race.attack,
-                defense: race.defense,
-                skill: race.skill,
-                level: 1,
+                age: parseInt(age),
+                bio: bio || 'Um aventureiro em busca de glória.',
+                life: race.baseLife,
+                maxLife: race.baseLife,
+                gold: 200,
                 exp: 0,
-                gold: 200 // Starting gold
+                level: 1
             };
             gameState.isDead = false;
 
@@ -946,13 +1180,102 @@
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
         }
 
+        // Profile Functions
+        function showProfile() {
+            if (!gameState.character || gameState.isDead) return;
+            
+            const race = RACES[gameState.character.race];
+            document.getElementById('profile-avatar').textContent = race.icon;
+            document.getElementById('profile-name').textContent = gameState.character.name;
+            document.getElementById('profile-race').textContent = race.name;
+            document.getElementById('profile-age').textContent = gameState.character.age;
+            document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
+            document.getElementById('profile-bio-text').textContent = gameState.character.bio;
+
+            // Show equipment bonuses
+            const bonuses = calculateEquipmentBonuses();
+            const bonusText = document.getElementById('equipment-bonus-text');
+            const bonusDiv = document.getElementById('profile-equipment-stats');
+            
+            if (bonuses.attackBonus > 0 || bonuses.defenseBonus > 0) {
+                bonusDiv.style.display = 'block';
+                bonusText.innerHTML = `
+                    ⚔️ Ataque Base: ${race.baseAttack}<br>
+                    🛡️ Defesa Base: ${race.baseDefense}<br>
+                    ➕ Bônus de Equipamentos:<br>
+                    &nbsp;&nbsp;⚔️ +${bonuses.attackBonus} Ataque<br>
+                    &nbsp;&nbsp;🛡️ +${bonuses.defenseBonus} Defesa<br>
+                    <strong>Total: ⚔️ ${race.baseAttack + bonuses.attackBonus} | 🛡️ ${race.baseDefense + bonuses.defenseBonus}</strong>
+                `;
+            } else {
+                bonusDiv.style.display = 'none';
+            }
+
+            document.getElementById('profile-modal').classList.add('active');
+        }
+
+        function closeProfile() {
+            document.getElementById('profile-modal').classList.remove('active');
+        }
+
+        function showEditProfile() {
+            closeProfile();
+            document.getElementById('edit-name').value = gameState.character.name;
+            document.getElementById('edit-age').value = gameState.character.age;
+            document.getElementById('edit-bio').value = gameState.character.bio;
+            document.getElementById('edit-profile-modal').classList.add('active');
+        }
+
+        function closeEditProfile() {
+            document.getElementById('edit-profile-modal').classList.remove('active');
+        }
+
+        function saveProfileEdit() {
+            const newName = document.getElementById('edit-name').value.trim();
+            const newAge = document.getElementById('edit-age').value;
+            const newBio = document.getElementById('edit-bio').value.trim();
+
+            if (!newName) {
+                alert('Nome não pode estar vazio!');
+                return;
+            }
+            if (!newAge || newAge < 1) {
+                alert('Idade inválida!');
+                return;
+            }
+
+            gameState.character.name = newName;
+            gameState.character.age = parseInt(newAge);
+            gameState.character.bio = newBio || gameState.character.bio;
+
+            closeEditProfile();
+            showProfile();
+            addLog('📝 Perfil atualizado!');
+            updateUI();
+        }
+
+        function calculateEquipmentBonuses() {
+            let attackBonus = 0;
+            let defenseBonus = 0;
+
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item) {
+                    attackBonus += item.attack || 0;
+                    defenseBonus += item.defense || 0;
+                }
+            }
+
+            return { attackBonus, defenseBonus };
+        }
+
         function updateUI() {
             if (!gameState.character) {
                 document.getElementById('character-creation-modal').classList.add('active');
                 return;
             }
 
-            // Se estiver morto, mostrar overlay e desabilitar tudo
+            // Se estiver morto, mostrar overlay
             if (gameState.isDead) {
                 document.getElementById('death-overlay').classList.add('active');
                 document.getElementById('save-btn').disabled = true;
@@ -963,23 +1286,25 @@
                 document.getElementById('load-btn').disabled = false;
             }
 
+            const race = RACES[gameState.character.race];
+            const bonuses = calculateEquipmentBonuses();
+            
+            // ATRIBUTOS FIXOS da raça + bônus de equipamentos
+            const totalAttack = race.baseAttack + bonuses.attackBonus;
+            const totalDefense = race.baseDefense + bonuses.defenseBonus;
+
             // Update player stats
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
-            
-            let totalAttack = gameState.character.attack;
-            let totalDefense = gameState.character.defense;
-            
-            // Add equipment bonuses
-            for (let slot in gameState.equipment) {
-                const item = gameState.equipment[slot];
-                if (item) {
-                    if (item.attack) totalAttack += item.attack;
-                    if (item.defense) totalDefense += item.defense;
-                }
-            }
-            
             document.getElementById('player-attack').textContent = totalAttack;
             document.getElementById('player-defense').textContent = totalDefense;
+            document.getElementById('player-gold').textContent = gameState.character.gold;
+            
+            // Show base stats
+            document.getElementById('base-attack').textContent = race.baseAttack;
+            document.getElementById('base-defense').textContent = race.baseDefense;
+            document.getElementById('bonus-attack').textContent = bonuses.attackBonus;
+            document.getElementById('bonus-defense').textContent = bonuses.defenseBonus;
+            
             document.getElementById('current-location').textContent = LOCATIONS[gameState.location].name;
 
             // Update inventory grid
@@ -1160,9 +1485,13 @@
             const item = gameState.inventory[index];
             if (!item || item.type !== 'food') return;
 
-            gameState.character.life = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
+            // NÃO aumenta o máximo de vida, apenas cura até o máximo da raça
+            const newLife = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
+            const healed = newLife - gameState.character.life;
+            gameState.character.life = newLife;
+            
             removeItemFromInventory(index);
-            addLog(`🍖 Você comeu ${item.name} e recuperou ${item.heal} de vida.`);
+            addLog(`🍖 Você comeu ${item.name} e recuperou ${healed} de vida. (${gameState.character.life}/${gameState.character.maxLife})`);
             updateUI();
         }
 
@@ -1195,8 +1524,7 @@
         function equipItem(slot) {
             if (gameState.isDead) return;
             
-            // This function is called when clicking on equipment slot
-            // It will unequip the item if there's one
+            // Unequip item
             if (gameState.equipment[slot]) {
                 // Find empty inventory slot
                 for (let i = 0; i < 18; i++) {
@@ -1312,8 +1640,10 @@
         function rest() {
             if (gameState.isDead) return;
             const heal = 200;
-            gameState.character.life = Math.min(gameState.character.life + heal, gameState.character.maxLife);
-            addLog(`😴 Você descansou e recuperou ${heal} de vida.`);
+            const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife);
+            const healed = newLife - gameState.character.life;
+            gameState.character.life = newLife;
+            addLog(`😴 Você descansou e recuperou ${healed} de vida.`);
             updateUI();
         }
 
@@ -1362,14 +1692,13 @@
         function exploreForest() {
             if (gameState.isDead) return;
             
-            if (Math.random() < 0.6) { // 60% chance of encounter
+            if (Math.random() < 0.6) {
                 const monsters = ['goblin', 'lobo', 'orc'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
                 gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
                 addLog(`⚠️ Um ${gameState.currentEnemy.name} apareceu!`);
             } else {
                 addLog('🌳 A floresta está tranquila... por enquanto.');
-                // Chance to find items
                 if (Math.random() < 0.3) {
                     addItemToInventory('maca', 1);
                     addLog('🍎 Você encontrou uma maçã silvestre!');
@@ -1414,27 +1743,24 @@
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
 
-            const playerAttack = parseInt(document.getElementById('player-attack').textContent);
-            const enemyDefense = gameState.currentEnemy.defense;
+            const race = RACES[gameState.character.race];
+            const bonuses = calculateEquipmentBonuses();
+            const playerAttack = race.baseAttack + bonuses.attackBonus;
+            const playerDefense = race.baseDefense + bonuses.defenseBonus;
             
             // Player attack
-            const damage = Math.max(1, playerAttack - enemyDefense + Math.floor(Math.random() * 20));
+            const damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
             gameState.currentEnemy.life -= damage;
             addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
 
             if (gameState.currentEnemy.life <= 0) {
-                // Victory - NÃO GANHA VIDA EXTRA!
+                // Victory - SÓ GANHA EXP E GOLD, NADA DE VIDA OU ATRIBUTOS
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
                 gameState.character.gold += gameState.currentEnemy.gold;
                 addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
                 
-                // Check level up
-                if (gameState.character.exp >= gameState.character.level * 100) {
-                    levelUp();
-                }
-                
-                // Chance to drop item (comida, não cura automaticamente)
+                // Chance to drop item (comida)
                 if (Math.random() < 0.3) {
                     const drops = ['maca', 'pao', 'carne'];
                     const drop = drops[Math.floor(Math.random() * drops.length)];
@@ -1445,12 +1771,10 @@
                 gameState.currentEnemy = null;
             } else {
                 // Enemy counterattack
-                const enemyAttack = gameState.currentEnemy.attack;
-                const playerDefense = parseInt(document.getElementById('player-defense').textContent);
-                const enemyDamage = Math.max(1, enemyAttack - playerDefense + Math.floor(Math.random() * 15));
+                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
                 
                 gameState.character.life -= enemyDamage;
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você!`);
+                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
 
                 if (gameState.character.life <= 0) {
                     playerDeath();
@@ -1468,10 +1792,11 @@
                 addLog('🏃 Você conseguiu fugir!');
             } else {
                 addLog('❌ Não conseguiu fugir!');
-                // Enemy attacks
-                const enemyAttack = gameState.currentEnemy.attack;
-                const playerDefense = parseInt(document.getElementById('player-defense').textContent);
-                const enemyDamage = Math.max(1, enemyAttack - playerDefense + Math.floor(Math.random() * 15));
+                
+                const race = RACES[gameState.character.race];
+                const bonuses = calculateEquipmentBonuses();
+                const playerDefense = race.baseDefense + bonuses.defenseBonus;
+                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
                 
                 gameState.character.life -= enemyDamage;
                 addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano enquanto você fugia!`);
@@ -1483,21 +1808,10 @@
             updateUI();
         }
 
-        function levelUp() {
-            gameState.character.level++;
-            gameState.character.maxLife += 100;
-            gameState.character.attack += 50;
-            gameState.character.defense += 20;
-            // NÃO recupera vida automaticamente no level up também
-            // (opcional, mas mantendo consistência com "só comida cura")
-            
-            addLog(`✨ LEVEL UP! Agora você é nível ${gameState.character.level}!`);
-        }
-
         function playerDeath() {
             gameState.character.life = 0;
             gameState.isDead = true;
-            gameState.currentEnemy = null; // Remove enemy on death
+            gameState.currentEnemy = null;
             
             addLog('💀 VOCÊ MORREU!');
             addLog('❌ Todas as ações estão bloqueadas.');
@@ -1552,15 +1866,14 @@
                     try {
                         const loadedState = JSON.parse(e.target.result);
                         
-                        // VERIFICAÇÃO CRÍTICA: Se o personagem estava morto no save, BLOQUEAR
+                        // VERIFICAÇÃO CRÍTICA
                         if (loadedState.isDead) {
-                            alert('❌ Este save é de um personagem MORTO e não pode ser carregado!\n\nPersonagens mortos são permanentemente bloqueados.');
+                            alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
                             return;
                         }
                         
-                        // Verificar se a vida está zerada (outra forma de detectar morte)
                         if (loadedState.character && loadedState.character.life <= 0) {
-                            alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!\n\nPersonagens mortos são permanentemente bloqueados.');
+                            alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
                             return;
                         }
                         
