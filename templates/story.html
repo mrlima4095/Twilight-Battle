@@ -397,7 +397,7 @@
         .title-buttons {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
         }
 
         .title-btn {
@@ -412,17 +412,31 @@
             color: white;
         }
 
-        .title-btn:hover {
+        .title-btn:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 0 30px #4a90e2;
+        }
+
+        .title-btn.continue {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .title-btn.continue:hover:not(:disabled) {
+            box-shadow: 0 0 30px #4CAF50;
         }
 
         .title-btn.load {
             background: linear-gradient(45deg, #9370db, #7b5fb0);
         }
 
-        .title-btn.load:hover {
+        .title-btn.load:hover:not(:disabled) {
             box-shadow: 0 0 30px #9370db;
+        }
+
+        .title-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(100%);
         }
 
         /* Character creation modal */
@@ -560,7 +574,7 @@
             margin-top: 20px;
         }
 
-        .save-btn, .load-btn {
+        .save-btn, .load-btn, .menu-btn {
             padding: 10px 20px;
             background: #4a90e2;
             border: none;
@@ -571,14 +585,22 @@
             transition: all 0.3s;
         }
 
-        .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled) {
+        .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled), .menu-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
         }
 
-        .save-btn:disabled, .load-btn:disabled {
+        .save-btn:disabled, .load-btn:disabled, .menu-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
+        }
+
+        .menu-btn {
+            background: #ffa500;
+        }
+
+        .menu-btn:hover:not(:disabled) {
+            box-shadow: 0 5px 15px #ffa500;
         }
 
         /* Death screen */
@@ -789,6 +811,7 @@
             <h1>🌆 TWILIGHT BATTLE</h1>
             <h2>Modo História</h2>
             <div class="title-buttons">
+                <button class="title-btn continue" id="continue-btn" onclick="continueGame()" style="display: none;">▶ Continuar</button>
                 <button class="title-btn" onclick="startNewGame()">✨ Novo Jogo</button>
                 <button class="title-btn load" onclick="loadGameFromTitle()">📂 Carregar Jogo</button>
             </div>
@@ -956,7 +979,7 @@
             <div class="save-load-buttons">
                 <button class="save-btn" id="save-btn" onclick="saveGame()">💾 Salvar</button>
                 <button class="load-btn" id="load-btn" onclick="loadGame()">📂 Carregar</button>
-                <button class="load-btn" onclick="returnToTitle()" style="background: #ffa500;">🏠 Menu</button>
+                <button class="menu-btn" onclick="returnToTitle()">🏠 Menu</button>
             </div>
         </div>
 
@@ -1202,10 +1225,61 @@
 
         // UI Functions
         function returnToTitle() {
+            // Fazer autosave antes de voltar ao menu
+            if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
+                localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
+                addLog('💾 Autosave realizado antes de voltar ao menu.');
+            }
+            
             document.getElementById('title-screen').style.display = 'flex';
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
+            
+            // Verificar se existe autosave para mostrar botão continuar
+            checkForContinueButton();
+        }
+
+        function checkForContinueButton() {
+            const autosave = localStorage.getItem('twilight_autosave');
+            const continueBtn = document.getElementById('continue-btn');
+            
+            if (autosave) {
+                try {
+                    const saved = JSON.parse(autosave);
+                    if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        continueBtn.style.display = 'block';
+                    } else {
+                        continueBtn.style.display = 'none';
+                    }
+                } catch (e) {
+                    continueBtn.style.display = 'none';
+                }
+            } else {
+                continueBtn.style.display = 'none';
+            }
+        }
+
+        function continueGame() {
+            const autosave = localStorage.getItem('twilight_autosave');
+            if (autosave) {
+                try {
+                    const saved = JSON.parse(autosave);
+                    if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        gameState = saved;
+                        document.getElementById('title-screen').style.display = 'none';
+                        document.getElementById('game-ui').style.display = 'block';
+                        updateUI();
+                        addLog('📂 Jogo continuado do autosave!');
+                    } else {
+                        alert('❌ Autosave inválido!');
+                        checkForContinueButton();
+                    }
+                } catch (err) {
+                    alert('Erro ao carregar autosave!');
+                    checkForContinueButton();
+                }
+            }
         }
 
         function startNewGame() {
@@ -1988,21 +2062,8 @@
             document.getElementById('title-screen').style.display = 'flex';
             document.getElementById('game-ui').style.display = 'none';
             
-            // Check for autosave
-            const autosave = localStorage.getItem('twilight_autosave');
-            if (autosave) {
-                try {
-                    const saved = JSON.parse(autosave);
-                    if (!saved.isDead && saved.character && saved.character.life > 0) {
-                        if (confirm('Deseja carregar o autosave?')) {
-                            gameState = saved;
-                            document.getElementById('title-screen').style.display = 'none';
-                            document.getElementById('game-ui').style.display = 'block';
-                            updateUI();
-                        }
-                    }
-                } catch (e) {}
-            }
+            // Verificar se existe autosave para mostrar botão continuar
+            checkForContinueButton();
             
             // Auto-save every 5 minutes (only if alive)
             setInterval(() => {
