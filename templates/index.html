@@ -291,7 +291,6 @@
             </div>
         </div>
 
-        
         <div class="games-list">
             <h2>Salas disponíveis</h2>
             <div id="games-container">
@@ -300,6 +299,13 @@
                 </div>
             </div>
             <button id="refresh-games">Atualizar lista</button>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button id="story-mode-btn" style="background: linear-gradient(45deg, #9370db, #7b5fb0); color: white; padding: 15px 30px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                📖 Modo História (Single Player)
+            </button>
+            <p style="color: #888; margin-top: 10px; font-size: 14px;">Jogue sozinho, explore o mundo e evolua seu personagem</p>
         </div>
         
         <div class="loading" id="loading">
@@ -517,6 +523,14 @@
                             window.location.href = `/game/${gameId}`;
                         }
                     });
+            });
+
+            document.getElementById('story-mode-btn').addEventListener('click', function() {
+                if (!currentUsername) {
+                    alert('Faça login primeiro!');
+                    return;
+                }
+                window.location.href = '/story';
             });
             
             // Carregar lista inicial
