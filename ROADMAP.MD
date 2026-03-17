@@ -63,7 +63,6 @@ Nome de personagem
 Gênero de personagem
 Duelos
 Modo Hardcore
-Inventario
 Sistema de carregar & salvar
 Atributo de sorte
 Habilidades
@@ -81,3 +80,4 @@ Modo pós-morte
 Arena de Monstros
 Eventos da temporada -> local
 Jornada da Fênix/Apofis
+Baús domesticos
