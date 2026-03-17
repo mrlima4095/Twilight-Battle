@@ -2,8 +2,8 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Twilight Battle - Modo História (Responsivo)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle - Modo História (Atributos Fixos)</title>
     <style>
         * {
             margin: 0;
@@ -21,18 +21,16 @@
         .game-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 10px;
+            padding: 20px;
         }
 
-        /* Header Responsivo */
+        /* Header */
         .game-header {
             background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
             justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255, 215, 0, 0.3);
@@ -40,57 +38,44 @@
         }
 
         .game-title {
-            font-size: 1.5em;
+            font-size: 2em;
             color: #ffd700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
         }
 
         .player-info {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            gap: 20px;
             align-items: center;
-            width: 100%;
         }
 
         .player-stats {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            width: 100%;
+            gap: 30px;
         }
 
         .stat {
             background: rgba(255, 255, 255, 0.1);
-            padding: 8px 12px;
+            padding: 10px 20px;
             border-radius: 10px;
             text-align: center;
-            flex: 1 1 auto;
-            min-width: 70px;
         }
 
         .stat-value {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
             color: #ffd700;
         }
 
         .stat-label {
-            font-size: 10px;
+            font-size: 12px;
             color: #888;
         }
 
         .location-badge {
             background: #4a90e2;
-            padding: 8px 15px;
+            padding: 10px 20px;
             border-radius: 10px;
             font-weight: bold;
-            font-size: 14px;
-            width: 100%;
-            text-align: center;
         }
 
         /* Profile Button */
@@ -99,9 +84,9 @@
             color: white;
             border: none;
             border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            font-size: 22px;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
@@ -109,56 +94,41 @@
             justify-content: center;
         }
 
-        /* Save/Load buttons */
-        .save-load-buttons {
-            display: flex;
-            gap: 8px;
-            width: 100%;
+        .profile-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #9370db;
         }
 
-        .save-btn, .load-btn {
-            padding: 10px;
-            background: #4a90e2;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s;
-            flex: 1;
-        }
-
-        /* Main layout - Responsivo */
+        /* Main layout */
         .main-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
         }
 
         /* Sidebars */
         .inventory-panel, .equipment-panel {
             background: rgba(0, 0, 0, 0.7);
             border-radius: 15px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid #ffd700;
             backdrop-filter: blur(10px);
-            width: 100%;
         }
 
         .panel-title {
             color: #ffd700;
             margin-bottom: 15px;
-            font-size: 16px;
+            font-size: 18px;
             text-align: center;
             border-bottom: 1px solid #ffd700;
             padding-bottom: 5px;
         }
 
-        /* Inventory grid - Responsivo */
+        /* Inventory grid */
         .inventory-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
             margin-bottom: 15px;
         }
 
@@ -175,16 +145,24 @@
             position: relative;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 10px;
+            font-size: 12px;
             text-align: center;
-            min-width: 60px;
+        }
+
+        .inventory-slot:hover {
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .inventory-slot.has-item {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
         }
 
         .inventory-slot .item-name {
             font-weight: bold;
             color: #ffd700;
-            font-size: 9px;
-            word-break: break-word;
+            font-size: 10px;
         }
 
         .inventory-slot .item-quantity {
@@ -194,16 +172,21 @@
             background: #ffd700;
             color: #1a1a2e;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: bold;
         }
 
-        /* Trash bin */
+        .inventory-slot.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
+        }
+
         .trash-bin {
             margin-top: 10px;
             padding: 10px;
@@ -212,26 +195,41 @@
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
-            font-size: 12px;
+            transition: all 0.3s;
         }
 
-        /* Equipment slots - Responsivo */
+        .trash-bin:hover {
+            background: rgba(255, 68, 68, 0.3);
+            border-color: #ff0000;
+        }
+
+        .trash-bin.drag-over {
+            background: rgba(255, 68, 68, 0.5);
+            border-color: #ff0000;
+            transform: scale(1.05);
+        }
+
+        .trash-bin.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Equipment slots */
         .equipment-slots {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
 
         .equipment-row {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
-            flex-wrap: wrap;
         }
 
         .equipment-slot {
-            width: 70px;
-            height: 70px;
+            width: 80px;
+            height: 80px;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #444;
             border-radius: 8px;
@@ -241,8 +239,13 @@
             align-items: center;
             padding: 5px;
             position: relative;
-            font-size: 8px;
+            font-size: 10px;
             text-align: center;
+        }
+
+        .equipment-slot.has-item {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: #4CAF50;
         }
 
         .equipment-slot .slot-label {
@@ -251,60 +254,56 @@
             left: 50%;
             transform: translateX(-50%);
             background: #333;
-            padding: 2px 4px;
-            border-radius: 8px;
-            font-size: 7px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 8px;
             white-space: nowrap;
         }
 
         .equipment-slot .item-name {
             font-weight: bold;
             color: #4CAF50;
-            font-size: 8px;
-            word-break: break-word;
+            font-size: 10px;
         }
 
-        /* Food grid */
-        #food-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-            gap: 5px;
+        .equipment-slot.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            filter: grayscale(100%);
         }
 
-        /* Game panel */
+        /* Center panel */
         .game-panel {
             background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid #ffd700;
             backdrop-filter: blur(10px);
-            margin: 0;
         }
 
         .location-title {
             color: #ffd700;
-            font-size: 20px;
-            margin-bottom: 15px;
+            font-size: 24px;
+            margin-bottom: 20px;
             text-align: center;
         }
 
         .location-description {
             color: #fff;
-            margin-bottom: 20px;
-            line-height: 1.5;
+            margin-bottom: 30px;
+            line-height: 1.6;
             text-align: center;
-            font-size: 14px;
         }
 
         .action-buttons {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 8px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 30px;
         }
 
         .action-btn {
-            padding: 12px 8px;
+            padding: 15px;
             background: linear-gradient(45deg, #4a90e2, #357abd);
             border: none;
             border-radius: 8px;
@@ -312,301 +311,404 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 13px;
-            width: 100%;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            filter: grayscale(100%);
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+        }
+
+        .action-btn.success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+
+        .action-btn.warning {
+            background: linear-gradient(45deg, #ffa500, #ff8c00);
         }
 
         /* Combat log */
         .combat-log {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
-            padding: 12px;
-            max-height: 150px;
+            padding: 15px;
+            max-height: 200px;
             overflow-y: auto;
-            margin-top: 15px;
-            font-size: 12px;
         }
 
-        /* Modal Responsivo */
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            font-size: 14px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        /* Character creation modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
         .modal-content {
             background: #1a1a2e;
             border: 2px solid #ffd700;
             border-radius: 20px;
-            padding: 20px;
-            max-width: 95%;
-            width: 95%;
+            padding: 40px;
+            max-width: 700px;
+            width: 90%;
             max-height: 90vh;
             overflow-y: auto;
-            margin: 0 auto;
         }
 
         .modal-title {
             color: #ffd700;
-            font-size: 24px;
-            margin-bottom: 20px;
+            font-size: 28px;
+            margin-bottom: 30px;
             text-align: center;
         }
 
         .race-selector {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
         .race-card {
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #444;
             border-radius: 10px;
-            padding: 10px;
+            padding: 15px;
             cursor: pointer;
             transition: all 0.3s;
             text-align: center;
         }
 
+        .race-card:hover {
+            border-color: #ffd700;
+            transform: translateY(-5px);
+        }
+
+        .race-card.selected {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+
         .race-name {
             color: #ffd700;
-            font-size: 16px;
-            margin-bottom: 5px;
+            font-size: 20px;
+            margin-bottom: 10px;
         }
 
         .race-stats {
             color: #fff;
-            font-size: 11px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .input-group input, .input-group select, .input-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        .input-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .input-group input:disabled, .input-group textarea:disabled {
+            opacity: 0.5;
         }
 
         .gender-selector {
             display: flex;
-            gap: 10px;
+            gap: 20px;
             justify-content: center;
-            flex-wrap: wrap;
         }
 
         .gender-option {
-            padding: 10px 20px;
+            padding: 10px 30px;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #444;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            font-size: 14px;
-            flex: 1;
-            text-align: center;
         }
 
-        .input-group input, .input-group select, .input-group textarea {
-            width: 100%;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #ffd700;
-            border-radius: 5px;
-            color: #fff;
-            font-size: 16px;
-        }
-
-        .input-group textarea {
-            min-height: 80px;
-        }
-
-        /* Profile modal responsivo */
-        .profile-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .profile-avatar {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 215, 0, 0.2);
-            border: 3px solid #ffd700;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-        }
-
-        .profile-info {
-            width: 100%;
-            text-align: center;
-        }
-
-        .profile-name {
-            font-size: 24px;
-            color: #ffd700;
-            margin-bottom: 5px;
-        }
-
-        .profile-stats {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        /* Death screen responsivo */
-        .death-message {
-            background: #1a1a2e;
-            border: 3px solid #ff4444;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            max-width: 90%;
-            margin: 0 auto;
-        }
-
-        .death-message h1 {
-            color: #ff4444;
-            font-size: 40px;
-            margin-bottom: 15px;
-        }
-
-        .restart-btn {
-            padding: 15px 30px;
-            background: #ffd700;
-            color: #1a1a2e;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            width: 100%;
-            max-width: 250px;
-        }
-
-        /* Tooltip responsivo */
-        .tooltip .tooltiptext {
-            width: 150px;
-            margin-left: -75px;
-            font-size: 10px;
-            padding: 8px;
-        }
-
-        /* Stats text */
-        .equipment-panel p {
-            font-size: 12px;
-            text-align: center;
-        }
-
-        /* Tablet Landscape */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            .main-layout {
-                display: grid;
-                grid-template-columns: 300px 1fr 250px;
-                gap: 15px;
-            }
-            
-            .game-header {
-                flex-wrap: nowrap;
-            }
-            
-            .player-info {
-                width: auto;
-            }
-            
-            .player-stats {
-                width: auto;
-                flex-wrap: nowrap;
-            }
-            
-            .location-badge {
-                width: auto;
-            }
-            
-            .save-load-buttons {
-                width: auto;
-            }
-        }
-
-        /* Desktop */
-        @media (min-width: 1025px) {
-            .main-layout {
-                display: grid;
-                grid-template-columns: 300px 1fr 300px;
-                gap: 20px;
-            }
-            
-            .game-title {
-                font-size: 2em;
-            }
-            
-            .player-stats {
-                flex-wrap: nowrap;
-            }
-            
-            .inventory-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        /* Ajustes para telas muito pequenas */
-        @media (max-width: 360px) {
-            .inventory-slot {
-                min-width: 50px;
-            }
-            
-            .equipment-slot {
-                width: 60px;
-                height: 60px;
-            }
-            
-            .action-btn {
-                font-size: 11px;
-                padding: 10px 5px;
-            }
-            
-            .stat {
-                padding: 5px 8px;
-            }
-            
-            .stat-value {
-                font-size: 14px;
-            }
-        }
-
-        /* Touch improvements */
-        .action-btn, .inventory-slot, .equipment-slot, .profile-btn, .save-btn, .load-btn {
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-
-        .inventory-slot:active, .action-btn:active, .equipment-slot:active {
-            transform: scale(0.95);
-        }
-
-        /* Drag and drop dicas */
-        .inventory-slot[draggable="true"] {
-            -webkit-user-drag: element;
-        }
-
-        /* Melhorias de scroll */
-        .combat-log, .modal-content {
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Esconde elementos desnecessários no mobile */
-        @media (max-width: 480px) {
-            .equipment-panel p {
-                font-size: 10px;
-            }
-            
-            #base-attack, #base-defense, #bonus-attack, #bonus-defense {
-                font-size: 10px;
-            }
-        }
-
-        /* Loading states */
-        .inventory-slot.disabled, .equipment-slot.disabled {
-            opacity: 0.3;
-            pointer-events: none;
+        .gender-option.selected {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
         }
 
         /* Food items */
         .food-item {
             background: rgba(76, 175, 80, 0.2);
             border-color: #4CAF50 !important;
+        }
+
+        /* Save/Load buttons */
+        .save-load-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .save-btn, .load-btn {
+            padding: 10px 20px;
+            background: #4a90e2;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+        }
+
+        .save-btn:disabled, .load-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* Death screen */
+        .death-screen {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .death-screen h2 {
+            color: #ff4444;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .death-screen p {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        .death-screen .warning {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .restart-btn {
+            padding: 15px 40px;
+            background: #ffd700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .restart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #ffd700;
+        }
+
+        /* Death overlay */
+        .death-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .death-overlay.active {
+            display: flex;
+            pointer-events: all;
+        }
+
+        .death-message {
+            background: #1a1a2e;
+            border: 3px solid #ff4444;
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .death-message h1 {
+            color: #ff4444;
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .death-message p {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+
+        /* Profile Modal */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 215, 0, 0.2);
+            border: 3px solid #ffd700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 32px;
+            color: #ffd700;
+            margin-bottom: 5px;
+        }
+
+        .profile-race {
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .profile-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .profile-stat {
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 20px;
+            color: #ffd700;
+        }
+
+        .profile-stat-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .profile-bio {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .profile-bio h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .profile-bio p {
+            color: #fff;
+            line-height: 1.6;
+        }
+
+        .edit-profile-btn {
+            width: 100%;
+            padding: 15px;
+            background: #9370db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .edit-profile-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px #9370db;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ffd700;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
         }
     </style>
 </head>
@@ -632,22 +734,22 @@
                     <div class="race-card" data-race="elfo" onclick="selectRace('elfo')">
                         <div class="race-name">🧝 Elfo</div>
                         <div class="race-stats">Vida: 512 | Ataque: 512</div>
-                        <div style="color: #888; font-size: 10px; margin-top: 5px;">Esquiva</div>
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Esquiva</div>
                     </div>
                     <div class="race-card" data-race="mago" onclick="selectRace('mago')">
                         <div class="race-name">🔮 Mago</div>
                         <div class="race-stats">Vida: 800 | Ataque: 250</div>
-                        <div style="color: #888; font-size: 10px; margin-top: 5px;">Magia</div>
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Magia</div>
                     </div>
                     <div class="race-card" data-race="centauro" onclick="selectRace('centauro')">
                         <div class="race-name">🏹 Centauro</div>
                         <div class="race-stats">Vida: 600 | Ataque: 256</div>
-                        <div style="color: #888; font-size: 10px; margin-top: 5px;">Carga</div>
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Carga</div>
                     </div>
                     <div class="race-card" data-race="ninfa" onclick="selectRace('ninfa')">
                         <div class="race-name">🌸 Ninfa</div>
                         <div class="race-stats">Vida: 512 | Ataque: 128</div>
-                        <div style="color: #888; font-size: 10px; margin-top: 5px;">Cura</div>
+                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Cura</div>
                     </div>
                 </div>
 
@@ -744,7 +846,7 @@
         <!-- Main Game UI -->
         <div class="game-header">
             <div class="game-title">
-                Twilight Battle
+                Twilight Battle - Modo História
                 <button class="profile-btn" onclick="showProfile()" id="profile-button">👤</button>
             </div>
             <div class="player-info" id="player-info">
@@ -756,11 +858,11 @@
                     </div>
                     <div class="stat">
                         <div class="stat-value" id="player-attack">0</div>
-                        <div class="stat-label">⚔️ Atk</div>
+                        <div class="stat-label">⚔️ Ataque</div>
                     </div>
                     <div class="stat">
                         <div class="stat-value" id="player-defense">0</div>
-                        <div class="stat-label">🛡️ Def</div>
+                        <div class="stat-label">🛡️ Defesa</div>
                     </div>
                     <div class="stat">
                         <div class="stat-value" id="player-gold">0</div>
@@ -780,7 +882,7 @@
                 <h3 class="panel-title">🎒 Inventário (18 espaços)</h3>
                 <div class="inventory-grid" id="inventory-grid"></div>
                 <div class="trash-bin" id="trash-bin" ondragover="handleDragOver(event)" ondrop="handleDropToTrash(event)">
-                    🗑️ Arraste para descartar
+                    🗑️ Arraste itens para descartar
                 </div>
             </div>
 
@@ -830,11 +932,11 @@
                         </div>
                     </div>
                 </div>
-                <div style="margin-top: 15px;">
-                    <h4 style="color: #ffd700; margin-bottom: 8px; font-size: 14px;">🍖 Comidas</h4>
+                <div style="margin-top: 20px;">
+                    <h4 style="color: #ffd700; margin-bottom: 10px;">🍖 Comidas</h4>
                     <div class="inventory-grid" id="food-grid"></div>
                 </div>
-                <div style="margin-top: 15px; text-align: center; color: #888; font-size: 11px;">
+                <div style="margin-top: 20px; text-align: center; color: #888; font-size: 12px;">
                     <p>⚔️ Atk Base: <span id="base-attack">0</span> | 🛡️ Def Base: <span id="base-defense">0</span></p>
                     <p>➕ Bônus: ⚔️ <span id="bonus-attack">0</span> | 🛡️ <span id="bonus-defense">0</span></p>
                 </div>
@@ -866,7 +968,7 @@
             isDead: false
         };
 
-        // Race definitions - ATRIBUTOS FIXOS
+        // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
         const RACES = {
             elfo: { 
                 name: 'Elfo', 
@@ -902,14 +1004,17 @@
             }
         };
 
-        // Items database
+        // Items database - APENAS EQUIPAMENTOS AUMENTAM ATRIBUTOS
         const ITEMS = {
+            // Weapons
             espada_simples: { name: 'Espada Simples', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
             espada_longa: { name: 'Espada Longa', type: 'weapon', slot: 'mainhand', attack: 100, defense: 0, description: 'Espada de bom alcance' },
             adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 10, description: 'Pequena e rápida' },
             escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, description: 'Proteção básica' },
             arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 80, defense: 0, description: 'Ataque à distância' },
             cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
+
+            // Armor
             capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, description: 'Proteção leve' },
             capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, description: 'Proteção pesada' },
             peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', attack: 0, defense: 30, description: 'Armadura leve' },
@@ -918,6 +1023,8 @@
             calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, description: 'Proteção reforçada' },
             botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, description: 'Calçado simples' },
             botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, description: 'Calçado reforçado' },
+
+            // Food (APENAS CURAM, NÃO AUMENTAM MÁXIMO)
             maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
@@ -928,73 +1035,74 @@
         const LOCATIONS = {
             aurora: {
                 name: 'Reino da Aurora',
-                description: 'Um reino próspero sob a luz eterna do sol.',
+                description: 'Um reino próspero sob a luz eterna do sol. Aqui você encontra segurança e comércio.',
                 actions: [
-                    { name: '🏠 Casa', action: 'goHome' },
+                    { name: '🏠 Sua Casa', action: 'goHome' },
                     { name: '🏰 Castelo', action: 'goCastle' },
-                    { name: '⚔️ Armas', action: 'goWeaponShop' },
-                    { name: '🛡️ Armaduras', action: 'goArmorShop' },
+                    { name: '🏪 Loja de Armas', action: 'goWeaponShop' },
+                    { name: '🛡️ Loja de Armaduras', action: 'goArmorShop' },
                     { name: '🍖 Mercado', action: 'goMarket' },
-                    { name: '🚪 Sair', action: 'leaveKingdom' }
+                    { name: '🚪 Sair do Reino', action: 'leaveKingdom' }
                 ]
             },
             home: {
                 name: 'Sua Casa',
-                description: 'Um lar aconchegante.',
+                description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
-                    { name: '😴 Descansar', action: 'rest' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
+                    { name: '📦 Guardar Item', action: 'showInventory' },
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
             castle: {
-                name: 'Castelo',
-                description: 'A residência real.',
+                name: 'Castelo do Reino',
+                description: 'A residência real. O rei oferece missões para aventureiros.',
                 actions: [
-                    { name: '👑 Falar com Rei', action: 'talkToKing' },
+                    { name: '👑 Falar com o Rei', action: 'talkToKing' },
                     { name: '📜 Aceitar Missão', action: 'acceptQuest' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
             weaponshop: {
                 name: 'Loja de Armas',
-                description: 'Armas de qualidade.',
+                description: 'Armas de qualidade para aventureiros.',
                 actions: [
-                    { name: '⚔️ Espada (50💰)', action: 'buySword' },
-                    { name: '⚔️ Esp. Longa (100💰)', action: 'buyLongsword' },
-                    { name: '🏹 Arco (80💰)', action: 'buyBow' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '⚔️ Comprar Espada Simples (50💰)', action: 'buySword' },
+                    { name: '⚔️ Comprar Espada Longa (100💰)', action: 'buyLongsword' },
+                    { name: '🏹 Comprar Arco (80💰)', action: 'buyBow' },
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
             armorshop: {
                 name: 'Loja de Armaduras',
-                description: 'As melhores proteções.',
+                description: 'As melhores proteções para sua jornada.',
                 actions: [
-                    { name: '🧢 Capacete (30💰)', action: 'buyLeatherHelmet' },
-                    { name: '👕 Peitoral (50💰)', action: 'buyLeatherChest' },
-                    { name: '👖 Calças (40💰)', action: 'buyLeatherPants' },
-                    { name: '👢 Botas (20💰)', action: 'buyLeatherBoots' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '🧢 Capacete de Couro (30💰)', action: 'buyLeatherHelmet' },
+                    { name: '👕 Peitoral de Couro (50💰)', action: 'buyLeatherChest' },
+                    { name: '👖 Calças de Couro (40💰)', action: 'buyLeatherPants' },
+                    { name: '👢 Botas de Couro (20💰)', action: 'buyLeatherBoots' },
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
             market: {
-                name: 'Mercado',
-                description: 'Comidas e suprimentos.',
+                name: 'Mercado Central',
+                description: 'Comidas e suprimentos para sua jornada.',
                 actions: [
                     { name: '🍎 Maçã (10💰)', action: 'buyApple' },
                     { name: '🍞 Pão (15💰)', action: 'buyBread' },
                     { name: '🥩 Carne (30💰)', action: 'buyMeat' },
-                    { name: '🧪 Poção (50💰)', action: 'buyPotion' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '🧪 Poção de Cura (50💰)', action: 'buyPotion' },
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
             outside: {
                 name: 'Fora do Reino',
-                description: 'Terras selvagens perigosas.',
+                description: 'Terras selvagens perigosas. Monstros espreitam nas sombras.',
                 actions: [
-                    { name: '🌳 Floresta', action: 'exploreForest' },
-                    { name: '⛰️ Montanhas', action: 'goMountains' },
-                    { name: '🏚️ Ruínas', action: 'goRuins' },
-                    { name: '🔙 Voltar', action: 'goToAurora' }
+                    { name: '🌳 Explorar a Floresta', action: 'exploreForest' },
+                    { name: '⛰️ Ir para as Montanhas', action: 'goMountains' },
+                    { name: '🏚️ Ruínas Antigas', action: 'goRuins' },
+                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             }
         };
@@ -1008,28 +1116,806 @@
             dragao: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
         };
 
-        // [Todas as funções JavaScript permanecem exatamente iguais ao original]
-        // Por questões de espaço, mantive apenas o CSS alterado, mas você deve copiar
-        // todas as funções JavaScript do arquivo original aqui.
-        
-        // Inclua todas as funções do JavaScript original:
-        // selectRace(), selectGender(), createCharacter(), showProfile(), 
-        // closeProfile(), showEditProfile(), closeEditProfile(), saveProfileEdit(),
-        // calculateEquipmentBonuses(), updateUI(), updateInventoryGrid(), 
-        // updateFoodGrid(), updateEquipmentDisplay(), updateGameContent(), 
-        // addLog(), addItemToInventory(), removeItemFromInventory(), useItem(),
-        // useFood(), equipItemFromInventory(), equipItem(), dragItem(), 
-        // handleDragOver(), handleDrop(), handleDropToTrash(), goHome(), 
-        // goCastle(), goWeaponShop(), goArmorShop(), goMarket(), leaveKingdom(),
-        // goToAurora(), rest(), showInventory(), buyItem(), buySword(), 
-        // buyLongsword(), buyBow(), buyLeatherHelmet(), buyLeatherChest(),
-        // buyLeatherPants(), buyLeatherBoots(), buyApple(), buyBread(), 
-        // buyMeat(), buyPotion(), talkToKing(), acceptQuest(), exploreForest(),
-        // goMountains(), goRuins(), attack(), run(), playerDeath(), restartGame(),
-        // saveGame(), loadGame()
-        
-        // [Cole aqui todas as funções JavaScript do arquivo original]
-        // (Omitidas por brevidade, mas devem ser copiadas integralmente)
+        // UI Functions
+        function selectRace(race) {
+            if (gameState.isDead) return;
+            document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`[data-race="${race}"]`).classList.add('selected');
+            gameState.selectedRace = race;
+        }
+
+        function selectGender(gender) {
+            if (gameState.isDead) return;
+            document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
+            document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
+            gameState.selectedGender = gender;
+        }
+
+        function createCharacter() {
+            const name = document.getElementById('character-name').value.trim();
+            const age = document.getElementById('character-age').value;
+            const bio = document.getElementById('character-bio').value.trim();
+            
+            if (!name) {
+                alert('Digite um nome para seu personagem!');
+                return;
+            }
+            if (!gameState.selectedRace) {
+                alert('Selecione uma raça!');
+                return;
+            }
+            if (!gameState.selectedGender) {
+                alert('Selecione um gênero!');
+                return;
+            }
+            if (!age || age < 1) {
+                alert('Digite uma idade válida!');
+                return;
+            }
+
+            const race = RACES[gameState.selectedRace];
+            gameState.character = {
+                name: name,
+                race: gameState.selectedRace,
+                raceData: race,
+                gender: gameState.selectedGender,
+                age: parseInt(age),
+                bio: bio || 'Um aventureiro em busca de glória.',
+                life: race.baseLife,
+                maxLife: race.baseLife,
+                gold: 200,
+                exp: 0,
+                level: 1
+            };
+            gameState.isDead = false;
+
+            document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('death-overlay').classList.remove('active');
+            
+            // Add starter items
+            addItemToInventory('maca', 3);
+            addItemToInventory('pao', 2);
+            
+            updateUI();
+            addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
+        }
+
+        // Profile Functions
+        function showProfile() {
+            if (!gameState.character || gameState.isDead) return;
+            
+            const race = RACES[gameState.character.race];
+            document.getElementById('profile-avatar').textContent = race.icon;
+            document.getElementById('profile-name').textContent = gameState.character.name;
+            document.getElementById('profile-race').textContent = race.name;
+            document.getElementById('profile-age').textContent = gameState.character.age;
+            document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
+            document.getElementById('profile-bio-text').textContent = gameState.character.bio;
+
+            // Show equipment bonuses
+            const bonuses = calculateEquipmentBonuses();
+            const bonusText = document.getElementById('equipment-bonus-text');
+            const bonusDiv = document.getElementById('profile-equipment-stats');
+            
+            if (bonuses.attackBonus > 0 || bonuses.defenseBonus > 0) {
+                bonusDiv.style.display = 'block';
+                bonusText.innerHTML = `
+                    ⚔️ Ataque Base: ${race.baseAttack}<br>
+                    🛡️ Defesa Base: ${race.baseDefense}<br>
+                    ➕ Bônus de Equipamentos:<br>
+                    &nbsp;&nbsp;⚔️ +${bonuses.attackBonus} Ataque<br>
+                    &nbsp;&nbsp;🛡️ +${bonuses.defenseBonus} Defesa<br>
+                    <strong>Total: ⚔️ ${race.baseAttack + bonuses.attackBonus} | 🛡️ ${race.baseDefense + bonuses.defenseBonus}</strong>
+                `;
+            } else {
+                bonusDiv.style.display = 'none';
+            }
+
+            document.getElementById('profile-modal').classList.add('active');
+        }
+
+        function closeProfile() {
+            document.getElementById('profile-modal').classList.remove('active');
+        }
+
+        function showEditProfile() {
+            closeProfile();
+            document.getElementById('edit-name').value = gameState.character.name;
+            document.getElementById('edit-age').value = gameState.character.age;
+            document.getElementById('edit-bio').value = gameState.character.bio;
+            document.getElementById('edit-profile-modal').classList.add('active');
+        }
+
+        function closeEditProfile() {
+            document.getElementById('edit-profile-modal').classList.remove('active');
+        }
+
+        function saveProfileEdit() {
+            const newName = document.getElementById('edit-name').value.trim();
+            const newAge = document.getElementById('edit-age').value;
+            const newBio = document.getElementById('edit-bio').value.trim();
+
+            if (!newName) {
+                alert('Nome não pode estar vazio!');
+                return;
+            }
+            if (!newAge || newAge < 1) {
+                alert('Idade inválida!');
+                return;
+            }
+
+            gameState.character.name = newName;
+            gameState.character.age = parseInt(newAge);
+            gameState.character.bio = newBio || gameState.character.bio;
+
+            closeEditProfile();
+            showProfile();
+            addLog('📝 Perfil atualizado!');
+            updateUI();
+        }
+
+        function calculateEquipmentBonuses() {
+            let attackBonus = 0;
+            let defenseBonus = 0;
+
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item) {
+                    attackBonus += item.attack || 0;
+                    defenseBonus += item.defense || 0;
+                }
+            }
+
+            return { attackBonus, defenseBonus };
+        }
+
+        function updateUI() {
+            if (!gameState.character) {
+                document.getElementById('character-creation-modal').classList.add('active');
+                return;
+            }
+
+            // Se estiver morto, mostrar overlay
+            if (gameState.isDead) {
+                document.getElementById('death-overlay').classList.add('active');
+                document.getElementById('save-btn').disabled = true;
+                document.getElementById('load-btn').disabled = true;
+            } else {
+                document.getElementById('death-overlay').classList.remove('active');
+                document.getElementById('save-btn').disabled = false;
+                document.getElementById('load-btn').disabled = false;
+            }
+
+            const race = RACES[gameState.character.race];
+            const bonuses = calculateEquipmentBonuses();
+            
+            // ATRIBUTOS FIXOS da raça + bônus de equipamentos
+            const totalAttack = race.baseAttack + bonuses.attackBonus;
+            const totalDefense = race.baseDefense + bonuses.defenseBonus;
+
+            // Update player stats
+            document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
+            document.getElementById('player-attack').textContent = totalAttack;
+            document.getElementById('player-defense').textContent = totalDefense;
+            document.getElementById('player-gold').textContent = gameState.character.gold;
+            
+            // Show base stats
+            document.getElementById('base-attack').textContent = race.baseAttack;
+            document.getElementById('base-defense').textContent = race.baseDefense;
+            document.getElementById('bonus-attack').textContent = bonuses.attackBonus;
+            document.getElementById('bonus-defense').textContent = bonuses.defenseBonus;
+            
+            document.getElementById('current-location').textContent = LOCATIONS[gameState.location].name;
+
+            // Update inventory grid
+            updateInventoryGrid();
+            updateEquipmentDisplay();
+            updateGameContent();
+            updateFoodGrid();
+        }
+
+        function updateInventoryGrid() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 18; i++) {
+                const item = gameState.inventory[i];
+                const slot = document.createElement('div');
+                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                slot.setAttribute('draggable', !!item && !gameState.isDead);
+                slot.setAttribute('data-index', i);
+                
+                if (item) {
+                    slot.innerHTML = `
+                        <span class="item-name">${item.name}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    if (!gameState.isDead) {
+                        slot.setAttribute('ondragstart', 'dragItem(event)');
+                    }
+                }
+
+                if (!gameState.isDead) {
+                    slot.setAttribute('ondragover', 'handleDragOver(event)');
+                    slot.setAttribute('ondrop', 'handleDrop(event)');
+                    slot.setAttribute('onclick', 'useItem(' + i + ')');
+                }
+                
+                grid.appendChild(slot);
+            }
+
+            // Update trash bin
+            const trashBin = document.getElementById('trash-bin');
+            if (gameState.isDead) {
+                trashBin.classList.add('disabled');
+            } else {
+                trashBin.classList.remove('disabled');
+            }
+        }
+
+        function updateFoodGrid() {
+            const grid = document.getElementById('food-grid');
+            grid.innerHTML = '';
+
+            gameState.inventory.forEach((item, index) => {
+                if (item && item.type === 'food') {
+                    const slot = document.createElement('div');
+                    slot.className = `inventory-slot has-item food-item ${gameState.isDead ? 'disabled' : ''}`;
+                    slot.innerHTML = `
+                        <span class="item-name">${item.name}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    if (!gameState.isDead) {
+                        slot.setAttribute('onclick', `useFood(${index})`);
+                    }
+                    grid.appendChild(slot);
+                }
+            });
+        }
+
+        function updateEquipmentDisplay() {
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                document.getElementById(`${slot}-item`).textContent = item ? item.name : 'Vazio';
+                const element = document.getElementById(`slot-${slot}`);
+                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+            }
+        }
+
+        function updateGameContent() {
+            const content = document.getElementById('game-content');
+            const location = LOCATIONS[gameState.location];
+
+            let html = `
+                <h2 class="location-title">${location.name}</h2>
+                <div class="location-description">${location.description}</div>
+                <div class="action-buttons">
+            `;
+
+            location.actions.forEach(action => {
+                html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+            });
+
+            if (gameState.currentEnemy && !gameState.isDead) {
+                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
+                    <h3 style="color: #ff4444;">⚔️ COMBATE!</h3>
+                    <p>${gameState.currentEnemy.name} - ❤️ ${gameState.currentEnemy.life}</p>
+                    <button class="action-btn danger" onclick="attack()">⚔️ Atacar</button>
+                    <button class="action-btn warning" onclick="run()">🏃 Fugir</button>
+                </div>`;
+            } else if (gameState.currentEnemy && gameState.isDead) {
+                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
+                    <h3 style="color: #888;">⚔️ Combate interrompido (personagem morto)</h3>
+                </div>`;
+            }
+
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
+        function addLog(message) {
+            gameState.combatLog.unshift(message);
+            if (gameState.combatLog.length > 10) gameState.combatLog.pop();
+            
+            const log = document.getElementById('combat-log');
+            log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
+        }
+
+        // Inventory Functions
+        function addItemToInventory(itemId, quantity = 1) {
+            if (gameState.isDead) return;
+            
+            const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
+            
+            for (let i = 0; i < quantity; i++) {
+                let added = false;
+                
+                // Check if item already exists and stackable
+                for (let j = 0; j < 18; j++) {
+                    if (gameState.inventory[j] && gameState.inventory[j].id === itemId && gameState.inventory[j].consumable) {
+                        gameState.inventory[j].quantity = (gameState.inventory[j].quantity || 1) + 1;
+                        added = true;
+                        break;
+                    }
+                }
+                
+                if (!added) {
+                    // Find empty slot
+                    for (let j = 0; j < 18; j++) {
+                        if (!gameState.inventory[j]) {
+                            gameState.inventory[j] = { ...item, id: itemId, quantity: item.consumable ? 1 : 1 };
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            updateUI();
+        }
+
+        function removeItemFromInventory(index) {
+            if (gameState.isDead) return;
+            
+            if (gameState.inventory[index]) {
+                if (gameState.inventory[index].quantity > 1) {
+                    gameState.inventory[index].quantity--;
+                } else {
+                    gameState.inventory[index] = null;
+                }
+                updateUI();
+            }
+        }
+
+        function useItem(index) {
+            if (gameState.isDead) return;
+            
+            const item = gameState.inventory[index];
+            if (!item) return;
+
+            if (item.type === 'food') {
+                useFood(index);
+            } else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') {
+                equipItemFromInventory(index);
+            }
+        }
+
+        function useFood(index) {
+            if (gameState.isDead) return;
+            
+            const item = gameState.inventory[index];
+            if (!item || item.type !== 'food') return;
+
+            // NÃO aumenta o máximo de vida, apenas cura até o máximo da raça
+            const newLife = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
+            const healed = newLife - gameState.character.life;
+            gameState.character.life = newLife;
+            
+            removeItemFromInventory(index);
+            addLog(`🍖 Você comeu ${item.name} e recuperou ${healed} de vida. (${gameState.character.life}/${gameState.character.maxLife})`);
+            updateUI();
+        }
+
+        function equipItemFromInventory(index) {
+            if (gameState.isDead) return;
+            
+            const item = gameState.inventory[index];
+            if (!item || !item.slot) return;
+
+            // Check if slot is compatible
+            if (item.slot === 'mainhand' || item.slot === 'offhand' || 
+                item.slot === 'helmet' || item.slot === 'chest' || 
+                item.slot === 'pants' || item.slot === 'boots') {
+                
+                // If there's already an item in that slot, swap
+                if (gameState.equipment[item.slot]) {
+                    const temp = gameState.equipment[item.slot];
+                    gameState.equipment[item.slot] = item;
+                    gameState.inventory[index] = temp;
+                } else {
+                    gameState.equipment[item.slot] = item;
+                    gameState.inventory[index] = null;
+                }
+                
+                addLog(`🔰 ${item.name} equipado.`);
+                updateUI();
+            }
+        }
+
+        function equipItem(slot) {
+            if (gameState.isDead) return;
+            
+            // Unequip item
+            if (gameState.equipment[slot]) {
+                // Find empty inventory slot
+                for (let i = 0; i < 18; i++) {
+                    if (!gameState.inventory[i]) {
+                        gameState.inventory[i] = gameState.equipment[slot];
+                        gameState.equipment[slot] = null;
+                        addLog(`📦 ${gameState.inventory[i].name} guardado no inventário.`);
+                        updateUI();
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Drag and Drop
+        let draggedItemIndex = null;
+
+        function dragItem(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
+            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
+        }
+
+        function handleDragOver(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+        }
+
+        function handleDrop(event) {
+            if (gameState.isDead) return;
+            
+            event.preventDefault();
+            const targetIndex = event.target.closest('.inventory-slot').dataset.index;
+            
+            if (draggedItemIndex !== null && targetIndex !== draggedItemIndex) {
+                // Swap items
+                const temp = gameState.inventory[targetIndex];
+                gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
+                gameState.inventory[draggedItemIndex] = temp;
+                updateUI();
+            }
+            
+            draggedItemIndex = null;
+        }
+
+        function handleDropToTrash(event) {
+            if (gameState.isDead) return;
+            
+            event.preventDefault();
+            if (draggedItemIndex !== null) {
+                gameState.inventory[draggedItemIndex] = null;
+                addLog('🗑️ Item descartado.');
+                updateUI();
+            }
+            draggedItemIndex = null;
+        }
+
+        // Location Actions
+        function goHome() {
+            if (gameState.isDead) return;
+            gameState.location = 'home';
+            updateUI();
+            addLog('🏠 Você entrou em sua casa.');
+        }
+
+        function goCastle() {
+            if (gameState.isDead) return;
+            gameState.location = 'castle';
+            updateUI();
+            addLog('🏰 Você chegou ao castelo.');
+        }
+
+        function goWeaponShop() {
+            if (gameState.isDead) return;
+            gameState.location = 'weaponshop';
+            updateUI();
+            addLog('⚔️ Bem-vindo à loja de armas.');
+        }
+
+        function goArmorShop() {
+            if (gameState.isDead) return;
+            gameState.location = 'armorshop';
+            updateUI();
+            addLog('🛡️ Bem-vindo à loja de armaduras.');
+        }
+
+        function goMarket() {
+            if (gameState.isDead) return;
+            gameState.location = 'market';
+            updateUI();
+            addLog('🍖 Você está no mercado.');
+        }
+
+        function leaveKingdom() {
+            if (gameState.isDead) return;
+            gameState.location = 'outside';
+            updateUI();
+            addLog('🚪 Você saiu do reino. Tenha cuidado!');
+        }
+
+        function goToAurora() {
+            if (gameState.isDead) return;
+            gameState.location = 'aurora';
+            updateUI();
+            addLog('🏰 Você voltou ao Reino da Aurora.');
+        }
+
+        function rest() {
+            if (gameState.isDead) return;
+            const heal = 200;
+            const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife);
+            const healed = newLife - gameState.character.life;
+            gameState.character.life = newLife;
+            addLog(`😴 Você descansou e recuperou ${healed} de vida.`);
+            updateUI();
+        }
+
+        function showInventory() {
+            if (gameState.isDead) return;
+            addLog('📦 Abra o inventário para gerenciar seus itens.');
+        }
+
+        // Shop Functions
+        function buyItem(itemId, cost) {
+            if (gameState.isDead) return;
+            
+            if (gameState.character.gold >= cost) {
+                gameState.character.gold -= cost;
+                addItemToInventory(itemId);
+                addLog(`💰 Você comprou ${ITEMS[itemId].name}.`);
+                updateUI();
+            } else {
+                addLog('❌ Moedas insuficientes!');
+            }
+        }
+
+        function buySword() { buyItem('espada_simples', 50); }
+        function buyLongsword() { buyItem('espada_longa', 100); }
+        function buyBow() { buyItem('arco', 80); }
+        function buyLeatherHelmet() { buyItem('capacete_couro', 30); }
+        function buyLeatherChest() { buyItem('peitoral_couro', 50); }
+        function buyLeatherPants() { buyItem('calcas_couro', 40); }
+        function buyLeatherBoots() { buyItem('botas_couro', 20); }
+        function buyApple() { buyItem('maca', 10); }
+        function buyBread() { buyItem('pao', 15); }
+        function buyMeat() { buyItem('carne', 30); }
+        function buyPotion() { buyItem('pocoes', 50); }
+
+        function talkToKing() {
+            if (gameState.isDead) return;
+            addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"');
+        }
+
+        function acceptQuest() {
+            if (gameState.isDead) return;
+            addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.');
+        }
+
+        // Exploration
+        function exploreForest() {
+            if (gameState.isDead) return;
+            
+            if (Math.random() < 0.6) {
+                const monsters = ['goblin', 'lobo', 'orc'];
+                const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
+                gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
+                addLog(`⚠️ Um ${gameState.currentEnemy.name} apareceu!`);
+            } else {
+                addLog('🌳 A floresta está tranquila... por enquanto.');
+                if (Math.random() < 0.3) {
+                    addItemToInventory('maca', 1);
+                    addLog('🍎 Você encontrou uma maçã silvestre!');
+                }
+            }
+            updateUI();
+        }
+
+        function goMountains() {
+            if (gameState.isDead) return;
+            
+            if (Math.random() < 0.5) {
+                const monsters = ['orc', 'troll'];
+                const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
+                gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
+                addLog(`⚠️ Um ${gameState.currentEnemy.name} emerge das montanhas!`);
+            } else {
+                addLog('⛰️ As montanhas são perigosas, mas você encontra minérios.');
+                gameState.character.gold += 20;
+                addLog('💰 Você encontrou 20 moedas!');
+            }
+            updateUI();
+        }
+
+        function goRuins() {
+            if (gameState.isDead) return;
+            
+            if (Math.random() < 0.4) {
+                gameState.currentEnemy = { ...MONSTERS['dragao'], id: 'dragao' };
+                addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
+            } else {
+                addLog('🏚️ Ruínas antigas... você encontra um baú!');
+                const items = ['espada_longa', 'capacete_ferro', 'pocoes'];
+                const itemId = items[Math.floor(Math.random() * items.length)];
+                addItemToInventory(itemId);
+                addLog(`🎁 Você encontrou: ${ITEMS[itemId].name}!`);
+            }
+            updateUI();
+        }
+
+        // Combat
+        function attack() {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+
+            const race = RACES[gameState.character.race];
+            const bonuses = calculateEquipmentBonuses();
+            const playerAttack = race.baseAttack + bonuses.attackBonus;
+            const playerDefense = race.baseDefense + bonuses.defenseBonus;
+            
+            // Player attack
+            const damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
+            gameState.currentEnemy.life -= damage;
+            addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
+
+            if (gameState.currentEnemy.life <= 0) {
+                // Victory - SÓ GANHA EXP E GOLD, NADA DE VIDA OU ATRIBUTOS
+                addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
+                gameState.character.exp += gameState.currentEnemy.exp;
+                gameState.character.gold += gameState.currentEnemy.gold;
+                addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
+                
+                // Chance to drop item (comida)
+                if (Math.random() < 0.3) {
+                    const drops = ['maca', 'pao', 'carne'];
+                    const drop = drops[Math.floor(Math.random() * drops.length)];
+                    addItemToInventory(drop);
+                    addLog(`🎁 O monstro dropou: ${ITEMS[drop].name}!`);
+                }
+                
+                gameState.currentEnemy = null;
+            } else {
+                // Enemy counterattack
+                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
+                
+                gameState.character.life -= enemyDamage;
+                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
+
+                if (gameState.character.life <= 0) {
+                    playerDeath();
+                }
+            }
+
+            updateUI();
+        }
+
+        function run() {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+            
+            if (Math.random() < 0.5) {
+                gameState.currentEnemy = null;
+                addLog('🏃 Você conseguiu fugir!');
+            } else {
+                addLog('❌ Não conseguiu fugir!');
+                
+                const race = RACES[gameState.character.race];
+                const bonuses = calculateEquipmentBonuses();
+                const playerDefense = race.baseDefense + bonuses.defenseBonus;
+                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
+                
+                gameState.character.life -= enemyDamage;
+                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano enquanto você fugia!`);
+
+                if (gameState.character.life <= 0) {
+                    playerDeath();
+                }
+            }
+            updateUI();
+        }
+
+        function playerDeath() {
+            gameState.character.life = 0;
+            gameState.isDead = true;
+            gameState.currentEnemy = null;
+            
+            addLog('💀 VOCÊ MORREU!');
+            addLog('❌ Todas as ações estão bloqueadas.');
+            
+            updateUI();
+        }
+
+        function restartGame() {
+            gameState = {
+                character: null,
+                location: 'aurora',
+                inventory: Array(18).fill(null),
+                equipment: {
+                    helmet: null, chest: null, pants: null,
+                    boots: null, mainhand: null, offhand: null
+                },
+                combatLog: ['Bem-vindo ao Reino da Aurora!'],
+                currentEnemy: null,
+                isDead: false
+            };
+            
+            document.getElementById('character-creation-modal').classList.add('active');
+            document.getElementById('death-overlay').classList.remove('active');
+            updateUI();
+        }
+
+        // Save/Load
+        function saveGame() {
+            if (gameState.isDead) {
+                alert('❌ Personagens mortos não podem ser salvos!');
+                return;
+            }
+            
+            const saveData = JSON.stringify(gameState, null, 2);
+            const blob = new Blob([saveData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `twilight_${gameState.character?.name || 'save'}.json`;
+            a.click();
+            addLog('💾 Jogo salvo!');
+        }
+
+        function loadGame() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const loadedState = JSON.parse(e.target.result);
+                        
+                        // VERIFICAÇÃO CRÍTICA
+                        if (loadedState.isDead) {
+                            alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
+                            return;
+                        }
+                        
+                        if (loadedState.character && loadedState.character.life <= 0) {
+                            alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
+                            return;
+                        }
+                        
+                        gameState = loadedState;
+                        document.getElementById('character-creation-modal').classList.remove('active');
+                        document.getElementById('death-overlay').classList.remove('active');
+                        updateUI();
+                        addLog('📂 Jogo carregado!');
+                    } catch (err) {
+                        alert('Erro ao carregar arquivo!');
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateUI();
+            
+            // Check for autosave
+            const autosave = localStorage.getItem('twilight_autosave');
+            if (autosave) {
+                try {
+                    const saved = JSON.parse(autosave);
+                    if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        if (confirm('Deseja carregar o autosave?')) {
+                            gameState = saved;
+                            updateUI();
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            // Auto-save every 5 minutes (only if alive)
+            setInterval(() => {
+                if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
+                    localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
+                }
+            }, 300000);
+        });
     </script>
 </body>
 </html>
