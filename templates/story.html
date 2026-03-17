@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Modo História (Atributos Fixos)</title>
+    <title>Twilight Battle - Modo História</title>
     <style>
         * {
             margin: 0;
@@ -353,6 +353,76 @@
 
         .log-entry:last-child {
             border-bottom: none;
+        }
+
+        /* Title Screen */
+        .title-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a, #1a1a3a);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .title-content {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid #ffd700;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .title-content h1 {
+            color: #ffd700;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        .title-content h2 {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+
+        .title-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .title-btn {
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+        }
+
+        .title-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px #4a90e2;
+        }
+
+        .title-btn.load {
+            background: linear-gradient(45deg, #9370db, #7b5fb0);
+        }
+
+        .title-btn.load:hover {
+            box-shadow: 0 0 30px #9370db;
         }
 
         /* Character creation modal */
@@ -713,137 +783,150 @@
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <!-- Death Overlay -->
-        <div class="death-overlay" id="death-overlay">
-            <div class="death-message">
-                <h1>💀 MORTO</h1>
-                <p>Seu personagem faleceu em batalha.</p>
-                <p>Este save está permanentemente bloqueado.</p>
-                <p class="warning">Não é possível interagir ou carregar este personagem.</p>
-                <button class="restart-btn" onclick="restartGame()">Criar Novo Personagem</button>
+    <!-- Title Screen -->
+    <div class="title-screen" id="title-screen">
+        <div class="title-content">
+            <h1>🌆 TWILIGHT BATTLE</h1>
+            <h2>Modo História</h2>
+            <div class="title-buttons">
+                <button class="title-btn" onclick="startNewGame()">✨ Novo Jogo</button>
+                <button class="title-btn load" onclick="loadGameFromTitle()">📂 Carregar Jogo</button>
             </div>
         </div>
+    </div>
 
-        <!-- Character Creation Modal -->
-        <div class="modal" id="character-creation-modal">
-            <div class="modal-content">
-                <h2 class="modal-title">Crie Seu Personagem</h2>
-                
-                <div class="race-selector" id="race-selector">
-                    <div class="race-card" data-race="elfo" onclick="selectRace('elfo')">
-                        <div class="race-name">🧝 Elfo</div>
-                        <div class="race-stats">Vida: 512 | Ataque: 512</div>
-                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Esquiva</div>
-                    </div>
-                    <div class="race-card" data-race="mago" onclick="selectRace('mago')">
-                        <div class="race-name">🔮 Mago</div>
-                        <div class="race-stats">Vida: 800 | Ataque: 250</div>
-                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Magia</div>
-                    </div>
-                    <div class="race-card" data-race="centauro" onclick="selectRace('centauro')">
-                        <div class="race-name">🏹 Centauro</div>
-                        <div class="race-stats">Vida: 600 | Ataque: 256</div>
-                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Carga</div>
-                    </div>
-                    <div class="race-card" data-race="ninfa" onclick="selectRace('ninfa')">
-                        <div class="race-name">🌸 Ninfa</div>
-                        <div class="race-stats">Vida: 512 | Ataque: 128</div>
-                        <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Cura</div>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="character-name">Nome do Personagem</label>
-                    <input type="text" id="character-name" placeholder="Digite o nome...">
-                </div>
-
-                <div class="input-group">
-                    <label for="character-age">Idade</label>
-                    <input type="number" id="character-age" min="1" max="1000" value="25">
-                </div>
-
-                <div class="input-group">
-                    <label>Gênero</label>
-                    <div class="gender-selector">
-                        <div class="gender-option" data-gender="masculino" onclick="selectGender('masculino')">♂️ Masculino</div>
-                        <div class="gender-option" data-gender="feminino" onclick="selectGender('feminino')">♀️ Feminino</div>
-                    </div>
-                </div>
-
-                <div class="input-group">
-                    <label for="character-bio">Biografia / História</label>
-                    <textarea id="character-bio" placeholder="Conte a história do seu personagem..."></textarea>
-                </div>
-
-                <button class="action-btn success" onclick="createCharacter()" style="width: 100%;">Iniciar Jornada</button>
-            </div>
+    <!-- Death Overlay -->
+    <div class="death-overlay" id="death-overlay">
+        <div class="death-message">
+            <h1>💀 MORTO</h1>
+            <p>Seu personagem faleceu em batalha.</p>
+            <p>Este save está permanentemente bloqueado.</p>
+            <p class="warning">Não é possível interagir ou carregar este personagem.</p>
+            <button class="restart-btn" onclick="returnToTitle()">Voltar ao Menu</button>
         </div>
+    </div>
 
-        <!-- Profile Modal -->
-        <div class="modal" id="profile-modal">
-            <div class="modal-content">
-                <h2 class="modal-title">Perfil do Personagem</h2>
-                
-                <div class="profile-header">
-                    <div class="profile-avatar" id="profile-avatar">🧝</div>
-                    <div class="profile-info">
-                        <div class="profile-name" id="profile-name">Nome</div>
-                        <div class="profile-race" id="profile-race">Raça</div>
-                        <div class="profile-stats">
-                            <div class="profile-stat">
-                                <div class="profile-stat-value" id="profile-age">25</div>
-                                <div class="profile-stat-label">Idade</div>
-                            </div>
-                            <div class="profile-stat">
-                                <div class="profile-stat-value" id="profile-gender">♂️</div>
-                                <div class="profile-stat-label">Gênero</div>
-                            </div>
+    <!-- Character Creation Modal -->
+    <div class="modal" id="character-creation-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Crie Seu Personagem</h2>
+            
+            <div class="race-selector" id="race-selector">
+                <div class="race-card" data-race="elfo" onclick="selectRace('elfo')">
+                    <div class="race-name">🧝 Elfo</div>
+                    <div class="race-stats">Vida: 512 | Ataque: 512</div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Esquiva</div>
+                </div>
+                <div class="race-card" data-race="mago" onclick="selectRace('mago')">
+                    <div class="race-name">🔮 Mago</div>
+                    <div class="race-stats">Vida: 800 | Ataque: 250</div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Magia</div>
+                </div>
+                <div class="race-card" data-race="centauro" onclick="selectRace('centauro')">
+                    <div class="race-name">🏹 Centauro</div>
+                    <div class="race-stats">Vida: 600 | Ataque: 256</div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Carga</div>
+                </div>
+                <div class="race-card" data-race="ninfa" onclick="selectRace('ninfa')">
+                    <div class="race-name">🌸 Ninfa</div>
+                    <div class="race-stats">Vida: 512 | Ataque: 128</div>
+                    <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Cura</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="character-name">Nome do Personagem</label>
+                <input type="text" id="character-name" placeholder="Digite o nome...">
+            </div>
+
+            <div class="input-group">
+                <label for="character-age">Idade</label>
+                <input type="number" id="character-age" min="1" max="1000" value="25">
+            </div>
+
+            <div class="input-group">
+                <label>Gênero</label>
+                <div class="gender-selector">
+                    <div class="gender-option" data-gender="masculino" onclick="selectGender('masculino')">♂️ Masculino</div>
+                    <div class="gender-option" data-gender="feminino" onclick="selectGender('feminino')">♀️ Feminino</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="character-bio">Biografia / História</label>
+                <textarea id="character-bio" placeholder="Conte a história do seu personagem..."></textarea>
+            </div>
+
+            <button class="action-btn success" onclick="createCharacter()" style="width: 100%;">Iniciar Jornada</button>
+            <button class="action-btn" onclick="cancelCharacterCreation()" style="width: 100%; margin-top: 10px;">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal" id="profile-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Perfil do Personagem</h2>
+            
+            <div class="profile-header">
+                <div class="profile-avatar" id="profile-avatar">🧝</div>
+                <div class="profile-info">
+                    <div class="profile-name" id="profile-name">Nome</div>
+                    <div class="profile-race" id="profile-race">Raça</div>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <div class="profile-stat-value" id="profile-age">25</div>
+                            <div class="profile-stat-label">Idade</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value" id="profile-gender">♂️</div>
+                            <div class="profile-stat-label">Gênero</div>
                         </div>
                     </div>
                 </div>
-
-                <div class="profile-bio">
-                    <h3>📜 Biografia</h3>
-                    <p id="profile-bio-text">...</p>
-                </div>
-
-                <div class="profile-bio" id="profile-equipment-stats" style="display: none;">
-                    <h3>⚔️ Bônus de Equipamentos</h3>
-                    <p id="equipment-bonus-text">Nenhum equipamento equipado</p>
-                </div>
-
-                <button class="edit-profile-btn" onclick="showEditProfile()">✏️ Editar Perfil</button>
-                <button class="action-btn" onclick="closeProfile()" style="margin-top: 10px; width: 100%;">Fechar</button>
             </div>
-        </div>
 
-        <!-- Edit Profile Modal -->
-        <div class="modal" id="edit-profile-modal">
-            <div class="modal-content">
-                <h2 class="modal-title">Editar Perfil</h2>
-
-                <div class="input-group">
-                    <label for="edit-name">Nome</label>
-                    <input type="text" id="edit-name">
-                </div>
-
-                <div class="input-group">
-                    <label for="edit-age">Idade</label>
-                    <input type="number" id="edit-age" min="1" max="1000">
-                </div>
-
-                <div class="input-group">
-                    <label for="edit-bio">Biografia</label>
-                    <textarea id="edit-bio"></textarea>
-                </div>
-
-                <button class="action-btn success" onclick="saveProfileEdit()">💾 Salvar Alterações</button>
-                <button class="action-btn" onclick="closeEditProfile()" style="margin-top: 10px;">Cancelar</button>
+            <div class="profile-bio">
+                <h3>📜 Biografia</h3>
+                <p id="profile-bio-text">...</p>
             </div>
-        </div>
 
-        <!-- Main Game UI -->
+            <div class="profile-bio" id="profile-equipment-stats" style="display: none;">
+                <h3>⚔️ Bônus de Equipamentos</h3>
+                <p id="equipment-bonus-text">Nenhum equipamento equipado</p>
+            </div>
+
+            <button class="edit-profile-btn" onclick="showEditProfile()">✏️ Editar Perfil</button>
+            <button class="action-btn" onclick="closeProfile()" style="margin-top: 10px; width: 100%;">Fechar</button>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal" id="edit-profile-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">Editar Perfil</h2>
+
+            <div class="input-group">
+                <label for="edit-name">Nome</label>
+                <input type="text" id="edit-name">
+            </div>
+
+            <div class="input-group">
+                <label for="edit-age">Idade</label>
+                <input type="number" id="edit-age" min="1" max="1000">
+            </div>
+
+            <div class="input-group">
+                <label for="edit-bio">Biografia</label>
+                <textarea id="edit-bio"></textarea>
+            </div>
+
+            <button class="action-btn success" onclick="saveProfileEdit()">💾 Salvar Alterações</button>
+            <button class="action-btn" onclick="closeEditProfile()" style="margin-top: 10px;">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Main Game UI -->
+    <div class="game-container" id="game-ui" style="display: none;">
         <div class="game-header">
             <div class="game-title">
                 Twilight Battle - Modo História
@@ -873,6 +956,7 @@
             <div class="save-load-buttons">
                 <button class="save-btn" id="save-btn" onclick="saveGame()">💾 Salvar</button>
                 <button class="load-btn" id="load-btn" onclick="loadGame()">📂 Carregar</button>
+                <button class="load-btn" onclick="returnToTitle()" style="background: #ffa500;">🏠 Menu</button>
             </div>
         </div>
 
@@ -1117,6 +1201,28 @@
         };
 
         // UI Functions
+        function returnToTitle() {
+            document.getElementById('title-screen').style.display = 'flex';
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('death-overlay').classList.remove('active');
+        }
+
+        function startNewGame() {
+            document.getElementById('title-screen').style.display = 'none';
+            document.getElementById('character-creation-modal').classList.add('active');
+        }
+
+        function loadGameFromTitle() {
+            document.getElementById('title-screen').style.display = 'none';
+            loadGame();
+        }
+
+        function cancelCharacterCreation() {
+            document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('title-screen').style.display = 'flex';
+        }
+
         function selectRace(race) {
             if (gameState.isDead) return;
             document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
@@ -1171,6 +1277,7 @@
 
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
+            document.getElementById('game-ui').style.display = 'block';
             
             // Add starter items
             addItemToInventory('maca', 3);
@@ -1271,7 +1378,6 @@
 
         function updateUI() {
             if (!gameState.character) {
-                document.getElementById('character-creation-modal').classList.add('active');
                 return;
             }
 
@@ -1819,25 +1925,6 @@
             updateUI();
         }
 
-        function restartGame() {
-            gameState = {
-                character: null,
-                location: 'aurora',
-                inventory: Array(18).fill(null),
-                equipment: {
-                    helmet: null, chest: null, pants: null,
-                    boots: null, mainhand: null, offhand: null
-                },
-                combatLog: ['Bem-vindo ao Reino da Aurora!'],
-                currentEnemy: null,
-                isDead: false
-            };
-            
-            document.getElementById('character-creation-modal').classList.add('active');
-            document.getElementById('death-overlay').classList.remove('active');
-            updateUI();
-        }
-
         // Save/Load
         function saveGame() {
             if (gameState.isDead) {
@@ -1869,21 +1956,26 @@
                         // VERIFICAÇÃO CRÍTICA
                         if (loadedState.isDead) {
                             alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
+                            document.getElementById('title-screen').style.display = 'flex';
                             return;
                         }
                         
                         if (loadedState.character && loadedState.character.life <= 0) {
                             alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
+                            document.getElementById('title-screen').style.display = 'flex';
                             return;
                         }
                         
                         gameState = loadedState;
                         document.getElementById('character-creation-modal').classList.remove('active');
                         document.getElementById('death-overlay').classList.remove('active');
+                        document.getElementById('title-screen').style.display = 'none';
+                        document.getElementById('game-ui').style.display = 'block';
                         updateUI();
                         addLog('📂 Jogo carregado!');
                     } catch (err) {
                         alert('Erro ao carregar arquivo!');
+                        document.getElementById('title-screen').style.display = 'flex';
                     }
                 };
                 reader.readAsText(file);
@@ -1893,7 +1985,8 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            updateUI();
+            document.getElementById('title-screen').style.display = 'flex';
+            document.getElementById('game-ui').style.display = 'none';
             
             // Check for autosave
             const autosave = localStorage.getItem('twilight_autosave');
@@ -1903,6 +1996,8 @@
                     if (!saved.isDead && saved.character && saved.character.life > 0) {
                         if (confirm('Deseja carregar o autosave?')) {
                             gameState = saved;
+                            document.getElementById('title-screen').style.display = 'none';
+                            document.getElementById('game-ui').style.display = 'block';
                             updateUI();
                         }
                     }
