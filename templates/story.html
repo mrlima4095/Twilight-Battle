@@ -948,6 +948,21 @@
             <button class="action-btn" onclick="closeEditProfile()" style="margin-top: 10px;">Cancelar</button>
         </div>
     </div>
+    
+    <!-- Chest Modal -->
+    <div class="modal" id="chest-modal">
+        <div class="modal-content">
+            <h2 class="modal-title">📦 Baú da Casa</h2>
+            <p style="color: #888; text-align: center; margin-bottom: 20px;">Armazene seus itens extras aqui (18 espaços)</p>
+            
+            <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); margin-bottom: 20px;"></div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn success" onclick="closeChest()" style="flex: 1;">Fechar Baú</button>
+                <button class="action-btn warning" onclick="organizeChest()" style="flex: 1;">📦 Organizar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Game UI -->
     <div class="game-container" id="game-ui" style="display: none;">
@@ -1063,6 +1078,7 @@
             character: null,
             location: 'aurora',
             inventory: Array(18).fill(null),
+            chest: Array(18).fill(null), // <-- ADICIONE ESTA LINHA
             equipment: {
                 helmet: null,
                 chest: null,
@@ -1074,7 +1090,7 @@
             combatLog: ['Bem-vindo ao Reino da Aurora!'],
             currentEnemy: null,
             isDead: false
-        };
+        }
 
         // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
         const RACES = {
@@ -1158,7 +1174,8 @@
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
                     { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
-                    { name: '📦 Guardar Item', action: 'showInventory' },
+                    //{ name: '📦 Guardar Item', action: 'showInventory' },
+                    { name: '📦 Abrir Baú', action: 'openChest' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -1490,6 +1507,9 @@
 
             // Update inventory grid
             updateInventoryGrid();
+            if (document.getElementById('chest-modal').classList.contains('active')) {
+                updateChestGrid();
+            }
             updateEquipmentDisplay();
             updateGameContent();
             updateFoodGrid();
@@ -1552,6 +1572,134 @@
                     grid.appendChild(slot);
                 }
             });
+        }
+
+        function openChest() {
+            if (gameState.isDead) return;
+            updateChestGrid();
+            document.getElementById('chest-modal').classList.add('active');
+            addLog('📦 Você abriu o baú da sua casa.');
+        }
+
+        function closeChest() {
+            document.getElementById('chest-modal').classList.remove('active');
+        }
+
+        function updateChestGrid() {
+            const grid = document.getElementById('chest-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 18; i++) {
+                const item = gameState.chest[i];
+                const slot = document.createElement('div');
+                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                slot.setAttribute('draggable', !!item && !gameState.isDead);
+                slot.setAttribute('data-index', i);
+                slot.setAttribute('data-source', 'chest');
+                
+                if (item) {
+                    slot.innerHTML = `
+                        <span class="item-name">${item.name}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    if (!gameState.isDead) {
+                        slot.setAttribute('ondragstart', 'dragChestItem(event)');
+                    }
+                }
+
+                if (!gameState.isDead) {
+                    slot.setAttribute('ondragover', 'handleDragOver(event)');
+                    slot.setAttribute('ondrop', 'handleChestDrop(event)');
+                    slot.setAttribute('onclick', 'useChestItem(' + i + ')');
+                }
+                
+                grid.appendChild(slot);
+            }
+        }
+
+        function dragChestItem(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
+            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
+            draggedItemSource = 'chest';
+        }
+
+        function handleChestDrop(event) {
+            if (gameState.isDead) return;
+            
+            event.preventDefault();
+            const targetSlot = event.target.closest('.inventory-slot');
+            if (!targetSlot) return;
+            
+            const targetIndex = targetSlot.dataset.index;
+            const targetSource = targetSlot.dataset.source || 'inventory';
+            
+            if (draggedItemIndex === null) return;
+
+            // Moving from inventory to chest
+            if (draggedItemSource === 'inventory' && targetSource === 'chest') {
+                const temp = gameState.chest[targetIndex];
+                gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
+                gameState.inventory[draggedItemIndex] = temp;
+                addLog('📦 Item movido para o baú.');
+            }
+            // Moving from chest to inventory
+            else if (draggedItemSource === 'chest' && targetSource === 'inventory') {
+                const temp = gameState.inventory[targetIndex];
+                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
+                gameState.chest[draggedItemIndex] = temp;
+                addLog('📦 Item retirado do baú.');
+            }
+            // Moving within chest
+            else if (draggedItemSource === 'chest' && targetSource === 'chest') {
+                const temp = gameState.chest[targetIndex];
+                gameState.chest[targetIndex] = gameState.chest[draggedItemIndex];
+                gameState.chest[draggedItemIndex] = temp;
+            }
+            
+            updateUI();
+            updateChestGrid();
+            draggedItemIndex = null;
+            draggedItemSource = null;
+        }
+
+        function useChestItem(index) {
+            if (gameState.isDead) return;
+            
+            const item = gameState.chest[index];
+            if (!item) return;
+
+            if (item.type === 'food') {
+                // Transfer food to inventory first to use it
+                for (let i = 0; i < 18; i++) {
+                    if (!gameState.inventory[i]) {
+                        gameState.inventory[i] = gameState.chest[index];
+                        gameState.chest[index] = null;
+                        addLog(`📦 ${item.name} movido para o inventário.`);
+                        updateUI();
+                        updateChestGrid();
+                        return;
+                    }
+                }
+                addLog('❌ Inventário cheio!');
+            }
+        }
+
+        function organizeChest() {
+            if (gameState.isDead) return;
+            
+            // Simple organization: move all items to front
+            const items = gameState.chest.filter(item => item !== null);
+            gameState.chest = Array(18).fill(null);
+            
+            for (let i = 0; i < items.length; i++) {
+                gameState.chest[i] = items[i];
+            }
+            
+            updateChestGrid();
+            addLog('📦 Baú organizado!');
         }
 
         function updateEquipmentDisplay() {
@@ -1722,6 +1870,7 @@
 
         // Drag and Drop
         let draggedItemIndex = null;
+        let draggedItemSource = 'inventory';
 
         function dragItem(event) {
             if (gameState.isDead) {
@@ -1729,6 +1878,7 @@
                 return;
             }
             draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
+            draggedItemSource = 'inventory';
         }
 
         function handleDragOver(event) {
@@ -1745,15 +1895,30 @@
             event.preventDefault();
             const targetIndex = event.target.closest('.inventory-slot').dataset.index;
             
-            if (draggedItemIndex !== null && targetIndex !== draggedItemIndex) {
-                // Swap items
+            if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
+                draggedItemIndex = null;
+                draggedItemSource = null;
+                return;
+            }
+
+            // Moving from chest to inventory
+            if (draggedItemSource === 'chest') {
+                const temp = gameState.inventory[targetIndex];
+                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
+                gameState.chest[draggedItemIndex] = temp;
+                addLog('📦 Item retirado do baú.');
+                updateChestGrid();
+            }
+            // Moving within inventory
+            else {
                 const temp = gameState.inventory[targetIndex];
                 gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
                 gameState.inventory[draggedItemIndex] = temp;
-                updateUI();
             }
             
+            updateUI();
             draggedItemIndex = null;
+            draggedItemSource = null;
         }
 
         function handleDropToTrash(event) {
@@ -1761,11 +1926,17 @@
             
             event.preventDefault();
             if (draggedItemIndex !== null) {
-                gameState.inventory[draggedItemIndex] = null;
+                if (draggedItemSource === 'chest') {
+                    gameState.chest[draggedItemIndex] = null;
+                    updateChestGrid();
+                } else {
+                    gameState.inventory[draggedItemIndex] = null;
+                }
                 addLog('🗑️ Item descartado.');
                 updateUI();
             }
             draggedItemIndex = null;
+            draggedItemSource = null;
         }
 
         // Location Actions
