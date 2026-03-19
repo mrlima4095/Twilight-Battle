@@ -1638,6 +1638,10 @@
             
             if (draggedItemIndex === null) return;
 
+            // Garantir que os arrays existem
+            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+            if (!gameState.inventory) gameState.inventory = Array(18).fill(null);
+
             // Moving from inventory to chest
             if (draggedItemSource === 'inventory' && targetSource === 'chest') {
                 const temp = gameState.chest[targetIndex];
@@ -1668,6 +1672,8 @@
         function useChestItem(index) {
             if (gameState.isDead) return;
             
+            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+            
             const item = gameState.chest[index];
             if (!item) return;
 
@@ -1679,7 +1685,7 @@
                         gameState.chest[index] = null;
                         addLog(`📦 ${item.name} movido para o inventário.`);
                         updateUI();
-                        updateChestGrid();
+                        if (gameState.chestOpen) updateChestGrid();
                         return;
                     }
                 }
@@ -1690,6 +1696,8 @@
         function organizeChest() {
             if (gameState.isDead) return;
             
+            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+            
             // Simple organization: move all items to front
             const items = gameState.chest.filter(item => item !== null);
             gameState.chest = Array(18).fill(null);
@@ -1698,7 +1706,7 @@
                 gameState.chest[i] = items[i];
             }
             
-            updateChestGrid();
+            if (gameState.chestOpen) updateChestGrid();
             addLog('📦 Baú organizado!');
         }
 
