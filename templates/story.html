@@ -1078,7 +1078,7 @@
             character: null,
             location: 'aurora',
             inventory: Array(18).fill(null),
-            chest: Array(18).fill(null),
+            chest: Array(18).fill(null), // <-- ADICIONE ESTA LINHA
             equipment: {
                 helmet: null,
                 chest: null,
@@ -1089,11 +1089,8 @@
             },
             combatLog: ['Bem-vindo ao Reino da Aurora!'],
             currentEnemy: null,
-            isDead: false,
-            selectedRace: null,
-            selectedGender: null,
-            chestOpen: false 
-        };
+            isDead: false
+        }
 
         // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
         const RACES = {
@@ -1178,7 +1175,7 @@
                 actions: [
                     { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
                     //{ name: '📦 Guardar Item', action: 'showInventory' },
-                    { name: '📦 Abrir Baú', action: 'toggleChest' },
+                    { name: '📦 Abrir Baú', action: 'openChest' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -1577,32 +1574,47 @@
             });
         }
 
-        // Chest Functions
-        function toggleChest() {
+        function openChest() {
             if (gameState.isDead) return;
-            
-            // Garantir que o array do baú existe
-            if (!gameState.chest) {
-                gameState.chest = Array(18).fill(null);
-            }
-            
-            gameState.chestOpen = !gameState.chestOpen;
-            
-            if (gameState.chestOpen) {
-                addLog('📦 Você abriu o baú da sua casa.');
-            } else {
-                addLog('📦 Você fechou o baú.');
-            }
-            
-            updateUI();
+            updateChestGrid();
+            document.getElementById('chest-modal').classList.add('active');
+            addLog('📦 Você abriu o baú da sua casa.');
+        }
+
+        function closeChest() {
+            document.getElementById('chest-modal').classList.remove('active');
         }
 
         function updateChestGrid() {
-            // Esta função agora é usada apenas para atualizar os slots quando o inventário muda
-            if (!gameState.chestOpen || gameState.location !== 'home') return;
-            
-            // Recria o conteúdo do game panel para atualizar os slots
-            updateGameContent();
+            const grid = document.getElementById('chest-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 18; i++) {
+                const item = gameState.chest[i];
+                const slot = document.createElement('div');
+                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                slot.setAttribute('draggable', !!item && !gameState.isDead);
+                slot.setAttribute('data-index', i);
+                slot.setAttribute('data-source', 'chest');
+                
+                if (item) {
+                    slot.innerHTML = `
+                        <span class="item-name">${item.name}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    if (!gameState.isDead) {
+                        slot.setAttribute('ondragstart', 'dragChestItem(event)');
+                    }
+                }
+
+                if (!gameState.isDead) {
+                    slot.setAttribute('ondragover', 'handleDragOver(event)');
+                    slot.setAttribute('ondrop', 'handleChestDrop(event)');
+                    slot.setAttribute('onclick', 'useChestItem(' + i + ')');
+                }
+                
+                grid.appendChild(slot);
+            }
         }
 
         function dragChestItem(event) {
@@ -1610,10 +1622,7 @@
                 event.preventDefault();
                 return;
             }
-            const slot = event.target.closest('.inventory-slot');
-            if (!slot) return;
-            
-            draggedItemIndex = slot.dataset.index;
+            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
             draggedItemSource = 'chest';
         }
 
@@ -1628,10 +1637,6 @@
             const targetSource = targetSlot.dataset.source || 'inventory';
             
             if (draggedItemIndex === null) return;
-
-            // Garantir que os arrays existem
-            if (!gameState.chest) gameState.chest = Array(18).fill(null);
-            if (!gameState.inventory) gameState.inventory = Array(18).fill(null);
 
             // Moving from inventory to chest
             if (draggedItemSource === 'inventory' && targetSource === 'chest') {
@@ -1655,14 +1660,13 @@
             }
             
             updateUI();
+            updateChestGrid();
             draggedItemIndex = null;
             draggedItemSource = null;
         }
 
         function useChestItem(index) {
             if (gameState.isDead) return;
-            
-            if (!gameState.chest) gameState.chest = Array(18).fill(null);
             
             const item = gameState.chest[index];
             if (!item) return;
@@ -1675,7 +1679,7 @@
                         gameState.chest[index] = null;
                         addLog(`📦 ${item.name} movido para o inventário.`);
                         updateUI();
-                        if (gameState.chestOpen) updateChestGrid();
+                        updateChestGrid();
                         return;
                     }
                 }
@@ -1686,8 +1690,6 @@
         function organizeChest() {
             if (gameState.isDead) return;
             
-            if (!gameState.chest) gameState.chest = Array(18).fill(null);
-            
             // Simple organization: move all items to front
             const items = gameState.chest.filter(item => item !== null);
             gameState.chest = Array(18).fill(null);
@@ -1696,10 +1698,9 @@
                 gameState.chest[i] = items[i];
             }
             
-            if (gameState.chestOpen) updateChestGrid();
+            updateChestGrid();
             addLog('📦 Baú organizado!');
         }
-
 
         function updateEquipmentDisplay() {
             for (let slot in gameState.equipment) {
@@ -1717,85 +1718,27 @@
             let html = `
                 <h2 class="location-title">${location.name}</h2>
                 <div class="location-description">${location.description}</div>
+                <div class="action-buttons">
             `;
 
-            // Se estiver na casa e com o baú aberto, mostrar o baú com slots
-            if (gameState.location === 'home' && gameState.chestOpen) {
-                html += `
-                    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú</button>
-                        <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
-                    </div>
-                    
-                    <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
-                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
-                        
-                        <!-- Grid do Baú - SLOTS CRIADOS DIRETAMENTE -->
-                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
-                `;
-                
-                // Criar os 18 slots diretamente no HTML
-                for (let i = 0; i < 18; i++) {
-                    const item = gameState.chest && gameState.chest[i] ? gameState.chest[i] : null;
-                    const hasItemClass = item ? 'has-item' : '';
-                    const foodClass = item && item.type === 'food' ? 'food-item' : '';
-                    const disabledClass = gameState.isDead ? 'disabled' : '';
-                    
-                    html += `<div class="inventory-slot ${hasItemClass} ${foodClass} ${disabledClass}" 
-                        data-index="${i}" 
-                        data-source="chest"
-                        draggable="${!!item && !gameState.isDead}"
-                        ondragstart="dragChestItem(event)"
-                        ondragover="handleDragOver(event)"
-                        ondrop="handleChestDrop(event)"
-                        onclick="useChestItem(${i})">`;
-                    
-                    if (item) {
-                        html += `
-                            <span class="item-name">${item.name}</span>
-                            ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                        `;
-                    } else {
-                        html += `<span style="color: #444; font-size: 20px;">⬜</span>`;
-                    }
-                    
-                    html += `</div>`;
-                }
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-            } 
-            // Caso contrário, mostrar as ações normais do local
-            else {
-                html += `<div class="action-buttons">`;
-                location.actions.forEach(action => {
-                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
-                });
-                html += `</div>`;
-            }
+            location.actions.forEach(action => {
+                html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+            });
 
-            // Mostrar área de combate se houver inimigo
             if (gameState.currentEnemy && !gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
-                    <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-size: 18px;">${gameState.currentEnemy.name}</span>
-                        <span style="font-size: 18px; color: #ff4444;">❤️ ${gameState.currentEnemy.life}</span>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="action-btn danger" onclick="attack()" style="flex: 1;">⚔️ Atacar</button>
-                        <button class="action-btn warning" onclick="run()" style="flex: 1;">🏃 Fugir</button>
-                    </div>
+                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
+                    <h3 style="color: #ff4444;">⚔️ COMBATE!</h3>
+                    <p>${gameState.currentEnemy.name} - ❤️ ${gameState.currentEnemy.life}</p>
+                    <button class="action-btn danger" onclick="attack()">⚔️ Atacar</button>
+                    <button class="action-btn warning" onclick="run()">🏃 Fugir</button>
                 </div>`;
             } else if (gameState.currentEnemy && gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
+                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
                     <h3 style="color: #888;">⚔️ Combate interrompido (personagem morto)</h3>
                 </div>`;
             }
 
+            html += '</div>';
             content.innerHTML = html;
         }
 
@@ -1950,10 +1893,7 @@
             if (gameState.isDead) return;
             
             event.preventDefault();
-            const targetSlot = event.target.closest('.inventory-slot');
-            if (!targetSlot) return;
-            
-            const targetIndex = targetSlot.dataset.index;
+            const targetIndex = event.target.closest('.inventory-slot').dataset.index;
             
             if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
                 draggedItemIndex = null;
@@ -1963,12 +1903,11 @@
 
             // Moving from chest to inventory
             if (draggedItemSource === 'chest') {
-                if (!gameState.chest) gameState.chest = Array(18).fill(null);
                 const temp = gameState.inventory[targetIndex];
                 gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
                 gameState.chest[draggedItemIndex] = temp;
                 addLog('📦 Item retirado do baú.');
-                if (gameState.chestOpen) updateChestGrid();
+                updateChestGrid();
             }
             // Moving within inventory
             else {
@@ -2046,7 +1985,6 @@
         function goToAurora() {
             if (gameState.isDead) return;
             gameState.location = 'aurora';
-            gameState.chestOpen = false; // <-- ADICIONE ESTA LINHA
             updateUI();
             addLog('🏰 Você voltou ao Reino da Aurora.');
         }
