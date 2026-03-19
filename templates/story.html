@@ -1755,7 +1755,7 @@
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú e Voltar às Ações</button>
+                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú</button>
                         <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
                     </div>
                     
@@ -1763,14 +1763,8 @@
                         <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
                         <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
                         
-                        <!-- Grid do Baú -->
+                        <!-- Grid do Baú - OS SLOTS SERÃO RENDERIZADOS AQUI -->
                         <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;"></div>
-                        
-                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-                            <div style="background: rgba(255,215,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid #ffd700;">
-                                <span style="color: #ffd700;">💡 Dica: Clique em comidas para mover ao inventário</span>
-                            </div>
-                        </div>
                     </div>
                 `;
             } 
@@ -1804,9 +1798,12 @@
 
             content.innerHTML = html;
 
-            // Se o baú estiver aberto, atualizar o grid do baú
+            // CRÍTICO: Se o baú estiver aberto, atualizar o grid do baú DEPOIS de inserir o HTML
             if (gameState.location === 'home' && gameState.chestOpen) {
-                updateChestGrid();
+                // Pequeno timeout para garantir que o DOM foi atualizado
+                setTimeout(() => {
+                    updateChestGrid();
+                }, 10);
             }
         }
         function addLog(message) {
