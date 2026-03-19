@@ -1733,30 +1733,53 @@
             let html = `
                 <h2 class="location-title">${location.name}</h2>
                 <div class="location-description">${location.description}</div>
-                <div class="action-buttons">
             `;
 
-            location.actions.forEach(action => {
-                html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
-            });
+            // Se estiver na casa e com o baú aberto, mostrar o baú
+            if (gameState.location === 'home' && gameState.chestOpen) {
+                html += `
+                    <div style="margin-bottom: 20px;">
+                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500;">🔙 Fechar Baú</button>
+                    </div>
+                    <div class="chest-container" style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 15px;">📦 Baú da Casa (18 espaços)</h3>
+                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr);"></div>
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
+                        </div>
+                    </div>
+                `;
+            } 
+            // Caso contrário, mostrar as ações normais do local
+            else {
+                html += `<div class="action-buttons">`;
+                location.actions.forEach(action => {
+                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+                });
+                html += `</div>`;
+            }
 
+            // Mostrar área de combate se houver inimigo
             if (gameState.currentEnemy && !gameState.isDead) {
-                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
+                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
                     <h3 style="color: #ff4444;">⚔️ COMBATE!</h3>
                     <p>${gameState.currentEnemy.name} - ❤️ ${gameState.currentEnemy.life}</p>
                     <button class="action-btn danger" onclick="attack()">⚔️ Atacar</button>
                     <button class="action-btn warning" onclick="run()">🏃 Fugir</button>
                 </div>`;
             } else if (gameState.currentEnemy && gameState.isDead) {
-                html += `</div><div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
+                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
                     <h3 style="color: #888;">⚔️ Combate interrompido (personagem morto)</h3>
                 </div>`;
             }
 
-            html += '</div>';
             content.innerHTML = html;
-        }
 
+            // Se o baú estiver aberto, atualizar o grid do baú
+            if (gameState.location === 'home' && gameState.chestOpen) {
+                updateChestGrid();
+            }
+        }
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 10) gameState.combatLog.pop();
