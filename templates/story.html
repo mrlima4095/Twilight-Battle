@@ -2023,6 +2023,24 @@
             if (gameState.isDead) return;
             addLog('📦 Abra o inventário para gerenciar seus itens.');
         }
+        function toggleChest() {
+            if (gameState.isDead) return;
+            
+            // Garantir que o array do baú existe
+            if (!gameState.chest) {
+                gameState.chest = Array(18).fill(null);
+            }
+            
+            gameState.chestOpen = !gameState.chestOpen;
+            
+            if (gameState.chestOpen) {
+                addLog('📦 Você abriu o baú da sua casa.');
+            } else {
+                addLog('📦 Você fechou o baú.');
+            }
+            
+            updateUI();
+        }
 
         // Shop Functions
         function buyItem(itemId, cost) {
