@@ -1103,7 +1103,8 @@
                 baseAttack: 512, 
                 baseDefense: 50, 
                 skill: 'esquiva',
-                icon: '🧝'
+                icon: '🧝',
+                mana: 80  // <-- ADICIONAR
             },
             mago: { 
                 name: 'Mago', 
@@ -1111,7 +1112,8 @@
                 baseAttack: 250, 
                 baseDefense: 30, 
                 skill: 'magia',
-                icon: '🔮'
+                icon: '🔮',
+                mana: 150  // <-- ADICIONAR
             },
             centauro: { 
                 name: 'Centauro', 
@@ -1119,7 +1121,8 @@
                 baseAttack: 256, 
                 baseDefense: 80, 
                 skill: 'carga',
-                icon: '🏹'
+                icon: '🏹',
+                mana: 80  // <-- ADICIONAR
             },
             ninfa: { 
                 name: 'Ninfa', 
@@ -1127,7 +1130,8 @@
                 baseAttack: 128, 
                 baseDefense: 60, 
                 skill: 'cura',
-                icon: '🌸'
+                icon: '🌸',
+                mana: 100  // <-- ADICIONAR
             }
         };
 
@@ -1364,7 +1368,9 @@
                 bio: bio || 'Um aventureiro em busca de glória.',
                 life: race.baseLife,
                 maxLife: race.baseLife,
-                gold: 5,
+                mana: race.mana,
+                maxMana: race.mana,
+                gold: 10,
                 exp: 0,
                 level: 1
             };
