@@ -1985,6 +1985,7 @@
         function goToAurora() {
             if (gameState.isDead) return;
             gameState.location = 'aurora';
+            gameState.chestOpen = false; // <-- ADICIONE ESTA LINHA
             updateUI();
             addLog('🏰 Você voltou ao Reino da Aurora.');
         }
