@@ -1078,7 +1078,7 @@
             character: null,
             location: 'aurora',
             inventory: Array(18).fill(null),
-            chest: Array(18).fill(null), // <-- ADICIONE ESTA LINHA
+            chest: Array(18).fill(null),
             equipment: {
                 helmet: null,
                 chest: null,
@@ -1089,8 +1089,11 @@
             },
             combatLog: ['Bem-vindo ao Reino da Aurora!'],
             currentEnemy: null,
-            isDead: false
-        }
+            isDead: false,
+            selectedRace: null,
+            selectedGender: null,
+            chestOpen: false 
+        };
 
         // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
         const RACES = {
@@ -1175,7 +1178,7 @@
                 actions: [
                     { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
                     //{ name: '📦 Guardar Item', action: 'showInventory' },
-                    { name: '📦 Abrir Baú', action: 'openChest' },
+                    { name: '📦 Abrir Baú', action: 'toggleChest' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
             },
@@ -1572,17 +1575,6 @@
                     grid.appendChild(slot);
                 }
             });
-        }
-
-        function openChest() {
-            if (gameState.isDead) return;
-            updateChestGrid();
-            document.getElementById('chest-modal').classList.add('active');
-            addLog('📦 Você abriu o baú da sua casa.');
-        }
-
-        function closeChest() {
-            document.getElementById('chest-modal').classList.remove('active');
         }
 
         function updateChestGrid() {
