@@ -1577,45 +1577,6 @@
             });
         }
 
-        function updateChestGrid() {
-            const grid = document.getElementById('chest-grid');
-            if (!grid) return;
-            
-            // Garantir que gameState.chest existe
-            if (!gameState.chest) {
-                gameState.chest = Array(18).fill(null);
-            }
-            
-            grid.innerHTML = '';
-
-            for (let i = 0; i < 18; i++) {
-                const item = gameState.chest[i] || null;
-                const slot = document.createElement('div');
-                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-                slot.setAttribute('draggable', !!item && !gameState.isDead);
-                slot.setAttribute('data-index', i);
-                slot.setAttribute('data-source', 'chest');
-                
-                if (item) {
-                    slot.innerHTML = `
-                        <span class="item-name">${item.name || 'Item'}</span>
-                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                    `;
-                    if (!gameState.isDead) {
-                        slot.setAttribute('ondragstart', 'dragChestItem(event)');
-                    }
-                }
-
-                if (!gameState.isDead) {
-                    slot.setAttribute('ondragover', 'handleDragOver(event)');
-                    slot.setAttribute('ondrop', 'handleChestDrop(event)');
-                    slot.setAttribute('onclick', 'useChestItem(' + i + ')');
-                }
-                
-                grid.appendChild(slot);
-            }
-        }
-
         // Chest Functions
         function toggleChest() {
             if (gameState.isDead) return;
