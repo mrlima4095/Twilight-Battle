@@ -1727,17 +1727,25 @@
                 <div class="location-description">${location.description}</div>
             `;
 
-            // Se estiver na casa e com o baú aberto, mostrar o baú
+            // Se estiver na casa e com o baú aberto, mostrar o baú com slots
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
-                    <div style="margin-bottom: 20px;">
-                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500;">🔙 Fechar Baú</button>
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú e Voltar às Ações</button>
+                        <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
                     </div>
-                    <div class="chest-container" style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 20px; margin-bottom: 20px;">
-                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 15px;">📦 Baú da Casa (18 espaços)</h3>
-                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr);"></div>
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
+                    
+                    <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
+                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
+                        
+                        <!-- Grid do Baú -->
+                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;"></div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                            <div style="background: rgba(255,215,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid #ffd700;">
+                                <span style="color: #ffd700;">💡 Dica: Clique em comidas para mover ao inventário</span>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1753,11 +1761,16 @@
 
             // Mostrar área de combate se houver inimigo
             if (gameState.currentEnemy && !gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px;">
-                    <h3 style="color: #ff4444;">⚔️ COMBATE!</h3>
-                    <p>${gameState.currentEnemy.name} - ❤️ ${gameState.currentEnemy.life}</p>
-                    <button class="action-btn danger" onclick="attack()">⚔️ Atacar</button>
-                    <button class="action-btn warning" onclick="run()">🏃 Fugir</button>
+                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
+                    <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-size: 18px;">${gameState.currentEnemy.name}</span>
+                        <span style="font-size: 18px; color: #ff4444;">❤️ ${gameState.currentEnemy.life}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="action-btn danger" onclick="attack()" style="flex: 1;">⚔️ Atacar</button>
+                        <button class="action-btn warning" onclick="run()" style="flex: 1;">🏃 Fugir</button>
+                    </div>
                 </div>`;
             } else if (gameState.currentEnemy && gameState.isDead) {
                 html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
