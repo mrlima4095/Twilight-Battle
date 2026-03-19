@@ -1598,53 +1598,13 @@
         }
 
         function updateChestGrid() {
-            const grid = document.getElementById('chest-grid');
-            if (!grid) {
-                console.log('Grid do baú não encontrado');
-                return;
-            }
+            // Esta função agora é usada apenas para atualizar os slots quando o inventário muda
+            if (!gameState.chestOpen || gameState.location !== 'home') return;
             
-            console.log('Atualizando grid do baú', gameState.chest);
-            
-            // Garantir que gameState.chest existe
-            if (!gameState.chest) {
-                gameState.chest = Array(18).fill(null);
-            }
-            
-            grid.innerHTML = '';
-
-            for (let i = 0; i < 18; i++) {
-                const item = gameState.chest[i] || null;
-                const slot = document.createElement('div');
-                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-                slot.setAttribute('draggable', !!item && !gameState.isDead);
-                slot.setAttribute('data-index', i);
-                slot.setAttribute('data-source', 'chest');
-                
-                if (item) {
-                    slot.innerHTML = `
-                        <span class="item-name">${item.name || 'Item'}</span>
-                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                    `;
-                    if (!gameState.isDead) {
-                        slot.setAttribute('ondragstart', 'dragChestItem(event)');
-                    }
-                } else {
-                    // Slot vazio ainda precisa ser um alvo para drop
-                    slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
-                }
-
-                if (!gameState.isDead) {
-                    slot.setAttribute('ondragover', 'handleDragOver(event)');
-                    slot.setAttribute('ondrop', 'handleChestDrop(event)');
-                    slot.setAttribute('onclick', 'useChestItem(' + i + ')');
-                }
-                
-                grid.appendChild(slot);
-            }
-            
-            console.log('Grid do baú atualizado com', grid.children.length, 'slots');
+            // Recria o conteúdo do game panel para atualizar os slots
+            updateGameContent();
         }
+
         function dragChestItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -1695,7 +1655,6 @@
             }
             
             updateUI();
-            updateChestGrid();
             draggedItemIndex = null;
             draggedItemSource = null;
         }
@@ -1772,8 +1731,40 @@
                         <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
                         <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
                         
-                        <!-- Grid do Baú - OS SLOTS SERÃO RENDERIZADOS AQUI -->
-                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;"></div>
+                        <!-- Grid do Baú - SLOTS CRIADOS DIRETAMENTE -->
+                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
+                `;
+                
+                // Criar os 18 slots diretamente no HTML
+                for (let i = 0; i < 18; i++) {
+                    const item = gameState.chest && gameState.chest[i] ? gameState.chest[i] : null;
+                    const hasItemClass = item ? 'has-item' : '';
+                    const foodClass = item && item.type === 'food' ? 'food-item' : '';
+                    const disabledClass = gameState.isDead ? 'disabled' : '';
+                    
+                    html += `<div class="inventory-slot ${hasItemClass} ${foodClass} ${disabledClass}" 
+                        data-index="${i}" 
+                        data-source="chest"
+                        draggable="${!!item && !gameState.isDead}"
+                        ondragstart="dragChestItem(event)"
+                        ondragover="handleDragOver(event)"
+                        ondrop="handleChestDrop(event)"
+                        onclick="useChestItem(${i})">`;
+                    
+                    if (item) {
+                        html += `
+                            <span class="item-name">${item.name}</span>
+                            ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                        `;
+                    } else {
+                        html += `<span style="color: #444; font-size: 20px;">⬜</span>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                html += `
+                        </div>
                     </div>
                 `;
             } 
@@ -1806,15 +1797,8 @@
             }
 
             content.innerHTML = html;
-
-            // CRÍTICO: Se o baú estiver aberto, atualizar o grid do baú DEPOIS de inserir o HTML
-            if (gameState.location === 'home' && gameState.chestOpen) {
-                // Pequeno timeout para garantir que o DOM foi atualizado
-                setTimeout(() => {
-                    updateChestGrid();
-                }, 10);
-            }
         }
+
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 10) gameState.combatLog.pop();
