@@ -1901,7 +1901,10 @@
             if (gameState.isDead) return;
             
             event.preventDefault();
-            const targetIndex = event.target.closest('.inventory-slot').dataset.index;
+            const targetSlot = event.target.closest('.inventory-slot');
+            if (!targetSlot) return;
+            
+            const targetIndex = targetSlot.dataset.index;
             
             if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
                 draggedItemIndex = null;
@@ -1911,11 +1914,12 @@
 
             // Moving from chest to inventory
             if (draggedItemSource === 'chest') {
+                if (!gameState.chest) gameState.chest = Array(18).fill(null);
                 const temp = gameState.inventory[targetIndex];
                 gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
                 gameState.chest[draggedItemIndex] = temp;
                 addLog('📦 Item retirado do baú.');
-                updateChestGrid();
+                if (gameState.chestOpen) updateChestGrid();
             }
             // Moving within inventory
             else {
