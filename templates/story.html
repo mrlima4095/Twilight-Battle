@@ -1599,7 +1599,12 @@
 
         function updateChestGrid() {
             const grid = document.getElementById('chest-grid');
-            if (!grid) return;
+            if (!grid) {
+                console.log('Grid do baú não encontrado');
+                return;
+            }
+            
+            console.log('Atualizando grid do baú', gameState.chest);
             
             // Garantir que gameState.chest existe
             if (!gameState.chest) {
@@ -1624,6 +1629,9 @@
                     if (!gameState.isDead) {
                         slot.setAttribute('ondragstart', 'dragChestItem(event)');
                     }
+                } else {
+                    // Slot vazio ainda precisa ser um alvo para drop
+                    slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
                 }
 
                 if (!gameState.isDead) {
@@ -1634,8 +1642,9 @@
                 
                 grid.appendChild(slot);
             }
+            
+            console.log('Grid do baú atualizado com', grid.children.length, 'slots');
         }
-
         function dragChestItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
