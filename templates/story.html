@@ -979,6 +979,10 @@
                         <div class="stat-label">❤️ Vida</div>
                     </div>
                     <div class="stat">
+                        <div class="stat-value" id="player-mana">0</div>
+                        <div class="stat-label">🔮 Mana</div>
+                    </div>
+                    <div class="stat">
                         <div class="stat-value" id="player-attack">0</div>
                         <div class="stat-label">⚔️ Ataque</div>
                     </div>
@@ -1502,6 +1506,7 @@
 
             // Update player stats
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
+            document.getElementById('player-mana').textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
             document.getElementById('player-attack').textContent = totalAttack;
             document.getElementById('player-defense').textContent = totalDefense;
             document.getElementById('player-gold').textContent = gameState.character.gold;
