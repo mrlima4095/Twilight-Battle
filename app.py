@@ -3181,7 +3181,7 @@ if __name__ == '__main__':
     def run():
         socketio.run(app, debug=False, port=5000)
 
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
+    #thread = threading.Thread(target=run, daemon=True)
+    #thread.start()
 
     AdminShell().cmdloop()
