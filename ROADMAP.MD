@@ -59,10 +59,7 @@ Conquistas
 Experiência
 Capitulos
 Raça
-Nome de personagem
-Gênero de personagem
 Duelos
-Modo Hardcore
 Sistema de carregar & salvar
 Atributo de sorte
 Habilidades
