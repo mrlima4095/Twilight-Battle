@@ -3178,10 +3178,10 @@ class AdminShell(cmd.Cmd):
         print("Digite 'help' para ver os comandos disponíveis")
 
 if __name__ == '__main__':
-    def run():
+    #def run():
         socketio.run(app, debug=False, port=5000)
 
     #thread = threading.Thread(target=run, daemon=True)
     #thread.start()
 
-    AdminShell().cmdloop()
+    #AdminShell().cmdloop()
