@@ -3184,5 +3184,5 @@ if __name__ == '__main__':
     thread = threading.Thread(target=run, daemon=True)
     thread.start()
 
-    if sys.argv.length > 1 and sys.argv[1] == "-x":
+    if len(sys.argv) > 1 and sys.argv[1] == "-x":
         AdminShell().cmdloop()
