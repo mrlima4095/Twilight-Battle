@@ -3180,9 +3180,11 @@ class AdminShell(cmd.Cmd):
 if __name__ == '__main__':
     def run():
         socketio.run(app, debug=False, port=5000)
-
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
-
+        
     if len(sys.argv) > 1 and sys.argv[1] == "-x":
+        thread = threading.Thread(target=run, daemon=True)
+        thread.start()
+    
         AdminShell().cmdloop()
+    else:
+        run()
