@@ -3187,4 +3187,5 @@ if __name__ == '__main__':
     
         AdminShell().cmdloop()
     else:
+        print("Running...")
         run()
