@@ -824,7 +824,6 @@
         
         /* ========== MEDIA QUERIES -- RESPONSIVO MOBILE ========== */
 
-        /* Tablet e Mobile Landscape (até 1024px) */
         @media (max-width: 1024px) {
             .main-layout {
                 grid-template-columns: 1fr;
@@ -861,7 +860,6 @@
             }
         }
         
-        /* Mobile (até 768px) */
         @media (max-width: 768px) {
             .game-container {
                 padding: 10px;
@@ -920,7 +918,6 @@
                 font-size: 12px;
             }
             
-            /* Painéis laterais */
             .inventory-panel,
             .equipment-panel {
                 padding: 15px;
@@ -950,7 +947,6 @@
                 font-size: 9px;
             }
             
-            /* Equipamentos */
             .equipment-slots {
                 gap: 8px;
             }
@@ -971,7 +967,6 @@
                 font-size: 9px;
             }
             
-            /* Área do jogo */
             .game-panel {
                 padding: 15px;
             }
@@ -996,7 +991,6 @@
                 font-size: 14px;
             }
             
-            /* Combat log */
             .combat-log {
                 max-height: 150px;
                 font-size: 12px;
@@ -1007,7 +1001,6 @@
                 padding: 6px;
             }
             
-            /* Modal de criação */
             .modal-content {
                 padding: 20px;
                 max-width: 95%;
@@ -1045,13 +1038,6 @@
                 padding: 10px;
             }
             
-            .input-group input, 
-            .input-group select, 
-            .input-group textarea {
-                padding: 8px;
-            }
-            
-            /* Perfil */
             .profile-header {
                 flex-direction: column;
                 text-align: center;
@@ -1073,11 +1059,6 @@
                 justify-content: center;
             }
             
-            .profile-bio p {
-                font-size: 13px;
-            }
-            
-            /* Tela de título */
             .title-content {
                 padding: 30px 20px;
                 max-width: 95%;
@@ -1097,41 +1078,16 @@
                 font-size: 18px;
             }
             
-            /* Baú */
             .chest-container .inventory-grid {
                 grid-template-columns: repeat(3, 1fr) !important;
             }
             
-            #chest-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            
-            /* Combate */
-            #game-content > div:last-child {
-                padding: 15px !important;
-            }
-            
-            #game-content > div:last-child h3 {
-                font-size: 18px;
-            }
-            
-            #game-content > div:last-child span {
-                font-size: 14px !important;
-            }
-            
-            /* Trash bin */
             .trash-bin {
                 font-size: 12px;
                 padding: 8px;
             }
-            
-            /* Food grid */
-            #food-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
         }
         
-        /* Mobile pequeno (até 480px) */
         @media (max-width: 480px) {
             .game-container {
                 padding: 8px;
@@ -1197,10 +1153,6 @@
                 font-size: 12px;
             }
             
-            .modal-title {
-                font-size: 18px;
-            }
-            
             .title-content h1 {
                 font-size: 24px;
             }
@@ -1213,37 +1165,8 @@
                 padding: 12px;
                 font-size: 16px;
             }
-            
-            /* Ajustes de texto */
-            .inventory-slot .item-name {
-                font-size: 8px;
-                word-break: break-word;
-            }
-            
-            .equipment-slot .item-name {
-                font-size: 8px;
-                word-break: break-word;
-            }
-            
-            .chest-container .inventory-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            
-            #chest-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            
-            #food-grid {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-            
-            .save-btn, .load-btn, .menu-btn {
-                padding: 6px 10px;
-                font-size: 10px;
-            }
         }
         
-        /* Orientação landscape em mobile */
         @media (max-width: 768px) and (orientation: landscape) {
             .main-layout {
                 display: block;
@@ -1280,17 +1203,8 @@
             .combat-log {
                 max-height: 100px;
             }
-            
-            .chest-container .inventory-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
-            }
-            
-            #chest-grid {
-                grid-template-columns: repeat(4, 1fr) !important;
-            }
         }
         
-        /* Melhorias de toque para mobile */
         @media (max-width: 768px) {
             button, 
             .inventory-slot,
@@ -1309,7 +1223,6 @@
                 transform: scale(0.95);
             }
             
-            /* Rolagem suave */
             .combat-log {
                 -webkit-overflow-scrolling: touch;
             }
@@ -1330,7 +1243,7 @@
                 <button class="title-btn continue" id="continue-btn" onclick="continueGame()" style="display: none;">▶ Continuar</button>
                 <button class="title-btn" onclick="startNewGame()">✨ Novo Jogo</button>
                 <button class="title-btn load" onclick="loadGameFromTitle()">📂 Carregar Jogo</button>
-                <button class="menu-btn" onclick="window.location.href = '/'">🏠 Menu Principal</button>
+                <button class="menu-btn" onclick="returnToTitle()">🏠 Menu Principal</button>
             </div>
         </div>
     </div>
@@ -1615,7 +1528,7 @@
             chestOpen: false 
         };
 
-        // Race definitions - ATRIBUTOS FIXOS (não mudam nunca)
+        // Race definitions
         const RACES = {
             elfo: { 
                 name: 'Elfo', 
@@ -1655,17 +1568,14 @@
             }
         };
 
-        // Items database - APENAS EQUIPAMENTOS AUMENTAM ATRIBUTOS
+        // Items database
         const ITEMS = {
-            // Weapons
             espada_simples: { name: 'Espada Simples', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
             espada_longa: { name: 'Espada Longa', type: 'weapon', slot: 'mainhand', attack: 100, defense: 0, description: 'Espada de bom alcance' },
             adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 10, description: 'Pequena e rápida' },
             escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, description: 'Proteção básica' },
             arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 80, defense: 0, description: 'Ataque à distância' },
             cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
-
-            // Armor
             capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, description: 'Proteção leve' },
             capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, description: 'Proteção pesada' },
             peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', attack: 0, defense: 30, description: 'Armadura leve' },
@@ -1674,8 +1584,6 @@
             calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, description: 'Proteção reforçada' },
             botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, description: 'Calçado simples' },
             botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, description: 'Calçado reforçado' },
-
-            // Food (APENAS CURAM, NÃO AUMENTAM MÁXIMO)
             maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
@@ -1767,21 +1675,23 @@
             dragao: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
         };
 
-        // Variáveis para drag and drop mobile
+        // Drag and Drop Variables
+        let draggedItemIndex = null;
+        let draggedItemSource = 'inventory';
+        
+        // Touch Drag and Drop Variables
         let touchDraggedItem = null;
         let touchDraggedIndex = null;
         let touchDraggedSource = null;
         let touchStartX = 0;
         let touchStartY = 0;
         let isDragging = false;
-        
-        // Variáveis para drag and drop mouse
-        let draggedItemIndex = null;
-        let draggedItemSource = 'inventory';
+        let touchTimeout = null;
+        let hasMoved = false;
 
-        // UI Functions
+        // ========== UI FUNCTIONS ==========
+        
         function returnToTitle() {
-            // Fazer autosave antes de voltar ao menu
             if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
                 localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
                 addLog('💾 Autosave realizado antes de voltar ao menu.');
@@ -1792,7 +1702,6 @@
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
             
-            // Verificar se existe autosave para mostrar botão continuar
             checkForContinueButton();
         }
 
@@ -1911,7 +1820,6 @@
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
             
-            // Add starter items
             addItemToInventory('maca', 3);
             addItemToInventory('pao', 2);
             
@@ -1919,7 +1827,6 @@
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
         }
 
-        // Profile Functions
         function showProfile() {
             if (!gameState.character || gameState.isDead) return;
             
@@ -1931,7 +1838,6 @@
             document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
             document.getElementById('profile-bio-text').textContent = gameState.character.bio;
 
-            // Show equipment bonuses
             const bonuses = calculateEquipmentBonuses();
             const bonusText = document.getElementById('equipment-bonus-text');
             const bonusDiv = document.getElementById('profile-equipment-stats');
@@ -2009,11 +1915,8 @@
         }
 
         function updateUI() {
-            if (!gameState.character) {
-                return;
-            }
+            if (!gameState.character) return;
 
-            // Se estiver morto, mostrar overlay
             if (gameState.isDead) {
                 document.getElementById('death-overlay').classList.add('active');
                 document.getElementById('save-btn').disabled = true;
@@ -2027,18 +1930,15 @@
             const race = RACES[gameState.character.race];
             const bonuses = calculateEquipmentBonuses();
             
-            // ATRIBUTOS FIXOS da raça + bônus de equipamentos
             const totalAttack = race.baseAttack + bonuses.attackBonus;
             const totalDefense = race.baseDefense + bonuses.defenseBonus;
 
-            // Update player stats
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
             document.getElementById('player-mana').textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
             document.getElementById('player-attack').textContent = totalAttack;
             document.getElementById('player-defense').textContent = totalDefense;
             document.getElementById('player-gold').textContent = gameState.character.gold;
             
-            // Show base stats
             document.getElementById('base-attack').textContent = race.baseAttack;
             document.getElementById('base-defense').textContent = race.baseDefense;
             document.getElementById('bonus-attack').textContent = bonuses.attackBonus;
@@ -2046,11 +1946,7 @@
             
             document.getElementById('current-location').textContent = LOCATIONS[gameState.location].name;
 
-            // Update inventory grid
             updateInventoryGrid();
-            if (document.getElementById('chest-modal').classList.contains('active')) {
-                updateChestGrid();
-            }
             updateEquipmentDisplay();
             updateGameContent();
             updateFoodGrid();
@@ -2077,35 +1973,39 @@
                 }
 
                 if (!gameState.isDead) {
-                    // Suporte para mouse
                     slot.setAttribute('draggable', !!item);
                     slot.setAttribute('ondragstart', 'dragItem(event)');
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
                     
-                    // Suporte para mobile (touch)
                     if (item) {
-                        slot.addEventListener('touchstart', (e) => handleTouchStart(e, i, 'inventory'));
-                        slot.addEventListener('touchmove', (e) => handleTouchMove(e));
-                        slot.addEventListener('touchend', (e) => handleTouchEnd(e, i, 'inventory'));
+                        const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
+                        const touchMoveHandler = (e) => handleTouchMove(e);
+                        const touchEndHandler = (e) => handleTouchEnd(e, i, 'inventory');
+                        
+                        slot.addEventListener('touchstart', touchStartHandler);
+                        slot.addEventListener('touchmove', touchMoveHandler);
+                        slot.addEventListener('touchend', touchEndHandler);
+                        
+                        slot._touchStart = touchStartHandler;
+                        slot._touchMove = touchMoveHandler;
+                        slot._touchEnd = touchEndHandler;
                     }
-                    
-                    slot.setAttribute('onclick', `useItem(${i})`);
                 }
                 
                 grid.appendChild(slot);
             }
 
-            // Update trash bin
             const trashBin = document.getElementById('trash-bin');
             if (gameState.isDead) {
                 trashBin.classList.add('disabled');
             } else {
                 trashBin.classList.remove('disabled');
-                
-                // Adicionar suporte mobile para lixeira
-                trashBin.addEventListener('touchmove', (e) => handleTrashTouchMove(e));
-                trashBin.addEventListener('touchend', (e) => handleTrashTouchEnd(e));
+                if (!trashBin._hasTouchEvents) {
+                    trashBin.addEventListener('touchmove', handleTrashTouchMove);
+                    trashBin.addEventListener('touchend', handleTrashTouchEnd);
+                    trashBin._hasTouchEvents = true;
+                }
             }
         }
 
@@ -2129,11 +2029,125 @@
             });
         }
 
-        // Touch Drag and Drop Functions
+        function updateEquipmentDisplay() {
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                document.getElementById(`${slot}-item`).textContent = item ? item.name : 'Vazio';
+                const element = document.getElementById(`slot-${slot}`);
+                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+            }
+        }
+
+        function updateGameContent() {
+            const content = document.getElementById('game-content');
+            const location = LOCATIONS[gameState.location];
+
+            let html = `
+                <h2 class="location-title">${location.name}</h2>
+                <div class="location-description">${location.description}</div>
+            `;
+
+            if (gameState.location === 'home' && gameState.chestOpen) {
+                html += `
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú</button>
+                        <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
+                    </div>
+                    
+                    <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
+                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
+                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
+                        
+                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
+                `;
+                
+                for (let i = 0; i < 18; i++) {
+                    const item = gameState.chest && gameState.chest[i] ? gameState.chest[i] : null;
+                    const hasItemClass = item ? 'has-item' : '';
+                    const foodClass = item && item.type === 'food' ? 'food-item' : '';
+                    const disabledClass = gameState.isDead ? 'disabled' : '';
+                    
+                    html += `<div class="inventory-slot ${hasItemClass} ${foodClass} ${disabledClass}" 
+                        data-index="${i}" 
+                        data-source="chest"
+                        draggable="${!!item && !gameState.isDead}"
+                        ondragstart="dragChestItem(event)"
+                        ondragover="handleDragOver(event)"
+                        ondrop="handleChestDrop(event)"
+                        onclick="useChestItem(${i})">`;
+                    
+                    if (item) {
+                        html += `
+                            <span class="item-name">${item.name}</span>
+                            ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                        `;
+                    } else {
+                        html += `<span style="color: #444; font-size: 20px;">⬜</span>`;
+                    }
+                    
+                    html += `</div>`;
+                }
+                
+                html += `</div></div>`;
+                
+                setTimeout(() => {
+                    document.querySelectorAll('#chest-grid .inventory-slot').forEach((slot, idx) => {
+                        const item = gameState.chest && gameState.chest[idx];
+                        if (item && !gameState.isDead) {
+                            const touchStartHandler = (e) => handleTouchStart(e, idx, 'chest');
+                            const touchMoveHandler = (e) => handleTouchMove(e);
+                            const touchEndHandler = (e) => handleTouchEnd(e, idx, 'chest');
+                            
+                            slot.addEventListener('touchstart', touchStartHandler);
+                            slot.addEventListener('touchmove', touchMoveHandler);
+                            slot.addEventListener('touchend', touchEndHandler);
+                            
+                            slot._touchStart = touchStartHandler;
+                            slot._touchMove = touchMoveHandler;
+                            slot._touchEnd = touchEndHandler;
+                        }
+                    });
+                }, 100);
+            } else {
+                html += `<div class="action-buttons">`;
+                location.actions.forEach(action => {
+                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+                });
+                html += `</div>`;
+            }
+
+            if (gameState.currentEnemy && !gameState.isDead) {
+                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
+                    <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-size: 18px;">${gameState.currentEnemy.name}</span>
+                        <span style="font-size: 18px; color: #ff4444;">❤️ ${gameState.currentEnemy.life}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="action-btn danger" onclick="attack()" style="flex: 1;">⚔️ Atacar</button>
+                        <button class="action-btn warning" onclick="run()" style="flex: 1;">🏃 Fugir</button>
+                    </div>
+                </div>`;
+            }
+
+            content.innerHTML = html;
+        }
+
+        function addLog(message) {
+            gameState.combatLog.unshift(message);
+            if (gameState.combatLog.length > 10) gameState.combatLog.pop();
+            
+            const log = document.getElementById('combat-log');
+            log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
+        }
+
+        // ========== TOUCH DRAG AND DROP ==========
+        
         function handleTouchStart(e, index, source) {
             if (gameState.isDead) return;
             
-            e.preventDefault();
+            if (touchTimeout) clearTimeout(touchTimeout);
+            
             const slot = e.target.closest('.inventory-slot');
             if (!slot) return;
             
@@ -2144,6 +2158,19 @@
             touchStartY = e.touches[0].clientY;
             touchDraggedIndex = index;
             touchDraggedSource = source;
+            hasMoved = false;
+            
+            touchTimeout = setTimeout(() => {
+                if (!hasMoved && !isDragging) {
+                    if (source === 'inventory') {
+                        useItem(index);
+                    } else if (source === 'chest') {
+                        useChestItem(index);
+                    }
+                    cleanupTouchDrag();
+                }
+            }, 150);
+            
             touchDraggedItem = slot.cloneNode(true);
             touchDraggedItem.style.position = 'fixed';
             touchDraggedItem.style.opacity = '0.6';
@@ -2156,8 +2183,6 @@
             
             document.body.appendChild(touchDraggedItem);
             isDragging = false;
-            
-            // Adicionar classe de arrasto ao slot original
             slot.classList.add('dragging');
         }
 
@@ -2170,26 +2195,27 @@
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
             if (deltaX > 10 || deltaY > 10) {
+                if (touchTimeout) {
+                    clearTimeout(touchTimeout);
+                    touchTimeout = null;
+                }
+                hasMoved = true;
                 isDragging = true;
                 touchDraggedItem.style.left = touch.clientX - touchDraggedItem.offsetWidth / 2 + 'px';
                 touchDraggedItem.style.top = touch.clientY - touchDraggedItem.offsetHeight / 2 + 'px';
                 
-                // Verificar sobre qual elemento estamos
                 const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
                 const targetSlot = elementUnderTouch?.closest('.inventory-slot');
                 const trashBin = elementUnderTouch?.closest('#trash-bin');
                 
-                // Remover highlight de todos os slots
                 document.querySelectorAll('.inventory-slot').forEach(slot => {
                     slot.classList.remove('drag-over');
                 });
                 
-                // Adicionar highlight ao slot alvo
-                if (targetSlot && targetSlot !== touchDraggedItem) {
+                if (targetSlot && targetSlot !== touchDraggedItem && targetSlot !== e.target.closest('.inventory-slot')) {
                     targetSlot.classList.add('drag-over');
                 }
                 
-                // Highlight da lixeira
                 if (trashBin) {
                     trashBin.classList.add('drag-over-mobile');
                 } else {
@@ -2199,6 +2225,11 @@
         }
 
         function handleTouchEnd(e, originalIndex, originalSource) {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+            
             if (!touchDraggedItem || gameState.isDead) {
                 cleanupTouchDrag();
                 return;
@@ -2213,7 +2244,6 @@
                 const trashBin = elementUnderTouch?.closest('#trash-bin');
                 
                 if (trashBin && !gameState.isDead) {
-                    // Descartar item
                     if (touchDraggedSource === 'inventory') {
                         gameState.inventory[touchDraggedIndex] = null;
                         addLog('🗑️ Item descartado.');
@@ -2227,16 +2257,13 @@
                     const targetIndex = targetSlot.dataset.index;
                     const targetSource = targetSlot.dataset.source || 'inventory';
                     
-                    if (targetIndex && targetIndex !== touchDraggedIndex) {
-                        // Mover item
+                    if (targetIndex && targetIndex != touchDraggedIndex) {
                         if (touchDraggedSource === 'inventory' && targetSource === 'inventory') {
-                            // Mover dentro do inventário
                             const temp = gameState.inventory[targetIndex];
                             gameState.inventory[targetIndex] = gameState.inventory[touchDraggedIndex];
                             gameState.inventory[touchDraggedIndex] = temp;
                         } 
                         else if (touchDraggedSource === 'inventory' && targetSource === 'chest') {
-                            // Mover do inventário para o baú
                             if (!gameState.chest) gameState.chest = Array(18).fill(null);
                             const temp = gameState.chest[targetIndex];
                             gameState.chest[targetIndex] = gameState.inventory[touchDraggedIndex];
@@ -2244,14 +2271,12 @@
                             addLog('📦 Item movido para o baú.');
                         }
                         else if (touchDraggedSource === 'chest' && targetSource === 'inventory') {
-                            // Mover do baú para o inventário
                             const temp = gameState.inventory[targetIndex];
                             gameState.inventory[targetIndex] = gameState.chest[touchDraggedIndex];
                             gameState.chest[touchDraggedIndex] = temp;
                             addLog('📦 Item retirado do baú.');
                         }
                         else if (touchDraggedSource === 'chest' && targetSource === 'chest') {
-                            // Mover dentro do baú
                             const temp = gameState.chest[targetIndex];
                             gameState.chest[targetIndex] = gameState.chest[touchDraggedIndex];
                             gameState.chest[touchDraggedIndex] = temp;
@@ -2269,6 +2294,11 @@
             if (!touchDraggedItem || gameState.isDead) return;
             e.preventDefault();
             
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+            
             const touch = e.touches[0];
             const trashBin = document.getElementById('trash-bin');
             const rect = trashBin.getBoundingClientRect();
@@ -2282,6 +2312,11 @@
         }
 
         function handleTrashTouchEnd(e) {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+            
             if (!touchDraggedItem || gameState.isDead) {
                 cleanupTouchDrag();
                 return;
@@ -2310,6 +2345,11 @@
         }
 
         function cleanupTouchDrag() {
+            if (touchTimeout) {
+                clearTimeout(touchTimeout);
+                touchTimeout = null;
+            }
+            
             if (touchDraggedItem) {
                 touchDraggedItem.remove();
                 touchDraggedItem = null;
@@ -2324,9 +2364,11 @@
             touchDraggedIndex = null;
             touchDraggedSource = null;
             isDragging = false;
+            hasMoved = false;
         }
 
-        // Mouse Drag and Drop Functions
+        // ========== MOUSE DRAG AND DROP ==========
+        
         function dragItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2360,7 +2402,6 @@
                 return;
             }
 
-            // Moving from chest to inventory
             if (draggedItemSource === 'chest') {
                 if (!gameState.chest) gameState.chest = Array(18).fill(null);
                 const temp = gameState.inventory[targetIndex];
@@ -2369,13 +2410,11 @@
                 addLog('📦 Item retirado do baú.');
                 if (gameState.chestOpen) updateGameContent();
             }
-            // Moving within inventory
             else if (draggedItemSource === 'inventory' && targetSource === 'inventory') {
                 const temp = gameState.inventory[targetIndex];
                 gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
                 gameState.inventory[draggedItemIndex] = temp;
             }
-            // Moving from inventory to chest
             else if (draggedItemSource === 'inventory' && targetSource === 'chest') {
                 if (!gameState.chest) gameState.chest = Array(18).fill(null);
                 const temp = gameState.chest[targetIndex];
@@ -2431,25 +2470,21 @@
             
             if (draggedItemIndex === null) return;
 
-            // Garantir que os arrays existem
             if (!gameState.chest) gameState.chest = Array(18).fill(null);
             if (!gameState.inventory) gameState.inventory = Array(18).fill(null);
 
-            // Moving from inventory to chest
             if (draggedItemSource === 'inventory' && targetSource === 'chest') {
                 const temp = gameState.chest[targetIndex];
                 gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
                 gameState.inventory[draggedItemIndex] = temp;
                 addLog('📦 Item movido para o baú.');
             }
-            // Moving from chest to inventory
             else if (draggedItemSource === 'chest' && targetSource === 'inventory') {
                 const temp = gameState.inventory[targetIndex];
                 gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
                 gameState.chest[draggedItemIndex] = temp;
                 addLog('📦 Item retirado do baú.');
             }
-            // Moving within chest
             else if (draggedItemSource === 'chest' && targetSource === 'chest') {
                 const temp = gameState.chest[targetIndex];
                 gameState.chest[targetIndex] = gameState.chest[draggedItemIndex];
@@ -2461,11 +2496,11 @@
             draggedItemSource = null;
         }
 
-        // Chest Functions
+        // ========== CHEST FUNCTIONS ==========
+        
         function toggleChest() {
             if (gameState.isDead) return;
             
-            // Garantir que o array do baú existe
             if (!gameState.chest) {
                 gameState.chest = Array(18).fill(null);
             }
@@ -2486,11 +2521,6 @@
             updateUI();
         }
 
-        function updateChestGrid() {
-            if (!gameState.chestOpen || gameState.location !== 'home') return;
-            updateGameContent();
-        }
-
         function useChestItem(index) {
             if (gameState.isDead) return;
             
@@ -2500,7 +2530,6 @@
             if (!item) return;
 
             if (item.type === 'food') {
-                // Transfer food to inventory first to use it
                 for (let i = 0; i < 18; i++) {
                     if (!gameState.inventory[i]) {
                         gameState.inventory[i] = gameState.chest[index];
@@ -2519,7 +2548,6 @@
             
             if (!gameState.chest) gameState.chest = Array(18).fill(null);
             
-            // Simple organization: move all items to front
             const items = gameState.chest.filter(item => item !== null);
             gameState.chest = Array(18).fill(null);
             
@@ -2531,125 +2559,8 @@
             addLog('📦 Baú organizado!');
         }
 
-        function updateEquipmentDisplay() {
-            for (let slot in gameState.equipment) {
-                const item = gameState.equipment[slot];
-                document.getElementById(`${slot}-item`).textContent = item ? item.name : 'Vazio';
-                const element = document.getElementById(`slot-${slot}`);
-                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-            }
-        }
-
-        function updateGameContent() {
-            const content = document.getElementById('game-content');
-            const location = LOCATIONS[gameState.location];
-
-            let html = `
-                <h2 class="location-title">${location.name}</h2>
-                <div class="location-description">${location.description}</div>
-            `;
-
-            // Se estiver na casa e com o baú aberto, mostrar o baú com slots
-            if (gameState.location === 'home' && gameState.chestOpen) {
-                html += `
-                    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú</button>
-                        <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
-                    </div>
-                    
-                    <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
-                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
-                        
-                        <!-- Grid do Baú - SLOTS CRIADOS DIRETAMENTE -->
-                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
-                `;
-                
-                // Criar os 18 slots diretamente no HTML
-                for (let i = 0; i < 18; i++) {
-                    const item = gameState.chest && gameState.chest[i] ? gameState.chest[i] : null;
-                    const hasItemClass = item ? 'has-item' : '';
-                    const foodClass = item && item.type === 'food' ? 'food-item' : '';
-                    const disabledClass = gameState.isDead ? 'disabled' : '';
-                    
-                    html += `<div class="inventory-slot ${hasItemClass} ${foodClass} ${disabledClass}" 
-                        data-index="${i}" 
-                        data-source="chest"
-                        draggable="${!!item && !gameState.isDead}"
-                        ondragstart="dragChestItem(event)"
-                        ondragover="handleDragOver(event)"
-                        ondrop="handleChestDrop(event)"
-                        onclick="useChestItem(${i})">`;
-                    
-                    if (item) {
-                        html += `
-                            <span class="item-name">${item.name}</span>
-                            ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                        `;
-                    } else {
-                        html += `<span style="color: #444; font-size: 20px;">⬜</span>`;
-                    }
-                    
-                    html += `</div>`;
-                }
-                
-                html += `
-                        </div>
-                    </div>
-                `;
-                
-                // Adicionar eventos touch após renderizar
-                setTimeout(() => {
-                    document.querySelectorAll('#chest-grid .inventory-slot').forEach((slot, idx) => {
-                        const item = gameState.chest && gameState.chest[idx];
-                        if (item && !gameState.isDead) {
-                            slot.addEventListener('touchstart', (e) => handleTouchStart(e, idx, 'chest'));
-                            slot.addEventListener('touchmove', (e) => handleTouchMove(e));
-                            slot.addEventListener('touchend', (e) => handleTouchEnd(e, idx, 'chest'));
-                        }
-                    });
-                }, 100);
-            } 
-            // Caso contrário, mostrar as ações normais do local
-            else {
-                html += `<div class="action-buttons">`;
-                location.actions.forEach(action => {
-                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
-                });
-                html += `</div>`;
-            }
-
-            // Mostrar área de combate se houver inimigo
-            if (gameState.currentEnemy && !gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
-                    <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-size: 18px;">${gameState.currentEnemy.name}</span>
-                        <span style="font-size: 18px; color: #ff4444;">❤️ ${gameState.currentEnemy.life}</span>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="action-btn danger" onclick="attack()" style="flex: 1;">⚔️ Atacar</button>
-                        <button class="action-btn warning" onclick="run()" style="flex: 1;">🏃 Fugir</button>
-                    </div>
-                </div>`;
-            } else if (gameState.currentEnemy && gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.1); padding: 20px; border-radius: 10px;">
-                    <h3 style="color: #888;">⚔️ Combate interrompido (personagem morto)</h3>
-                </div>`;
-            }
-
-            content.innerHTML = html;
-        }
-
-        function addLog(message) {
-            gameState.combatLog.unshift(message);
-            if (gameState.combatLog.length > 10) gameState.combatLog.pop();
-            
-            const log = document.getElementById('combat-log');
-            log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
-        }
-
-        // Inventory Functions
+        // ========== INVENTORY FUNCTIONS ==========
+        
         function addItemToInventory(itemId, quantity = 1) {
             if (gameState.isDead) return;
             
@@ -2658,7 +2569,6 @@
             for (let i = 0; i < quantity; i++) {
                 let added = false;
                 
-                // Check if item already exists and stackable
                 for (let j = 0; j < 18; j++) {
                     if (gameState.inventory[j] && gameState.inventory[j].id === itemId && gameState.inventory[j].consumable) {
                         gameState.inventory[j].quantity = (gameState.inventory[j].quantity || 1) + 1;
@@ -2668,7 +2578,6 @@
                 }
                 
                 if (!added) {
-                    // Find empty slot
                     for (let j = 0; j < 18; j++) {
                         if (!gameState.inventory[j]) {
                             gameState.inventory[j] = { ...item, id: itemId, quantity: item.consumable ? 1 : 1 };
@@ -2713,7 +2622,6 @@
             const item = gameState.inventory[index];
             if (!item || item.type !== 'food') return;
 
-            // NÃO aumenta o máximo de vida, apenas cura até o máximo da raça
             const newLife = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
             const healed = newLife - gameState.character.life;
             gameState.character.life = newLife;
@@ -2729,12 +2637,10 @@
             const item = gameState.inventory[index];
             if (!item || !item.slot) return;
 
-            // Check if slot is compatible
             if (item.slot === 'mainhand' || item.slot === 'offhand' || 
                 item.slot === 'helmet' || item.slot === 'chest' || 
                 item.slot === 'pants' || item.slot === 'boots') {
                 
-                // If there's already an item in that slot, swap
                 if (gameState.equipment[item.slot]) {
                     const temp = gameState.equipment[item.slot];
                     gameState.equipment[item.slot] = item;
@@ -2752,9 +2658,7 @@
         function equipItem(slot) {
             if (gameState.isDead) return;
             
-            // Unequip item
             if (gameState.equipment[slot]) {
-                // Find empty inventory slot
                 for (let i = 0; i < 18; i++) {
                     if (!gameState.inventory[i]) {
                         gameState.inventory[i] = gameState.equipment[slot];
@@ -2767,76 +2671,21 @@
             }
         }
 
-        // Location Actions
-        function goHome() {
-            if (gameState.isDead) return;
-            gameState.location = 'home';
-            updateUI();
-            addLog('🏠 Você entrou em sua casa.');
-        }
+        // ========== LOCATION ACTIONS ==========
+        
+        function goHome() { if (gameState.isDead) return; gameState.location = 'home'; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
+        function goCastle() { if (gameState.isDead) return; gameState.location = 'castle'; updateUI(); addLog('🏰 Você chegou ao castelo.'); }
+        function goWeaponShop() { if (gameState.isDead) return; gameState.location = 'weaponshop'; updateUI(); addLog('⚔️ Bem-vindo à loja de armas.'); }
+        function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
+        function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
+        function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
+        function goToAurora() { if (gameState.isDead) return; gameState.location = 'aurora'; gameState.chestOpen = false; updateUI(); addLog('🏰 Você voltou ao Reino da Aurora.'); }
+        function rest() { if (gameState.isDead) return; const heal = 200; const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); const healed = newLife - gameState.character.life; gameState.character.life = newLife; addLog(`😴 Você descansou e recuperou ${healed} de vida.`); updateUI(); }
 
-        function goCastle() {
-            if (gameState.isDead) return;
-            gameState.location = 'castle';
-            updateUI();
-            addLog('🏰 Você chegou ao castelo.');
-        }
-
-        function goWeaponShop() {
-            if (gameState.isDead) return;
-            gameState.location = 'weaponshop';
-            updateUI();
-            addLog('⚔️ Bem-vindo à loja de armas.');
-        }
-
-        function goArmorShop() {
-            if (gameState.isDead) return;
-            gameState.location = 'armorshop';
-            updateUI();
-            addLog('🛡️ Bem-vindo à loja de armaduras.');
-        }
-
-        function goMarket() {
-            if (gameState.isDead) return;
-            gameState.location = 'market';
-            updateUI();
-            addLog('🍖 Você está no mercado.');
-        }
-
-        function leaveKingdom() {
-            if (gameState.isDead) return;
-            gameState.location = 'outside';
-            updateUI();
-            addLog('🚪 Você saiu do reino. Tenha cuidado!');
-        }
-
-        function goToAurora() {
-            if (gameState.isDead) return;
-            gameState.location = 'aurora';
-            gameState.chestOpen = false;
-            updateUI();
-            addLog('🏰 Você voltou ao Reino da Aurora.');
-        }
-
-        function rest() {
-            if (gameState.isDead) return;
-            const heal = 200;
-            const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife);
-            const healed = newLife - gameState.character.life;
-            gameState.character.life = newLife;
-            addLog(`😴 Você descansou e recuperou ${healed} de vida.`);
-            updateUI();
-        }
-
-        function showInventory() {
-            if (gameState.isDead) return;
-            addLog('📦 Abra o inventário para gerenciar seus itens.');
-        }
-
-        // Shop Functions
+        // ========== SHOP FUNCTIONS ==========
+        
         function buyItem(itemId, cost) {
             if (gameState.isDead) return;
-            
             if (gameState.character.gold >= cost) {
                 gameState.character.gold -= cost;
                 addItemToInventory(itemId);
@@ -2859,20 +2708,13 @@
         function buyMeat() { buyItem('carne', 30); }
         function buyPotion() { buyItem('pocoes', 50); }
 
-        function talkToKing() {
-            if (gameState.isDead) return;
-            addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"');
-        }
+        function talkToKing() { if (gameState.isDead) return; addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"'); }
+        function acceptQuest() { if (gameState.isDead) return; addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.'); }
 
-        function acceptQuest() {
-            if (gameState.isDead) return;
-            addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.');
-        }
-
-        // Exploration
+        // ========== EXPLORATION ==========
+        
         function exploreForest() {
             if (gameState.isDead) return;
-            
             if (Math.random() < 0.6) {
                 const monsters = ['goblin', 'lobo', 'orc'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
@@ -2890,7 +2732,6 @@
 
         function goMountains() {
             if (gameState.isDead) return;
-            
             if (Math.random() < 0.5) {
                 const monsters = ['orc', 'troll'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
@@ -2906,7 +2747,6 @@
 
         function goRuins() {
             if (gameState.isDead) return;
-            
             if (Math.random() < 0.4) {
                 gameState.currentEnemy = { ...MONSTERS['dragao'], id: 'dragao' };
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
@@ -2920,7 +2760,8 @@
             updateUI();
         }
 
-        // Combat
+        // ========== COMBAT ==========
+        
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
 
@@ -2929,19 +2770,16 @@
             const playerAttack = race.baseAttack + bonuses.attackBonus;
             const playerDefense = race.baseDefense + bonuses.defenseBonus;
             
-            // Player attack
             const damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
             gameState.currentEnemy.life -= damage;
             addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
 
             if (gameState.currentEnemy.life <= 0) {
-                // Victory - SÓ GANHA EXP E GOLD, NADA DE VIDA OU ATRIBUTOS
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
                 gameState.character.gold += gameState.currentEnemy.gold;
                 addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
                 
-                // Chance to drop item (comida)
                 if (Math.random() < 0.3) {
                     const drops = ['maca', 'pao', 'carne'];
                     const drop = drops[Math.floor(Math.random() * drops.length)];
@@ -2951,9 +2789,7 @@
                 
                 gameState.currentEnemy = null;
             } else {
-                // Enemy counterattack
                 const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
-                
                 gameState.character.life -= enemyDamage;
                 addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
 
@@ -3000,7 +2836,8 @@
             updateUI();
         }
 
-        // Save/Load
+        // ========== SAVE/LOAD ==========
+        
         function saveGame() {
             if (gameState.isDead) {
                 alert('❌ Personagens mortos não podem ser salvos!');
@@ -3028,7 +2865,6 @@
                     try {
                         const loadedState = JSON.parse(e.target.result);
                         
-                        // VERIFICAÇÃO CRÍTICA
                         if (loadedState.isDead) {
                             alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
                             document.getElementById('title-screen').style.display = 'flex';
@@ -3058,15 +2894,14 @@
             input.click();
         }
 
-        // Initialize
+        // ========== INITIALIZE ==========
+        
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
             document.getElementById('game-ui').style.display = 'none';
             
-            // Verificar se existe autosave para mostrar botão continuar
             checkForContinueButton();
             
-            // Auto-save every 5 minutes (only if alive)
             setInterval(() => {
                 if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
                     localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
