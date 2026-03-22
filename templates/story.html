@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Twilight Battle - Modo História</title>
     <style>
         * {
@@ -147,6 +147,7 @@
             transition: all 0.3s;
             font-size: 12px;
             text-align: center;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .inventory-slot:hover {
@@ -186,6 +187,18 @@
             pointer-events: none;
             filter: grayscale(100%);
         }
+        
+        .inventory-slot.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+            transition: all 0.2s;
+        }
+        
+        .inventory-slot.drag-over {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.02);
+        }
 
         .trash-bin {
             margin-top: 10px;
@@ -204,6 +217,12 @@
         }
 
         .trash-bin.drag-over {
+            background: rgba(255, 68, 68, 0.5);
+            border-color: #ff0000;
+            transform: scale(1.05);
+        }
+        
+        .trash-bin.drag-over-mobile {
             background: rgba(255, 68, 68, 0.5);
             border-color: #ff0000;
             transform: scale(1.05);
@@ -1605,7 +1624,7 @@
                 baseDefense: 50, 
                 skill: 'esquiva',
                 icon: '🧝',
-                mana: 80  // <-- ADICIONAR
+                mana: 80
             },
             mago: { 
                 name: 'Mago', 
@@ -1614,7 +1633,7 @@
                 baseDefense: 30, 
                 skill: 'magia',
                 icon: '🔮',
-                mana: 150  // <-- ADICIONAR
+                mana: 150
             },
             centauro: { 
                 name: 'Centauro', 
@@ -1623,7 +1642,7 @@
                 baseDefense: 80, 
                 skill: 'carga',
                 icon: '🏹',
-                mana: 80  // <-- ADICIONAR
+                mana: 80
             },
             ninfa: { 
                 name: 'Ninfa', 
@@ -1632,7 +1651,7 @@
                 baseDefense: 60, 
                 skill: 'cura',
                 icon: '🌸',
-                mana: 100  // <-- ADICIONAR
+                mana: 100
             }
         };
 
@@ -1682,7 +1701,6 @@
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
                     { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
-                    //{ name: '📦 Guardar Item', action: 'showInventory' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
                     { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
                 ]
@@ -1748,6 +1766,18 @@
             troll: { name: 'Troll', life: 800, attack: 120, defense: 50, exp: 300, gold: 120 },
             dragao: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
         };
+
+        // Variáveis para drag and drop mobile
+        let touchDraggedItem = null;
+        let touchDraggedIndex = null;
+        let touchDraggedSource = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isDragging = false;
+        
+        // Variáveis para drag and drop mouse
+        let draggedItemIndex = null;
+        let draggedItemSource = 'inventory';
 
         // UI Functions
         function returnToTitle() {
@@ -2034,23 +2064,33 @@
                 const item = gameState.inventory[i];
                 const slot = document.createElement('div');
                 slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-                slot.setAttribute('draggable', !!item && !gameState.isDead);
                 slot.setAttribute('data-index', i);
+                slot.setAttribute('data-source', 'inventory');
                 
                 if (item) {
                     slot.innerHTML = `
                         <span class="item-name">${item.name}</span>
                         ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                     `;
-                    if (!gameState.isDead) {
-                        slot.setAttribute('ondragstart', 'dragItem(event)');
-                    }
+                } else {
+                    slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
                 }
 
                 if (!gameState.isDead) {
+                    // Suporte para mouse
+                    slot.setAttribute('draggable', !!item);
+                    slot.setAttribute('ondragstart', 'dragItem(event)');
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
-                    slot.setAttribute('onclick', 'useItem(' + i + ')');
+                    
+                    // Suporte para mobile (touch)
+                    if (item) {
+                        slot.addEventListener('touchstart', (e) => handleTouchStart(e, i, 'inventory'));
+                        slot.addEventListener('touchmove', (e) => handleTouchMove(e));
+                        slot.addEventListener('touchend', (e) => handleTouchEnd(e, i, 'inventory'));
+                    }
+                    
+                    slot.setAttribute('onclick', `useItem(${i})`);
                 }
                 
                 grid.appendChild(slot);
@@ -2062,6 +2102,10 @@
                 trashBin.classList.add('disabled');
             } else {
                 trashBin.classList.remove('disabled');
+                
+                // Adicionar suporte mobile para lixeira
+                trashBin.addEventListener('touchmove', (e) => handleTrashTouchMove(e));
+                trashBin.addEventListener('touchend', (e) => handleTrashTouchEnd(e));
             }
         }
 
@@ -2085,32 +2129,282 @@
             });
         }
 
-        // Chest Functions
-        function toggleChest() {
+        // Touch Drag and Drop Functions
+        function handleTouchStart(e, index, source) {
             if (gameState.isDead) return;
             
-            // Garantir que o array do baú existe
-            if (!gameState.chest) {
-                gameState.chest = Array(18).fill(null);
+            e.preventDefault();
+            const slot = e.target.closest('.inventory-slot');
+            if (!slot) return;
+            
+            const item = source === 'inventory' ? gameState.inventory[index] : (gameState.chest && gameState.chest[index]);
+            if (!item) return;
+            
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchDraggedIndex = index;
+            touchDraggedSource = source;
+            touchDraggedItem = slot.cloneNode(true);
+            touchDraggedItem.style.position = 'fixed';
+            touchDraggedItem.style.opacity = '0.6';
+            touchDraggedItem.style.pointerEvents = 'none';
+            touchDraggedItem.style.zIndex = '9999';
+            touchDraggedItem.style.width = slot.offsetWidth + 'px';
+            touchDraggedItem.style.height = slot.offsetHeight + 'px';
+            touchDraggedItem.style.left = touchStartX - slot.offsetWidth / 2 + 'px';
+            touchDraggedItem.style.top = touchStartY - slot.offsetHeight / 2 + 'px';
+            
+            document.body.appendChild(touchDraggedItem);
+            isDragging = false;
+            
+            // Adicionar classe de arrasto ao slot original
+            slot.classList.add('dragging');
+        }
+
+        function handleTouchMove(e) {
+            if (!touchDraggedItem || gameState.isDead) return;
+            
+            e.preventDefault();
+            const touch = e.touches[0];
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            
+            if (deltaX > 10 || deltaY > 10) {
+                isDragging = true;
+                touchDraggedItem.style.left = touch.clientX - touchDraggedItem.offsetWidth / 2 + 'px';
+                touchDraggedItem.style.top = touch.clientY - touchDraggedItem.offsetHeight / 2 + 'px';
+                
+                // Verificar sobre qual elemento estamos
+                const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+                const targetSlot = elementUnderTouch?.closest('.inventory-slot');
+                const trashBin = elementUnderTouch?.closest('#trash-bin');
+                
+                // Remover highlight de todos os slots
+                document.querySelectorAll('.inventory-slot').forEach(slot => {
+                    slot.classList.remove('drag-over');
+                });
+                
+                // Adicionar highlight ao slot alvo
+                if (targetSlot && targetSlot !== touchDraggedItem) {
+                    targetSlot.classList.add('drag-over');
+                }
+                
+                // Highlight da lixeira
+                if (trashBin) {
+                    trashBin.classList.add('drag-over-mobile');
+                } else {
+                    document.getElementById('trash-bin')?.classList.remove('drag-over-mobile');
+                }
+            }
+        }
+
+        function handleTouchEnd(e, originalIndex, originalSource) {
+            if (!touchDraggedItem || gameState.isDead) {
+                cleanupTouchDrag();
+                return;
             }
             
-            gameState.chestOpen = !gameState.chestOpen;
+            e.preventDefault();
             
-            if (gameState.chestOpen) {
-                addLog('📦 Você abriu o baú da sua casa.');
+            if (isDragging) {
+                const touch = e.changedTouches[0];
+                const elementUnderTouch = document.elementFromPoint(touch.clientX, touch.clientY);
+                const targetSlot = elementUnderTouch?.closest('.inventory-slot');
+                const trashBin = elementUnderTouch?.closest('#trash-bin');
+                
+                if (trashBin && !gameState.isDead) {
+                    // Descartar item
+                    if (touchDraggedSource === 'inventory') {
+                        gameState.inventory[touchDraggedIndex] = null;
+                        addLog('🗑️ Item descartado.');
+                    } else if (touchDraggedSource === 'chest' && gameState.chest) {
+                        gameState.chest[touchDraggedIndex] = null;
+                        addLog('🗑️ Item descartado do baú.');
+                    }
+                    updateUI();
+                } 
+                else if (targetSlot) {
+                    const targetIndex = targetSlot.dataset.index;
+                    const targetSource = targetSlot.dataset.source || 'inventory';
+                    
+                    if (targetIndex && targetIndex !== touchDraggedIndex) {
+                        // Mover item
+                        if (touchDraggedSource === 'inventory' && targetSource === 'inventory') {
+                            // Mover dentro do inventário
+                            const temp = gameState.inventory[targetIndex];
+                            gameState.inventory[targetIndex] = gameState.inventory[touchDraggedIndex];
+                            gameState.inventory[touchDraggedIndex] = temp;
+                        } 
+                        else if (touchDraggedSource === 'inventory' && targetSource === 'chest') {
+                            // Mover do inventário para o baú
+                            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+                            const temp = gameState.chest[targetIndex];
+                            gameState.chest[targetIndex] = gameState.inventory[touchDraggedIndex];
+                            gameState.inventory[touchDraggedIndex] = temp;
+                            addLog('📦 Item movido para o baú.');
+                        }
+                        else if (touchDraggedSource === 'chest' && targetSource === 'inventory') {
+                            // Mover do baú para o inventário
+                            const temp = gameState.inventory[targetIndex];
+                            gameState.inventory[targetIndex] = gameState.chest[touchDraggedIndex];
+                            gameState.chest[touchDraggedIndex] = temp;
+                            addLog('📦 Item retirado do baú.');
+                        }
+                        else if (touchDraggedSource === 'chest' && targetSource === 'chest') {
+                            // Mover dentro do baú
+                            const temp = gameState.chest[targetIndex];
+                            gameState.chest[targetIndex] = gameState.chest[touchDraggedIndex];
+                            gameState.chest[touchDraggedIndex] = temp;
+                        }
+                        
+                        updateUI();
+                    }
+                }
+            }
+            
+            cleanupTouchDrag();
+        }
+
+        function handleTrashTouchMove(e) {
+            if (!touchDraggedItem || gameState.isDead) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const trashBin = document.getElementById('trash-bin');
+            const rect = trashBin.getBoundingClientRect();
+            
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                trashBin.classList.add('drag-over-mobile');
             } else {
-                addLog('📦 Você fechou o baú.');
+                trashBin.classList.remove('drag-over-mobile');
+            }
+        }
+
+        function handleTrashTouchEnd(e) {
+            if (!touchDraggedItem || gameState.isDead) {
+                cleanupTouchDrag();
+                return;
+            }
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const trashBin = document.getElementById('trash-bin');
+            const rect = trashBin.getBoundingClientRect();
+            
+            if (touch.clientX >= rect.left && touch.clientX <= rect.right &&
+                touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+                
+                if (touchDraggedSource === 'inventory') {
+                    gameState.inventory[touchDraggedIndex] = null;
+                    addLog('🗑️ Item descartado.');
+                } else if (touchDraggedSource === 'chest' && gameState.chest) {
+                    gameState.chest[touchDraggedIndex] = null;
+                    addLog('🗑️ Item descartado do baú.');
+                }
+                
+                updateUI();
+            }
+            
+            cleanupTouchDrag();
+        }
+
+        function cleanupTouchDrag() {
+            if (touchDraggedItem) {
+                touchDraggedItem.remove();
+                touchDraggedItem = null;
+            }
+            
+            document.querySelectorAll('.inventory-slot').forEach(slot => {
+                slot.classList.remove('dragging', 'drag-over');
+            });
+            
+            document.getElementById('trash-bin')?.classList.remove('drag-over-mobile');
+            
+            touchDraggedIndex = null;
+            touchDraggedSource = null;
+            isDragging = false;
+        }
+
+        // Mouse Drag and Drop Functions
+        function dragItem(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
+            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
+            draggedItemSource = 'inventory';
+        }
+
+        function handleDragOver(event) {
+            if (gameState.isDead) {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+        }
+
+        function handleDrop(event) {
+            if (gameState.isDead) return;
+            
+            event.preventDefault();
+            const targetSlot = event.target.closest('.inventory-slot');
+            if (!targetSlot) return;
+            
+            const targetIndex = targetSlot.dataset.index;
+            const targetSource = targetSlot.dataset.source || 'inventory';
+            
+            if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
+                draggedItemIndex = null;
+                draggedItemSource = null;
+                return;
+            }
+
+            // Moving from chest to inventory
+            if (draggedItemSource === 'chest') {
+                if (!gameState.chest) gameState.chest = Array(18).fill(null);
+                const temp = gameState.inventory[targetIndex];
+                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
+                gameState.chest[draggedItemIndex] = temp;
+                addLog('📦 Item retirado do baú.');
+                if (gameState.chestOpen) updateGameContent();
+            }
+            // Moving within inventory
+            else if (draggedItemSource === 'inventory' && targetSource === 'inventory') {
+                const temp = gameState.inventory[targetIndex];
+                gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
+                gameState.inventory[draggedItemIndex] = temp;
+            }
+            // Moving from inventory to chest
+            else if (draggedItemSource === 'inventory' && targetSource === 'chest') {
+                if (!gameState.chest) gameState.chest = Array(18).fill(null);
+                const temp = gameState.chest[targetIndex];
+                gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
+                gameState.inventory[draggedItemIndex] = temp;
+                addLog('📦 Item movido para o baú.');
             }
             
             updateUI();
+            draggedItemIndex = null;
+            draggedItemSource = null;
         }
 
-        function updateChestGrid() {
-            // Esta função agora é usada apenas para atualizar os slots quando o inventário muda
-            if (!gameState.chestOpen || gameState.location !== 'home') return;
+        function handleDropToTrash(event) {
+            if (gameState.isDead) return;
             
-            // Recria o conteúdo do game panel para atualizar os slots
-            updateGameContent();
+            event.preventDefault();
+            if (draggedItemIndex !== null) {
+                if (draggedItemSource === 'chest') {
+                    gameState.chest[draggedItemIndex] = null;
+                    updateGameContent();
+                } else {
+                    gameState.inventory[draggedItemIndex] = null;
+                }
+                addLog('🗑️ Item descartado.');
+                updateUI();
+            }
+            draggedItemIndex = null;
+            draggedItemSource = null;
         }
 
         function dragChestItem(event) {
@@ -2165,6 +2459,36 @@
             updateUI();
             draggedItemIndex = null;
             draggedItemSource = null;
+        }
+
+        // Chest Functions
+        function toggleChest() {
+            if (gameState.isDead) return;
+            
+            // Garantir que o array do baú existe
+            if (!gameState.chest) {
+                gameState.chest = Array(18).fill(null);
+            }
+            
+            gameState.chestOpen = !gameState.chestOpen;
+            
+            if (gameState.chestOpen) {
+                addLog('📦 Você abriu o baú da sua casa.');
+            } else {
+                addLog('📦 Você fechou o baú.');
+            }
+            
+            updateUI();
+        }
+
+        function closeChest() {
+            gameState.chestOpen = false;
+            updateUI();
+        }
+
+        function updateChestGrid() {
+            if (!gameState.chestOpen || gameState.location !== 'home') return;
+            updateGameContent();
         }
 
         function useChestItem(index) {
@@ -2273,6 +2597,18 @@
                         </div>
                     </div>
                 `;
+                
+                // Adicionar eventos touch após renderizar
+                setTimeout(() => {
+                    document.querySelectorAll('#chest-grid .inventory-slot').forEach((slot, idx) => {
+                        const item = gameState.chest && gameState.chest[idx];
+                        if (item && !gameState.isDead) {
+                            slot.addEventListener('touchstart', (e) => handleTouchStart(e, idx, 'chest'));
+                            slot.addEventListener('touchmove', (e) => handleTouchMove(e));
+                            slot.addEventListener('touchend', (e) => handleTouchEnd(e, idx, 'chest'));
+                        }
+                    });
+                }, 100);
             } 
             // Caso contrário, mostrar as ações normais do local
             else {
@@ -2431,81 +2767,6 @@
             }
         }
 
-        // Drag and Drop
-        let draggedItemIndex = null;
-        let draggedItemSource = 'inventory';
-
-        function dragItem(event) {
-            if (gameState.isDead) {
-                event.preventDefault();
-                return;
-            }
-            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
-            draggedItemSource = 'inventory';
-        }
-
-        function handleDragOver(event) {
-            if (gameState.isDead) {
-                event.preventDefault();
-                return;
-            }
-            event.preventDefault();
-        }
-
-        function handleDrop(event) {
-            if (gameState.isDead) return;
-            
-            event.preventDefault();
-            const targetSlot = event.target.closest('.inventory-slot');
-            if (!targetSlot) return;
-            
-            const targetIndex = targetSlot.dataset.index;
-            
-            if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
-                draggedItemIndex = null;
-                draggedItemSource = null;
-                return;
-            }
-
-            // Moving from chest to inventory
-            if (draggedItemSource === 'chest') {
-                if (!gameState.chest) gameState.chest = Array(18).fill(null);
-                const temp = gameState.inventory[targetIndex];
-                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
-                gameState.chest[draggedItemIndex] = temp;
-                addLog('📦 Item retirado do baú.');
-                if (gameState.chestOpen) updateChestGrid();
-            }
-            // Moving within inventory
-            else {
-                const temp = gameState.inventory[targetIndex];
-                gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
-                gameState.inventory[draggedItemIndex] = temp;
-            }
-            
-            updateUI();
-            draggedItemIndex = null;
-            draggedItemSource = null;
-        }
-
-        function handleDropToTrash(event) {
-            if (gameState.isDead) return;
-            
-            event.preventDefault();
-            if (draggedItemIndex !== null) {
-                if (draggedItemSource === 'chest') {
-                    gameState.chest[draggedItemIndex] = null;
-                    updateChestGrid();
-                } else {
-                    gameState.inventory[draggedItemIndex] = null;
-                }
-                addLog('🗑️ Item descartado.');
-                updateUI();
-            }
-            draggedItemIndex = null;
-            draggedItemSource = null;
-        }
-
         // Location Actions
         function goHome() {
             if (gameState.isDead) return;
@@ -2552,7 +2813,7 @@
         function goToAurora() {
             if (gameState.isDead) return;
             gameState.location = 'aurora';
-            gameState.chestOpen = false; // <-- ADICIONE ESTA LINHA
+            gameState.chestOpen = false;
             updateUI();
             addLog('🏰 Você voltou ao Reino da Aurora.');
         }
