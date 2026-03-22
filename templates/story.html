@@ -199,6 +199,14 @@
             background: rgba(255, 215, 0, 0.2);
             transform: scale(1.02);
         }
+        
+        /* Feedback visual para touch delay */
+        .inventory-slot.touch-waiting {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(0.98);
+            transition: all 0.1s;
+            border-color: #ffd700;
+        }
 
         .trash-bin {
             margin-top: 10px;
@@ -1688,6 +1696,7 @@
         let isDragging = false;
         let touchTimeout = null;
         let hasMoved = false;
+        const TOUCH_DELAY_MS = 500; // Tempo mínimo para distinguir clique de arrasto (500ms)
 
         // ========== UI FUNCTIONS ==========
         
@@ -2160,7 +2169,12 @@
             touchDraggedSource = source;
             hasMoved = false;
             
+            // Adicionar classe de feedback visual
+            slot.classList.add('touch-waiting');
+            
             touchTimeout = setTimeout(() => {
+                // Remover classe de feedback
+                slot.classList.remove('touch-waiting');
                 if (!hasMoved && !isDragging) {
                     if (source === 'inventory') {
                         useItem(index);
@@ -2169,7 +2183,7 @@
                     }
                     cleanupTouchDrag();
                 }
-            }, 150);
+            }, TOUCH_DELAY_MS);
             
             touchDraggedItem = slot.cloneNode(true);
             touchDraggedItem.style.position = 'fixed';
@@ -2194,11 +2208,17 @@
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
-            if (deltaX > 10 || deltaY > 10) {
+            // Se moveu mais de 8px, inicia arrasto imediatamente
+            if (deltaX > 8 || deltaY > 8) {
                 if (touchTimeout) {
                     clearTimeout(touchTimeout);
                     touchTimeout = null;
                 }
+                
+                // Remover classe de feedback se existir
+                const originalSlot = document.querySelector(`.inventory-slot[data-index="${touchDraggedIndex}"]`);
+                if (originalSlot) originalSlot.classList.remove('touch-waiting');
+                
                 hasMoved = true;
                 isDragging = true;
                 touchDraggedItem.style.left = touch.clientX - touchDraggedItem.offsetWidth / 2 + 'px';
@@ -2356,7 +2376,7 @@
             }
             
             document.querySelectorAll('.inventory-slot').forEach(slot => {
-                slot.classList.remove('dragging', 'drag-over');
+                slot.classList.remove('dragging', 'drag-over', 'touch-waiting');
             });
             
             document.getElementById('trash-bin')?.classList.remove('drag-over-mobile');
