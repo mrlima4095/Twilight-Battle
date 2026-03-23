@@ -1584,37 +1584,55 @@
         };
 
         // Locations
+        // Atualizar o objeto LOCATIONS - substitua a definição atual por esta versão expandida
         const LOCATIONS = {
-            aurora: {
-                name: 'Reino da Aurora',
-                description: 'Um reino próspero sob a luz eterna do sol. Aqui você encontra segurança e comércio.',
-                actions: [
-                    { name: '🏠 Sua Casa', action: 'goHome' },
-                    { name: '🏰 Castelo', action: 'goCastle' },
-                    { name: '🏪 Loja de Armas', action: 'goWeaponShop' },
-                    { name: '🛡️ Loja de Armaduras', action: 'goArmorShop' },
-                    { name: '🍖 Mercado', action: 'goMarket' },
-                    { name: '🚪 Sair do Reino', action: 'leaveKingdom' }
-                ]
-            },
+            // ========== ZONA RESIDENCIAL ==========
             home: {
                 name: 'Sua Casa',
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
                     { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🚪 Sair para a Rua', action: 'goToStreet' }
                 ]
             },
-            castle: {
-                name: 'Castelo do Reino',
-                description: 'A residência real. O rei oferece missões para aventureiros.',
+            street: {
+                name: 'Rua das Casas',
+                description: 'Uma rua tranquila com 12 casas residenciais. Seus vizinhos moram aqui.',
                 actions: [
-                    { name: '👑 Falar com o Rei', action: 'talkToKing' },
-                    { name: '📜 Aceitar Missão', action: 'acceptQuest' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🏠 Visitar Casa 1', action: 'visitHouse1' },
+                    { name: '🏠 Visitar Casa 2', action: 'visitHouse2' },
+                    { name: '🏠 Visitar Casa 3', action: 'visitHouse3' },
+                    { name: '🏠 Visitar Casa 4', action: 'visitHouse4' },
+                    { name: '🏠 Visitar Casa 5', action: 'visitHouse5' },
+                    { name: '🏠 Visitar Casa 6', action: 'visitHouse6' },
+                    { name: '🏠 Visitar Casa 7', action: 'visitHouse7' },
+                    { name: '🏠 Visitar Casa 8', action: 'visitHouse8' },
+                    { name: '🏠 Visitar Casa 9', action: 'visitHouse9' },
+                    { name: '🏠 Visitar Casa 10', action: 'visitHouse10' },
+                    { name: '🏠 Visitar Casa 11', action: 'visitHouse11' },
+                    { name: '🏠 Visitar Casa 12', action: 'visitHouse12' },
+                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
                 ]
             },
+            
+            // ========== AVENIDA PRINCIPAL ==========
+            main_avenue: {
+                name: 'Avenida Principal',
+                description: 'A movimentada avenida central do reino. Lojas e comércios se alinham em ambos os lados.',
+                actions: [
+                    { name: '⚔️ Loja de Armas', action: 'goWeaponShop' },
+                    { name: '🛡️ Loja de Armaduras', action: 'goArmorShop' },
+                    { name: '🌉 Ir para a Ponte Leste', action: 'goEastBridge' },
+                    { name: '🏘️ Entrar no Vilarejo Norte', action: 'goNorthVillage' },
+                    { name: '🏘️ Entrar no Vilarejo Sul', action: 'goSouthVillage' },
+                    { name: '🚪 Ir para o Portão Principal', action: 'goMainGate' },
+                    { name: '🏛️ Ir para a Praça Principal', action: 'goMainSquare' },
+                    { name: '🏠 Voltar para a Rua das Casas', action: 'goToStreet' }
+                ]
+            },
+            
+            // ========== LOJAS ==========
             weaponshop: {
                 name: 'Loja de Armas',
                 description: 'Armas de qualidade para aventureiros.',
@@ -1622,7 +1640,8 @@
                     { name: '⚔️ Comprar Espada Simples (50💰)', action: 'buySword' },
                     { name: '⚔️ Comprar Espada Longa (100💰)', action: 'buyLongsword' },
                     { name: '🏹 Comprar Arco (80💰)', action: 'buyBow' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🗡️ Comprar Adaga (40💰)', action: 'buyDagger' },
+                    { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
             armorshop: {
@@ -1633,20 +1652,140 @@
                     { name: '👕 Peitoral de Couro (50💰)', action: 'buyLeatherChest' },
                     { name: '👖 Calças de Couro (40💰)', action: 'buyLeatherPants' },
                     { name: '👢 Botas de Couro (20💰)', action: 'buyLeatherBoots' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🛡️ Escudo de Madeira (45💰)', action: 'buyWoodenShield' },
+                    { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
+                ]
+            },
+            
+            // ========== PRAÇA PRINCIPAL ==========
+            main_square: {
+                name: 'Praça Principal',
+                description: 'O coração pulsante do reino. Aqui se encontra o mercado, a taberna e o imponente castelo.',
+                actions: [
+                    { name: '🍖 Mercado de Alimentos', action: 'goMarket' },
+                    { name: '🍺 Taberna do Porto', action: 'goTavern' },
+                    { name: '🏰 Castelo Real', action: 'goCastleGate' },
+                    { name: '🛤️ Voltar para a Avenida Principal', action: 'goToMainAvenue' }
                 ]
             },
             market: {
                 name: 'Mercado Central',
-                description: 'Comidas e suprimentos para sua jornada.',
+                description: 'Barracas coloridas vendendo alimentos frescos e suprimentos.',
                 actions: [
                     { name: '🍎 Maçã (10💰)', action: 'buyApple' },
                     { name: '🍞 Pão (15💰)', action: 'buyBread' },
                     { name: '🥩 Carne (30💰)', action: 'buyMeat' },
                     { name: '🧪 Poção de Cura (50💰)', action: 'buyPotion' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🐟 Peixe Fresco (25💰)', action: 'buyFish' },
+                    { name: '🥕 Cenoura (8💰)', action: 'buyCarrot' },
+                    { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
             },
+            tavern: {
+                name: 'Taberna do Porto',
+                description: 'Um lugar aconchegante com música ao vivo e as melhores bebidas do reino.',
+                actions: [
+                    { name: '🍺 Cerveja (5💰)', action: 'buyBeer' },
+                    { name: '🍷 Vinho Tinto (15💰)', action: 'buyWine' },
+                    { name: '☕ Café Quente (8💰)', action: 'buyCoffee' },
+                    { name: '🥃 Hidromel (12💰)', action: 'buyMead' },
+                    { name: '🍸 Licor de Mel (20💰)', action: 'buyLiqueur' },
+                    { name: '🗣️ Ouvir Histórias', action: 'listenStories' },
+                    { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
+                ]
+            },
+            
+            // ========== CASTELO ==========
+            castle_gate: {
+                name: 'Pátio do Castelo',
+                description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
+                actions: [
+                    { name: '🚪 Entrar no Salão Principal', action: 'goGreatHall' },
+                    { name: '👑 Ir para a Sala do Trono', action: 'goThroneRoom' },
+                    { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
+                ]
+            },
+            great_hall: {
+                name: 'Salão Principal',
+                description: 'Um vasto salão decorado com tapeçarias que contam a história do reino. Nobres e cavaleiros circulam por aqui.',
+                actions: [
+                    { name: '🗡️ Falar com o Capitão da Guarda', action: 'talkToCaptain' },
+                    { name: '📜 Ver Quadro de Missões', action: 'acceptQuest' },
+                    { name: '👑 Ir para a Sala do Trono', action: 'goThroneRoom' },
+                    { name: '🚪 Voltar para o Pátio', action: 'goCastleGate' }
+                ]
+            },
+            throne_room: {
+                name: 'Sala do Trono',
+                description: 'A majestosa sala onde o Rei da Aurora recebe seus súditos.',
+                actions: [
+                    { name: '👑 Falar com o Rei', action: 'talkToKing' },
+                    { name: '📜 Receber Missão Real', action: 'acceptRoyalQuest' },
+                    { name: '🚪 Voltar para o Salão', action: 'goGreatHall' }
+                ]
+            },
+            
+            // ========== PONTE E ZONA RURAL ==========
+            east_bridge: {
+                name: 'Ponte Leste',
+                description: 'Uma ponte de pedra que atravessa o Rio Aurora. Do outro lado, os campos agrícolas se estendem.',
+                actions: [
+                    { name: '🌾 Atravessar para os Campos', action: 'goFarmlands' },
+                    { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
+                ]
+            },
+            farmlands: {
+                name: 'Campos de Plantação',
+                description: 'Vastos campos de trigo e vegetais. O cheiro da terra fresca preenche o ar.',
+                actions: [
+                    { name: '🏚️ Visitar Moinho', action: 'goMill' },
+                    { name: '🏠 Casa do Fazendeiro Miguel', action: 'visitFarmerHouse1' },
+                    { name: '🏠 Casa da Fazendeira Ana', action: 'visitFarmerHouse2' },
+                    { name: '🚪 Portão Secundário (Sair do Reino)', action: 'leaveKingdomSecondary' },
+                    { name: '🌉 Voltar para a Ponte', action: 'goEastBridge' }
+                ]
+            },
+            mill: {
+                name: 'Moinho e Forno Comunitário',
+                description: 'Um antigo moinho de vento que ainda funciona. Ao lado, um forno comunitário onde os padeiros assam pão fresco.',
+                actions: [
+                    { name: '🌾 Moer Grãos (Serviço gratuito)', action: 'millGrains' },
+                    { name: '🍞 Comprar Pão Fresco (12💰)', action: 'buyFreshBread' },
+                    { name: '🔙 Voltar para os Campos', action: 'goFarmlands' }
+                ]
+            },
+            
+            // ========== VILAREJOS ==========
+            north_village: {
+                name: 'Vilarejo Norte',
+                description: 'Um pequeno vilarejo pacífico com cerca de 30 casas. Os moradores são principalmente artesãos.',
+                actions: [
+                    { name: '🔨 Visitar Marceneiro', action: 'visitCarpenter' },
+                    { name: '🎨 Visitar Artesão', action: 'visitArtisan' },
+                    { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
+                ]
+            },
+            south_village: {
+                name: 'Vilarejo Sul',
+                description: 'Vilarejo conhecido pelos tecelões e tintureiros. Tecidos coloridos secam nas varandas.',
+                actions: [
+                    { name: '🧵 Visitar Tecelão', action: 'visitWeaver' },
+                    { name: '🎨 Comprar Tecido Colorido (25💰)', action: 'buyCloth' },
+                    { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
+                ]
+            },
+            
+            // ========== PORTÕES E SAÍDAS ==========
+            main_gate: {
+                name: 'Portão Principal',
+                description: 'O enorme portão de ferro que protege a entrada principal do reino. Guardas vigiam constantemente.',
+                actions: [
+                    { name: '🚪 Sair do Reino (Terras Selvagens)', action: 'leaveKingdom' },
+                    { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
+                ]
+            },
+            
+            // ========== LOCAL EXTERNO (EXISTENTE) ==========
             outside: {
                 name: 'Fora do Reino',
                 description: 'Terras selvagens perigosas. Monstros espreitam nas sombras.',
@@ -1654,7 +1793,15 @@
                     { name: '🌳 Explorar a Floresta', action: 'exploreForest' },
                     { name: '⛰️ Ir para as Montanhas', action: 'goMountains' },
                     { name: '🏚️ Ruínas Antigas', action: 'goRuins' },
-                    { name: '🔙 Voltar ao Reino', action: 'goToAurora' }
+                    { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
+                ]
+            },
+            aurora: {
+                name: 'Reino da Aurora',
+                description: 'O reino é cercado por muralhas imponentes. Aqui dentro você encontra segurança e comércio.',
+                actions: [
+                    { name: '🏠 Sua Casa', action: 'goHome' },
+                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
                 ]
             }
         };
