@@ -2827,164 +2827,29 @@
     
         // ========== LOCATION ACTIONS ==========
         
-function goHome() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'home'; 
-    gameState.chestOpen = false; 
-    updateUI(); 
-    addLog('🏠 Você entrou em sua casa.'); 
-}
-
-function goToStreet() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'street'; 
-    updateUI(); 
-    addLog('🚶 Você sai de casa e entra na Rua das Casas.'); 
-}
-
-function goToMainAvenue() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'main_avenue'; 
-    updateUI(); 
-    addLog('🛤️ Você chega na movimentada Avenida Principal.'); 
-}
-
-function goToMainSquare() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'main_square'; 
-    updateUI(); 
-    addLog('🏛️ Você entra na Praça Principal, coração do reino.'); 
-}
-
-function goToMainGate() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'main_gate'; 
-    updateUI(); 
-    addLog('🚪 Você se aproxima do imponente Portão Principal.'); 
-}
-
-function goCastleGate() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'castle_gate'; 
-    updateUI(); 
-    addLog('🏰 Você entra no pátio do castelo.'); 
-}
-
-function goGreatHall() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'great_hall'; 
-    updateUI(); 
-    addLog('🚪 Você entra no majestoso Salão Principal.'); 
-}
-
-function goThroneRoom() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'throne_room'; 
-    updateUI(); 
-    addLog('👑 Você entra na Sala do Trono.'); 
-}
-
-function goEastBridge() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'east_bridge'; 
-    updateUI(); 
-    addLog('🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); 
-}
-
-function goFarmlands() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'farmlands'; 
-    updateUI(); 
-    addLog('🌾 Você atravessa a ponte e chega aos campos de plantação.'); 
-}
-
-function goMill() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'mill'; 
-    updateUI(); 
-    addLog('🏚️ Você chega ao antigo moinho e ao forno comunitário.'); 
-}
-
-function goNorthVillage() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'north_village'; 
-    updateUI(); 
-    addLog('🏘️ Você entra no Vilarejo Norte.'); 
-}
-
-function goSouthVillage() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'south_village'; 
-    updateUI(); 
-    addLog('🏘️ Você entra no Vilarejo Sul.'); 
-}
-
-function goTavern() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'tavern'; 
-    updateUI(); 
-    addLog('🍺 Você entra na Taberna do Porto.'); 
-}
-
-function goWeaponShop() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'weaponshop'; 
-    updateUI(); 
-    addLog('⚔️ Bem-vindo à loja de armas.'); 
-}
-
-function goArmorShop() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'armorshop'; 
-    updateUI(); 
-    addLog('🛡️ Bem-vindo à loja de armaduras.'); 
-}
-
-function goMarket() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'market'; 
-    updateUI(); 
-    addLog('🍖 Você está no mercado.'); 
-}
-
-function leaveKingdom() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'outside'; 
-    updateUI(); 
-    addLog('🚪 Você saiu pelo portão principal. Tenha cuidado!'); 
-}
-
-function leaveKingdomSecondary() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'outside'; 
-    updateUI(); 
-    addLog('🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); 
-}
-
-function returnToMainGate() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'main_gate'; 
-    updateUI(); 
-    addLog('🚪 Você retorna ao Portão Principal do reino.'); 
-}
-
-function goToAurora() { 
-    if (gameState.isDead) return; 
-    gameState.location = 'aurora'; 
-    gameState.chestOpen = false; 
-    updateUI(); 
-    addLog('🏰 Você voltou ao Reino da Aurora.'); 
-}
-
-function rest() { 
-    if (gameState.isDead) return; 
-    const heal = 200; 
-    const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); 
-    const healed = newLife - gameState.character.life; 
-    gameState.character.life = newLife; 
-    addLog(`😴 Você descansou e recuperou ${healed} de vida.`); 
-    updateUI(); 
-}
+        function goHome() { if (gameState.isDead) return; gameState.location = 'home'; gameState.chestOpen = false; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
+        function goToStreet() { if (gameState.isDead) return; gameState.location = 'street'; updateUI(); addLog('🚶 Você sai de casa e entra na Rua das Casas.'); }
+        function goToMainAvenue() { if (gameState.isDead) return; gameState.location = 'main_avenue'; updateUI(); addLog('🛤️ Você chega na movimentada Avenida Principal.'); }
+        function goToMainSquare() { if (gameState.isDead) return; gameState.location = 'main_square'; updateUI(); addLog('🏛️ Você entra na Praça Principal, coração do reino.'); }
+        function goToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você se aproxima do imponente Portão Principal.'); }
+        function goCastleGate() { if (gameState.isDead) return; gameState.location = 'castle_gate'; updateUI(); addLog('🏰 Você entra no pátio do castelo.'); }
+        function goGreatHall() { if (gameState.isDead) return; gameState.location = 'great_hall'; updateUI(); addLog('🚪 Você entra no majestoso Salão Principal.'); }
+        function goThroneRoom() { if (gameState.isDead) return; gameState.location = 'throne_room'; updateUI(); addLog('👑 Você entra na Sala do Trono.'); }
+        function goEastBridge() { if (gameState.isDead) return; gameState.location = 'east_bridge'; updateUI(); addLog('🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
+        function goFarmlands() { if (gameState.isDead) return; gameState.location = 'farmlands'; updateUI(); addLog('🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
+        function goMill() { if (gameState.isDead) return; gameState.location = 'mill'; updateUI(); addLog('🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
+        function goNorthVillage() { if (gameState.isDead) return; gameState.location = 'north_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Norte.'); }
+        function goSouthVillage() { if (gameState.isDead) return; gameState.location = 'south_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Sul.'); }
+        function goTavern() { if (gameState.isDead) return; gameState.location = 'tavern'; updateUI(); addLog('🍺 Você entra na Taberna do Porto.'); }
+        function leaveKingdomSecondary() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
+        function returnToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você retorna ao Portão Principal do reino.'); }
+        function goWeaponShop() { if (gameState.isDead) return; gameState.location = 'weaponshop'; updateUI(); addLog('⚔️ Bem-vindo à loja de armas.'); }
+        function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
+        function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
+        function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
+        function goToAurora() { if (gameState.isDead) return; gameState.location = 'aurora'; gameState.chestOpen = false; updateUI(); addLog('🏰 Você voltou ao Reino da Aurora.'); }
+        function rest() { if (gameState.isDead) return; const heal = 200; const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); const healed = newLife - gameState.character.life; gameState.character.life = newLife; addLog(`😴 Você descansou e recuperou ${healed} de vida.`); updateUI(); }
+    
         // ========== FUNÇÕES DAS CASAS ==========
         for (let i = 1; i <= 12; i++) {
             window[`visitHouse${i}`] = function() {
