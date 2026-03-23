@@ -1967,11 +1967,20 @@
                 }
 
                 if (!gameState.isDead) {
-                    slot.setAttribute('draggable', !!item);
+                    // Suporte para mouse - drag and drop
+                    if (item) {
+                        slot.setAttribute('draggable', 'true');
+                    } else {
+                        slot.setAttribute('draggable', 'false');
+                    }
                     slot.setAttribute('ondragstart', 'dragItem(event)');
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
                     
+                    // ADICIONAR CLICK PARA MOUSE - IMPORTANTE!
+                    slot.setAttribute('onclick', `useItem(${i})`);
+                    
+                    // Suporte para mobile (touch) - não interfere no mouse
                     if (item) {
                         const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
                         const touchMoveHandler = (e) => handleTouchMove(e);
