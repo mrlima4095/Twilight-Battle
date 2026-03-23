@@ -1518,9 +1518,10 @@
             isDead: false,
             selectedRace: null,
             selectedGender: null,
-            chestOpen: false 
+            chestOpen: false,
+            royalQuest: null
         };
-
+    
         // Race definitions
         const RACES = {
             elfo: { 
@@ -1560,7 +1561,7 @@
                 mana: 100
             }
         };
-
+    
         // Items database
         const ITEMS = {
             espada_simples: { name: 'Espada Simples', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
@@ -1580,26 +1581,28 @@
             maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            pocoes: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true }
+            pocoes: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
             peixe: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
             pao_fresco: { name: 'Pão Fresco', type: 'food', heal: 90, description: 'Recupera 90 de vida', consumable: true },
-            
-            // Novas bebidas
             cerveja: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
             vinho: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
             cafe: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
             hidromel: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
             licor: { name: 'Licor de Mel', type: 'drink', heal: 50, mana: 25, description: 'Recupera 50 de vida e 25 de mana', consumable: true },
-            
-            // Itens de vilarejo
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false }
         };
-
-        // Locations
-        // Atualizar o objeto LOCATIONS - substitua a definição atual por esta versão expandida
+    
+        // Locations expandidas
         const LOCATIONS = {
-            // ========== ZONA RESIDENCIAL ==========
+            aurora: {
+                name: 'Reino da Aurora',
+                description: 'O reino é cercado por muralhas imponentes. Aqui dentro você encontra segurança e comércio.',
+                actions: [
+                    { name: '🏠 Sua Casa', action: 'goHome' },
+                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
+                ]
+            },
             home: {
                 name: 'Sua Casa',
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
@@ -1628,8 +1631,6 @@
                     { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
                 ]
             },
-            
-            // ========== AVENIDA PRINCIPAL ==========
             main_avenue: {
                 name: 'Avenida Principal',
                 description: 'A movimentada avenida central do reino. Lojas e comércios se alinham em ambos os lados.',
@@ -1644,8 +1645,6 @@
                     { name: '🏠 Voltar para a Rua das Casas', action: 'goToStreet' }
                 ]
             },
-            
-            // ========== LOJAS ==========
             weaponshop: {
                 name: 'Loja de Armas',
                 description: 'Armas de qualidade para aventureiros.',
@@ -1669,8 +1668,6 @@
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
-            
-            // ========== PRAÇA PRINCIPAL ==========
             main_square: {
                 name: 'Praça Principal',
                 description: 'O coração pulsante do reino. Aqui se encontra o mercado, a taberna e o imponente castelo.',
@@ -1707,8 +1704,6 @@
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
             },
-            
-            // ========== CASTELO ==========
             castle_gate: {
                 name: 'Pátio do Castelo',
                 description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
@@ -1737,8 +1732,6 @@
                     { name: '🚪 Voltar para o Salão', action: 'goGreatHall' }
                 ]
             },
-            
-            // ========== PONTE E ZONA RURAL ==========
             east_bridge: {
                 name: 'Ponte Leste',
                 description: 'Uma ponte de pedra que atravessa o Rio Aurora. Do outro lado, os campos agrícolas se estendem.',
@@ -1767,8 +1760,6 @@
                     { name: '🔙 Voltar para os Campos', action: 'goFarmlands' }
                 ]
             },
-            
-            // ========== VILAREJOS ==========
             north_village: {
                 name: 'Vilarejo Norte',
                 description: 'Um pequeno vilarejo pacífico com cerca de 30 casas. Os moradores são principalmente artesãos.',
@@ -1787,8 +1778,6 @@
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
-            
-            // ========== PORTÕES E SAÍDAS ==========
             main_gate: {
                 name: 'Portão Principal',
                 description: 'O enorme portão de ferro que protege a entrada principal do reino. Guardas vigiam constantemente.',
@@ -1797,8 +1786,6 @@
                     { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
-            
-            // ========== LOCAL EXTERNO (EXISTENTE) ==========
             outside: {
                 name: 'Fora do Reino',
                 description: 'Terras selvagens perigosas. Monstros espreitam nas sombras.',
@@ -1808,17 +1795,9 @@
                     { name: '🏚️ Ruínas Antigas', action: 'goRuins' },
                     { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
                 ]
-            },
-            aurora: {
-                name: 'Reino da Aurora',
-                description: 'O reino é cercado por muralhas imponentes. Aqui dentro você encontra segurança e comércio.',
-                actions: [
-                    { name: '🏠 Sua Casa', action: 'goHome' },
-                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
-                ]
             }
         };
-
+    
         // Monsters
         const MONSTERS = {
             goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 20 },
@@ -1827,12 +1806,10 @@
             troll: { name: 'Troll', life: 800, attack: 120, defense: 50, exp: 300, gold: 120 },
             dragao: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
         };
-
+    
         // Drag and Drop Variables
         let draggedItemIndex = null;
         let draggedItemSource = 'inventory';
-        
-        // Touch Drag and Drop Variables
         let touchDraggedItem = null;
         let touchDraggedIndex = null;
         let touchDraggedSource = null;
@@ -1841,8 +1818,8 @@
         let isDragging = false;
         let touchTimeout = null;
         let hasMoved = false;
-        const TOUCH_DELAY_MS = 1000; // Tempo mínimo para distinguir clique de arrasto (500ms)
-
+        const TOUCH_DELAY_MS = 1000;
+    
         // ========== UI FUNCTIONS ==========
         
         function returnToTitle() {
@@ -1858,7 +1835,7 @@
             
             checkForContinueButton();
         }
-
+    
         function checkForContinueButton() {
             const autosave = localStorage.getItem('twilight_autosave');
             const continueBtn = document.getElementById('continue-btn');
@@ -1878,7 +1855,7 @@
                 continueBtn.style.display = 'none';
             }
         }
-
+    
         function continueGame() {
             const autosave = localStorage.getItem('twilight_autosave');
             if (autosave) {
@@ -1900,36 +1877,36 @@
                 }
             }
         }
-
+    
         function startNewGame() {
             document.getElementById('title-screen').style.display = 'none';
             document.getElementById('character-creation-modal').classList.add('active');
         }
-
+    
         function loadGameFromTitle() {
             document.getElementById('title-screen').style.display = 'none';
             loadGame();
         }
-
+    
         function cancelCharacterCreation() {
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('title-screen').style.display = 'flex';
         }
-
+    
         function selectRace(race) {
             if (gameState.isDead) return;
             document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
             document.querySelector(`[data-race="${race}"]`).classList.add('selected');
             gameState.selectedRace = race;
         }
-
+    
         function selectGender(gender) {
             if (gameState.isDead) return;
             document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
             document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
             gameState.selectedGender = gender;
         }
-
+    
         function createCharacter() {
             const name = document.getElementById('character-name').value.trim();
             const age = document.getElementById('character-age').value;
@@ -1951,7 +1928,7 @@
                 alert('Digite uma idade válida!');
                 return;
             }
-
+    
             const race = RACES[gameState.selectedRace];
             gameState.character = {
                 name: name,
@@ -1964,12 +1941,13 @@
                 maxLife: race.baseLife,
                 mana: race.mana,
                 maxMana: race.mana,
-                gold: 10,
+                gold: 100,
                 exp: 0,
                 level: 1
             };
             gameState.isDead = false;
-
+            gameState.royalQuest = null;
+    
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
@@ -1978,9 +1956,9 @@
             addItemToInventory('pao', 2);
             
             updateUI();
-            addLog('✨ Olá ' + name + '! Bem-vindo ao Reino da Aurora!');
+            addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
         }
-
+    
         function showProfile() {
             if (!gameState.character || gameState.isDead) return;
             
@@ -1991,7 +1969,7 @@
             document.getElementById('profile-age').textContent = gameState.character.age;
             document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
             document.getElementById('profile-bio-text').textContent = gameState.character.bio;
-
+    
             const bonuses = calculateEquipmentBonuses();
             const bonusText = document.getElementById('equipment-bonus-text');
             const bonusDiv = document.getElementById('profile-equipment-stats');
@@ -2009,14 +1987,14 @@
             } else {
                 bonusDiv.style.display = 'none';
             }
-
+    
             document.getElementById('profile-modal').classList.add('active');
         }
-
+    
         function closeProfile() {
             document.getElementById('profile-modal').classList.remove('active');
         }
-
+    
         function showEditProfile() {
             closeProfile();
             document.getElementById('edit-name').value = gameState.character.name;
@@ -2024,16 +2002,16 @@
             document.getElementById('edit-bio').value = gameState.character.bio;
             document.getElementById('edit-profile-modal').classList.add('active');
         }
-
+    
         function closeEditProfile() {
             document.getElementById('edit-profile-modal').classList.remove('active');
         }
-
+    
         function saveProfileEdit() {
             const newName = document.getElementById('edit-name').value.trim();
             const newAge = document.getElementById('edit-age').value;
             const newBio = document.getElementById('edit-bio').value.trim();
-
+    
             if (!newName) {
                 alert('Nome não pode estar vazio!');
                 return;
@@ -2042,21 +2020,21 @@
                 alert('Idade inválida!');
                 return;
             }
-
+    
             gameState.character.name = newName;
             gameState.character.age = parseInt(newAge);
             gameState.character.bio = newBio || gameState.character.bio;
-
+    
             closeEditProfile();
             showProfile();
             addLog('📝 Perfil atualizado!');
             updateUI();
         }
-
+    
         function calculateEquipmentBonuses() {
             let attackBonus = 0;
             let defenseBonus = 0;
-
+    
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
                 if (item) {
@@ -2064,13 +2042,13 @@
                     defenseBonus += item.defense || 0;
                 }
             }
-
+    
             return { attackBonus, defenseBonus };
         }
-
+    
         function updateUI() {
             if (!gameState.character) return;
-
+    
             if (gameState.isDead) {
                 document.getElementById('death-overlay').classList.add('active');
                 document.getElementById('save-btn').disabled = true;
@@ -2080,13 +2058,13 @@
                 document.getElementById('save-btn').disabled = false;
                 document.getElementById('load-btn').disabled = false;
             }
-
+    
             const race = RACES[gameState.character.race];
             const bonuses = calculateEquipmentBonuses();
             
             const totalAttack = race.baseAttack + bonuses.attackBonus;
             const totalDefense = race.baseDefense + bonuses.defenseBonus;
-
+    
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
             document.getElementById('player-mana').textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
             document.getElementById('player-attack').textContent = totalAttack;
@@ -2098,18 +2076,19 @@
             document.getElementById('bonus-attack').textContent = bonuses.attackBonus;
             document.getElementById('bonus-defense').textContent = bonuses.defenseBonus;
             
-            document.getElementById('current-location').textContent = LOCATIONS[gameState.location].name;
-
+            const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
+            document.getElementById('current-location').textContent = locationName;
+    
             updateInventoryGrid();
             updateEquipmentDisplay();
             updateGameContent();
             updateFoodGrid();
         }
-
+    
         function updateInventoryGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
-
+    
             for (let i = 0; i < 18; i++) {
                 const item = gameState.inventory[i];
                 const slot = document.createElement('div');
@@ -2125,22 +2104,13 @@
                 } else {
                     slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
                 }
-
+    
                 if (!gameState.isDead) {
-                    // Suporte para mouse - drag and drop
-                    if (item) {
-                        slot.setAttribute('draggable', 'true');
-                    } else {
-                        slot.setAttribute('draggable', 'false');
-                    }
+                    slot.setAttribute('draggable', !!item);
                     slot.setAttribute('ondragstart', 'dragItem(event)');
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
                     
-                    // ADICIONAR CLICK PARA MOUSE - IMPORTANTE!
-                    slot.setAttribute('onclick', `useItem(${i})`);
-                    
-                    // Suporte para mobile (touch) - não interfere no mouse
                     if (item) {
                         const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
                         const touchMoveHandler = (e) => handleTouchMove(e);
@@ -2158,7 +2128,7 @@
                 
                 grid.appendChild(slot);
             }
-
+    
             const trashBin = document.getElementById('trash-bin');
             if (gameState.isDead) {
                 trashBin.classList.add('disabled');
@@ -2171,11 +2141,11 @@
                 }
             }
         }
-
+    
         function updateFoodGrid() {
             const grid = document.getElementById('food-grid');
             grid.innerHTML = '';
-
+    
             gameState.inventory.forEach((item, index) => {
                 if (item && item.type === 'food') {
                     const slot = document.createElement('div');
@@ -2191,7 +2161,7 @@
                 }
             });
         }
-
+    
         function updateEquipmentDisplay() {
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
@@ -2200,16 +2170,21 @@
                 element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
             }
         }
-
+    
         function updateGameContent() {
             const content = document.getElementById('game-content');
             const location = LOCATIONS[gameState.location];
-
+    
+            if (!location) {
+                content.innerHTML = `<h2 class="location-title">Erro</h2><div class="location-description">Localização não encontrada.</div>`;
+                return;
+            }
+    
             let html = `
                 <h2 class="location-title">${location.name}</h2>
                 <div class="location-description">${location.description}</div>
             `;
-
+    
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
@@ -2219,7 +2194,7 @@
                     
                     <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
                         <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
-                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú</p>
+                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
                         
                         <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
                 `;
@@ -2278,7 +2253,7 @@
                 });
                 html += `</div>`;
             }
-
+    
             if (gameState.currentEnemy && !gameState.isDead) {
                 html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
                     <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
@@ -2292,10 +2267,10 @@
                     </div>
                 </div>`;
             }
-
+    
             content.innerHTML = html;
         }
-
+    
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 10) gameState.combatLog.pop();
@@ -2303,7 +2278,7 @@
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
         }
-
+    
         // ========== TOUCH DRAG AND DROP ==========
         
         function handleTouchStart(e, index, source) {
@@ -2323,11 +2298,9 @@
             touchDraggedSource = source;
             hasMoved = false;
             
-            // Adicionar classe de feedback visual
             slot.classList.add('touch-waiting');
             
             touchTimeout = setTimeout(() => {
-                // Remover classe de feedback
                 slot.classList.remove('touch-waiting');
                 if (!hasMoved && !isDragging) {
                     if (source === 'inventory') {
@@ -2353,7 +2326,7 @@
             isDragging = false;
             slot.classList.add('dragging');
         }
-
+    
         function handleTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             
@@ -2362,14 +2335,12 @@
             const deltaX = Math.abs(touch.clientX - touchStartX);
             const deltaY = Math.abs(touch.clientY - touchStartY);
             
-            // Se moveu mais de 8px, inicia arrasto imediatamente
             if (deltaX > 8 || deltaY > 8) {
                 if (touchTimeout) {
                     clearTimeout(touchTimeout);
                     touchTimeout = null;
                 }
                 
-                // Remover classe de feedback se existir
                 const originalSlot = document.querySelector(`.inventory-slot[data-index="${touchDraggedIndex}"]`);
                 if (originalSlot) originalSlot.classList.remove('touch-waiting');
                 
@@ -2397,7 +2368,7 @@
                 }
             }
         }
-
+    
         function handleTouchEnd(e, originalIndex, originalSource) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2463,7 +2434,7 @@
             
             cleanupTouchDrag();
         }
-
+    
         function handleTrashTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             e.preventDefault();
@@ -2484,7 +2455,7 @@
                 trashBin.classList.remove('drag-over-mobile');
             }
         }
-
+    
         function handleTrashTouchEnd(e) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2517,7 +2488,7 @@
             
             cleanupTouchDrag();
         }
-
+    
         function cleanupTouchDrag() {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2540,7 +2511,7 @@
             isDragging = false;
             hasMoved = false;
         }
-
+    
         // ========== MOUSE DRAG AND DROP ==========
         
         function dragItem(event) {
@@ -2551,7 +2522,7 @@
             draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
             draggedItemSource = 'inventory';
         }
-
+    
         function handleDragOver(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2559,7 +2530,7 @@
             }
             event.preventDefault();
         }
-
+    
         function handleDrop(event) {
             if (gameState.isDead) return;
             
@@ -2575,7 +2546,7 @@
                 draggedItemSource = null;
                 return;
             }
-
+    
             if (draggedItemSource === 'chest') {
                 if (!gameState.chest) gameState.chest = Array(18).fill(null);
                 const temp = gameState.inventory[targetIndex];
@@ -2601,7 +2572,7 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-
+    
         function handleDropToTrash(event) {
             if (gameState.isDead) return;
             
@@ -2619,7 +2590,7 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-
+    
         function dragChestItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2631,7 +2602,7 @@
             draggedItemIndex = slot.dataset.index;
             draggedItemSource = 'chest';
         }
-
+    
         function handleChestDrop(event) {
             if (gameState.isDead) return;
             
@@ -2643,10 +2614,10 @@
             const targetSource = targetSlot.dataset.source || 'inventory';
             
             if (draggedItemIndex === null) return;
-
+    
             if (!gameState.chest) gameState.chest = Array(18).fill(null);
             if (!gameState.inventory) gameState.inventory = Array(18).fill(null);
-
+    
             if (draggedItemSource === 'inventory' && targetSource === 'chest') {
                 const temp = gameState.chest[targetIndex];
                 gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
@@ -2669,7 +2640,7 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-
+    
         // ========== CHEST FUNCTIONS ==========
         
         function toggleChest() {
@@ -2689,12 +2660,12 @@
             
             updateUI();
         }
-
+    
         function closeChest() {
             gameState.chestOpen = false;
             updateUI();
         }
-
+    
         function useChestItem(index) {
             if (gameState.isDead) return;
             
@@ -2702,7 +2673,7 @@
             
             const item = gameState.chest[index];
             if (!item) return;
-
+    
             if (item.type === 'food') {
                 for (let i = 0; i < 18; i++) {
                     if (!gameState.inventory[i]) {
@@ -2716,7 +2687,7 @@
                 addLog('❌ Inventário cheio!');
             }
         }
-
+    
         function organizeChest() {
             if (gameState.isDead) return;
             
@@ -2732,7 +2703,7 @@
             updateUI();
             addLog('📦 Baú organizado!');
         }
-
+    
         // ========== INVENTORY FUNCTIONS ==========
         
         function addItemToInventory(itemId, quantity = 1) {
@@ -2763,7 +2734,7 @@
             
             updateUI();
         }
-
+    
         function removeItemFromInventory(index) {
             if (gameState.isDead) return;
             
@@ -2776,41 +2747,49 @@
                 updateUI();
             }
         }
-
+    
         function useItem(index) {
             if (gameState.isDead) return;
             
             const item = gameState.inventory[index];
             if (!item) return;
-
-            if (item.type === 'food') {
+    
+            if (item.type === 'food' || item.type === 'drink') {
                 useFood(index);
             } else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') {
                 equipItemFromInventory(index);
             }
         }
-
+    
         function useFood(index) {
             if (gameState.isDead) return;
             
             const item = gameState.inventory[index];
-            if (!item || item.type !== 'food') return;
-
+            if (!item || (item.type !== 'food' && item.type !== 'drink')) return;
+    
             const newLife = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
             const healed = newLife - gameState.character.life;
             gameState.character.life = newLife;
             
+            if (item.mana) {
+                const newMana = Math.min(gameState.character.mana + item.mana, gameState.character.maxMana);
+                const manaRestored = newMana - gameState.character.mana;
+                gameState.character.mana = newMana;
+                addLog(`🍺 Você consumiu ${item.name} e recuperou ${healed} de vida e ${manaRestored} de mana.`);
+            } else {
+                addLog(`🍖 Você comeu ${item.name} e recuperou ${healed} de vida. (${gameState.character.life}/${gameState.character.maxLife})`);
+            }
+            
             removeItemFromInventory(index);
-            addLog(`🍖 Você comeu ${item.name} e recuperou ${healed} de vida. (${gameState.character.life}/${gameState.character.maxLife})`);
             updateUI();
         }
-
+    
         function equipItemFromInventory(index) {
             if (gameState.isDead) return;
             
             const item = gameState.inventory[index];
             if (!item || !item.slot) return;
-
+    
             if (item.slot === 'mainhand' || item.slot === 'offhand' || 
                 item.slot === 'helmet' || item.slot === 'chest' || 
                 item.slot === 'pants' || item.slot === 'boots') {
@@ -2828,7 +2807,7 @@
                 updateUI();
             }
         }
-
+    
         function equipItem(slot) {
             if (gameState.isDead) return;
             
@@ -2844,18 +2823,207 @@
                 }
             }
         }
-
+    
         // ========== LOCATION ACTIONS ==========
         
-        function goHome() { if (gameState.isDead) return; gameState.location = 'home'; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
-        function goCastle() { if (gameState.isDead) return; gameState.location = 'castle'; updateUI(); addLog('🏰 Você chegou ao castelo.'); }
+        function goHome() { if (gameState.isDead) return; gameState.location = 'home'; gameState.chestOpen = false; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
+        function goToStreet() { if (gameState.isDead) return; gameState.location = 'street'; updateUI(); addLog('🚶 Você sai de casa e entra na Rua das Casas.'); }
+        function goToMainAvenue() { if (gameState.isDead) return; gameState.location = 'main_avenue'; updateUI(); addLog('🛤️ Você chega na movimentada Avenida Principal.'); }
+        function goToMainSquare() { if (gameState.isDead) return; gameState.location = 'main_square'; updateUI(); addLog('🏛️ Você entra na Praça Principal, coração do reino.'); }
+        function goToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você se aproxima do imponente Portão Principal.'); }
+        function goCastleGate() { if (gameState.isDead) return; gameState.location = 'castle_gate'; updateUI(); addLog('🏰 Você entra no pátio do castelo.'); }
+        function goGreatHall() { if (gameState.isDead) return; gameState.location = 'great_hall'; updateUI(); addLog('🚪 Você entra no majestoso Salão Principal.'); }
+        function goThroneRoom() { if (gameState.isDead) return; gameState.location = 'throne_room'; updateUI(); addLog('👑 Você entra na Sala do Trono.'); }
+        function goEastBridge() { if (gameState.isDead) return; gameState.location = 'east_bridge'; updateUI(); addLog('🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
+        function goFarmlands() { if (gameState.isDead) return; gameState.location = 'farmlands'; updateUI(); addLog('🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
+        function goMill() { if (gameState.isDead) return; gameState.location = 'mill'; updateUI(); addLog('🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
+        function goNorthVillage() { if (gameState.isDead) return; gameState.location = 'north_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Norte.'); }
+        function goSouthVillage() { if (gameState.isDead) return; gameState.location = 'south_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Sul.'); }
+        function goTavern() { if (gameState.isDead) return; gameState.location = 'tavern'; updateUI(); addLog('🍺 Você entra na Taberna do Porto.'); }
+        function leaveKingdomSecondary() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
+        function returnToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você retorna ao Portão Principal do reino.'); }
         function goWeaponShop() { if (gameState.isDead) return; gameState.location = 'weaponshop'; updateUI(); addLog('⚔️ Bem-vindo à loja de armas.'); }
         function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
         function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
         function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
         function goToAurora() { if (gameState.isDead) return; gameState.location = 'aurora'; gameState.chestOpen = false; updateUI(); addLog('🏰 Você voltou ao Reino da Aurora.'); }
         function rest() { if (gameState.isDead) return; const heal = 200; const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); const healed = newLife - gameState.character.life; gameState.character.life = newLife; addLog(`😴 Você descansou e recuperou ${healed} de vida.`); updateUI(); }
-
+    
+        // ========== FUNÇÕES DAS CASAS ==========
+        for (let i = 1; i <= 12; i++) {
+            window[`visitHouse${i}`] = function() {
+                if (gameState.isDead) return;
+                const houses = {
+                    1: { name: 'Seu Vizinho Aldo', dialog: 'Bom dia, vizinho!', item: null },
+                    2: { name: 'Dona Marta', dialog: 'Que bom te ver! Tome este pão.', item: 'pao' },
+                    3: { name: 'Seu Joaquim', dialog: 'Precisa de algo?', item: null },
+                    4: { name: 'Dona Clara', dialog: 'As flores do meu jardim estão lindas!', item: null },
+                    5: { name: 'Mestre Ferreiro', dialog: 'Precisa consertar algo?', item: null },
+                    6: { name: 'Dona Rosa', dialog: 'Que dia lindo!', item: null },
+                    7: { name: 'Seu Pedro', dialog: 'Venha tomar um café!', item: 'cafe' },
+                    8: { name: 'Dona Luzia', dialog: 'Minhas galinhas estão botando muito!', item: null },
+                    9: { name: 'Seu Antônio', dialog: 'A colheita foi boa este ano.', item: 'cenoura' },
+                    10: { name: 'Dona Beatriz', dialog: 'Que bom ver você!', item: null },
+                    11: { name: 'Jovem Aprendiz', dialog: 'Sonho em ser aventureiro um dia!', item: null },
+                    12: { name: 'Vovó Helena', dialog: 'Tome estas maçãs, querido.', item: 'maca' }
+                };
+                
+                const house = houses[i];
+                addLog(`🏠 Você visita a casa ${i}. ${house.dialog}`);
+                
+                if (house.item && Math.random() < 0.5) {
+                    addItemToInventory(house.item);
+                    addLog(`🎁 ${house.name} te deu: ${ITEMS[house.item]?.name || house.item}!`);
+                }
+                updateUI();
+            };
+        }
+    
+        // ========== FUNÇÕES DO CASTELO ==========
+    
+        function talkToCaptain() {
+            if (gameState.isDead) return;
+            addLog('🗡️ Capitão: "Aventureiro, os monstros estão se aproximando das muralhas. Precisamos de heróis como você!"');
+            
+            if (Math.random() < 0.3) {
+                addItemToInventory('pocoes');
+                addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
+            }
+        }
+    
+        function acceptRoyalQuest() {
+            if (gameState.isDead) return;
+            addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
+            addLog('📜 Missão Real: Derrote 5 monstros para ganhar uma recompensa especial!');
+            
+            if (!gameState.royalQuest) {
+                gameState.royalQuest = { kills: 0, target: 5, rewarded: false };
+            }
+        }
+    
+        // ========== FUNÇÕES DA TABERNA ==========
+    
+        function buyBeer() { if (gameState.isDead) return; buyDrink('cerveja', 5); }
+        function buyWine() { if (gameState.isDead) return; buyDrink('vinho', 15); }
+        function buyCoffee() { if (gameState.isDead) return; buyDrink('cafe', 8); }
+        function buyMead() { if (gameState.isDead) return; buyDrink('hidromel', 12); }
+        function buyLiqueur() { if (gameState.isDead) return; buyDrink('licor', 20); }
+    
+        function buyDrink(itemId, cost) {
+            if (gameState.isDead) return;
+            if (gameState.character.gold >= cost) {
+                gameState.character.gold -= cost;
+                const item = ITEMS[itemId];
+                addItemToInventory(itemId);
+                addLog(`🍺 Você comprou ${item.name}.`);
+                
+                gameState.character.life = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
+                if (item.mana) {
+                    gameState.character.mana = Math.min(gameState.character.mana + item.mana, gameState.character.maxMana);
+                }
+                updateUI();
+            } else {
+                addLog('❌ Moedas insuficientes!');
+            }
+        }
+    
+        function listenStories() {
+            if (gameState.isDead) return;
+            const stories = [
+                '📖 O bardo conta a lenda do herói que derrotou o dragão das montanhas...',
+                '📖 Um mercador fala sobre terras distantes além do mar...',
+                '📖 Velhos guerreiros relembram a Grande Guerra de 500 anos atrás...',
+                '📖 Alguém sussurra sobre um tesouro escondido nas ruínas antigas...'
+            ];
+            const story = stories[Math.floor(Math.random() * stories.length)];
+            addLog(story);
+            
+            if (Math.random() < 0.2) {
+                gameState.character.mana = Math.min(gameState.character.mana + 10, gameState.character.maxMana);
+                addLog('🎵 As histórias inspiradoras recuperam 10 de mana!');
+            }
+        }
+    
+        // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
+    
+        function visitFarmerHouse1() {
+            if (gameState.isDead) return;
+            addLog('🏠 Você visita a casa do Fazendeiro Miguel.');
+            addLog('👨‍🌾 Miguel: "Bem-vindo! A colheita está farta este ano!"');
+            
+            if (Math.random() < 0.6) {
+                addItemToInventory('cenoura');
+                addLog('🎁 Miguel te dá algumas cenouras frescas!');
+            }
+            updateUI();
+        }
+    
+        function visitFarmerHouse2() {
+            if (gameState.isDead) return;
+            addLog('🏠 Você visita a casa da Fazendeira Ana.');
+            addLog('👩‍🌾 Ana: "Que bom ver você! Tome este pão que fiz hoje."');
+            
+            if (Math.random() < 0.6) {
+                addItemToInventory('pao_fresco');
+                addLog('🎁 Ana te dá um pão fresco!');
+            }
+            updateUI();
+        }
+    
+        function millGrains() {
+            if (gameState.isDead) return;
+            addLog('🌾 O moleiro mói seus grãos gratuitamente.');
+            addLog('🍞 Você pode comprar pão fresco agora.');
+            updateUI();
+        }
+    
+        function buyFreshBread() {
+            if (gameState.isDead) return;
+            if (gameState.character.gold >= 12) {
+                gameState.character.gold -= 12;
+                addItemToInventory('pao_fresco');
+                addLog('🍞 Você comprou Pão Fresco por 12 moedas.');
+                updateUI();
+            } else {
+                addLog('❌ Moedas insuficientes!');
+            }
+        }
+    
+        // ========== FUNÇÕES DOS VILAREJOS ==========
+    
+        function visitCarpenter() {
+            if (gameState.isDead) return;
+            addLog('🔨 O marceneiro mostra seus belos móveis de madeira.');
+            addLog('💬 "Se precisar de móveis para sua casa, estou aqui!"');
+            updateUI();
+        }
+    
+        function visitArtisan() {
+            if (gameState.isDead) return;
+            addLog('🎨 O artesão trabalha em uma bela escultura de madeira.');
+            addLog('💬 "A arte é a alma do reino!"');
+            updateUI();
+        }
+    
+        function visitWeaver() {
+            if (gameState.isDead) return;
+            addLog('🧵 A tecelã mostra seus tecidos coloridos.');
+            addLog('💬 "As cores vêm de plantas que cultivo no jardim!"');
+            updateUI();
+        }
+    
+        function buyCloth() {
+            if (gameState.isDead) return;
+            if (gameState.character.gold >= 25) {
+                gameState.character.gold -= 25;
+                addItemToInventory('tecido');
+                addLog('🎨 Você comprou Tecido Colorido por 25 moedas.');
+                updateUI();
+            } else {
+                addLog('❌ Moedas insuficientes!');
+            }
+        }
+    
         // ========== SHOP FUNCTIONS ==========
         
         function buyItem(itemId, cost) {
@@ -2869,10 +3037,12 @@
                 addLog('❌ Moedas insuficientes!');
             }
         }
-
+    
         function buySword() { buyItem('espada_simples', 50); }
         function buyLongsword() { buyItem('espada_longa', 100); }
         function buyBow() { buyItem('arco', 80); }
+        function buyDagger() { buyItem('adaga', 40); }
+        function buyWoodenShield() { buyItem('escudo_madeira', 45); }
         function buyLeatherHelmet() { buyItem('capacete_couro', 30); }
         function buyLeatherChest() { buyItem('peitoral_couro', 50); }
         function buyLeatherPants() { buyItem('calcas_couro', 40); }
@@ -2881,10 +3051,12 @@
         function buyBread() { buyItem('pao', 15); }
         function buyMeat() { buyItem('carne', 30); }
         function buyPotion() { buyItem('pocoes', 50); }
-
+        function buyFish() { buyItem('peixe', 25); }
+        function buyCarrot() { buyItem('cenoura', 8); }
+    
         function talkToKing() { if (gameState.isDead) return; addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"'); }
         function acceptQuest() { if (gameState.isDead) return; addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.'); }
-
+    
         // ========== EXPLORATION ==========
         
         function exploreForest() {
@@ -2903,7 +3075,7 @@
             }
             updateUI();
         }
-
+    
         function goMountains() {
             if (gameState.isDead) return;
             if (Math.random() < 0.5) {
@@ -2918,7 +3090,7 @@
             }
             updateUI();
         }
-
+    
         function goRuins() {
             if (gameState.isDead) return;
             if (Math.random() < 0.4) {
@@ -2933,12 +3105,12 @@
             }
             updateUI();
         }
-
+    
         // ========== COMBAT ==========
         
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
-
+    
             const race = RACES[gameState.character.race];
             const bonuses = calculateEquipmentBonuses();
             const playerAttack = race.baseAttack + bonuses.attackBonus;
@@ -2947,12 +3119,24 @@
             const damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
             gameState.currentEnemy.life -= damage;
             addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
-
+    
             if (gameState.currentEnemy.life <= 0) {
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
                 gameState.character.gold += gameState.currentEnemy.gold;
                 addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
+                
+                if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
+                    gameState.royalQuest.kills++;
+                    addLog(`📜 Progresso da Missão Real: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros derrotados.`);
+                    
+                    if (gameState.royalQuest.kills >= gameState.royalQuest.target && !gameState.royalQuest.rewarded) {
+                        gameState.royalQuest.rewarded = true;
+                        gameState.character.gold += 300;
+                        addLog(`👑 MISSÃO REAL COMPLETA! Você recebeu 300 moedas de recompensa!`);
+                        addLog(`🏆 O Rei o declara um herói do reino!`);
+                    }
+                }
                 
                 if (Math.random() < 0.3) {
                     const drops = ['maca', 'pao', 'carne'];
@@ -2966,15 +3150,15 @@
                 const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
                 gameState.character.life -= enemyDamage;
                 addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
-
+    
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
             }
-
+    
             updateUI();
         }
-
+    
         function run() {
             if (gameState.isDead || !gameState.currentEnemy) return;
             
@@ -2991,29 +3175,25 @@
                 
                 gameState.character.life -= enemyDamage;
                 addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano enquanto você fugia!`);
-
+    
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
             }
             updateUI();
         }
-
+    
         function playerDeath() {
             gameState.character.life = 0;
             gameState.isDead = true;
             gameState.currentEnemy = null;
-
-            localStorage.removeItem('gameAutosave');
-            localStorage.removeItem('gameSave');
-            localStorage.removeItem('gameState');
             
             addLog('💀 VOCÊ MORREU!');
             addLog('❌ Todas as ações estão bloqueadas.');
             
             updateUI();
         }
-
+    
         // ========== SAVE/LOAD ==========
         
         function saveGame() {
@@ -3031,7 +3211,7 @@
             a.click();
             addLog('💾 Jogo salvo!');
         }
-
+    
         function loadGame() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -3071,7 +3251,7 @@
             };
             input.click();
         }
-
+    
         // ========== INITIALIZE ==========
         
         document.addEventListener('DOMContentLoaded', function() {
