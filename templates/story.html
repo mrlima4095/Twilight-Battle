@@ -1818,7 +1818,7 @@
             addItemToInventory('pao', 2);
             
             updateUI();
-            addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
+            addLog('✨ Olá ' + name + '! Bem-vindo ao Reino da Aurora!');
         }
 
         function showProfile() {
@@ -2843,6 +2843,10 @@
             gameState.character.life = 0;
             gameState.isDead = true;
             gameState.currentEnemy = null;
+
+            localStorage.removeItem('gameAutosave');
+            localStorage.removeItem('gameSave');
+            localStorage.removeItem('gameState');
             
             addLog('💀 VOCÊ MORREU!');
             addLog('❌ Todas as ações estão bloqueadas.');
