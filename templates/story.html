@@ -1502,7 +1502,7 @@
         // Game State
         let gameState = {
             character: null,
-            location: 'aurora',
+            location: 'home',
             inventory: Array(18).fill(null),
             chest: Array(18).fill(null),
             equipment: {
@@ -1595,19 +1595,11 @@
     
         // Locations expandidas
         const LOCATIONS = {
-            aurora: {
-                name: 'Reino da Aurora',
-                description: 'O reino é cercado por muralhas imponentes. Aqui dentro você encontra segurança e comércio.',
-                actions: [
-                    { name: '🏠 Sua Casa', action: 'goHome' },
-                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
-                ]
-            },
             home: {
                 name: 'Sua Casa',
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
-                    { name: '😴 Descansar (Recuperar 200 de vida)', action: 'rest' },
+                    { name: '😴 Dormir', action: 'rest' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
                     { name: '🚪 Sair para a Rua', action: 'goToStreet' }
                 ]
@@ -1826,7 +1818,6 @@
         function returnToTitle() {
             if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
                 localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
-                addLog('💾 Autosave realizado antes de voltar ao menu.');
             }
             
             document.getElementById('title-screen').style.display = 'flex';
@@ -1931,6 +1922,10 @@
             }
     
             const race = RACES[gameState.selectedRace];
+            
+            gameState.inventory = Array(18).fill(null);
+            gameState.chest = Array(18).fill(null);
+            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null };
             gameState.character = {
                 name: name,
                 race: gameState.selectedRace,
@@ -1992,9 +1987,7 @@
             document.getElementById('profile-modal').classList.add('active');
         }
     
-        function closeProfile() {
-            document.getElementById('profile-modal').classList.remove('active');
-        }
+        function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
     
         function showEditProfile() {
             closeProfile();
@@ -2847,7 +2840,6 @@
         function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
         function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
         function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
-        function goToAurora() { if (gameState.isDead) return; gameState.location = 'aurora'; gameState.chestOpen = false; updateUI(); addLog('🏰 Você voltou ao Reino da Aurora.'); }
         function rest() { if (gameState.isDead) return; const heal = 200; const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); const healed = newLife - gameState.character.life; gameState.character.life = newLife; addLog(`😴 Você descansou e recuperou ${healed} de vida.`); updateUI(); }
     
         // ========== FUNÇÕES DAS CASAS ==========
