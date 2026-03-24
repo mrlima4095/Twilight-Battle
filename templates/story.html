@@ -3557,14 +3557,13 @@
             } else {
                 addLog('❌ Não conseguiu fugir!');
                 
-                const race = RACES[gameState.character.race];
-                const bonuses = calculateEquipmentBonuses();
-                const playerDefense = race.baseDefense + bonuses.defenseBonus;
-                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
+                const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
                 
-                gameState.character.life -= enemyDamage;
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano enquanto você fugia!`);
-    
+                // Usar o novo sistema de armadura com durabilidade
+                const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
+                
+                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyBaseDamage} de dano enquanto você fugia!`);
+        
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
