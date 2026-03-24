@@ -2108,41 +2108,48 @@
             
             const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
             
-            // MODIFICADO: Adicionar indicador de horário
-            const timeIcon = getTimeIcon();
-            const timeText = getTimeText();
-            const locationHtml = `<div style="display: flex; gap: 10px; align-items: center;">
-                <div class="location-badge">${locationName}</div>
-                <div class="time-indicator">
-                    <span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span>
-                    <span class="time-text">${timeText}</span>
-                </div>
-            </div>`;
-            
-            // Substituir o location-badge pelo novo layout
+            // CORREÇÃO: Encontrar ou criar o container de localização e horário
             const playerInfoDiv = document.getElementById('player-info');
-            const oldLocationBadge = document.getElementById('current-location');
-            if (oldLocationBadge) {
-                // Criar container para location e time
-                const container = document.createElement('div');
-                container.style.display = 'flex';
-                container.style.gap = '10px';
-                container.style.alignItems = 'center';
+            let locationTimeContainer = document.getElementById('location-time-container');
+            
+            // Se o container não existir, criar
+            if (!locationTimeContainer) {
+                locationTimeContainer = document.createElement('div');
+                locationTimeContainer.id = 'location-time-container';
+                locationTimeContainer.style.display = 'flex';
+                locationTimeContainer.style.gap = '10px';
+                locationTimeContainer.style.alignItems = 'center';
                 
+                // Criar o badge de localização
                 const newLocationBadge = document.createElement('div');
                 newLocationBadge.className = 'location-badge';
                 newLocationBadge.id = 'current-location';
-                newLocationBadge.textContent = locationName;
                 
+                // Criar o indicador de horário
                 const timeIndicator = document.createElement('div');
                 timeIndicator.className = 'time-indicator';
-                timeIndicator.innerHTML = `<span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+                timeIndicator.id = 'time-indicator';
+                
+                locationTimeContainer.appendChild(newLocationBadge);
+                locationTimeContainer.appendChild(timeIndicator);
+                
+                // Inserir no início do playerInfoDiv
+                playerInfoDiv.insertBefore(locationTimeContainer, playerInfoDiv.firstChild);
+            }
+            
+            // Atualizar os elementos existentes
+            const locationBadge = document.getElementById('current-location');
+            const timeIndicator = document.getElementById('time-indicator');
+            
+            if (locationBadge) {
+                locationBadge.textContent = locationName;
+            }
+            
+            if (timeIndicator) {
+                const timeIcon = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
+                const timeText = gameState.timeOfDay === 'day' ? 'Dia' : 'Noite';
+                timeIndicator.innerHTML = `<span class="time-icon">${timeIcon}</span>
                                         <span class="time-text">${timeText}</span>`;
-                
-                container.appendChild(newLocationBadge);
-                container.appendChild(timeIndicator);
-                
-                oldLocationBadge.replaceWith(container);
             }
             
             // Verificar e adicionar classe de warning se mana baixa e for dia
