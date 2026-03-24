@@ -1601,6 +1601,7 @@
             adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 10, description: 'Pequena e rápida' },
             escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, description: 'Proteção básica' },
             arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 80, defense: 0, description: 'Ataque à distância' },
+            flecha: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.' }
             cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
             capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, description: 'Proteção leve' },
             capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, description: 'Proteção pesada' },
@@ -1653,10 +1654,10 @@
                 name: 'Loja de Armas',
                 description: 'Armas de qualidade para aventureiros.',
                 actions: [
-                    { name: '⚔️ Comprar Espada Simples (50💰)', action: 'buySword' },
-                    { name: '⚔️ Comprar Espada Longa (100💰)', action: 'buyLongsword' },
-                    { name: '🏹 Comprar Arco (80💰)', action: 'buyBow' },
-                    { name: '🗡️ Comprar Adaga (40💰)', action: 'buyDagger' },
+                    { name: '⚔️ Comprar Espada (35💰)', action: 'buySword' },
+                    { name: '🏹 Comprar Arco (40💰)', action: 'buyBow' },
+                    { name: '🏹 Comprar Flecha (1💰)', action: 'buyArrow' },
+                    { name: '🗡️ Comprar Adaga (25💰)', action: 'buyDagger' },
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
