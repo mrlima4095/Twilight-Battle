@@ -1549,6 +1549,10 @@
             timeOfDay: 'day', // 'day' ou 'night'
             isSleeping: false,
             sleepTimeout: null,
+            dayCycleTimer: null,
+            cycleStartTime: null,
+            cycleDuration: 1200, // 20 minutos em segundos (20 * 60)
+            remainingCycleTime: null, // Para quando dormir
         };
     
         // Race definitions
@@ -2931,9 +2935,11 @@
             if (gameState.isDead || gameState.isSleeping) return false;
             
             if (gameState.timeOfDay === 'day') {
+                // Dia: precisa ter mana abaixo de 50%
                 const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
                 return manaPercent < 50;
             } else {
+                // Noite: sempre pode dormir
                 return true;
             }
         }
@@ -2944,6 +2950,12 @@
             } else {
                 return '🌞 Dormir durante a noite... Você acordará de dia e recuperará toda sua mana!';
             }
+        }
+
+        function getSleepDurationSeconds() {
+            // 1 segundo dormido = 2 minutos do jogo (120 segundos)
+            // Para dormir 20 minutos do jogo, precisa de 10 segundos reais
+            return 10; // 10 segundos reais = 20 minutos do jogo
         }
 
         function startSleep() {
@@ -2958,6 +2970,16 @@
             
             gameState.isSleeping = true;
             
+            // Pausar o ciclo principal enquanto dorme
+            if (gameState.dayCycleTimer) {
+                // Salvar quanto tempo restava no ciclo atual
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                gameState.remainingCycleTime = Math.max(0, gameState.remainingCycleTime - elapsed);
+                clearInterval(gameState.dayCycleTimer);
+                gameState.dayCycleTimer = null;
+            }
+            
             // Configurar modal
             const modal = document.getElementById('sleep-modal');
             const timerSpan = document.getElementById('sleep-timer');
@@ -2966,24 +2988,33 @@
             messageSpan.textContent = getSleepMessage();
             modal.classList.add('active');
             
-            let secondsLeft = 10;
+            // Calcular duração do sono (10 segundos = 20 minutos do jogo)
+            const sleepDuration = getSleepDurationSeconds(); // 10 segundos
+            let secondsLeft = sleepDuration;
             timerSpan.textContent = secondsLeft;
             
-            // Timer para acordar automaticamente
+            // Registrar horário de início do sono
+            const sleepStartTime = Date.now();
+            let elapsedSleepSeconds = 0;
+            
+            // Timer para contar o sono
             if (gameState.sleepTimeout) clearInterval(gameState.sleepTimeout);
             
             gameState.sleepTimeout = setInterval(() => {
-                secondsLeft--;
+                const now = Date.now();
+                elapsedSleepSeconds = Math.floor((now - sleepStartTime) / 1000);
+                secondsLeft = Math.max(0, sleepDuration - elapsedSleepSeconds);
                 timerSpan.textContent = secondsLeft;
                 
                 if (secondsLeft <= 0) {
                     clearInterval(gameState.sleepTimeout);
                     gameState.sleepTimeout = null;
-                    completeSleep();
+                    completeSleep(false, sleepDuration);
                 }
-            }, 1000);
+            }, 100);
             
-            addLog(`😴 Você foi dormir...`);
+            addLog(`😴 Você foi dormir... (${gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'})`);
+            addLog(`⏰ Dormir por ${sleepDuration} segundos fará o tempo avançar 20 minutos.`);
         }
 
         function wakeUp() {
@@ -2994,34 +3025,50 @@
                 gameState.sleepTimeout = null;
             }
             
-            addLog('⏰ Você acordou antes do tempo!');
-            completeSleep(true);
+            // Calcular quanto tempo dormiu
+            const modal = document.getElementById('sleep-modal');
+            const timerSpan = document.getElementById('sleep-timer');
+            const secondsSlept = 10 - parseInt(timerSpan.textContent);
+            
+            addLog(`⏰ Você acordou após ${secondsSlept} segundo(s) de sono!`);
+            completeSleep(true, secondsSlept);
         }
 
-        function completeSleep(earlyWake = false) {
+        function completeSleep(earlyWake = false, secondsSlept = 0) {
             const wasDay = gameState.timeOfDay === 'day';
             
-            // Fechar modal
-            document.getElementById('sleep-modal').classList.remove('active');
+            // Calcular quanto tempo do jogo passou
+            // 1 segundo dormido = 2 minutos (120 segundos) do jogo
+            const gameTimePassed = secondsSlept * 120; // em segundos do jogo
             
-            // Alternar dia/noite
-            gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
+            addLog(`⏱️ O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
+            
+            // Avançar o ciclo baseado no tempo dormido
+            if (gameState.remainingCycleTime !== null) {
+                let newRemaining = gameState.remainingCycleTime - gameTimePassed;
+                
+                // Verificar quantos ciclos completos passaram
+                while (newRemaining <= 0) {
+                    // Alternar dia/noite para cada ciclo completo
+                    toggleTimeOfDay();
+                    newRemaining += gameState.cycleDuration;
+                }
+                gameState.remainingCycleTime = newRemaining;
+            }
             
             // Recuperar mana conforme o momento em que dormiu
             let manaRestored = 0;
-            let manaPercentRestored = 0;
             
             if (wasDay) {
                 // Dormiu de dia: recupera 20% da mana
-                manaPercentRestored = 0.2;
                 manaRestored = Math.floor(gameState.character.maxMana * 0.2);
                 gameState.character.mana = Math.min(gameState.character.mana + manaRestored, gameState.character.maxMana);
-                addLog(`😴 Você dormiu durante o dia e acordou à noite. Recuperou ${manaRestored} de mana (20%).`);
+                addLog(`😴 Você dormiu durante o dia. Recuperou ${manaRestored} de mana (20%).`);
             } else {
                 // Dormiu de noite: recupera mana inteira
                 manaRestored = gameState.character.maxMana - gameState.character.mana;
                 gameState.character.mana = gameState.character.maxMana;
-                addLog(`😴 Você dormiu durante a noite e acordou de dia. Recuperou toda sua mana! (+${manaRestored})`);
+                addLog(`😴 Você dormiu durante a noite. Recuperou toda sua mana! (+${manaRestored})`);
             }
             
             // Pequena recuperação de vida também (20% da vida máxima)
@@ -3031,11 +3078,18 @@
             
             gameState.isSleeping = false;
             
-            // Atualizar UI para mostrar o novo horário
+            // Fechar modal
+            document.getElementById('sleep-modal').classList.remove('active');
+            
+            // Reiniciar o ciclo com o tempo atualizado
+            gameState.cycleStartTime = Date.now();
+            startCycleTimer();
+            
+            // Atualizar UI
             updateUI();
             
-            if (earlyWake && wasDay) {
-                addLog('⚠️ Você acordou cedo, ainda é noite. Tente dormir novamente para recuperar mais mana!');
+            if (earlyWake) {
+                addLog(`⚠️ Você acordou cedo! O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos.`);
             }
         }
 
@@ -3045,6 +3099,85 @@
                 return true;
             }
             return false;
+        }
+
+        // ========== CYCLE MANAGEMENT ==========
+
+        function startCycleTimer() {
+            // Limpar timer existente se houver
+            if (gameState.dayCycleTimer) {
+                clearInterval(gameState.dayCycleTimer);
+                gameState.dayCycleTimer = null;
+            }
+            
+            // Se não houver tempo restante registrado, iniciar novo ciclo de 20 minutos
+            if (gameState.remainingCycleTime === null) {
+                gameState.cycleStartTime = Date.now();
+                gameState.remainingCycleTime = gameState.cycleDuration;
+            } else {
+                // Continuar do tempo restante
+                gameState.cycleStartTime = Date.now();
+            }
+            
+            // Atualizar timer a cada segundo
+            gameState.dayCycleTimer = setInterval(() => {
+                if (gameState.isSleeping) return; // Não avança tempo enquanto dorme
+                
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                const remaining = gameState.remainingCycleTime - elapsed;
+                
+                if (remaining <= 0) {
+                    // Ciclo terminou, alternar dia/noite
+                    toggleTimeOfDay();
+                    // Reiniciar ciclo
+                    gameState.cycleStartTime = Date.now();
+                    gameState.remainingCycleTime = gameState.cycleDuration;
+                } else {
+                    // Atualizar display do tempo restante (opcional)
+                    updateCycleDisplay();
+                }
+            }, 1000);
+        }
+
+        function toggleTimeOfDay() {
+            gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
+            
+            const timeName = gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite';
+            addLog(`🕰️ O ciclo mudou! Agora é ${timeName}.`);
+            
+            updateUI();
+            updateCycleDisplay();
+        }
+
+        function updateCycleDisplay() {
+            if (!gameState.cycleStartTime) return;
+            
+            const now = Date.now();
+            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+            const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+            
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            
+            // Procurar ou criar elemento para mostrar tempo restante
+            let timerDisplay = document.getElementById('cycle-timer');
+            if (!timerDisplay) {
+                // Criar se não existir
+                const timeIndicator = document.querySelector('.time-indicator');
+                if (timeIndicator) {
+                    timerDisplay = document.createElement('span');
+                    timerDisplay.id = 'cycle-timer';
+                    timerDisplay.style.fontSize = '10px';
+                    timerDisplay.style.marginLeft = '8px';
+                    timerDisplay.style.color = '#888';
+                    timeIndicator.appendChild(timerDisplay);
+                }
+            }
+            
+            if (timerDisplay) {
+                timerDisplay.textContent = ` ⏱️ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
         }
 
         // ========== FUNÇÕES DAS CASAS ==========
