@@ -2738,11 +2738,7 @@
             
             updateUI();
         }
-    
-        function closeChest() {
-            gameState.chestOpen = false;
-            updateUI();
-        }
+        function closeChest() { gameState.chestOpen = false; updateUI(); }
     
         function useChestItem(index) {
             if (gameState.isDead) return;
@@ -2765,7 +2761,6 @@
                 addLog('❌ Inventário cheio!');
             }
         }
-    
         function organizeChest() {
             if (gameState.isDead) return;
             
@@ -2838,7 +2833,6 @@
                 equipItemFromInventory(index);
             }
         }
-    
         function useFood(index) {
             if (gameState.isDead) return;
             
@@ -2885,7 +2879,6 @@
                 updateUI();
             }
         }
-    
         function equipItem(slot) {
             if (gameState.isDead) return;
             
@@ -2949,7 +2942,6 @@
                 return '🌞 Dormir durante a noite... Você acordará de dia e recuperará toda sua mana!';
             }
         }
-
         function getSleepDurationSeconds() {
             // 1 segundo dormido = 2 minutos do jogo (120 segundos)
             // Para dormir 20 minutos do jogo, precisa de 10 segundos reais
@@ -3137,7 +3129,6 @@
                 }
             }, 1000);
         }
-
         function toggleTimeOfDay() {
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
@@ -3147,7 +3138,6 @@
             updateUI();
             updateCycleDisplay();
         }
-
         function updateCycleDisplay() {
             if (!gameState.cycleStartTime) return;
             
@@ -3189,7 +3179,6 @@
                 addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
             }
         }
-    
         function acceptRoyalQuest() {
             if (gameState.isDead) return;
             addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
@@ -3256,7 +3245,6 @@
             }
             updateUI();
         }
-    
         function visitFarmerHouse2() {
             if (gameState.isDead) return;
             addLog('🏠 Você visita a casa da Fazendeira Ana.');
@@ -3296,21 +3284,19 @@
             addLog('💬 "Se precisar de móveis para sua casa, estou aqui!"');
             updateUI();
         }
-    
         function visitArtisan() {
             if (gameState.isDead) return;
             addLog('🎨 O artesão trabalha em uma bela escultura de madeira.');
             addLog('💬 "A arte é a alma do reino!"');
             updateUI();
         }
-    
         function visitWeaver() {
             if (gameState.isDead) return;
             addLog('🧵 A tecelã mostra seus tecidos coloridos.');
             addLog('💬 "As cores vêm de plantas que cultivo no jardim!"');
             updateUI();
         }
-    
+
         function buyCloth() {
             if (gameState.isDead) return;
             if (gameState.character.gold >= 25) {
@@ -3336,7 +3322,7 @@
                 addLog('❌ Moedas insuficientes!');
             }
         }
-    
+
         function buySword() { buyItem('espada', 35); }
         function buyLongsword() { buyItem('espada_longa', 100); }
         function buyBow() { buyItem('arco', 40); }
@@ -3353,12 +3339,12 @@
         function buyPotion() { buyItem('pocoes', 35); }
         function buyFish() { buyItem('peixe', 5); }
         function buyCarrot() { buyItem('cenoura', 3); }
-    
+
         function talkToKing() { if (gameState.isDead) return; addLog('👑 Rei: "Aventureiro, proteja nosso reino das criaturas selvagens!"'); }
         function acceptQuest() { if (gameState.isDead) return; addLog('📜 Você aceitou uma missão para eliminar criaturas na floresta.'); }
-    
+
         // ========== EXPLORATION ==========
-        
+
         function exploreForest() {
             if (gameState.isDead) return;
             if (Math.random() < 0.6) {
@@ -3375,7 +3361,7 @@
             }
             updateUI();
         }
-    
+
         function goMountains() {
             if (gameState.isDead) return;
             if (Math.random() < 0.5) {
@@ -3390,7 +3376,7 @@
             }
             updateUI();
         }
-    
+
         function goRuins() {
             if (gameState.isDead) return;
             if (Math.random() < 0.4) {
@@ -3405,7 +3391,7 @@
             }
             updateUI();
         }
-    
+
         // ========== COMBAT ==========
         
         /*function attack() {
@@ -3546,11 +3532,14 @@
                 
                 gameState.currentEnemy = null;
             } else if (damage > 0 || !isUsingBow) {
-                // Inimigo ataca de volta (apenas se o ataque foi válido ou se não foi um arco sem flecha)
-                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - (race.baseDefense + bonuses.defenseBonus) + Math.floor(Math.random() * 15));
-                gameState.character.life -= enemyDamage;
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
-        
+                // Cálculo do dano do inimigo
+                const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
+                
+                // Usar o novo sistema de armadura com durabilidade
+                const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
+                
+                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyBaseDamage} de dano!`);
+                
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
@@ -3558,7 +3547,7 @@
         
             updateUI();
         }
-    
+
         function run() {
             if (gameState.isDead || !gameState.currentEnemy) return;
             
@@ -3582,7 +3571,7 @@
             }
             updateUI();
         }
-    
+
         function playerDeath() {
             gameState.character.life = 0;
             gameState.isDead = true;
@@ -3592,6 +3581,106 @@
             addLog('❌ Todas as ações estão bloqueadas.');
             
             updateUI();
+        }
+        
+        // Adicionar esta função após calculateEquipmentBonuses()
+        function calculateTotalDefenseWithDurability() {
+            let totalDefense = 0;
+            const brokenItems = [];
+            
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item && (item.type === 'armor' || item.type === 'shield')) {
+                    if (item.durability > 0) {
+                        totalDefense += item.defense;
+                    } else {
+                        brokenItems.push(item.name);
+                    }
+                }
+            }
+            
+            return { totalDefense, brokenItems };
+        }
+        
+        // Função para aplicar dano com sistema de durabilidade
+        function applyDamageWithArmor(incomingDamage) {
+            let remainingDamage = incomingDamage;
+            const armorSlots = ['helmet', 'chest', 'pants', 'boots', 'offhand']; // offhand para escudo
+            const armorItems = [];
+            
+            // Coletar todas as armaduras equipadas que ainda têm durabilidade
+            for (let slot of armorSlots) {
+                const item = gameState.equipment[slot];
+                if (item && (item.type === 'armor' || item.type === 'shield') && item.durability > 0) {
+                    armorItems.push({ slot, item });
+                }
+            }
+            
+            // Ordenar por defesa (maior primeiro para proteger mais)
+            armorItems.sort((a, b) => b.item.defense - a.item.defense);
+            
+            let totalAbsorbed = 0;
+            const absorptionLog = [];
+            
+            // Aplicar absorção de dano por cada peça de armadura
+            for (let armor of armorItems) {
+                if (remainingDamage <= 0) break;
+                
+                const defenseValue = armor.item.defense;
+                const absorbAmount = Math.min(remainingDamage, defenseValue);
+                
+                if (absorbAmount > 0) {
+                    remainingDamage -= absorbAmount;
+                    totalAbsorbed += absorbAmount;
+                    
+                    // Reduzir durabilidade (1 ponto por dano absorvido)
+                    const durabilityLoss = Math.max(1, Math.min(absorbAmount, armor.item.durability));
+                    armor.item.durability -= durabilityLoss;
+                    
+                    absorptionLog.push(`${armor.item.name} absorveu ${absorbAmount} de dano e perdeu ${durabilityLoss} de durabilidade (${armor.item.durability}/${armor.item.maxDurability})`);
+                    
+                    // Verificar se quebrou
+                    if (armor.item.durability <= 0) {
+                        absorptionLog.push(`⚠️ ${armor.item.name} se quebrou e não oferece mais proteção!`);
+                        armor.item.durability = 0;
+                    }
+                }
+            }
+            
+            // Log da absorção
+            if (totalAbsorbed > 0) {
+                addLog(`🛡️ Suas armaduras absorveram ${totalAbsorbed} de dano!`);
+                absorptionLog.forEach(log => addLog(log));
+            }
+            
+            // Aplicar dano restante à vida
+            if (remainingDamage > 0) {
+                gameState.character.life -= remainingDamage;
+                addLog(`💔 Dano restante: ${remainingDamage} pontos de vida perdidos!`);
+            }
+            
+            // Verificar se alguma armadura quebrou completamente
+            checkForBrokenArmor();
+            
+            return { totalAbsorbed, remainingDamage };
+        }
+        
+        // Função para verificar e notificar sobre armaduras quebradas
+        function checkForBrokenArmor() {
+            const brokenItems = [];
+            
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item && (item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
+                    brokenItems.push(item.name);
+                }
+            }
+            
+            if (brokenItems.length > 0) {
+                addLog(`⚠️ ATENÇÃO: ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} completamente destruída${brokenItems.length > 1 ? 's' : ''}!`);
+            }
+            
+            return brokenItems;
         }
     
         // ========== SAVE/LOAD ==========
@@ -3611,7 +3700,6 @@
             a.click();
             addLog('💾 Jogo salvo!');
         }
-    
         function loadGame() {
             const input = document.createElement('input');
             input.type = 'file';
