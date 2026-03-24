@@ -3634,16 +3634,31 @@
         }
         
         // Função para aplicar dano com sistema de durabilidade
+        // Função para aplicar dano com sistema de durabilidade (corrigida com prioridade)
         function applyDamageWithArmor(incomingDamage) {
             let remainingDamage = incomingDamage;
-            const armorSlots = ['helmet', 'chest', 'pants', 'boots', 'offhand']; // offhand para escudo
+            
+            // Definir prioridade das armaduras (do que protege primeiro para o último)
+            const armorPriority = [
+                { slot: 'offhand', name: 'Escudo' },      // 1º - Escudo
+                { slot: 'chest', name: 'Peitoral' },      // 2º - Peitoral
+                { slot: 'pants', name: 'Calças' },        // 3º - Calças
+                { slot: 'boots', name: 'Botas' },         // 4º - Botas
+                { slot: 'helmet', name: 'Capacete' }      // 5º - Capacete
+            ];
+            
             const activeArmor = [];
             
-            // Coletar todas as armaduras equipadas que ainda têm durabilidade
-            for (let slot of armorSlots) {
-                const item = gameState.equipment[slot];
+            // Coletar armaduras ativas na ordem de prioridade
+            for (let priority of armorPriority) {
+                const item = gameState.equipment[priority.slot];
                 if (item && (item.type === 'armor' || item.type === 'shield') && item.durability > 0) {
-                    activeArmor.push({ slot, item });
+                    activeArmor.push({ 
+                        slot: priority.slot, 
+                        item: item, 
+                        name: priority.name,
+                        defense: item.defense 
+                    });
                 }
             }
             
@@ -3654,52 +3669,63 @@
                 return { totalAbsorbed: 0, remainingDamage: incomingDamage };
             }
             
-            // Calcular defesa total das armaduras ativas
-            let totalDefense = 0;
+            let totalAbsorbed = 0;
+            const absorptionLog = [];
+            let armorThatAbsorbed = false;
+            
+            // Aplicar absorção por prioridade
             for (let armor of activeArmor) {
-                totalDefense += armor.item.defense;
-            }
-            
-            // Calcular quanto dano é absorvido pela defesa total
-            let absorbedDamage = Math.min(remainingDamage, totalDefense);
-            remainingDamage -= absorbedDamage;
-            
-            // Distribuir a perda de durabilidade: CADA GOLPE = 1 DE DURABILIDADE por armadura
-            // Independente do dano absorvido, cada peça de armadura perde 1 de durabilidade ao ser atingida
-            const durabilityLossPerArmor = 1;
-            const durabilityLog = [];
-            
-            for (let armor of activeArmor) {
-                if (armor.item.durability > 0) {
-                    armor.item.durability = Math.max(0, armor.item.durability - durabilityLossPerArmor);
-                    durabilityLog.push(`${armor.item.name} perdeu ${durabilityLossPerArmor} de durabilidade (${armor.item.durability}/${armor.item.maxDurability})`);
+                if (remainingDamage <= 0) break;
+                
+                const defenseValue = armor.defense;
+                
+                // Quanto esta armadura pode absorver
+                const absorbAmount = Math.min(remainingDamage, defenseValue);
+                
+                if (absorbAmount > 0) {
+                    remainingDamage -= absorbAmount;
+                    totalAbsorbed += absorbAmount;
+                    armorThatAbsorbed = true;
+                    
+                    // SÓ PERDE DURABILIDADE SE ABSORVEU DANO
+                    // Perde 1 de durabilidade por vez, independente do quanto absorveu
+                    const oldDurability = armor.item.durability;
+                    armor.item.durability = Math.max(0, armor.item.durability - 1);
+                    const durabilityLost = oldDurability - armor.item.durability;
+                    
+                    absorptionLog.push(`${armor.name} (${armor.item.name}) absorveu ${absorbAmount} de dano e perdeu ${durabilityLost} de durabilidade (${armor.item.durability}/${armor.item.maxDurability})`);
                     
                     // Verificar se quebrou
                     if (armor.item.durability === 0) {
-                        durabilityLog.push(`⚠️ ${armor.item.name} se quebrou e não oferece mais proteção!`);
+                        absorptionLog.push(`⚠️ ${armor.item.name} se quebrou e não oferece mais proteção!`);
                     }
                 }
             }
             
             // Log da absorção
-            if (absorbedDamage > 0) {
-                addLog(`🛡️ Suas armaduras (defesa total: ${totalDefense}) absorveram ${absorbedDamage} de dano!`);
-            } else {
-                addLog(`⚠️ O dano (${incomingDamage}) foi maior que sua defesa total (${totalDefense})!`);
+            if (totalAbsorbed > 0) {
+                addLog(`🛡️ Suas armaduras absorveram ${totalAbsorbed} de dano no total!`);
+                absorptionLog.forEach(log => addLog(`   ${log}`));
             }
             
-            // Mostrar logs de durabilidade
-            durabilityLog.forEach(log => addLog(log));
+            if (totalAbsorbed < incomingDamage) {
+                addLog(`⚠️ ${incomingDamage - totalAbsorbed} de dano passaram pelas armaduras!`);
+            }
+            
+            // Se nenhuma armadura absorveu dano (dano menor que a defesa da primeira?)
+            if (!armorThatAbsorbed && incomingDamage > 0) {
+                addLog(`⚠️ Nenhuma armadura conseguiu absorver o dano!`);
+            }
             
             // Aplicar dano restante à vida
             if (remainingDamage > 0) {
                 gameState.character.life -= remainingDamage;
-                addLog(`💔 Dano que passou da armadura: ${remainingDamage} pontos de vida perdidos!`);
-            } else {
-                addLog(`✨ Toda a armadura absorveu o dano! Nenhum dano na vida.`);
+                addLog(`💔 Dano na vida: ${remainingDamage} pontos! (Vida: ${gameState.character.life}/${gameState.character.maxLife})`);
+            } else if (totalAbsorbed > 0) {
+                addLog(`✨ Todo o dano foi absorvido pelas armaduras!`);
             }
             
-            return { totalAbsorbed: absorbedDamage, remainingDamage, totalDefense };
+            return { totalAbsorbed, remainingDamage };
         }
 
         // Função para verificar e notificar sobre armaduras quebradas
