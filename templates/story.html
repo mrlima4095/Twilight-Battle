@@ -2173,7 +2173,7 @@
         function updateInventoryGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
-    
+
             for (let i = 0; i < 18; i++) {
                 const item = gameState.inventory[i];
                 const slot = document.createElement('div');
@@ -2189,20 +2189,32 @@
                 } else {
                     slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
                 }
-    
+
                 if (!gameState.isDead) {
                     slot.setAttribute('draggable', !!item);
                     slot.setAttribute('ondragstart', 'dragItem(event)');
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
                     
-                    if (item) {
+                    // Adicionar evento de clique para usar itens (PC)
+                    slot.onclick = (function(index) {
+                        return function(e) {
+                            e.stopPropagation();
+                            const itemExists = gameState.inventory[index];
+                            if (itemExists) {
+                                useItem(index);
+                            }
+                        };
+                    })(i);
+                    
+                    // Verificar se é dispositivo touch antes de adicionar eventos touch
+                    if ('ontouchstart' in window) {
                         const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
                         const touchMoveHandler = (e) => handleTouchMove(e);
                         const touchEndHandler = (e) => handleTouchEnd(e, i, 'inventory');
                         
-                        slot.addEventListener('touchstart', touchStartHandler);
-                        slot.addEventListener('touchmove', touchMoveHandler);
+                        slot.addEventListener('touchstart', touchStartHandler, { passive: false });
+                        slot.addEventListener('touchmove', touchMoveHandler, { passive: false });
                         slot.addEventListener('touchend', touchEndHandler);
                         
                         slot._touchStart = touchStartHandler;
@@ -2213,14 +2225,14 @@
                 
                 grid.appendChild(slot);
             }
-    
+
             const trashBin = document.getElementById('trash-bin');
             if (gameState.isDead) {
                 trashBin.classList.add('disabled');
             } else {
                 trashBin.classList.remove('disabled');
-                if (!trashBin._hasTouchEvents) {
-                    trashBin.addEventListener('touchmove', handleTrashTouchMove);
+                if ('ontouchstart' in window && !trashBin._hasTouchEvents) {
+                    trashBin.addEventListener('touchmove', handleTrashTouchMove, { passive: false });
                     trashBin.addEventListener('touchend', handleTrashTouchEnd);
                     trashBin._hasTouchEvents = true;
                 }
