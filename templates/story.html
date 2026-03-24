@@ -2044,18 +2044,27 @@
         function calculateEquipmentBonuses() {
             let attackBonus = 0;
             let defenseBonus = 0;
-    
+            const brokenItems = [];
+        
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
                 if (item) {
-                    attackBonus += item.attack || 0;
-                    defenseBonus += item.defense || 0;
+                    if ((item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
+                        brokenItems.push(item.name);
+                    } else {
+                        attackBonus += item.attack || 0;
+                        defenseBonus += item.defense || 0;
+                    }
                 }
             }
-    
+            
+            if (brokenItems.length > 0) {
+                addLog(`⚠️ ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} quebrada${brokenItems.length > 1 ? 's' : ''} e não oferecem proteção!`);
+            }
+        
             return { attackBonus, defenseBonus };
         }
-    
+        
         function updateUI() {
             if (!gameState.character) return;
 
