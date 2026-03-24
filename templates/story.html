@@ -1972,6 +1972,9 @@
             };
             gameState.isDead = false;
             gameState.royalQuest = null;
+            gameState.timeOfDay = 'day';
+            gameState.isSleeping = false;
+            gameState.sleepTimeout = null;
     
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
@@ -2071,7 +2074,7 @@
     
         function updateUI() {
             if (!gameState.character) return;
-    
+
             if (gameState.isDead) {
                 document.getElementById('death-overlay').classList.add('active');
                 document.getElementById('save-btn').disabled = true;
@@ -2081,13 +2084,13 @@
                 document.getElementById('save-btn').disabled = false;
                 document.getElementById('load-btn').disabled = false;
             }
-    
+
             const race = RACES[gameState.character.race];
             const bonuses = calculateEquipmentBonuses();
             
             const totalAttack = race.baseAttack + bonuses.attackBonus;
             const totalDefense = race.baseDefense + bonuses.defenseBonus;
-    
+
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
             document.getElementById('player-mana').textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
             document.getElementById('player-attack').textContent = totalAttack;
@@ -2100,14 +2103,63 @@
             document.getElementById('bonus-defense').textContent = bonuses.defenseBonus;
             
             const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
-            document.getElementById('current-location').textContent = locationName;
-    
+            
+            // MODIFICADO: Adicionar indicador de horário
+            const timeIcon = getTimeIcon();
+            const timeText = getTimeText();
+            const locationHtml = `<div style="display: flex; gap: 10px; align-items: center;">
+                <div class="location-badge">${locationName}</div>
+                <div class="time-indicator">
+                    <span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+                    <span class="time-text">${timeText}</span>
+                </div>
+            </div>`;
+            
+            // Substituir o location-badge pelo novo layout
+            const playerInfoDiv = document.getElementById('player-info');
+            const oldLocationBadge = document.getElementById('current-location');
+            if (oldLocationBadge) {
+                // Criar container para location e time
+                const container = document.createElement('div');
+                container.style.display = 'flex';
+                container.style.gap = '10px';
+                container.style.alignItems = 'center';
+                
+                const newLocationBadge = document.createElement('div');
+                newLocationBadge.className = 'location-badge';
+                newLocationBadge.id = 'current-location';
+                newLocationBadge.textContent = locationName;
+                
+                const timeIndicator = document.createElement('div');
+                timeIndicator.className = 'time-indicator';
+                timeIndicator.innerHTML = `<span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span>
+                                        <span class="time-text">${timeText}</span>`;
+                
+                container.appendChild(newLocationBadge);
+                container.appendChild(timeIndicator);
+                
+                oldLocationBadge.replaceWith(container);
+            }
+            
+            // Verificar e adicionar classe de warning se mana baixa e for dia
+            const manaStat = document.querySelector('.stat:nth-child(2)');
+            if (gameState.timeOfDay === 'day') {
+                const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
+                if (manaPercent < 50 && !gameState.isDead && !gameState.isSleeping) {
+                    manaStat.classList.add('low-mana');
+                } else {
+                    manaStat.classList.remove('low-mana');
+                }
+            } else {
+                manaStat.classList.remove('low-mana');
+            }
+
             updateInventoryGrid();
             updateEquipmentDisplay();
             updateGameContent();
             updateFoodGrid();
         }
-    
+
         function updateInventoryGrid() {
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
@@ -2985,6 +3037,14 @@
             if (earlyWake && wasDay) {
                 addLog('⚠️ Você acordou cedo, ainda é noite. Tente dormir novamente para recuperar mais mana!');
             }
+        }
+
+        function checkIfSleeping(actionName) {
+            if (gameState.isSleeping) {
+                addLog(`😴 Você está dormindo! Não pode ${actionName} agora.`);
+                return true;
+            }
+            return false;
         }
 
         // ========== FUNÇÕES DAS CASAS ==========
