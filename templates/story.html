@@ -1633,27 +1633,7 @@
                 actions: [
                     { name: '😴 Dormir', action: 'rest' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
-                    { name: '🚪 Sair para a Rua', action: 'goToStreet' }
-                ]
-            },
-            street: {
-                name: 'Rua das Casas',
-                description: 'Uma rua tranquila com 12 casas residenciais. Seus vizinhos moram aqui. Sua casa fica no final da rua.',
-                actions: [
-                    { name: '🏠 Sua Casa', action: 'goHome' },
-                    { name: '🏠 Visitar Casa 1', action: 'visitHouse1' },
-                    { name: '🏠 Visitar Casa 2', action: 'visitHouse2' },
-                    { name: '🏠 Visitar Casa 3', action: 'visitHouse3' },
-                    { name: '🏠 Visitar Casa 4', action: 'visitHouse4' },
-                    { name: '🏠 Visitar Casa 5', action: 'visitHouse5' },
-                    { name: '🏠 Visitar Casa 6', action: 'visitHouse6' },
-                    { name: '🏠 Visitar Casa 7', action: 'visitHouse7' },
-                    { name: '🏠 Visitar Casa 8', action: 'visitHouse8' },
-                    { name: '🏠 Visitar Casa 9', action: 'visitHouse9' },
-                    { name: '🏠 Visitar Casa 10', action: 'visitHouse10' },
-                    { name: '🏠 Visitar Casa 11', action: 'visitHouse11' },
-                    { name: '🏠 Visitar Casa 12', action: 'visitHouse12' },
-                    { name: '🛤️ Ir para a Avenida Principal', action: 'goToMainAvenue' }
+                    { name: '🚪 Sair para a Rua', action: 'goNorthVillage' }
                 ]
             },
             main_avenue: {
@@ -1666,8 +1646,7 @@
                     { name: '🏘️ Entrar no Vilarejo Norte', action: 'goNorthVillage' },
                     { name: '🏘️ Entrar no Vilarejo Sul', action: 'goSouthVillage' },
                     { name: '🚪 Ir para o Portão Principal', action: 'goToMainGate' },
-                    { name: '🏛️ Ir para a Praça Principal', action: 'goToMainSquare' },
-                    { name: '🏠 Voltar para a Rua das Casas', action: 'goToStreet' }
+                    { name: '🏛️ Ir para a Praça Principal', action: 'goToMainSquare' }
                 ]
             },
             weaponshop: {
@@ -1789,6 +1768,7 @@
                 name: 'Vilarejo Norte',
                 description: 'Um pequeno vilarejo pacífico com cerca de 30 casas. Os moradores são principalmente artesãos.',
                 actions: [
+                    { name: '🏠 Sua Casa', action: 'goHome' },
                     { name: '🔨 Visitar Marceneiro', action: 'visitCarpenter' },
                     { name: '🎨 Visitar Artesão', action: 'visitArtisan' },
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
@@ -2924,7 +2904,6 @@
         // ========== LOCATION ACTIONS ==========
         
         function goHome() { if (gameState.isDead) return; gameState.location = 'home'; gameState.chestOpen = false; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
-        function goToStreet() { if (gameState.isDead) return; gameState.location = 'street'; updateUI(); addLog('🚶 Você sai de casa e entra na Rua das Casas.'); }
         function goToMainAvenue() { if (gameState.isDead) return; gameState.location = 'main_avenue'; updateUI(); addLog('🛤️ Você chega na movimentada Avenida Principal.'); }
         function goToMainSquare() { if (gameState.isDead) return; gameState.location = 'main_square'; updateUI(); addLog('🏛️ Você entra na Praça Principal, coração do reino.'); }
         function goToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você se aproxima do imponente Portão Principal.'); }
@@ -3198,36 +3177,6 @@
             }
         }
 
-        // ========== FUNÇÕES DAS CASAS ==========
-        for (let i = 1; i <= 12; i++) {
-            window[`visitHouse${i}`] = function() {
-                if (gameState.isDead) return;
-                const houses = {
-                    1: { name: 'Seu Vizinho Aldo', dialog: 'Bom dia, vizinho!', item: null },
-                    2: { name: 'Dona Marta', dialog: 'Que bom te ver! Tome este pão.', item: 'pao' },
-                    3: { name: 'Seu Joaquim', dialog: 'Precisa de algo?', item: null },
-                    4: { name: 'Dona Clara', dialog: 'As flores do meu jardim estão lindas!', item: null },
-                    5: { name: 'Mestre Ferreiro', dialog: 'Precisa consertar algo?', item: null },
-                    6: { name: 'Dona Rosa', dialog: 'Que dia lindo!', item: null },
-                    7: { name: 'Seu Pedro', dialog: 'Venha tomar um café!', item: 'cafe' },
-                    8: { name: 'Dona Luzia', dialog: 'Minhas galinhas estão botando muito!', item: null },
-                    9: { name: 'Seu Antônio', dialog: 'A colheita foi boa este ano.', item: 'cenoura' },
-                    10: { name: 'Dona Beatriz', dialog: 'Que bom ver você!', item: null },
-                    11: { name: 'Jovem Aprendiz', dialog: 'Sonho em ser aventureiro um dia!', item: null },
-                    12: { name: 'Vovó Helena', dialog: 'Tome estas maçãs, querido.', item: 'maca' }
-                };
-                
-                const house = houses[i];
-                addLog(`🏠 Você visita a casa ${i}. ${house.dialog}`);
-                
-                if (house.item && Math.random() < 0.5) {
-                    addItemToInventory(house.item);
-                    addLog(`🎁 ${house.name} te deu: ${ITEMS[house.item]?.name || house.item}!`);
-                }
-                updateUI();
-            };
-        }
-    
         // ========== FUNÇÕES DO CASTELO ==========
     
         function talkToCaptain() {
