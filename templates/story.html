@@ -12,17 +12,8 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        .game-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: #fff; }
+        .game-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
         /* Header */
         .game-header {
@@ -36,41 +27,34 @@
             border: 1px solid rgba(255, 215, 0, 0.3);
             backdrop-filter: blur(10px);
         }
-
         .game-title {
             font-size: 2em;
             color: #ffd700;
         }
-
         .player-info {
             display: flex;
             gap: 20px;
             align-items: center;
         }
-
         .player-stats {
             display: flex;
             gap: 30px;
         }
-
         .stat {
             background: rgba(255, 255, 255, 0.1);
             padding: 10px 20px;
             border-radius: 10px;
             text-align: center;
         }
-
         .stat-value {
             font-size: 24px;
             font-weight: bold;
             color: #ffd700;
         }
-
         .stat-label {
             font-size: 12px;
             color: #888;
         }
-
         .location-badge {
             background: #4a90e2;
             padding: 10px 20px;
@@ -93,7 +77,6 @@
             align-items: center;
             justify-content: center;
         }
-
         .profile-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 0 20px #9370db;
@@ -114,7 +97,6 @@
             border: 1px solid #ffd700;
             backdrop-filter: blur(10px);
         }
-
         .panel-title {
             color: #ffd700;
             margin-bottom: 15px;
@@ -131,7 +113,6 @@
             gap: 10px;
             margin-bottom: 15px;
         }
-
         .inventory-slot {
             aspect-ratio: 1;
             background: rgba(255, 255, 255, 0.05);
@@ -149,23 +130,19 @@
             text-align: center;
             -webkit-tap-highlight-color: transparent;
         }
-
         .inventory-slot:hover {
             border-color: #ffd700;
             transform: scale(1.05);
         }
-
         .inventory-slot.has-item {
             background: rgba(255, 215, 0, 0.1);
             border-color: #ffd700;
         }
-
         .inventory-slot .item-name {
             font-weight: bold;
             color: #ffd700;
             font-size: 10px;
         }
-
         .inventory-slot .item-quantity {
             position: absolute;
             bottom: 2px;
@@ -181,19 +158,16 @@
             font-size: 10px;
             font-weight: bold;
         }
-
         .inventory-slot.disabled {
             opacity: 0.5;
             pointer-events: none;
             filter: grayscale(100%);
         }
-        
         .inventory-slot.dragging {
             opacity: 0.5;
             transform: scale(0.95);
             transition: all 0.2s;
         }
-        
         .inventory-slot.drag-over {
             border-color: #ffd700;
             background: rgba(255, 215, 0, 0.2);
@@ -207,7 +181,6 @@
             transition: all 0.1s;
             border-color: #ffd700;
         }
-
         .trash-bin {
             margin-top: 10px;
             padding: 10px;
@@ -218,24 +191,20 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .trash-bin:hover {
             background: rgba(255, 68, 68, 0.3);
             border-color: #ff0000;
         }
-
         .trash-bin.drag-over {
             background: rgba(255, 68, 68, 0.5);
             border-color: #ff0000;
             transform: scale(1.05);
         }
-        
         .trash-bin.drag-over-mobile {
             background: rgba(255, 68, 68, 0.5);
             border-color: #ff0000;
             transform: scale(1.05);
         }
-
         .trash-bin.disabled {
             opacity: 0.3;
             pointer-events: none;
@@ -247,13 +216,11 @@
             flex-direction: column;
             gap: 10px;
         }
-
         .equipment-row {
             display: flex;
             gap: 10px;
             justify-content: center;
         }
-
         .equipment-slot {
             width: 80px;
             height: 80px;
@@ -269,12 +236,10 @@
             font-size: 10px;
             text-align: center;
         }
-
         .equipment-slot.has-item {
             background: rgba(76, 175, 80, 0.1);
             border-color: #4CAF50;
         }
-
         .equipment-slot .slot-label {
             position: absolute;
             top: -8px;
@@ -286,13 +251,11 @@
             font-size: 8px;
             white-space: nowrap;
         }
-
         .equipment-slot .item-name {
             font-weight: bold;
             color: #4CAF50;
             font-size: 10px;
         }
-
         .equipment-slot.disabled {
             opacity: 0.5;
             pointer-events: none;
@@ -314,7 +277,6 @@
             margin-bottom: 20px;
             text-align: center;
         }
-
         .location-description {
             color: #fff;
             margin-bottom: 30px;
@@ -328,7 +290,6 @@
             gap: 10px;
             margin-bottom: 30px;
         }
-
         .action-btn {
             padding: 15px;
             background: linear-gradient(45deg, #4a90e2, #357abd);
@@ -339,26 +300,21 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .action-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
         }
-
         .action-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
             filter: grayscale(100%);
         }
-
         .action-btn.danger {
             background: linear-gradient(45deg, #ff4444, #cc0000);
         }
-
         .action-btn.success {
             background: linear-gradient(45deg, #4CAF50, #45a049);
         }
-
         .action-btn.warning {
             background: linear-gradient(45deg, #ffa500, #ff8c00);
         }
@@ -371,13 +327,11 @@
             max-height: 200px;
             overflow-y: auto;
         }
-
         .log-entry {
             padding: 5px;
             border-bottom: 1px solid rgba(255, 215, 0, 0.2);
             font-size: 14px;
         }
-
         .log-entry:last-child {
             border-bottom: none;
         }
@@ -395,7 +349,6 @@
             justify-content: center;
             align-items: center;
         }
-
         .title-content {
             text-align: center;
             padding: 40px;
@@ -406,14 +359,12 @@
             max-width: 500px;
             width: 90%;
         }
-
         .title-content h1 {
             color: #ffd700;
             font-size: 48px;
             margin-bottom: 20px;
             text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
         }
-
         .title-content h2 {
             color: #fff;
             font-size: 24px;
@@ -426,7 +377,6 @@
             flex-direction: column;
             gap: 15px;
         }
-
         .title-btn {
             padding: 20px;
             font-size: 24px;
@@ -438,28 +388,22 @@
             background: linear-gradient(45deg, #4a90e2, #357abd);
             color: white;
         }
-
         .title-btn:hover:not(:disabled) {
             transform: scale(1.05);
             box-shadow: 0 0 30px #4a90e2;
         }
-
         .title-btn.continue {
             background: linear-gradient(45deg, #4CAF50, #45a049);
         }
-
         .title-btn.continue:hover:not(:disabled) {
             box-shadow: 0 0 30px #4CAF50;
         }
-
         .title-btn.load {
             background: linear-gradient(45deg, #9370db, #7b5fb0);
         }
-
         .title-btn.load:hover:not(:disabled) {
             box-shadow: 0 0 30px #9370db;
         }
-
         .title-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
@@ -479,11 +423,9 @@
             justify-content: center;
             align-items: center;
         }
-
         .modal.active {
             display: flex;
         }
-
         .modal-content {
             background: #1a1a2e;
             border: 2px solid #ffd700;
@@ -494,7 +436,6 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-
         .modal-title {
             color: #ffd700;
             font-size: 28px;
@@ -508,7 +449,6 @@
             gap: 15px;
             margin-bottom: 30px;
         }
-
         .race-card {
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid #444;
@@ -518,23 +458,19 @@
             transition: all 0.3s;
             text-align: center;
         }
-
         .race-card:hover {
             border-color: #ffd700;
             transform: translateY(-5px);
         }
-
         .race-card.selected {
             border-color: #ffd700;
             background: rgba(255, 215, 0, 0.1);
         }
-
         .race-name {
             color: #ffd700;
             font-size: 20px;
             margin-bottom: 10px;
         }
-
         .race-stats {
             color: #fff;
             font-size: 14px;
@@ -543,13 +479,11 @@
         .input-group {
             margin-bottom: 20px;
         }
-
         .input-group label {
             display: block;
             color: #ffd700;
             margin-bottom: 5px;
         }
-
         .input-group input, .input-group select, .input-group textarea {
             width: 100%;
             padding: 10px;
@@ -558,12 +492,10 @@
             border-radius: 5px;
             color: #fff;
         }
-
         .input-group textarea {
             min-height: 100px;
             resize: vertical;
         }
-
         .input-group input:disabled, .input-group textarea:disabled {
             opacity: 0.5;
         }
@@ -573,7 +505,6 @@
             gap: 20px;
             justify-content: center;
         }
-
         .gender-option {
             padding: 10px 30px;
             background: rgba(255, 255, 255, 0.05);
@@ -582,7 +513,6 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .gender-option.selected {
             border-color: #ffd700;
             background: rgba(255, 215, 0, 0.1);
@@ -600,7 +530,6 @@
             gap: 10px;
             margin-top: 20px;
         }
-
         .save-btn, .load-btn, .menu-btn {
             padding: 10px 20px;
             background: #4a90e2;
@@ -611,12 +540,10 @@
             font-size: 14px;
             transition: all 0.3s;
         }
-
         .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled), .menu-btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
         }
-
         .save-btn:disabled, .load-btn:disabled, .menu-btn:disabled {
             opacity: 0.3;
             cursor: not-allowed;
@@ -625,7 +552,6 @@
         .menu-btn {
             background: #ffa500;
         }
-
         .menu-btn:hover:not(:disabled) {
             box-shadow: 0 5px 15px #ffa500;
         }
@@ -635,19 +561,16 @@
             text-align: center;
             padding: 50px;
         }
-
         .death-screen h2 {
             color: #ff4444;
             font-size: 48px;
             margin-bottom: 20px;
         }
-
         .death-screen p {
             color: #fff;
             font-size: 18px;
             margin-bottom: 30px;
         }
-
         .death-screen .warning {
             color: #ff4444;
             font-size: 14px;
@@ -665,7 +588,6 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .restart-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 0 30px #ffd700;
@@ -685,12 +607,10 @@
             align-items: center;
             pointer-events: none;
         }
-
         .death-overlay.active {
             display: flex;
             pointer-events: all;
         }
-
         .death-message {
             background: #1a1a2e;
             border: 3px solid #ff4444;
@@ -699,13 +619,11 @@
             text-align: center;
             max-width: 600px;
         }
-
         .death-message h1 {
             color: #ff4444;
             font-size: 64px;
             margin-bottom: 20px;
         }
-
         .death-message p {
             color: #fff;
             font-size: 18px;
@@ -719,7 +637,6 @@
             gap: 30px;
             margin-bottom: 30px;
         }
-
         .profile-avatar {
             width: 100px;
             height: 100px;
@@ -731,58 +648,47 @@
             justify-content: center;
             font-size: 48px;
         }
-
         .profile-info {
             flex: 1;
         }
-
         .profile-name {
             font-size: 32px;
             color: #ffd700;
             margin-bottom: 5px;
         }
-
         .profile-race {
             color: #888;
             margin-bottom: 10px;
         }
-
         .profile-stats {
             display: flex;
             gap: 20px;
         }
-
         .profile-stat {
             text-align: center;
         }
-
         .profile-stat-value {
             font-size: 20px;
             color: #ffd700;
         }
-
         .profile-stat-label {
             font-size: 12px;
             color: #888;
         }
-
         .profile-bio {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
         }
-
         .profile-bio h3 {
             color: #ffd700;
             margin-bottom: 10px;
         }
-
         .profile-bio p {
             color: #fff;
             line-height: 1.6;
         }
-
         .edit-profile-btn {
             width: 100%;
             padding: 15px;
@@ -794,7 +700,6 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-
         .edit-profile-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px #9370db;
@@ -805,7 +710,6 @@
             position: relative;
             display: inline-block;
         }
-
         .tooltip .tooltiptext {
             visibility: hidden;
             width: 200px;
@@ -824,14 +728,11 @@
             transition: opacity 0.3s;
             font-size: 12px;
         }
-
         .tooltip:hover .tooltiptext {
             visibility: visible;
             opacity: 1;
         }
         
-        /* ========== MEDIA QUERIES -- RESPONSIVO MOBILE ========== */
-
         @media (max-width: 1024px) {
             .main-layout {
                 grid-template-columns: 1fr;
@@ -1239,6 +1140,120 @@
                 -webkit-overflow-scrolling: touch;
             }
         }
+
+        .time-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 25px;
+            border: 1px solid #ffd700;
+        }
+        
+        .time-icon {
+            font-size: 20px;
+        }
+        
+        .time-text {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        
+        /* Sleep Modal */
+        .sleep-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .sleep-modal.active {
+            display: flex;
+        }
+        
+        .sleep-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 3px solid #ffd700;
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: pulseGlow 2s infinite;
+        }
+        
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+        }
+        
+        .sleep-content h2 {
+            color: #ffd700;
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        
+        .sleep-content .sleep-icon {
+            font-size: 80px;
+            margin: 20px 0;
+            animation: sleepZzz 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes sleepZzz {
+            0%, 100% { transform: translateY(0px); opacity: 1; }
+            50% { transform: translateY(-10px); opacity: 0.7; }
+        }
+        
+        .sleep-content .timer-text {
+            font-size: 48px;
+            color: #ffd700;
+            font-weight: bold;
+            margin: 20px 0;
+            font-family: monospace;
+        }
+        
+        .sleep-content .sleep-message {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        
+        .wake-btn {
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #ffa500, #ff8c00);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .wake-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px #ffa500;
+        }
+        
+        /* Status effect for low mana warning */
+        .stat.low-mana {
+            animation: warningPulse 1s ease-in-out infinite;
+            border: 1px solid #ff4444;
+        }
+        
+        @keyframes warningPulse {
+            0%, 100% { background: rgba(255, 68, 68, 0.1); }
+            50% { background: rgba(255, 68, 68, 0.3); }
+        }
     </style>
 </head>
 <body>
@@ -1386,6 +1401,17 @@
         </div>
     </div>
 
+    <!-- Sleep Modal -->
+    <div class="sleep-modal" id="sleep-modal">
+        <div class="sleep-content">
+            <h2>😴 Dormindo...</h2>
+            <div class="sleep-icon">💤💤💤</div>
+            <div class="timer-text" id="sleep-timer">10</div>
+            <div class="sleep-message" id="sleep-message"></div>
+            <button class="wake-btn" onclick="wakeUp()">⏰ Acordar</button>
+        </div>
+    </div>
+
     <!-- Main Game UI -->
     <div class="game-container" id="game-ui" style="display: none;">
         <div class="game-header">
@@ -1519,7 +1545,10 @@
             selectedRace: null,
             selectedGender: null,
             chestOpen: false,
-            royalQuest: null
+            royalQuest: null,
+            timeOfDay: 'day', // 'day' ou 'night'
+            isSleeping: false,
+            sleepTimeout: null,
         };
     
         // Race definitions
@@ -2840,8 +2869,124 @@
         function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
         function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
         function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
-        function rest() { if (gameState.isDead) return; const heal = 200; const newLife = Math.min(gameState.character.life + heal, gameState.character.maxLife); const healed = newLife - gameState.character.life; gameState.character.life = newLife; addLog(`😴 Você descansou e recuperou ${healed} de vida.`); updateUI(); }
-    
+        function rest() { if (gameState.isDead) return; if (gameState.location === 'home') { startSleep(); } }
+        
+        // ========== TIME SYSTEM FUNCTIONS ==========
+        function getTimeIcon() { return gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite'; }
+        function getTimeText() { return gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'; }
+
+        function canSleep() {
+            if (gameState.isDead || gameState.isSleeping) return false;
+            
+            if (gameState.timeOfDay === 'day') {
+                const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
+                return manaPercent < 50;
+            } else {
+                return true;
+            }
+        }
+
+        function getSleepMessage() {
+            if (gameState.timeOfDay === 'day') {
+                return '🌙 Dormir durante o dia... Você acordará à noite, mas recuperará apenas 20% da mana.';
+            } else {
+                return '🌞 Dormir durante a noite... Você acordará de dia e recuperará toda sua mana!';
+            }
+        }
+
+        function startSleep() {
+            if (gameState.isDead || gameState.isSleeping) return;
+            
+            if (!canSleep()) {
+                if (gameState.timeOfDay === 'day') {
+                    addLog('⚠️ Você não está cansado o suficiente para dormir durante o dia! Sua mana está acima de 50%.');
+                }
+                return;
+            }
+            
+            gameState.isSleeping = true;
+            
+            // Configurar modal
+            const modal = document.getElementById('sleep-modal');
+            const timerSpan = document.getElementById('sleep-timer');
+            const messageSpan = document.getElementById('sleep-message');
+            
+            messageSpan.textContent = getSleepMessage();
+            modal.classList.add('active');
+            
+            let secondsLeft = 10;
+            timerSpan.textContent = secondsLeft;
+            
+            // Timer para acordar automaticamente
+            if (gameState.sleepTimeout) clearInterval(gameState.sleepTimeout);
+            
+            gameState.sleepTimeout = setInterval(() => {
+                secondsLeft--;
+                timerSpan.textContent = secondsLeft;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(gameState.sleepTimeout);
+                    gameState.sleepTimeout = null;
+                    completeSleep();
+                }
+            }, 1000);
+            
+            addLog(`😴 Você foi dormir...`);
+        }
+
+        function wakeUp() {
+            if (!gameState.isSleeping) return;
+            
+            if (gameState.sleepTimeout) {
+                clearInterval(gameState.sleepTimeout);
+                gameState.sleepTimeout = null;
+            }
+            
+            addLog('⏰ Você acordou antes do tempo!');
+            completeSleep(true);
+        }
+
+        function completeSleep(earlyWake = false) {
+            const wasDay = gameState.timeOfDay === 'day';
+            
+            // Fechar modal
+            document.getElementById('sleep-modal').classList.remove('active');
+            
+            // Alternar dia/noite
+            gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
+            
+            // Recuperar mana conforme o momento em que dormiu
+            let manaRestored = 0;
+            let manaPercentRestored = 0;
+            
+            if (wasDay) {
+                // Dormiu de dia: recupera 20% da mana
+                manaPercentRestored = 0.2;
+                manaRestored = Math.floor(gameState.character.maxMana * 0.2);
+                gameState.character.mana = Math.min(gameState.character.mana + manaRestored, gameState.character.maxMana);
+                addLog(`😴 Você dormiu durante o dia e acordou à noite. Recuperou ${manaRestored} de mana (20%).`);
+            } else {
+                // Dormiu de noite: recupera mana inteira
+                manaRestored = gameState.character.maxMana - gameState.character.mana;
+                gameState.character.mana = gameState.character.maxMana;
+                addLog(`😴 Você dormiu durante a noite e acordou de dia. Recuperou toda sua mana! (+${manaRestored})`);
+            }
+            
+            // Pequena recuperação de vida também (20% da vida máxima)
+            const lifeRestored = Math.floor(gameState.character.maxLife * 0.2);
+            gameState.character.life = Math.min(gameState.character.life + lifeRestored, gameState.character.maxLife);
+            addLog(`❤️ Você recuperou ${lifeRestored} de vida ao descansar.`);
+            
+            gameState.isSleeping = false;
+            
+            // Atualizar UI para mostrar o novo horário
+            updateUI();
+            
+            if (earlyWake && wasDay) {
+                addLog('⚠️ Você acordou cedo, ainda é noite. Tente dormir novamente para recuperar mais mana!');
+            }
+        }
+
         // ========== FUNÇÕES DAS CASAS ==========
         for (let i = 1; i <= 12; i++) {
             window[`visitHouse${i}`] = function() {
