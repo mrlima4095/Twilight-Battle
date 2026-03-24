@@ -2243,12 +2243,35 @@
         function updateEquipmentDisplay() {
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
-                document.getElementById(`${slot}-item`).textContent = item ? item.name : 'Vazio';
+                const displayElement = document.getElementById(`${slot}-item`);
+                
+                if (item) {
+                    if (item.durability !== undefined) {
+                        const durabilityPercent = (item.durability / item.maxDurability) * 100;
+                        let durabilityColor = '#4CAF50';
+                        if (durabilityPercent < 25) durabilityColor = '#ff4444';
+                        else if (durabilityPercent < 50) durabilityColor = '#ffa500';
+                        
+                        displayElement.innerHTML = `${item.name}<br><span style="font-size: 8px; color: ${durabilityColor}">🔧 ${item.durability}/${item.maxDurability}</span>`;
+                    } else {
+                        displayElement.textContent = item.name;
+                    }
+                } else {
+                    displayElement.textContent = 'Vazio';
+                }
+                
                 const element = document.getElementById(`slot-${slot}`);
                 element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                
+                // Adicionar tooltip com informações de durabilidade
+                if (item && item.durability !== undefined) {
+                    element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`;
+                } else if (item) {
+                    element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`;
+                }
             }
         }
-    
+
         function updateGameContent() {
             const content = document.getElementById('game-content');
             const location = LOCATIONS[gameState.location];
