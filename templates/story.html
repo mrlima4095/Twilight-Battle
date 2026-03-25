@@ -2917,26 +2917,26 @@
             updateUI();
             addLog(message);
         }
-        
-        function goHome() { if (gameState.isDead) return; gameState.location = 'home'; gameState.chestOpen = false; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
+
+        function goHome() { gameState.chestOpen = false; go('home', '🏠 Você entrou em sua casa.'); }
         function goToMainAvenue() { go('main_avenue', '🛤️ Você chega na movimentada Avenida Principal.'); }
         function goToMainSquare() { go('main_square', '🏛️ Você entra na Praça Principal, coração do reino.'); }
-        function goToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você se aproxima do imponente Portão Principal.'); }
-        function goCastleGate() { if (gameState.isDead) return; gameState.location = 'castle_gate'; updateUI(); addLog('🏰 Você entra no pátio do castelo.'); }
-        function goGreatHall() { if (gameState.isDead) return; gameState.location = 'great_hall'; updateUI(); addLog('🚪 Você entra no majestoso Salão Principal.'); }
-        function goThroneRoom() { if (gameState.isDead) return; gameState.location = 'throne_room'; updateUI(); addLog('👑 Você entra na Sala do Trono.'); }
-        function goEastBridge() { if (gameState.isDead) return; gameState.location = 'east_bridge'; updateUI(); addLog('🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
-        function goFarmlands() { if (gameState.isDead) return; gameState.location = 'farmlands'; updateUI(); addLog('🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
-        function goMill() { if (gameState.isDead) return; gameState.location = 'mill'; updateUI(); addLog('🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
-        function goNorthVillage() { if (gameState.isDead) return; gameState.location = 'north_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Norte.'); }
-        function goSouthVillage() { if (gameState.isDead) return; gameState.location = 'south_village'; updateUI(); addLog('🏘️ Você entra no Vilarejo Sul.'); }
-        function goTavern() { if (gameState.isDead) return; gameState.location = 'tavern'; updateUI(); addLog('🍺 Você entra na Taberna do Porto.'); }
-        function leaveKingdomSecondary() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
-        function returnToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você retorna ao Portão Principal do reino.'); }
-        function goWeaponShop() { if (gameState.isDead) return; gameState.location = 'weaponshop'; updateUI(); addLog('⚔️ Bem-vindo à loja de armas.'); }
-        function goArmorShop() { if (gameState.isDead) return; gameState.location = 'armorshop'; updateUI(); addLog('🛡️ Bem-vindo à loja de armaduras.'); }
-        function goMarket() { if (gameState.isDead) return; gameState.location = 'market'; updateUI(); addLog('🍖 Você está no mercado.'); }
-        function leaveKingdom() { if (gameState.isDead) return; gameState.location = 'outside'; updateUI(); addLog('🚪 Você saiu do reino. Tenha cuidado!'); }
+        function goToMainGate() { go('main_gate', '🚪 Você se aproxima do imponente Portão Principal.'); }
+        function goCastleGate() { go('castle_gate', '🏰 Você entra no pátio do castelo.'); }
+        function goGreatHall() { go('great_hall', '🚪 Você entra no majestoso Salão Principal.'); }
+        function goThroneRoom() { go('throne_room', '👑 Você entra na Sala do Trono.'); }
+        function goEastBridge() { go('east_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
+        function goFarmlands() { go('farmlands', '🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
+        function goMill() { go('mill', '🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
+        function goNorthVillage() { go('north_village', '🏘️ Você entra no Vilarejo Norte.'); }
+        function goSouthVillage() { go('south_village', '🏘️ Você entra no Vilarejo Sul.'); }
+        function goTavern() { go('tavern', '🍺 Você entra na Taberna do Porto.'); }
+        function leaveKingdomSecondary() { go('outside', '🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
+        function returnToMainGate() { go('main_gate', '🚪 Você retorna ao Portão Principal do reino.'); }
+        function goWeaponShop() { go('weaponshop', '⚔️ Bem-vindo à loja de armas.'); }
+        function goArmorShop() { go('armorshop', '🛡️ Bem-vindo à loja de armaduras.'); }
+        function goMarket() { go('market', '🍖 Você está no mercado.'); }
+        function leaveKingdom() { go('outside', '🚪 Você saiu do reino. Tenha cuidado!'); }
         function rest() { if (gameState.isDead) return; if (gameState.location === 'home') { startSleep(); } }
         
         // ========== TIME SYSTEM FUNCTIONS ==========
