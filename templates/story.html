@@ -1518,9 +1518,7 @@
         </div>
 
         <!-- Combat Log -->
-        <div class="combat-log" id="combat-log">
-            <div class="log-entry">Bem-vindo ao Reino da Aurora!</div>
-        </div>
+        <div class="combat-log" id="combat-log"></div>
     </div>
 
     <script>
@@ -1538,7 +1536,7 @@
                 mainhand: null,
                 offhand: null
             },
-            combatLog: ['Bem-vindo ao Reino da Aurora!'],
+            combatLog: [],
             currentEnemy: null,
             isDead: false,
             selectedRace: null,
@@ -1904,7 +1902,6 @@
             document.querySelector(`[data-race="${race}"]`).classList.add('selected');
             gameState.selectedRace = race;
         }
-    
         function selectGender(gender) {
             if (gameState.isDead) return;
             document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
@@ -2002,7 +1999,6 @@
     
             document.getElementById('profile-modal').classList.add('active');
         }
-    
         function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
     
         function showEditProfile() {
@@ -2012,11 +2008,9 @@
             document.getElementById('edit-bio').value = gameState.character.bio;
             document.getElementById('edit-profile-modal').classList.add('active');
         }
-    
         function closeEditProfile() {
             document.getElementById('edit-profile-modal').classList.remove('active');
         }
-    
         function saveProfileEdit() {
             const newName = document.getElementById('edit-name').value.trim();
             const newAge = document.getElementById('edit-age').value;
@@ -2228,7 +2222,6 @@
                 }
             }
         }
-    
         function updateFoodGrid() {
             const grid = document.getElementById('food-grid');
             grid.innerHTML = '';
@@ -2248,7 +2241,6 @@
                 }
             });
         }
-    
         function updateEquipmentDisplay() {
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
@@ -2280,7 +2272,6 @@
                 }
             }
         }
-
         function updateGameContent() {
             const content = document.getElementById('game-content');
             const location = LOCATIONS[gameState.location];
@@ -2380,7 +2371,7 @@
     
             content.innerHTML = html;
         }
-    
+
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 10) gameState.combatLog.pop();
@@ -2388,7 +2379,7 @@
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
         }
-    
+
         // ========== TOUCH DRAG AND DROP ==========
         
         function handleTouchStart(e, index, source) {
@@ -2436,7 +2427,6 @@
             isDragging = false;
             slot.classList.add('dragging');
         }
-    
         function handleTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             
@@ -2478,7 +2468,6 @@
                 }
             }
         }
-    
         function handleTouchEnd(e, originalIndex, originalSource) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2544,7 +2533,6 @@
             
             cleanupTouchDrag();
         }
-    
         function handleTrashTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             e.preventDefault();
@@ -2565,7 +2553,6 @@
                 trashBin.classList.remove('drag-over-mobile');
             }
         }
-    
         function handleTrashTouchEnd(e) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2598,7 +2585,6 @@
             
             cleanupTouchDrag();
         }
-    
         function cleanupTouchDrag() {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -2632,7 +2618,6 @@
             draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
             draggedItemSource = 'inventory';
         }
-    
         function handleDragOver(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2640,7 +2625,6 @@
             }
             event.preventDefault();
         }
-    
         function handleDrop(event) {
             if (gameState.isDead) return;
             
@@ -2682,7 +2666,6 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-    
         function handleDropToTrash(event) {
             if (gameState.isDead) return;
             
@@ -2700,7 +2683,6 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-    
         function dragChestItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2712,7 +2694,6 @@
             draggedItemIndex = slot.dataset.index;
             draggedItemSource = 'chest';
         }
-    
         function handleChestDrop(event) {
             if (gameState.isDead) return;
             
@@ -2974,11 +2955,7 @@
                 return '🌞 Dormir durante a noite... Você acordará de dia e recuperará toda sua mana!';
             }
         }
-        function getSleepDurationSeconds() {
-            // 1 segundo dormido = 2 minutos do jogo (120 segundos)
-            // Para dormir 20 minutos do jogo, precisa de 10 segundos reais
-            return 10; // 10 segundos reais = 20 minutos do jogo
-        }
+        function getSleepDurationSeconds() { return 10; }
 
         function startSleep() {
             if (gameState.isDead || gameState.isSleeping) return;
@@ -3426,56 +3403,6 @@
 
         // ========== COMBAT ==========
         
-        /*function attack() {
-            if (gameState.isDead || !gameState.currentEnemy) return;
-    
-            const race = RACES[gameState.character.race];
-            const bonuses = calculateEquipmentBonuses();
-            const playerAttack = race.baseAttack + bonuses.attackBonus;
-            const playerDefense = race.baseDefense + bonuses.defenseBonus;
-            
-            const damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
-            gameState.currentEnemy.life -= damage;
-            addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
-    
-            if (gameState.currentEnemy.life <= 0) {
-                addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
-                gameState.character.exp += gameState.currentEnemy.exp;
-                gameState.character.gold += gameState.currentEnemy.gold;
-                addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
-                
-                if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
-                    gameState.royalQuest.kills++;
-                    addLog(`📜 Progresso da Missão Real: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros derrotados.`);
-                    
-                    if (gameState.royalQuest.kills >= gameState.royalQuest.target && !gameState.royalQuest.rewarded) {
-                        gameState.royalQuest.rewarded = true;
-                        gameState.character.gold += 300;
-                        addLog(`👑 MISSÃO REAL COMPLETA! Você recebeu 300 moedas de recompensa!`);
-                        addLog(`🏆 O Rei o declara um herói do reino!`);
-                    }
-                }
-                
-                if (Math.random() < 0.3) {
-                    const drops = ['maca', 'pao', 'carne'];
-                    const drop = drops[Math.floor(Math.random() * drops.length)];
-                    addItemToInventory(drop);
-                    addLog(`🎁 O monstro dropou: ${ITEMS[drop].name}!`);
-                }
-                
-                gameState.currentEnemy = null;
-            } else {
-                const enemyDamage = Math.max(1, gameState.currentEnemy.attack - playerDefense + Math.floor(Math.random() * 15));
-                gameState.character.life -= enemyDamage;
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyDamage} de dano em você! (${gameState.character.life}/${gameState.character.maxLife})`);
-    
-                if (gameState.character.life <= 0) {
-                    playerDeath();
-                }
-            }
-    
-            updateUI();
-        }*/
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
         
@@ -3579,7 +3506,6 @@
         
             updateUI();
         }
-
         function run() {
             if (gameState.isDead || !gameState.currentEnemy) return;
             
@@ -3614,7 +3540,6 @@
             updateUI();
         }
         
-        // Adicionar esta função após calculateEquipmentBonuses()
         function calculateTotalDefenseWithDurability() {
             let totalDefense = 0;
             const brokenItems = [];
@@ -3632,8 +3557,6 @@
             
             return { totalDefense, brokenItems };
         }
-        
-        // Função para aplicar dano com sistema de durabilidade (CORRIGIDA - cada golpe = 1 de durabilidade)
         function applyDamageWithArmor(incomingDamage) {
             let remainingDamage = incomingDamage;
             
@@ -3732,8 +3655,6 @@
             
             return { totalAbsorbed, remainingDamage };
         }
-
-        // Função para verificar e notificar sobre armaduras quebradas
         function checkForBrokenArmor() {
             const brokenItems = [];
             
