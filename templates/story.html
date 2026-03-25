@@ -2910,10 +2910,17 @@
         }
     
         // ========== LOCATION ACTIONS ==========
+
+        function go(location, message) {
+            if (gameState.isDead) { return; }
+            gameState.location = location;
+            updateUI();
+            addLog(message);
+        }
         
         function goHome() { if (gameState.isDead) return; gameState.location = 'home'; gameState.chestOpen = false; updateUI(); addLog('🏠 Você entrou em sua casa.'); }
-        function goToMainAvenue() { if (gameState.isDead) return; gameState.location = 'main_avenue'; updateUI(); addLog('🛤️ Você chega na movimentada Avenida Principal.'); }
-        function goToMainSquare() { if (gameState.isDead) return; gameState.location = 'main_square'; updateUI(); addLog('🏛️ Você entra na Praça Principal, coração do reino.'); }
+        function goToMainAvenue() { go('main_avenue', '🛤️ Você chega na movimentada Avenida Principal.'); }
+        function goToMainSquare() { go('main_square', '🏛️ Você entra na Praça Principal, coração do reino.'); }
         function goToMainGate() { if (gameState.isDead) return; gameState.location = 'main_gate'; updateUI(); addLog('🚪 Você se aproxima do imponente Portão Principal.'); }
         function goCastleGate() { if (gameState.isDead) return; gameState.location = 'castle_gate'; updateUI(); addLog('🏰 Você entra no pátio do castelo.'); }
         function goGreatHall() { if (gameState.isDead) return; gameState.location = 'great_hall'; updateUI(); addLog('🚪 Você entra no majestoso Salão Principal.'); }
