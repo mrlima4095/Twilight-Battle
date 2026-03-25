@@ -1631,6 +1631,7 @@
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
                 actions: [
                     { name: '😴 Dormir', action: 'rest' },
+                    { name: '🔮 Bola de Cristal', action: 'openCrystalBall' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
                     { name: '🚪 Sair para a Rua', action: 'goNorthVillage' }
                 ]
@@ -3730,6 +3731,33 @@
         }
     
         // ========== INITIALIZE ==========
+
+        function openCrystalBall() {
+            if (gameState.isDead) {
+                addLog('💀 A bola de cristal está escura... você está morto.');
+                return;
+            }
+            
+            const command = prompt(gameState.character.name.toLowerCase() + ' $');
+            
+            if (command) {
+                try {
+                    const result = eval(command);
+                    updateUI();
+                    
+                    if (result !== undefined) {
+                        addLog(`🔮 Bola de Cristal: ${JSON.stringify(result, null, 2)}`);
+                        alert(`Resultado:\n${JSON.stringify(result, null, 2)}`);
+                    } else {
+                        addLog('🔮 Bola de Cristal: Executado!');
+                        alert('✅ Comando executado!');
+                    }
+                } catch (error) {
+                    addLog(`❌ Erro: ${error.message}`);
+                    alert(`❌ Erro:\n${error.message}`);
+                }
+            }
+        }
         
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
