@@ -1595,8 +1595,10 @@
         // Items database
         const ITEMS = {
             espada: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
-            espada_longa: { name: 'Espada Longa', type: 'weapon', slot: 'mainhand', attack: 100, defense: 0, description: 'Espada de bom alcance' },
-            adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 10, description: 'Pequena e rápida' },
+            katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
+            facao: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
+            tchaco: { name: 'Tchaco', type: 'weapon', slot: 'mainhand', attack: 35, defense: 0, description: 'Arma de madeira resistente, boa para defesa e ataque.' },
+            adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
             escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
             arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
             flecha: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
@@ -3341,7 +3343,6 @@
         }
 
         function buySword() { buyItem('espada', 35); }
-        function buyLongsword() { buyItem('espada_longa', 100); }
         function buyBow() { buyItem('arco', 40); }
         function buyArrow() { buyItem('flecha', 3); }
         function buyDagger() { buyItem('adaga', 25); }
@@ -3401,7 +3402,7 @@
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
             } else {
                 addLog('🏚️ Ruínas antigas... você encontra um baú!');
-                const items = ['espada_longa', 'capacete_ferro', 'pocoes'];
+                const items = ['katana', 'capacete_ferro', 'pocoes'];
                 const itemId = items[Math.floor(Math.random() * items.length)];
                 addItemToInventory(itemId);
                 addLog(`🎁 Você encontrou: ${ITEMS[itemId].name}!`);
