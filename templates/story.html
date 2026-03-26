@@ -3338,24 +3338,61 @@
                 addLog('❌ Moedas insuficientes!');
             }
         }
-    
         function listenStories() {
             if (gameState.isDead) return;
-            const stories = [
-                '📖 O bardo conta a lenda do herói que derrotou o dragão das montanhas...',
-                '📖 Um mercador fala sobre terras distantes além do mar...',
-                '📖 Velhos guerreiros relembram a Grande Guerra de 500 anos atrás...',
-                '📖 Alguém sussurra sobre um tesouro escondido nas ruínas antigas...'
-            ];
-            const story = stories[Math.floor(Math.random() * stories.length)];
-            addLog(story);
             
-            if (Math.random() < 0.2) {
+            const stories = [
+                {
+                    title: '📖 A Lenda do Herói das Montanhas',
+                    text: 'Há muito tempo, um herói chamado Aldric enfrentou o dragão das montanhas fumegantes. Com sua espada encantada, ele derrotou a besta e salvou todo o reino. Dizem que sua espada ainda está escondida em algum lugar, esperando por um novo herói digno...'
+                },
+                {
+                    title: '📖 Terras Além-Mar',
+                    text: 'Um mercador de barba grisalha conta sobre terras distantes: "Além do mar oriental, existe um continente onde as árvores são feitas de cristal e os rios brilham como prata líquida. Um dia, talvez, possamos navegar até lá..."'
+                },
+                {
+                    title: '📖 A Grande Guerra',
+                    text: 'Veteranos relembram: "Há quinhentos anos, uma guerra devastadora quase destruiu nosso reino. Foi quando o primeiro Rei da Aurora uniu todos os povos e construiu estas muralhas que nos protegem até hoje."'
+                },
+                {
+                    title: '📖 O Tesouro Esquecido',
+                    text: 'Um sussurro corre pela taverna: "Dizem que nas ruínas antigas, além da floresta proibida, existe um tesouro deixado pelos antigos. Mas poucos que entraram lá voltaram para contar a história..."'
+                }
+            ];
+            
+            const story = stories[Math.floor(Math.random() * stories.length)];
+            const hasManaRestore = Math.random() < 0.2;
+            
+            Swal.fire({
+                title: story.title,
+                html: `<div style="text-align: left; line-height: 1.6;">
+                    <p>${story.text}</p>
+                    ${hasManaRestore ? '<p style="margin-top: 15px; color: #4CAF50;">✨ As histórias te inspiram e você recupera 10 de mana!</p>' : ''}
+                </div>`,
+                icon: 'info',
+                confirmButtonText: 'Continuar ouvindo 🎵',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showCancelButton: true,
+                cancelButtonText: 'Sair da taverna',
+                cancelButtonColor: '#ff4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Se quiser, pode chamar novamente para continuar ouvindo
+                    // listenStories();
+                    addLog('📖 Você continua ouvindo as histórias...');
+                }
+            });
+            
+            addLog(story.title + ': ' + story.text.substring(0, 50) + '...');
+            
+            if (hasManaRestore) {
                 gameState.character.mana = Math.min(gameState.character.mana + 10, gameState.character.maxMana);
                 addLog('🎵 As histórias inspiradoras recuperam 10 de mana!');
             }
         }
-    
+
         // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
     
         function visitFarmerHouse1() {
