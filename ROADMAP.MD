@@ -29,7 +29,6 @@ Capacete/Peitoral/Calças/Botas Sagrada da Fênix
 
 ## Armas
 
-Facão
 Faca de Ritual Antiga
 Cutelo
 Lança
@@ -37,7 +36,6 @@ Lança do Caçador de Dragões
 Mjölnir
 Martelo meteoro
 Machado
-Katana
 Espada
 Espada Excalibur
 Espada da Justiça
@@ -45,7 +43,6 @@ Lâmina das Almas Maldita
 Lâmina da Destruição
 Lâmina do Abismo
 Lâmina do Tempo
-Tchaco
 Cajado do Profeta
 
 # Modo Historia
@@ -77,7 +74,6 @@ Arena de Monstros
 Eventos da temporada -> local
 Jornada da Fênix/Apofis
 Baús domesticos
-
 
 
 Boa, agora você tá pensando como dev de verdade 😎
