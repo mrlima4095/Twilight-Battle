@@ -2380,7 +2380,7 @@
 
         function addLog(message) {
             gameState.combatLog.unshift(message);
-            if (gameState.combatLog.length > 10) gameState.combatLog.pop();
+            if (gameState.combatLog.length > 200) gameState.combatLog.pop();
             
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
