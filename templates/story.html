@@ -3747,6 +3747,76 @@
             };
             input.click();
         }
+        
+        // ========== DIALOG SYSTEM ==========
+
+        async function showDialog(options) {
+            const {
+                title,
+                text,
+                icon = 'info',
+                confirmText = 'Continuar',
+                showCancel = false,
+                cancelText = 'Sair',
+                imageUrl = null,
+                imageWidth = null,
+                imageHeight = null
+            } = options;
+            
+            const result = await Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                confirmButtonText: confirmText,
+                showCancelButton: showCancel,
+                cancelButtonText: cancelText,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4a90e2',
+                cancelButtonColor: '#ff4444',
+                imageUrl: imageUrl,
+                imageWidth: imageWidth,
+                imageHeight: imageHeight,
+                customClass: {
+                    popup: 'swal-dark',
+                    title: 'swal-title'
+                }
+            });
+            
+            return result;
+        }
+        
+        function showCharacterDialog(character, message, options = {}) {
+            const race = RACES[gameState.character?.race];
+            const iconMap = {
+                'Rei': '👑',
+                'Capitão': '🗡️',
+                'Bardo': '🎵',
+                'Mercador': '💰',
+                'Fazendeiro': '🌾',
+                'Marceneiro': '🔨',
+                'Artesão': '🎨',
+                'Tecelã': '🧵'
+            };
+            
+            const charIcon = iconMap[character] || '💬';
+            
+            Swal.fire({
+                title: `${charIcon} ${character}`,
+                html: `<div style="text-align: left; line-height: 1.6;">${message}</div>`,
+                icon: options.icon || 'info',
+                confirmButtonText: options.confirmText || 'Continuar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                imageUrl: options.imageUrl,
+                imageWidth: options.imageWidth,
+                imageHeight: options.imageHeight,
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
+        }
     
         // ========== INITIALIZE ==========
 
