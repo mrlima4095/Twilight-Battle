@@ -3195,26 +3195,124 @@
         }
 
         // ========== FUNÇÕES DO CASTELO ==========
-    
+
         function talkToCaptain() {
             if (gameState.isDead) return;
-            addLog('🗡️ Capitão: "Aventureiro, os monstros estão se aproximando das muralhas. Precisamos de heróis como você!"');
+            
+            const messages = [
+                "Aventureiro, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.",
+                "Já perdi muitos bons soldados para aquelas criaturas... Mas você tem potencial. Continue treinando e um dia poderá se tornar um guarda real!",
+                "Ouvi dizer que você enfrentou alguns monstros nas terras selvagens. Continue assim e talvez o Rei lhe conceda uma audiência especial."
+            ];
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            
+            Swal.fire({
+                title: '🗡️ Capitão da Guarda',
+                html: `<div style="text-align: left;">
+                    <p style="margin-bottom: 15px;">"${randomMessage}"</p>
+                    ${Math.random() < 0.3 ? '<p style="color: #ffd700; margin-top: 10px;">🎁 Tome esta poção, você vai precisar!</p>' : ''}
+                </div>`,
+                icon: 'info',
+                confirmButtonText: 'Entendido',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            
+            addLog('🗡️ Capitão: "' + randomMessage + '"');
             
             if (Math.random() < 0.3) {
                 addItemToInventory('pocoes');
                 addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
             }
         }
+
+        function talkToKing() {
+            if (gameState.isDead) return;
+            
+            const messages = [
+                "Aventureiro, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.",
+                "Vejo bravura em seu coração. O reino precisa de heróis como você para enfrentar as trevas que se aproximam.",
+                "Se um dia desejar uma missão de grande importância, volte ao meu trono. Tenho uma tarefa que apenas os mais corajosos podem cumprir."
+            ];
+            
+            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+            
+            Swal.fire({
+                title: '👑 Rei da Aurora',
+                html: `<div style="text-align: left;">
+                    <p style="margin-bottom: 15px; font-style: italic;">"${randomMessage}"</p>
+                    <p style="color: #ffd700; margin-top: 10px;">✨ O Rei o observa com admiração.</p>
+                </div>`,
+                icon: 'success',
+                confirmButtonText: 'Saudações, Majestade',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            
+            addLog('👑 Rei: "' + randomMessage + '"');
+        }
+
+        // Substitua a função acceptRoyalQuest
         function acceptRoyalQuest() {
             if (gameState.isDead) return;
-            addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
-            addLog('📜 Missão Real: Derrote 5 monstros para ganhar uma recompensa especial!');
             
-            if (!gameState.royalQuest) {
-                gameState.royalQuest = { kills: 0, target: 5, rewarded: false };
-            }
+            Swal.fire({
+                title: '📜 Missão Real',
+                html: `<div style="text-align: left;">
+                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 15px;">👑 Rei da Aurora:</p>
+                    <p>"Herói, uma grande ameaça ronda nossas terras. Criaturas das trevas estão se multiplicando e precisamos de alguém corajoso para enfrentá-las."</p>
+                    <p style="margin-top: 15px;">"Sua missão é eliminar <strong style="color: #ffd700;">5 monstros</strong> nas terras selvagens e trazer glória ao reino!"</p>
+                    <p style="margin-top: 15px; color: #4CAF50;">🏆 Recompensa: 300 moedas de ouro</p>
+                    <p style="margin-top: 10px; color: #888;">"Você aceita este desafio, aventureiro?"</p>
+                </div>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '✅ Aceitar Missão',
+                cancelButtonText: '❌ Recusar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (!gameState.royalQuest) {
+                        gameState.royalQuest = { kills: 0, target: 5, rewarded: false };
+                    }
+                    
+                    Swal.fire({
+                        title: '📜 Missão Aceita!',
+                        html: `<div style="text-align: left;">
+                            <p>Que a sorte esteja ao seu lado, herói!</p>
+                            <p style="margin-top: 10px;">📊 Progresso: <strong>${gameState.royalQuest.kills}/${gameState.royalQuest.target}</strong> monstros derrotados</p>
+                            <p style="margin-top: 10px; color: #ffd700;">💰 Recompensa: 300 moedas ao completar</p>
+                        </div>`,
+                        icon: 'success',
+                        confirmButtonText: 'Vamos lá!',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#4CAF50'
+                    });
+                    
+                    addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
+                    addLog('📜 Missão Real: Derrote 5 monstros para ganhar uma recompensa especial!');
+                } else {
+                    Swal.fire({
+                        title: 'Missão Recusada',
+                        text: 'Talvez em outra ocasião, aventureiro. As portas do castelo estarão sempre abertas para você.',
+                        icon: 'info',
+                        confirmButtonText: 'Até logo',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    addLog('👑 Rei: "Entendo... quando estiver pronto, volte."');
+                }
+            });
         }
-    
+
         // ========== FUNÇÕES DA TABERNA ==========
     
         function buyBeer() { if (gameState.isDead) return; buyDrink('cerveja', 5); }
