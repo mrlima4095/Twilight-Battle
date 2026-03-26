@@ -60,7 +60,6 @@ Experiência
 Capitulos
 Raça
 Duelos
-Sistema de carregar & salvar
 Atributo de sorte
 Habilidades
 Poções
