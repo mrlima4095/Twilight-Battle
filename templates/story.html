@@ -3030,6 +3030,20 @@
         function leaveKingdom() { go('outside', '🚪 Você saiu do reino. Tenha cuidado!'); }
         function rest() { if (gameState.isDead) return; if (gameState.location === 'home') { startSleep(); } }
         
+
+        function goBackOutside() { go('outside_back', '🌲 Você chegou a Trilha principal do Oeste.'); }
+function goBackForestTrailNorth() { go('back_forest_trail_north', '🚶 Você segue pela trilha norte, adentrando a floresta selvagem.'); }
+function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha sul, onde a vegetação se torna mais densa e sombria.'); }
+
+function goBackForestDeepNorth() { go('back_forest_deep_north', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
+function goBackForestDeepSouth() {
+    go('back_forest_deep_south', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.');
+}
+
+function returnToBackGate() {
+    go('main_gate', '🚪 Você retorna pelo portão dos fundos e entra no reino novamente.');
+}
+        
         // ========== TIME SYSTEM FUNCTIONS ==========
         function getTimeIcon() { return gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite'; }
         function getTimeText() { return gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'; }
@@ -3310,7 +3324,6 @@
                 addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
             }
         }
-
         function talkToKing() {
             if (gameState.isDead) return;
             
