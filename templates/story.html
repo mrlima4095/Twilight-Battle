@@ -3788,6 +3788,7 @@
                 addLog(`${attackType}: Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
             }
         
+            // Verificar se inimigo morreu
             if (gameState.currentEnemy.life <= 0) {
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
@@ -3814,20 +3815,26 @@
                 }
                 
                 gameState.currentEnemy = null;
-            } else if (damage > 0 || !isUsingBow) {
-                // Cálculo do dano do inimigo
-                const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
-                
-                // Usar o novo sistema de armadura com durabilidade
-                const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
-                
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyBaseDamage} de dano!`);
-                
-                if (gameState.character.life <= 0) {
-                    playerDeath();
-                }
+                updateUI();
+                return;
             }
-        
+            
+            // Inimigo contra-ataca
+            const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
+            
+            addLog(`💢 ${gameState.currentEnemy.name} contra-ataca causando ${enemyBaseDamage} de dano!`);
+            
+            // Usar o sistema de armadura com durabilidade
+            const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
+            
+            if (totalAbsorbed > 0) {
+                addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
+            }
+            
+            if (gameState.character.life <= 0) {
+                playerDeath();
+            }
+            
             updateUI();
         }
         function run() {
