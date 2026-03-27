@@ -1831,6 +1831,65 @@
                     { name: '🏚️ Ruínas Antigas', action: 'goRuins' },
                     { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
                 ]
+            },
+            outside_back: {
+                name: 'Trilha dos Fundos',
+                description: 'Você sai pelos fundos do reino, encontrando uma trilha pouco usada. A vegetação cresce solta e o caminho parece levar para uma área mais selvagem da floresta.',
+                actions: [
+                    { name: '🌲 Seguir pela Trilha Norte', action: 'goBackForestTrailNorth' },
+                    { name: '🌿 Seguir pela Trilha Sul', action: 'goBackForestTrailSouth' },
+                    { name: '🔙 Voltar ao Reino', action: 'returnToBackGate' }
+                ]
+            },
+
+            back_forest_trail_north: {
+                name: 'Trilha Norte',
+                description: 'Uma trilha estreita que serpenteia por entre árvores centenárias. O chão é coberto por folhas secas e você caminha por um bom tempo... O ar fica mais fresco conforme avança.',
+                actions: [
+                    { name: '🚶 Continuar pela Trilha', action: 'goBackForestDeepNorth' },
+                    { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
+                ]
+            },
+            back_forest_trail_south: {
+                name: 'Trilha Sul',
+                description: 'O caminho se torna mais sombrio e úmido. Você ouve sons estranhos entre as árvores. Após caminhar por um bom tempo, algo parece diferente à frente...',
+                actions: [
+                    { name: '🚶 Continuar pela Trilha', action: 'goBackForestDeepSouth' },
+                    { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
+                ]
+            },
+
+            back_forest_deep_north: {
+                name: 'Clareira do Lago Sagrado',
+                description: 'Após uma longa caminhada, você encontra um lago de águas azul-turquesa, rodeado por flores que brilham suavemente. A energia do local é palpável. Dizem que este é um local sagrado, escondido do resto do mundo.',
+                actions: [
+                    { name: '💧 Mergulhar no Lago Sagrado', action: 'enterSacredLake' },
+                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
+                ]
+            },
+            back_forest_deep_south: {
+                name: 'Cemitério Abandonado',
+                description: 'Após uma longa caminhada, você chega a um cemitério antigo e abandonado. As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
+                actions: [
+                    { name: '🚪 Explorar o Cemitério', action: 'enterBackCemetery' },
+                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
+                ]
+            },
+
+            sacred_lake_interior: {
+                name: 'Dentro do Lago Sagrado',
+                description: 'Você mergulha nas águas cristalinas do lago sagrado. Uma luz azulada envolve seu corpo, e você sente uma energia ancestral fluindo através de você. Bolhas de luz dançam ao redor, purificando sua alma.',
+                actions: [
+                    { name: '🏊 Sair do Lago', action: 'exitSacredLake' }
+                ]
+            },
+            back_cemetery: {
+                name: 'Cemitério Abandonado',
+                description: 'Lápides em ruínas contam histórias esquecidas. Algo se move entre as sombras. O ar é pesado e frio, como se a própria morte pairasse no local.',
+                actions: [
+                    { name: '🔍 Explorar o Cemitério', action: 'exploreBackCemetery' },
+                    { name: '🔙 Voltar para a Entrada', action: 'goBackForestDeepSouth' }
+                ]
             }
         };
 
