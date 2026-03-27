@@ -2367,17 +2367,75 @@
         function updateGameContent() {
             const content = document.getElementById('game-content');
             const location = LOCATIONS[gameState.location];
-    
+        
+            // Se estiver em batalha, mostra apenas a interface de combate
+            if (gameState.currentEnemy && !gameState.isDead) {
+                const enemy = gameState.currentEnemy;
+                const race = RACES[gameState.character.race];
+                const bonuses = calculateEquipmentBonuses();
+                const totalAttack = race.baseAttack + bonuses.attackBonus;
+                const totalDefense = race.baseDefense + bonuses.defenseBonus;
+                
+                let html = `
+                    <div style="position: relative; background: linear-gradient(135deg, #2a1a1a, #1a0a0a); border: 2px solid #ff4444; border-radius: 20px; padding: 30px; margin-bottom: 20px;">
+                        <div style="position: absolute; top: 10px; right: 20px; font-size: 12px; color: #888;">⚔️ COMBATE</div>
+                        <h2 class="location-title" style="color: #ff4444;">⚔️ BATALHA!</h2>
+                        
+                        <!-- Inimigo -->
+                        <div style="background: rgba(0,0,0,0.5); border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">${enemy.name === 'Dragão Jovem' ? '🐉' : (enemy.name === 'Goblin' ? '👺' : (enemy.name === 'Lobo' ? '🐺' : (enemy.name === 'Orc' ? '👹' : '🗿')))}</div>
+                            <div style="font-size: 24px; font-weight: bold; color: #ff4444;">${enemy.name}</div>
+                            <div style="margin-top: 15px;">
+                                <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 15px;">
+                                    <div><span style="color: #ff4444;">❤️</span> <strong>${enemy.life}</strong> / ${MONSTERS[enemy.id]?.life || enemy.life}</div>
+                                    <div><span style="color: #ffa500;">⚔️</span> ${enemy.attack}</div>
+                                    <div><span style="color: #4CAF50;">🛡️</span> ${enemy.defense}</div>
+                                </div>
+                                <div class="health-bar" style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px;">
+                                    <div style="width: ${(enemy.life / (MONSTERS[enemy.id]?.life || enemy.life)) * 100}%; background: linear-gradient(90deg, #ff4444, #cc0000); height: 100%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Jogador -->
+                        <div style="background: rgba(0,0,0,0.5); border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center;">
+                            <div style="font-size: 24px; font-weight: bold; color: #ffd700;">${gameState.character.name}</div>
+                            <div style="margin-top: 15px;">
+                                <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 15px;">
+                                    <div><span style="color: #ff4444;">❤️</span> <strong>${gameState.character.life}</strong> / ${gameState.character.maxLife}</div>
+                                    <div><span style="color: #4a90e2;">🔮</span> ${gameState.character.mana}/${gameState.character.maxMana}</div>
+                                    <div><span style="color: #ffa500;">⚔️</span> ${totalAttack}</div>
+                                    <div><span style="color: #4CAF50;">🛡️</span> ${totalDefense}</div>
+                                </div>
+                                <div class="health-bar" style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px;">
+                                    <div style="width: ${(gameState.character.life / gameState.character.maxLife) * 100}%; background: linear-gradient(90deg, #4CAF50, #45a049); height: 100%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de combate -->
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <button class="action-btn danger" onclick="attack()" style="flex: 1; padding: 15px; font-size: 18px;">⚔️ ATACAR</button>
+                            <button class="action-btn warning" onclick="run()" style="flex: 1; padding: 15px; font-size: 18px;">🏃 FUGIR</button>
+                        </div>
+                    </div>
+                `;
+                
+                content.innerHTML = html;
+                return;
+            }
+        
+            // Se não estiver em batalha, mostra a localização normal
             if (!location) {
                 content.innerHTML = `<h2 class="location-title">Erro</h2><div class="location-description">Localização não encontrada.</div>`;
                 return;
             }
-    
+        
             let html = `
                 <h2 class="location-title">${location.name}</h2>
                 <div class="location-description">${location.description}</div>
             `;
-    
+        
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
@@ -2446,21 +2504,7 @@
                 });
                 html += `</div>`;
             }
-    
-            if (gameState.currentEnemy && !gameState.isDead) {
-                html += `<div style="margin-top: 20px; background: rgba(255,68,68,0.2); padding: 20px; border-radius: 10px; border: 1px solid #ff4444;">
-                    <h3 style="color: #ff4444; margin-bottom: 10px;">⚔️ COMBATE!</h3>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-size: 18px;">${gameState.currentEnemy.name}</span>
-                        <span style="font-size: 18px; color: #ff4444;">❤️ ${gameState.currentEnemy.life}</span>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="action-btn danger" onclick="attack()" style="flex: 1;">⚔️ Atacar</button>
-                        <button class="action-btn warning" onclick="run()" style="flex: 1;">🏃 Fugir</button>
-                    </div>
-                </div>`;
-            }
-    
+        
             content.innerHTML = html;
         }
 
