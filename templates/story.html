@@ -3840,24 +3840,31 @@
         function run() {
             if (gameState.isDead || !gameState.currentEnemy) return;
             
+            // Chance de 50% de fugir
             if (Math.random() < 0.5) {
+                addLog(`🏃 Você conseguiu fugir de ${gameState.currentEnemy.name}!`);
                 gameState.currentEnemy = null;
-                addLog('🏃 Você conseguiu fugir!');
+                updateUI();
             } else {
-                addLog('❌ Não conseguiu fugir!');
+                addLog(`❌ Não conseguiu fugir de ${gameState.currentEnemy.name}!`);
                 
                 const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
                 
-                // Usar o novo sistema de armadura com durabilidade
+                addLog(`💢 ${gameState.currentEnemy.name} ataca enquanto você foge causando ${enemyBaseDamage} de dano!`);
+                
+                // Usar o sistema de armadura com durabilidade
                 const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
                 
-                addLog(`💔 ${gameState.currentEnemy.name} causou ${enemyBaseDamage} de dano enquanto você fugia!`);
-        
+                if (totalAbsorbed > 0) {
+                    addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
+                }
+                
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
+                
+                updateUI();
             }
-            updateUI();
         }
 
         function playerDeath() {
