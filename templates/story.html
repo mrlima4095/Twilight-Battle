@@ -3194,7 +3194,7 @@
             
             // Calcular quanto tempo do jogo passou
             // 1 segundo dormido = 2 minutos (120 segundos) do jogo
-            const gameTimePassed = secondsSlept * 120; // em segundos do jogo
+            const gameTimePassed = secondsSlept * 60; // em segundos do jogo
             
             addLog(`⏱️ O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
             
@@ -3357,9 +3357,7 @@
         function toggleTimeOfDay() {
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
-            const timeName = gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite';
-            addLog(`🕰️ O ciclo mudou! Agora é ${timeName}.`);
-            
+            addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
             updateUI();
         }
 
