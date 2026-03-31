@@ -1971,20 +1971,9 @@
             }
         }
     
-        function startNewGame() {
-            document.getElementById('title-screen').style.display = 'none';
-            document.getElementById('character-creation-modal').classList.add('active');
-        }
-    
-        function loadGameFromTitle() {
-            document.getElementById('title-screen').style.display = 'none';
-            loadGame();
-        }
-    
-        function cancelCharacterCreation() {
-            document.getElementById('character-creation-modal').classList.remove('active');
-            document.getElementById('title-screen').style.display = 'flex';
-        }
+        function startNewGame() { document.getElementById('title-screen').style.display = 'none'; document.getElementById('character-creation-modal').classList.add('active'); }
+        function loadGameFromTitle() { document.getElementById('title-screen').style.display = 'none'; loadGame(); }
+        function cancelCharacterCreation() { document.getElementById('character-creation-modal').classList.remove('active'); document.getElementById('title-screen').style.display = 'flex'; }
     
         function selectRace(race) {
             if (gameState.isDead) return;
