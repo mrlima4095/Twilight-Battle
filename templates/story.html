@@ -1639,7 +1639,7 @@
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            potions: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
+            heal_potion: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
             fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
             pao_fresco: { name: 'Pão Fresco', type: 'food', heal: 90, description: 'Recupera 90 de vida', consumable: true },
@@ -1894,11 +1894,11 @@
 
         // Monsters
         const MONSTERS = {
-            goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 20 },
-            wolf: { name: 'Lobo', life: 200, attack: 40, defense: 15, exp: 75, gold: 30 },
-            orc: { name: 'Orc', life: 400, attack: 70, defense: 30, exp: 150, gold: 60 },
-            troll: { name: 'Troll', life: 800, attack: 120, defense: 50, exp: 300, gold: 120 },
-            dragon: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
+            goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 0 },
+            wolf: { name: 'Lobo', life: 200, attack: 40, defense: 15, exp: 75, gold: 0 },
+            orc: { name: 'Orc', life: 400, attack: 70, defense: 30, exp: 150, gold: 0 },
+            troll: { name: 'Troll', life: 800, attack: 120, defense: 50, exp: 300, gold: 0 },
+            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0 }
         };
     
         // Drag and Drop Variables
