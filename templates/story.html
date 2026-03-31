@@ -2059,7 +2059,7 @@
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
             
-            addItemToInventory('dagger', 3);
+            addItemToInventory('apple', 3);
             addItemToInventory('bread', 2);
             
             updateUI(); startCycleTimer();
@@ -3703,7 +3703,7 @@
         function buyLeatherChest() { buyItem('peitoral_couro', 50); }
         function buyLeatherPants() { buyItem('calcas_couro', 40); }
         function buyLeatherBoots() { buyItem('botas_couro', 20); }
-        function buyApple() { buyItem('dagger', 2); }
+        function buyApple() { buyItem('apple', 2); }
         function buyBread() { buyItem('bread', 2); }
         function buyMeat() { buyItem('meat', 5); }
         function buyPotion() { buyItem('potion', 35); }
@@ -3722,7 +3722,7 @@
             } else {
                 addLog('🌳 A floresta está tranquila... por enquanto.');
                 if (Math.random() < 0.3) {
-                    addItemToInventory('dagger', 1);
+                    addItemToInventory('apple', 1);
                     addLog('🍎 Você encontrou uma maçã silvestre!');
                 }
             }
@@ -3842,7 +3842,7 @@
                 }
                 
                 if (Math.random() < 0.3) {
-                    const drops = ['dagger', 'bread', 'meat'];
+                    const drops = ['apple', 'bread', 'meat'];
                     const drop = drops[Math.floor(Math.random() * drops.length)];
                     addItemToInventory(drop);
                     addLog(`🎁 O monstro dropou: ${ITEMS[drop].name}!`);
