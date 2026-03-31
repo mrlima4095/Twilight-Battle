@@ -3051,9 +3051,13 @@
 
         function go(location, message) {
             if (gameState.isDead) { return; }
+            gameState.last_location = location;
             gameState.location = location;
             updateUI();
             addLog(message);
+        }
+        function goBack() {
+            go
         }
 
         function goHome() { gameState.chestOpen = false; go('home', '🏠 Você entrou em sua casa.'); }
@@ -3078,8 +3082,8 @@
         function rest() { if (gameState.isDead) return; if (gameState.location === 'home') { startSleep(); } }
 
         function goBackOutside() { go('outside_back', '🌲 Você chegou a Trilha principal do Oeste.'); }
-        function goBackForestTrailNorth() { go('back_forest_trail_north', '🚶 Você segue pela trilha norte, adentrando a floresta selvagem.'); }
-        function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha sul, onde a vegetação se torna mais densa e sombria.'); }
+        function goBackForestTrailNorth() { go('back_forest_trail_north', '🚶 Você segue pela trilha ao norte, adentrando a floresta selvagem.'); }
+        function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha ao sul, onde a vegetação se torna mais densa e sombria.'); }
 
         function goSacredLake() { go('sacred_lake', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
         function goAbandonedCemetery() { go('abandoned_cemetery', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.'); }
