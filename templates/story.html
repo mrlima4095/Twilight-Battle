@@ -3325,40 +3325,40 @@
 
         // ========== CYCLE MANAGEMENT ==========
 
-function startCycleTimer() {
-    // Limpar timer existente se houver
-    if (gameState.dayCycleTimer) {
-        clearInterval(gameState.dayCycleTimer);
-        gameState.dayCycleTimer = null;
-    }
-    
-    // Se não houver tempo restante registrado, iniciar novo ciclo
-    if (gameState.remainingCycleTime === null || gameState.remainingCycleTime === undefined) {
-        gameState.cycleStartTime = Date.now();
-        gameState.remainingCycleTime = gameState.cycleDuration;
-    } else {
-        // Já tem um tempo restante (vindo do save), apenas atualizar o startTime
-        gameState.cycleStartTime = Date.now();
-    }
-    
-    // Atualizar timer a cada segundo
-    gameState.dayCycleTimer = setInterval(() => {
-        if (gameState.isSleeping) return;
-        
-        const now = Date.now();
-        const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-        const remaining = gameState.remainingCycleTime - elapsed;
-        
-        if (remaining <= 0) {
-            // Ciclo terminou, alternar dia/noite
-            toggleTimeOfDay();
-            // Reiniciar ciclo
-            gameState.cycleStartTime = Date.now();
-            gameState.remainingCycleTime = gameState.cycleDuration;
+        function startCycleTimer() {
+            // Limpar timer existente se houver
+            if (gameState.dayCycleTimer) {
+                clearInterval(gameState.dayCycleTimer);
+                gameState.dayCycleTimer = null;
+            }
+            
+            // Se não houver tempo restante registrado, iniciar novo ciclo
+            if (gameState.remainingCycleTime === null || gameState.remainingCycleTime === undefined) {
+                gameState.cycleStartTime = Date.now();
+                gameState.remainingCycleTime = gameState.cycleDuration;
+            } else {
+                // Já tem um tempo restante (vindo do save), apenas atualizar o startTime
+                gameState.cycleStartTime = Date.now();
+            }
+            
+            // Atualizar timer a cada segundo
+            gameState.dayCycleTimer = setInterval(() => {
+                if (gameState.isSleeping) return;
+                
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                const remaining = gameState.remainingCycleTime - elapsed;
+                
+                if (remaining <= 0) {
+                    // Ciclo terminou, alternar dia/noite
+                    toggleTimeOfDay();
+                    // Reiniciar ciclo
+                    gameState.cycleStartTime = Date.now();
+                    gameState.remainingCycleTime = gameState.cycleDuration;
+                }
+                // Não atualizar display do tempo restante na UI
+            }, 1000);
         }
-        // Não atualizar display do tempo restante na UI
-    }, 1000);
-}
         function toggleTimeOfDay() {
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
