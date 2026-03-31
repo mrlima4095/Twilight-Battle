@@ -3170,8 +3170,7 @@
                 }
             }, 100);
             
-            addLog(`😴 Você foi dormir... (${gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'})`);
-            addLog(`⏰ Dormir por ${sleepDuration} segundos fará o tempo avançar 10 minutos.`);
+            addLog('😴 Você foi dormir...');
         }
 
         function wakeUp() {
@@ -3198,7 +3197,7 @@
             // 1 segundo dormido = 2 minutos (120 segundos) do jogo
             const gameTimePassed = secondsSlept * 60; // em segundos do jogo
             
-            addLog(`⏱️ O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
+            addLog(`⏱️ Você durmiu por ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
             
             // Avançar o ciclo baseado no tempo dormido
             if (gameState.remainingCycleTime !== null) {
