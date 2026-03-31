@@ -1648,7 +1648,15 @@
             coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
             mead: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
             liquor: { name: 'Licor de Mel', type: 'drink', heal: 50, mana: 25, description: 'Recupera 50 de vida e 25 de mana', consumable: true },
-            tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false }
+            tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
+
+            clock: { 
+                name: '⏰ Relógio', 
+                type: 'tool', 
+                consumable: false, 
+                description: 'Mostra o tempo restante do ciclo atual.', 
+                useEffect: 'showTimeRemaining'
+            }
         };
 
         // Locations expandidas
@@ -1956,7 +1964,7 @@
                         gameState = saved;
                         document.getElementById('title-screen').style.display = 'none';
                         document.getElementById('game-ui').style.display = 'block';
-                        updateUI();
+                        updateUI(); startCycleTimer();
                         addLog('📂 Jogo continuado do autosave!');
                     } else {
                         alert('❌ Autosave inválido!');
@@ -2054,7 +2062,7 @@
             addItemToInventory('dagger', 3);
             addItemToInventory('bread', 2);
             
-            updateUI();
+            updateUI(); startCycleTimer();
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
         }
     
@@ -2973,12 +2981,13 @@
             
             const item = gameState.inventory[index];
             if (!item) return;
-    
-            if (item.type === 'food' || item.type === 'drink') {
-                useFood(index);
-            } else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') {
-                equipItemFromInventory(index);
-            }
+            
+            // Verificar se é o relógio
+            
+
+            if (item.type === 'food' || item.type === 'drink') { useFood(index); }
+            else if (item.id === 'clock') { showTimeRemaining(); }
+            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
         }
         function useFood(index) {
             if (gameState.isDead) return;
@@ -3254,6 +3263,67 @@
             return false;
         }
 
+        function showTimeRemaining() {
+            if (!gameState.cycleStartTime) {
+                Swal.fire({
+                    title: '⏰ Relógio Mágico',
+                    text: 'O ciclo de tempo ainda não foi iniciado!',
+                    icon: 'info',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const now = Date.now();
+            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+            const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+            
+            const minutes = Math.floor(remaining / 60);
+            const seconds = remaining % 60;
+            
+            const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+            const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+            
+            // Calcular porcentagem do ciclo
+            const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+            
+            // Criar barra de progresso
+            const progressBar = `
+                <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px; margin: 20px 0;">
+                    <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;"></div>
+                </div>
+            `;
+            
+            Swal.fire({
+                title: '⏰ Relógio',
+                html: `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">${currentPhase === '☀️ DIA' ? '☀️' : '🌙'}</div>
+                        <div style="font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 10px;">
+                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+                        </div>
+                        <div style="color: #888; margin-bottom: 15px;">
+                            ${currentPhase} - Restante para ${nextPhase}
+                        </div>
+                        ${progressBar}
+                        <div style="color: #aaa; font-size: 12px; margin-top: 10px;">
+                            Cada ciclo dura 10 minutos de jogo
+                        </div>
+                    </div>
+                `,
+                icon: 'info',
+                confirmButtonText: 'Entendi',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
+        }
+
         // ========== CYCLE MANAGEMENT ==========
 
         function startCycleTimer() {
@@ -3263,7 +3333,7 @@
                 gameState.dayCycleTimer = null;
             }
             
-            // Se não houver tempo restante registrado, iniciar novo ciclo de 20 minutos
+            // Se não houver tempo restante registrado, iniciar novo ciclo de 10 minutos
             if (gameState.remainingCycleTime === null) {
                 gameState.cycleStartTime = Date.now();
                 gameState.remainingCycleTime = gameState.cycleDuration;
@@ -3272,7 +3342,7 @@
                 gameState.cycleStartTime = Date.now();
             }
             
-            // Atualizar timer a cada segundo
+            // Atualizar timer a cada segundo (apenas para controle interno, sem mostrar na UI)
             gameState.dayCycleTimer = setInterval(() => {
                 if (gameState.isSleeping) return; // Não avança tempo enquanto dorme
                 
@@ -3286,10 +3356,8 @@
                     // Reiniciar ciclo
                     gameState.cycleStartTime = Date.now();
                     gameState.remainingCycleTime = gameState.cycleDuration;
-                } else {
-                    // Atualizar display do tempo restante (opcional)
-                    updateCycleDisplay();
                 }
+                // Não atualizar display do tempo restante
             }, 1000);
         }
         function toggleTimeOfDay() {
@@ -3299,36 +3367,6 @@
             addLog(`🕰️ O ciclo mudou! Agora é ${timeName}.`);
             
             updateUI();
-            updateCycleDisplay();
-        }
-        function updateCycleDisplay() {
-            if (!gameState.cycleStartTime) return;
-            
-            const now = Date.now();
-            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-            const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
-            
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-            
-            // Procurar ou criar elemento para mostrar tempo restante
-            let timerDisplay = document.getElementById('cycle-timer');
-            if (!timerDisplay) {
-                // Criar se não existir
-                const timeIndicator = document.querySelector('.time-indicator');
-                if (timeIndicator) {
-                    timerDisplay = document.createElement('span');
-                    timerDisplay.id = 'cycle-timer';
-                    timerDisplay.style.fontSize = '10px';
-                    timerDisplay.style.marginLeft = '8px';
-                    timerDisplay.style.color = '#888';
-                    timeIndicator.appendChild(timerDisplay);
-                }
-            }
-            
-            if (timerDisplay) {
-                timerDisplay.textContent = ` ⏱️ ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            }
         }
 
         // ========== FUNÇÕES DO CASTELO ==========
@@ -4051,7 +4089,7 @@
                         document.getElementById('death-overlay').classList.remove('active');
                         document.getElementById('title-screen').style.display = 'none';
                         document.getElementById('game-ui').style.display = 'block';
-                        updateUI();
+                        updateUI(); startCycleTimer();
                         addLog('📂 Jogo carregado!');
                     } catch (err) {
                         alert('Erro ao carregar arquivo!');
