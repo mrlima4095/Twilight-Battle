@@ -3871,7 +3871,7 @@
             gameState.currentEnemy = null;
             
             addLog('💀 VOCÊ MORREU!');
-            addLog('❌ Todas as ações estão bloqueadas.');
+            localStorage.removeItem('twilight_autosave');
             
             updateUI();
         }
