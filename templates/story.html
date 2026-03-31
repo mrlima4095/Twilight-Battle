@@ -1314,22 +1314,22 @@
             <h2 class="modal-title">Crie Seu Personagem</h2>
             
             <div class="race-selector" id="race-selector">
-                <div class="race-card" data-race="elfo" onclick="selectRace('elfo')">
+                <div class="race-card" data-race="elf" onclick="selectRace('elf')">
                     <div class="race-name">🧝 Elfo</div>
                     <div class="race-stats">Vida: 512 | Ataque: 512</div>
                     <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Esquiva</div>
                 </div>
-                <div class="race-card" data-race="mago" onclick="selectRace('mago')">
+                <div class="race-card" data-race="wizard" onclick="selectRace('wizard')">
                     <div class="race-name">🔮 Mago</div>
                     <div class="race-stats">Vida: 800 | Ataque: 250</div>
                     <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Magia</div>
                 </div>
-                <div class="race-card" data-race="centauro" onclick="selectRace('centauro')">
+                <div class="race-card" data-race="centaur" onclick="selectRace('centaur')">
                     <div class="race-name">🏹 Centauro</div>
                     <div class="race-stats">Vida: 600 | Ataque: 256</div>
                     <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Carga</div>
                 </div>
-                <div class="race-card" data-race="ninfa" onclick="selectRace('ninfa')">
+                <div class="race-card" data-race="nymph" onclick="selectRace('nymph')">
                     <div class="race-name">🌸 Ninfa</div>
                     <div class="race-stats">Vida: 512 | Ataque: 128</div>
                     <div style="color: #888; font-size: 12px; margin-top: 5px;">Habilidade: Cura</div>
@@ -1471,7 +1471,7 @@
             </div>
             <div class="save-load-buttons">
                 <button class="save-btn" id="save-btn" onclick="saveGame()">💾 Salvar</button>
-                <button class="load-btn" id="load-btn" onclick="loadGame()">📂 Carregar</button>
+                <!--<button class="load-btn" id="load-btn" onclick="loadGame()">📂 Carregar</button>-->
                 <button class="menu-btn" onclick="returnToTitle()">🏠 Menu</button>
             </div>
         </div>
@@ -1580,7 +1580,7 @@
     
         // Race definitions
         const RACES = {
-            elfo: { 
+            elf: { 
                 name: 'Elfo', 
                 baseLife: 512, 
                 baseAttack: 512, 
@@ -1589,7 +1589,7 @@
                 icon: '🧝',
                 mana: 80
             },
-            mago: { 
+            wizard: { 
                 name: 'Mago', 
                 baseLife: 800, 
                 baseAttack: 250, 
@@ -1598,7 +1598,7 @@
                 icon: '🔮',
                 mana: 150
             },
-            centauro: { 
+            centaur: { 
                 name: 'Centauro', 
                 baseLife: 600, 
                 baseAttack: 256, 
@@ -1607,7 +1607,7 @@
                 icon: '🏹',
                 mana: 80
             },
-            ninfa: { 
+            nymph: { 
                 name: 'Ninfa', 
                 baseLife: 512, 
                 baseAttack: 128, 
@@ -1893,10 +1893,10 @@
         // Monsters
         const MONSTERS = {
             goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 20 },
-            lobo: { name: 'Lobo', life: 200, attack: 40, defense: 15, exp: 75, gold: 30 },
+            wolf: { name: 'Lobo', life: 200, attack: 40, defense: 15, exp: 75, gold: 30 },
             orc: { name: 'Orc', life: 400, attack: 70, defense: 30, exp: 150, gold: 60 },
             troll: { name: 'Troll', life: 800, attack: 120, defense: 50, exp: 300, gold: 120 },
-            dragao: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
+            dragon: { name: 'Dragão Jovem', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 500 }
         };
     
         // Drag and Drop Variables
@@ -3677,7 +3677,7 @@
         function exploreForest() {
             if (gameState.isDead) return;
             if (Math.random() < 0.6) {
-                const monsters = ['goblin', 'lobo', 'orc'];
+                const monsters = ['goblin', 'wolf', 'orc'];
                 const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
                 gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
                 addLog(`⚠️ Um ${gameState.currentEnemy.name} apareceu!`);
@@ -3709,7 +3709,7 @@
         function goRuins() {
             if (gameState.isDead) return;
             if (Math.random() < 0.4) {
-                gameState.currentEnemy = { ...MONSTERS['dragao'], id: 'dragao' };
+                gameState.currentEnemy = { ...MONSTERS['dragon'], id: 'dragon' };
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
             } else {
                 addLog('🏚️ Ruínas antigas... você encontra um baú!');
@@ -4150,10 +4150,8 @@
                     
                     if (result !== undefined) {
                         addLog(`🔮 Bola de Cristal: ${JSON.stringify(result, null, 2)}`);
-                        alert(`Resultado:\n${JSON.stringify(result, null, 2)}`);
                     } else {
-                        addLog('🔮 Bola de Cristal: Executado!');
-                        alert('✅ Comando executado!');
+                        addLog('🔮 A Bola de Cristal executou o comando!');
                     }
                 } catch (error) {
                     addLog(`❌ Erro: ${error.message}`);
