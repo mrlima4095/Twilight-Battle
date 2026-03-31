@@ -1620,10 +1620,10 @@
 
         // Items database
         const ITEMS = {
-            espada: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
+            sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
             katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
             facao: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
-            adaga: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
+            dagger: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
             escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
             arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
             flecha: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
@@ -1636,11 +1636,11 @@
             calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
             botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, durability: 20, maxDurability: 20, description: 'Calçado simples' },
             botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
-            maca: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
-            pao: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
-            carne: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
+            apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
+            bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
+            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
             pocoes: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
-            peixe: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
+            fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
             pao_fresco: { name: 'Pão Fresco', type: 'food', heal: 90, description: 'Recupera 90 de vida', consumable: true },
             cerveja: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
@@ -2052,8 +2052,8 @@
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
             
-            addItemToInventory('maca', 3);
-            addItemToInventory('pao', 2);
+            addItemToInventory('dagger', 3);
+            addItemToInventory('bread', 2);
             
             updateUI();
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
@@ -3656,10 +3656,10 @@
             }
         }
 
-        function buySword() { buyItem('espada', 35); }
+        function buySword() { buyItem('sword', 35); }
         function buyBow() { buyItem('arco', 40); }
         function buyArrow() { buyItem('flecha', 3); }
-        function buyDagger() { buyItem('adaga', 25); }
+        function buyDagger() { buyItem('dagger', 25); }
         function buyKatana() { buyItem('katana', 120); }
         function buyFacao() { buyItem('facao', 65); }
         function buyWoodenShield() { buyItem('escudo_madeira', 30); }
@@ -3667,11 +3667,11 @@
         function buyLeatherChest() { buyItem('peitoral_couro', 50); }
         function buyLeatherPants() { buyItem('calcas_couro', 40); }
         function buyLeatherBoots() { buyItem('botas_couro', 20); }
-        function buyApple() { buyItem('maca', 2); }
-        function buyBread() { buyItem('pao', 2); }
-        function buyMeat() { buyItem('carne', 5); }
+        function buyApple() { buyItem('dagger', 2); }
+        function buyBread() { buyItem('bread', 2); }
+        function buyMeat() { buyItem('meat', 5); }
         function buyPotion() { buyItem('pocoes', 35); }
-        function buyFish() { buyItem('peixe', 5); }
+        function buyFish() { buyItem('fish', 5); }
         function buyCarrot() { buyItem('cenoura', 3); }
 
         // ========== EXPLORATION ==========
@@ -3686,7 +3686,7 @@
             } else {
                 addLog('🌳 A floresta está tranquila... por enquanto.');
                 if (Math.random() < 0.3) {
-                    addItemToInventory('maca', 1);
+                    addItemToInventory('dagger', 1);
                     addLog('🍎 Você encontrou uma maçã silvestre!');
                 }
             }
@@ -3806,7 +3806,7 @@
                 }
                 
                 if (Math.random() < 0.3) {
-                    const drops = ['maca', 'pao', 'carne'];
+                    const drops = ['dagger', 'bread', 'meat'];
                     const drop = drops[Math.floor(Math.random() * drops.length)];
                     addItemToInventory(drop);
                     addLog(`🎁 O monstro dropou: ${ITEMS[drop].name}!`);
