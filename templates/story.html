@@ -1622,12 +1622,12 @@
         const ITEMS = {
             sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
             katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
-            facao: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
+            machete: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
             dagger: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
-            escudo_madeira: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
-            arco: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
-            flecha: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
-            cajado: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
+            wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
+            bow: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
+            arrow: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
+            staff: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
             capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Proteção leve' },
             capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, durability: 80, maxDurability: 80, description: 'Proteção pesada' },
             peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Armadura leve' },
@@ -1635,19 +1635,19 @@
             calcas_couro: { name: 'Calças de Couro', type: 'armor', slot: 'pants', attack: 0, defense: 15, durability: 30, maxDurability: 30, description: 'Proteção para as pernas' },
             calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
             botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, durability: 20, maxDurability: 20, description: 'Calçado simples' },
-            botas_ferro: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
+            iron_boots: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
             meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            pocoes: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
+            potions: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
             fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
             pao_fresco: { name: 'Pão Fresco', type: 'food', heal: 90, description: 'Recupera 90 de vida', consumable: true },
-            cerveja: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
-            vinho: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
-            cafe: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
-            hidromel: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
-            licor: { name: 'Licor de Mel', type: 'drink', heal: 50, mana: 25, description: 'Recupera 50 de vida e 25 de mana', consumable: true },
+            beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
+            wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
+            coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
+            mead: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
+            liquor: { name: 'Licor de Mel', type: 'drink', heal: 50, mana: 25, description: 'Recupera 50 de vida e 25 de mana', consumable: true },
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false }
         };
 
@@ -1718,7 +1718,6 @@
                     { name: '🍎 Maçã (10💰)', action: 'buyApple' },
                     { name: '🍞 Pão (15💰)', action: 'buyBread' },
                     { name: '🥩 Carne (30💰)', action: 'buyMeat' },
-                    { name: '🧪 Poção de Cura (50💰)', action: 'buyPotion' },
                     { name: '🐟 Peixe Fresco (25💰)', action: 'buyFish' },
                     { name: '🥕 Cenoura (8💰)', action: 'buyCarrot' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
@@ -1844,7 +1843,7 @@
                 name: 'Trilha Norte',
                 description: 'Uma trilha estreita que serpenteia por entre árvores centenárias. O chão é coberto por folhas secas e você caminha por um bom tempo... O ar fica mais fresco conforme avança.',
                 actions: [
-                    { name: '🚶 Continuar pela Trilha', action: 'goBackForestDeepNorth' },
+                    { name: '🚶 Continuar pela Trilha', action: 'goAbandonedCemetery' },
                     { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
                 ]
             },
@@ -1852,12 +1851,12 @@
                 name: 'Trilha Sul',
                 description: 'O caminho se torna mais sombrio e úmido. Você ouve sons estranhos entre as árvores. Após caminhar por um bom tempo, algo parece diferente à frente...',
                 actions: [
-                    { name: '🚶 Continuar pela Trilha', action: 'goBackForestDeepSouth' },
+                    { name: '🚶 Continuar pela Trilha', action: 'goSacredLake' },
                     { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
                 ]
             },
 
-            back_forest_deep_north: {
+            sacred_lake: {
                 name: 'Clareira do Lago Sagrado',
                 description: 'Após uma longa caminhada, você encontra um lago de águas azul-turquesa, rodeado por flores que brilham suavemente. A energia do local é palpável. Dizem que este é um local sagrado, escondido do resto do mundo.',
                 actions: [
@@ -1865,7 +1864,7 @@
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
                 ]
             },
-            back_forest_deep_south: {
+            abandoned_cemetery: {
                 name: 'Cemitério Abandonado',
                 description: 'Após uma longa caminhada, você chega a um cemitério antigo e abandonado. As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
                 actions: [
@@ -1886,7 +1885,7 @@
                 description: 'Lápides em ruínas contam histórias esquecidas. Algo se move entre as sombras. O ar é pesado e frio, como se a própria morte pairasse no local.',
                 actions: [
                     { name: '🔍 Explorar o Cemitério', action: 'exploreBackCemetery' },
-                    { name: '🔙 Voltar para a Entrada', action: 'goBackForestDeepSouth' }
+                    { name: '🔙 Voltar para a Entrada', action: 'goSacredLake' }
                 ]
             }
         };
@@ -3077,8 +3076,8 @@
         function goBackForestTrailNorth() { go('back_forest_trail_north', '🚶 Você segue pela trilha norte, adentrando a floresta selvagem.'); }
         function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha sul, onde a vegetação se torna mais densa e sombria.'); }
 
-        function goBackForestDeepNorth() { go('back_forest_deep_north', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
-        function goBackForestDeepSouth() { go('back_forest_deep_south', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.'); }
+        function goSacredLake() { go('sacred_lake', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
+        function goAbandonedCemetery() { go('abandoned_cemetery', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.'); }
 
         function returnToBackGate() { go('farmlands', '🚪 Você retorna pelo portão dos fundos e entra no reino novamente.'); }
 
@@ -3361,7 +3360,7 @@
             addLog('🗡️ Capitão: "' + randomMessage + '"');
             
             if (Math.random() < 0.3) {
-                addItemToInventory('pocoes');
+                addItemToInventory('heal_potion');
                 addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
             }
         }
@@ -3452,11 +3451,11 @@
 
         // ========== FUNÇÕES DA TABERNA ==========
     
-        function buyBeer() { if (gameState.isDead) return; buyDrink('cerveja', 5); }
-        function buyWine() { if (gameState.isDead) return; buyDrink('vinho', 15); }
-        function buyCoffee() { if (gameState.isDead) return; buyDrink('cafe', 8); }
-        function buyMead() { if (gameState.isDead) return; buyDrink('hidromel', 12); }
-        function buyLiqueur() { if (gameState.isDead) return; buyDrink('licor', 20); }
+        function buyBeer() { buyDrink('beer', 5); }
+        function buyWine() { buyDrink('wine', 15); }
+        function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
+        function buyMead() { if (gameState.isDead) return; buyDrink('mead', 12); }
+        function buyLiqueur() { if (gameState.isDead) return; buyDrink('liquor', 20); }
     
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
@@ -3560,7 +3559,6 @@
             }
             updateUI();
         }
-        
         function visitFarmerHouse2() {
             if (gameState.isDead) return;
             
@@ -3657,12 +3655,12 @@
         }
 
         function buySword() { buyItem('sword', 35); }
-        function buyBow() { buyItem('arco', 40); }
-        function buyArrow() { buyItem('flecha', 3); }
+        function buyBow() { buyItem('bow', 40); }
+        function buyArrow() { buyItem('arrow', 3); }
         function buyDagger() { buyItem('dagger', 25); }
         function buyKatana() { buyItem('katana', 120); }
-        function buyFacao() { buyItem('facao', 65); }
-        function buyWoodenShield() { buyItem('escudo_madeira', 30); }
+        function buyFacao() { buyItem('machete', 65); }
+        function buyWoodenShield() { buyItem('wooden_shield', 30); }
         function buyLeatherHelmet() { buyItem('capacete_couro', 30); }
         function buyLeatherChest() { buyItem('peitoral_couro', 50); }
         function buyLeatherPants() { buyItem('calcas_couro', 40); }
@@ -3670,7 +3668,7 @@
         function buyApple() { buyItem('dagger', 2); }
         function buyBread() { buyItem('bread', 2); }
         function buyMeat() { buyItem('meat', 5); }
-        function buyPotion() { buyItem('pocoes', 35); }
+        function buyPotion() { buyItem('potion', 35); }
         function buyFish() { buyItem('fish', 5); }
         function buyCarrot() { buyItem('cenoura', 3); }
 
@@ -3715,7 +3713,7 @@
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
             } else {
                 addLog('🏚️ Ruínas antigas... você encontra um baú!');
-                const items = ['katana', 'capacete_ferro', 'pocoes'];
+                const items = ['katana', 'capacete_ferro', 'potion'];
                 const itemId = items[Math.floor(Math.random() * items.length)];
                 addItemToInventory(itemId);
                 addLog(`🎁 Você encontrou: ${ITEMS[itemId].name}!`);
@@ -3737,7 +3735,7 @@
             
             // Verificar se está usando arco na mão principal
             const mainhand = gameState.equipment.mainhand;
-            const isUsingBow = mainhand && mainhand.id === 'arco';
+            const isUsingBow = mainhand && mainhand.id === 'bow';
             
             if (isUsingBow) {
                 // Procurar flechas no inventário
