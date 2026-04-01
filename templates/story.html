@@ -1280,6 +1280,28 @@
         .swal-dark .swal2-cancel {
             background: #ff4444 !important;
         }
+
+        /* Profile exp bar */
+        #profile-exp-section {
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 3px solid #ffd700;
+        }
+
+        #exp-progress-bar {
+            transition: width 0.5s ease-out;
+        }
+
+        /* Responsividade para telas pequenas */
+        @media (max-width: 768px) {
+            .profile-stats {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .profile-stat {
+                min-width: 70px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1383,6 +1405,14 @@
                             <div class="profile-stat-value" id="profile-gender">♂️</div>
                             <div class="profile-stat-label">Gênero</div>
                         </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value" id="profile-level">1</div>
+                            <div class="profile-stat-label">Nível</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value" id="profile-exp">0</div>
+                            <div class="profile-stat-label">EXP</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1390,6 +1420,19 @@
             <div class="profile-bio">
                 <h3>📜 Biografia</h3>
                 <p id="profile-bio-text">...</p>
+            </div>
+
+            <div class="profile-bio" id="profile-exp-section">
+                <h3>⭐ Progresso de Experiência</h3>
+                <div style="margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>📊 Nível <span id="exp-level-display">1</span></span>
+                        <span><span id="exp-current">0</span> / <span id="exp-next">100</span> EXP</span>
+                    </div>
+                    <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px;">
+                        <div id="exp-progress-bar" style="width: 0%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;"></div>
+                    </div>
+                </div>
             </div>
 
             <div class="profile-bio" id="profile-equipment-stats" style="display: none;">
@@ -2080,7 +2123,30 @@
             document.getElementById('profile-age').textContent = gameState.character.age;
             document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
             document.getElementById('profile-bio-text').textContent = gameState.character.bio;
-    
+            
+            // NOVOS CAMPOS DE NÍVEL E EXPERIÊNCIA
+            const level = gameState.character.level || 1;
+            const exp = gameState.character.exp || 0;
+            const expForNextLevel = calculateExpForNextLevel(level);
+            const expProgress = Math.min(100, (exp / expForNextLevel) * 100);
+            
+            document.getElementById('profile-level').textContent = level;
+            document.getElementById('profile-exp').textContent = exp;
+            document.getElementById('exp-level-display').textContent = level;
+            document.getElementById('exp-current').textContent = exp;
+            document.getElementById('exp-next').textContent = expForNextLevel;
+            document.getElementById('exp-progress-bar').style.width = `${expProgress}%`;
+            
+            // Atualizar cor da barra baseado na porcentagem
+            const progressBar = document.getElementById('exp-progress-bar');
+            if (expProgress >= 100) {
+                progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #45a049)';
+            } else if (expProgress >= 75) {
+                progressBar.style.background = 'linear-gradient(90deg, #ffa500, #ff8c00)';
+            } else {
+                progressBar.style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)';
+            }
+            
             const bonuses = calculateEquipmentBonuses();
             const bonusText = document.getElementById('equipment-bonus-text');
             const bonusDiv = document.getElementById('profile-equipment-stats');
@@ -2098,7 +2164,7 @@
             } else {
                 bonusDiv.style.display = 'none';
             }
-    
+
             document.getElementById('profile-modal').classList.add('active');
         }
         function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
@@ -2152,7 +2218,9 @@
         
             return { attackBonus, defenseBonus };
         }
-        
+        function calculateExpForNextLevel(level) { return 100 * level; }
+
+
         function updateUI() {
             if (!gameState.character) return;
 
