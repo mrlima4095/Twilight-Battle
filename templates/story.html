@@ -3262,7 +3262,7 @@
         function showTimeRemaining() {
             if (!gameState.cycleStartTime) {
                 Swal.fire({
-                    title: '⏰ Relógio ',
+                    title: '⏰ Relógio',
                     text: 'O ciclo de tempo ainda não foi iniciado!',
                     icon: 'info',
                     background: '#1a1a2e',
@@ -3272,50 +3272,133 @@
                 return;
             }
             
-            const now = Date.now();
-            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-            const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
-            
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-            
-            const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
-            const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
-            
-            // Calcular porcentagem do ciclo
-            const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
-            
-            // Criar barra de progresso
-            const progressBar = `
-                <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px; margin: 20px 0;">
-                    <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;"></div>
-                </div>
-            `;
-            
-            Swal.fire({
-                title: '⏰ Relógio',
-                html: `
+            // Criar container HTML
+            const createTimerHTML = () => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+                const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+                
+                // Calcular porcentagem do ciclo
+                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                
+                return `
                     <div style="text-align: center;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">${currentPhase === '☀️ DIA' ? '☀️' : '🌙'}</div>
-                        <div style="font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 10px;">
+                        <div style="font-size: 64px; margin-bottom: 20px; animation: pulse 1s ease-in-out infinite;">
+                            ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
+                        </div>
+                        <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 15px; font-family: monospace;" id="live-timer">
                             ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
                         </div>
-                        <div style="color: #888; margin-bottom: 15px;">
+                        <div style="color: #888; margin-bottom: 15px; font-size: 16px;">
                             ${currentPhase} - Restante para ${nextPhase}
                         </div>
-                        ${progressBar}
+                        <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
+                            <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;" id="timer-progress"></div>
+                        </div>
                         <div style="color: #aaa; font-size: 12px; margin-top: 10px;">
-                            Cada ciclo dura 10 minutos de jogo
+                            📅 Cada ciclo dura ${Math.floor(gameState.cycleDuration / 60)} minutos de jogo
+                        </div>
+                        <div style="color: #ffd700; font-size: 11px; margin-top: 15px;">
+                            🔄 O relógio está atualizando em tempo real
                         </div>
                     </div>
-                `,
+                `;
+            };
+            
+            // Função para atualizar o timer
+            let updateInterval;
+            
+            const updateTimer = () => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                let remaining = gameState.remainingCycleTime - elapsed;
+                
+                // Se o tempo acabou durante a visualização
+                if (remaining <= 0) {
+                    // Recuperar o estado atualizado
+                    const newElapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                    remaining = Math.max(0, gameState.remainingCycleTime - newElapsed);
+                }
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                // Atualizar timer
+                const timerElement = document.getElementById('live-timer');
+                if (timerElement) {
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                // Atualizar barra de progresso
+                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                const progressBar = document.getElementById('timer-progress');
+                if (progressBar) {
+                    progressBar.style.width = `${percentage}%`;
+                }
+                
+                // Verificar se o ciclo terminou e atualizar fase
+                if (remaining <= 0) {
+                    const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
+                    if (currentPhaseElement) {
+                        const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+                        const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+                        currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
+                    }
+                    
+                    // Atualizar ícone
+                    const iconElement = document.querySelector('.swal2-html-container div div:first-child');
+                    if (iconElement) {
+                        iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
+                    }
+                }
+            };
+            
+            // Estilo CSS para animação
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            Swal.fire({
+                title: '⏰ Relógio';
+                html: createTimerHTML(),
                 icon: 'info',
-                confirmButtonText: 'Entendi',
+                confirmButtonText: 'Fechar',
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
-                customClass: {
-                    popup: 'swal-dark'
+                allowOutsideClick: false,
+                didOpen: () => {
+                    // Iniciar atualização a cada segundo
+                    updateInterval = setInterval(() => {
+                        // Verificar se o Swal ainda está aberto
+                        const swalContent = document.querySelector('.swal2-html-container');
+                        if (swalContent) {
+                            updateTimer();
+                        } else {
+                            clearInterval(updateInterval);
+                        }
+                    }, 1000);
+                },
+                willClose: () => {
+                    // Limpar intervalo quando fechar
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                    }
+                    // Remover o estilo adicionado
+                    if (style.parentNode) {
+                        style.parentNode.removeChild(style);
+                    }
                 }
             });
         }
