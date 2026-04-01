@@ -4202,6 +4202,112 @@
             return brokenItems;
         }
     
+        // ========== LEVEL SYSTEM ==========
+
+        function checkAndApplyLevelUp() {
+            if (!gameState.character || gameState.isDead) return false;
+            
+            let leveledUp = false;
+            let levelUpCount = 0;
+            const levelUps = [];
+            
+            // Garantir que level e exp existam
+            if (gameState.character.level === undefined) gameState.character.level = 1;
+            if (gameState.character.exp === undefined) gameState.character.exp = 0;
+            
+            // Loop para múltiplos level ups de uma vez
+            while (true) {
+                const currentLevel = gameState.character.level;
+                const expNeeded = calculateExpForNextLevel(currentLevel);
+                
+                // Verificar se tem experiência suficiente para subir
+                if (gameState.character.exp >= expNeeded) {
+                    // Subir de nível
+                    gameState.character.exp -= expNeeded;
+                    gameState.character.level++;
+                    leveledUp = true;
+                    levelUpCount++;
+                } else {
+                    break;
+                }
+            }
+            
+            return leveledUp;
+        }
+        function addExperience(amount) {
+            if (!gameState.character || gameState.isDead) return false;
+            if (amount <= 0) return false;
+            
+            // Adicionar experiência
+            gameState.character.exp = (gameState.character.exp || 0) + amount;
+            
+            addLog(`✨ +${amount} EXP! (Total: ${gameState.character.exp})`);
+            
+            // Verificar e aplicar level up
+            const leveledUp = checkAndApplyLevelUp();
+            
+            // Atualizar UI se necessário
+            if (leveledUp) {
+                updateUI();
+            }
+            
+            return leveledUp;
+        }
+        function setLevel(newLevel, keepExp = false) {
+            if (!gameState.character || gameState.isDead) return;
+            if (newLevel < 1) newLevel = 1;
+            
+            const oldLevel = gameState.character.level || 1;
+            const levelDifference = newLevel - oldLevel;
+            
+            if (levelDifference > 0) {
+                for (let i = 0; i < levelDifference; i++) {
+                    gameState.character.maxLife += 50;
+                    gameState.character.maxMana += 25;
+                    
+                    const race = RACES[gameState.character.race];
+                    if (race) {
+                        race.baseAttack += 10;
+                        race.baseDefense += 5;
+                    }
+                }
+                
+                gameState.character.life = gameState.character.maxLife;
+                gameState.character.mana = gameState.character.maxMana;
+                
+                if (!keepExp) {
+                    gameState.character.exp = 0;
+                }
+                
+                addLog(`✨ Seu nível foi aumentado para ${newLevel}!`);
+                
+            } else if (levelDifference < 0) {
+                // Perder níveis (raro, mas pode acontecer em eventos especiais)
+                for (let i = 0; i < Math.abs(levelDifference); i++) {
+                    gameState.character.maxLife = Math.max(50, gameState.character.maxLife - 50);
+                    gameState.character.maxMana = Math.max(25, gameState.character.maxMana - 25);
+                    
+                    const race = RACES[gameState.character.race];
+                    if (race) {
+                        race.baseAttack = Math.max(10, race.baseAttack - 10);
+                        race.baseDefense = Math.max(5, race.baseDefense - 5);
+                    }
+                }
+                
+                if (gameState.character.life > gameState.character.maxLife) {
+                    gameState.character.life = gameState.character.maxLife;
+                }
+                if (gameState.character.mana > gameState.character.maxMana) {
+                    gameState.character.mana = gameState.character.maxMana;
+                }
+                
+                addLog(`⚠️ Seu nível foi reduzido para ${newLevel}!`);
+            }
+            
+            gameState.character.level = newLevel;
+            updateUI();
+        }
+
         // ========== SAVE/LOAD ==========
         
         function saveGame() {
