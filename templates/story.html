@@ -3427,7 +3427,7 @@
                 
                 const now = Date.now();
                 const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                let remaining = gameState.remainingCycleTime - elapsed;
+                const remaining = gameState.remainingCycleTime - elapsed;
                 
                 if (remaining <= 0) {
                     // Ciclo terminou, alternar dia/noite
@@ -3435,24 +3435,8 @@
                     // Reiniciar ciclo
                     gameState.cycleStartTime = Date.now();
                     gameState.remainingCycleTime = gameState.cycleDuration;
-                    
-                    // Verificar se o relógio está aberto e atualizar
-                    const swalContent = document.querySelector('.swal2-html-container');
-                    if (swalContent) {
-                        // Se o modal do relógio estiver aberto, atualizar a fase
-                        const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
-                        if (currentPhaseElement) {
-                            const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
-                            const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
-                            currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
-                        }
-                        
-                        const iconElement = document.querySelector('.swal2-html-container div div:first-child');
-                        if (iconElement) {
-                            iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
-                        }
-                    }
                 }
+                // Não atualizar display do tempo restante na UI
             }, 1000);
         }
         function toggleTimeOfDay() {
