@@ -2106,8 +2106,7 @@
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
             
-            addItemToInventory('apple', 3);
-            addItemToInventory('bread', 2);
+            addItemToInventory('apple', 3); addItemToInventory('bread', 2); addItemToChest('clock', 1);
             
             updateUI(); startCycleTimer();
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
@@ -3026,7 +3025,51 @@
             
             updateUI();
         }
-    
+        function addItemToChest(itemId, quantity = 1) {
+            if (gameState.isDead) { return; }
+            if (!gameState.chest) { gameState.chest = Array(18).fill(null); }
+            
+            const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
+            item.id = itemId;
+            
+            for (let i = 0; i < quantity; i++) {
+                let added = false;
+                
+                // Tentar empilhar com itens existentes (apenas consumíveis)
+                if (item.consumable) {
+                    for (let j = 0; j < 18; j++) {
+                        if (gameState.chest[j] && gameState.chest[j].id === itemId && gameState.chest[j].consumable) {
+                            gameState.chest[j].quantity = (gameState.chest[j].quantity || 1) + 1;
+                            added = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Se não empilhou, encontrar slot vazio
+                if (!added) {
+                    for (let j = 0; j < 18; j++) {
+                        if (!gameState.chest[j]) {
+                            gameState.chest[j] = { 
+                                ...item, 
+                                id: itemId, 
+                                quantity: item.consumable ? 1 : 1 
+                            };
+                            added = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!added) {return false;
+                }
+            }
+            
+            if (gameState.chestOpen) { updateUI(); }
+            
+            return true;
+        }
+
         function removeItemFromInventory(index) {
             if (gameState.isDead) return;
             
