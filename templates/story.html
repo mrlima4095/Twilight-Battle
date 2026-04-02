@@ -2246,8 +2246,8 @@
             const newAge = document.getElementById('edit-age').value;
             const newBio = document.getElementById('edit-bio').value.trim();
     
-            if (!newName) { alert('Nome não pode estar vazio!'); return; }
-            if (!newAge || newAge < 1) { alert('Idade inválida!'); return; }
+            if (!newName) { Swal.fire({ title: 'Erro', text: 'Nome não pode estar vazio!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!newAge || newAge < 1) { Swal.fire({ title: 'Erro', text: 'Idade inválida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
     
             gameState.character.name = newName;
             gameState.character.age = parseInt(newAge);
