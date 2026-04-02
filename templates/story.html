@@ -2132,7 +2132,7 @@
                 raceData: race,
                 gender: gameState.selectedGender,
                 age: parseInt(age),
-                bio: bio || 'Um aventureiro em busca de glória.',
+                bio: bio || `${gameState.selectedGender === 'masculino' ? 'Um aventureiro' : 'Uma aventureira'} em busca de glória.`,
                 life: race.baseLife,
                 maxLife: race.baseLife,
                 mana: race.mana,
