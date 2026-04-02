@@ -2069,10 +2069,10 @@
             const age = document.getElementById('character-age').value;
             const bio = document.getElementById('character-bio').value.trim();
             
-            if (!name) { alert('Digite um nome para seu personagem!'); return; }
-            if (!gameState.selectedRace) { alert('Selecione uma raça!'); return; }
-            if (!gameState.selectedGender) { alert('Selecione um gênero!'); return; }
-            if (!age || age < 1) { alert('Digite uma idade válida!'); return; }
+            if (!name) { Swal.fire({ title: '❌ Erro', text: 'Digite um nome para seu personagem!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedRace) { Swal.fire({ title: '❌ Erro', text: 'Selecione uma raça!', icon: 'error', confirmButtonText: 'OK',background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedGender) { Swal.fire({ title: '❌ Erro', text: 'Selecione um gênero!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!age || age < 1) { Swal.fire({ title: '❌ Erro', text: 'Digite uma idade válida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
             
             const race = RACES[gameState.selectedRace];
             
@@ -2101,14 +2101,33 @@
             gameState.isSleeping = false;
             gameState.sleepTimeout = null;
             gameState.location = 'home';
-    
+
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
             document.getElementById('game-ui').style.display = 'block';
             
-            addItemToInventory('apple', 3); addItemToInventory('bread', 2); addItemToChest('clock', 1);
+            addItemToInventory('apple', 3);
+            addItemToInventory('bread', 2);
+            addItemToChest('clock', 1);
             
-            updateUI(); startCycleTimer();
+            updateUI();
+            startCycleTimer();
+            
+            // Mensagem de boas-vindas estilizada
+            Swal.fire({
+                title: '✨ Personagem Criado!',
+                html: `<div style="text-align: left;">
+                    <p><strong>${name}</strong>, o ${race.name} ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao <strong style="color: #ffd700;">Reino da Aurora</strong>!</p>
+                    <p style="margin-top: 10px;">📜 Sua jornada começa agora.</p>
+                    <p style="margin-top: 5px; color: #888;">❤️ ${race.baseLife} Vida | 🔮 ${race.mana} Mana | ⚔️ ${race.baseAttack} Ataque</p>
+                </div>`,
+                icon: 'success',
+                confirmButtonText: 'Iniciar Jornada 🚀',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4CAF50'
+            });
+            
             addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
         }
     
