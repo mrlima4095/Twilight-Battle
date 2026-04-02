@@ -2053,12 +2053,71 @@
     
         function selectRace(race) {
             if (gameState.isDead) return;
+            
             document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
             document.querySelector(`[data-race="${race}"]`).classList.add('selected');
             gameState.selectedRace = race;
+            
+            // Travar gênero para Ninfa
+            if (race === 'nymph') {
+                // Forçar gênero feminino
+                gameState.selectedGender = 'feminino';
+                
+                // Atualizar UI dos gêneros
+                document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
+                document.querySelector(`[data-gender="feminino"]`).classList.add('selected');
+                
+                // Desabilitar opção masculina visualmente
+                const maleOption = document.querySelector(`[data-gender="masculino"]`);
+                maleOption.style.opacity = '0.5';
+                maleOption.style.cursor = 'not-allowed';
+                maleOption.style.pointerEvents = 'none';
+                maleOption.title = 'Ninfas são exclusivamente femininas';
+                
+                // Restaurar opção feminina
+                const femaleOption = document.querySelector(`[data-gender="feminino"]`);
+                femaleOption.style.opacity = '1';
+                femaleOption.style.cursor = 'pointer';
+                femaleOption.style.pointerEvents = 'auto';
+                
+                // Mensagem de aviso
+                Swal.fire({
+                    title: '🌸 Ninfa',
+                    text: 'Ninfas são entidades exclusivamente femininas na mitologia. O gênero foi automaticamente definido como Feminino.',
+                    icon: 'info',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+            } else {
+                // Restaurar opções para outras raças
+                document.querySelectorAll('.gender-option').forEach(g => {
+                    g.style.opacity = '1';
+                    g.style.cursor = 'pointer';
+                    g.style.pointerEvents = 'auto';
+                    g.title = '';
+                });
+            }
         }
+
         function selectGender(gender) {
             if (gameState.isDead) return;
+            
+            // Impedir seleção de masculino para Ninfa
+            if (gameState.selectedRace === 'nymph' && gender === 'masculino') {
+                Swal.fire({
+                    title: '🌸 Mitologia',
+                    text: 'Ninfas são entidades femininas da natureza. Não existem ninfas masculinas na tradição mitológica.',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
             document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
             document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
             gameState.selectedGender = gender;
