@@ -2069,10 +2069,10 @@
             const age = document.getElementById('character-age').value;
             const bio = document.getElementById('character-bio').value.trim();
             
-            if (!name) { Swal.fire({ title: '❌ Erro', text: 'Digite um nome para seu personagem!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!gameState.selectedRace) { Swal.fire({ title: '❌ Erro', text: 'Selecione uma raça!', icon: 'error', confirmButtonText: 'OK',background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!gameState.selectedGender) { Swal.fire({ title: '❌ Erro', text: 'Selecione um gênero!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!age || age < 1) { Swal.fire({ title: '❌ Erro', text: 'Digite uma idade válida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!name) { Swal.fire({ title: 'Erro', text: 'Digite um nome para seu personagem!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedRace) { Swal.fire({ title: 'Erro', text: 'Selecione uma raça!', icon: 'error', confirmButtonText: 'OK',background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedGender) { Swal.fire({ title: 'Erro', text: 'Selecione um gênero!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!age || age < 1) { Swal.fire({ title: 'Erro', text: 'Digite uma idade válida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
             
             const race = RACES[gameState.selectedRace];
             
