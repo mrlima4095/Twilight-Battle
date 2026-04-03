@@ -734,20 +734,6 @@
             visibility: visible;
             opacity: 1;
         }
-
-        /* Crafting Grid */
-        .crafting-slot {
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        .crafting-slot:active {
-            transform: scale(0.95);
-        }
-        .crafting-slot.drag-over {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.2);
-            transform: scale(1.02);
-        }
         
         @media (max-width: 1024px) {
             .main-layout {
@@ -1011,14 +997,6 @@
                 font-size: 12px;
                 padding: 8px;
             }
-
-            #game-content > div > div {
-                grid-template-columns: 1fr !important;
-            }
-            
-            .crafting-slot {
-                min-height: 70px;
-            }
         }
         
         @media (max-width: 480px) {
@@ -1279,6 +1257,7 @@
             50% { background: rgba(255, 68, 68, 0.3); }
         }
         
+        /* Adicione no final do <style> */
         .swal-dark {
             border: 2px solid #ffd700 !important;
             border-radius: 20px !important;
@@ -1302,6 +1281,7 @@
             background: #ff4444 !important;
         }
 
+        /* Profile exp bar */
         #profile-exp-section {
             background: rgba(0, 0, 0, 0.5);
             border-left: 3px solid #ffd700;
@@ -1311,6 +1291,7 @@
             transition: width 0.5s ease-out;
         }
 
+        /* Responsividade para telas pequenas */
         @media (max-width: 768px) {
             .profile-stats {
                 flex-wrap: wrap;
@@ -1327,7 +1308,7 @@
     <!-- Title Screen -->
     <div class="title-screen" id="title-screen">
         <div class="title-content">
-            <h1>🌆 TWILIGHT BATTLE xxx</h1>
+            <h1>🌆 TWILIGHT BATTLE</h1>
             <h2>Modo História</h2>
             <div class="title-buttons">
                 <button class="title-btn continue" id="continue-btn" onclick="continueGame()" style="display: none;">▶ Continuar</button>
@@ -1631,18 +1612,13 @@
             selectedGender: null,
             chestOpen: false,
             royalQuest: null,
-            timeOfDay: 'day',
+            timeOfDay: 'day', // 'day' ou 'night'
             isSleeping: false,
             sleepTimeout: null,
             dayCycleTimer: null,
             cycleStartTime: null,
-            cycleDuration: 600,
-            remainingCycleTime: null,
-            installedStations: {},
-            activeStation: null,
-            activeStationType: null,
-            craftingGrid: Array(9).fill(null),
-            selectedRecipe: null
+            cycleDuration: 600, // 20 minutos em segundos (20 * 60)
+            remainingCycleTime: null, // Para quando dormir
         };
     
         // Race definitions
@@ -1715,124 +1691,16 @@
             coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
             mead: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
+
             clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
+            // Adicione ao objeto ITEMS:
             paper: { name: 'Papel', type: 'material', consumable: false, description: 'Folhas de papel em branco.' },
             leather: { name: 'Couro', type: 'material', consumable: false, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'tool', consumable: false, description: 'Um livro vazio esperando para ser escrito.' },
-            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos. Pode ser instalada em sua casa ou clareiras.' },
-            cauldron: { name: 'Caldeirão', type: 'station', stationType: 'cauldron', consumable: false, description: 'Usado para preparar poções e alimentos especiais.' },
-            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', consumable: false, description: 'Usada para forjar e reparar equipamentos.' },
-            wood: { name: 'Madeira', type: 'material', consumable: false, description: 'Tora de madeira bruta.' },
-            wood_plank: { name: 'Tábua de Madeira', type: 'material', consumable: false, description: 'Madeira trabalhada.' },
-            iron_ingot: { name: 'Barra de Ferro', type: 'material', consumable: false, description: 'Metal forjado para criar equipamentos.' },
-            herb: { name: 'Erva Medicinal', type: 'material', consumable: false, description: 'Erva com propriedades curativas.' },
-            magic_herb: { name: 'Erva Mágica', type: 'material', consumable: false, description: 'Erva rica em energia arcana.' },
-            water_flask: { name: 'Frasco com Água', type: 'material', consumable: false, description: 'Água pura em um frasco de vidro.' },
-            hearty_stew: { name: 'Ensopado Reforçado', type: 'food', heal: 150, mana: 50, description: 'Recupera 150 de vida e 50 de mana.', consumable: true },
-            mana_potion: { name: 'Poção de Mana', type: 'food', mana: 100, description: 'Recupera 100 de mana.', consumable: true },
-            simple_bench: { name: 'Banco Simples', type: 'furniture', consumable: false, description: 'Um banco de madeira para descansar.' }
+            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
         };
 
-        const CRAFTING_RECIPES = {
-            book: {
-                name: '📖 Livro em Branco',
-                description: 'Um livro vazio para anotações e encantamentos.',
-                materials: [
-                    { id: 'paper', quantity: 3 },
-                    { id: 'leather', quantity: 2 }
-                ],
-                result: 'book',
-                quantity: 1,
-                station: 'crafting_table'
-            },
-            wood_plank: {
-                name: '🪵 Tábua de Madeira',
-                description: 'Madeira trabalhada para construções.',
-                materials: [
-                    { id: 'wood', quantity: 2 }
-                ],
-                result: 'wood_plank',
-                quantity: 1,
-                station: 'crafting_table'
-            },
-            simple_bench: {
-                name: '🪑 Banco Simples',
-                description: 'Um banco de madeira para descanso.',
-                materials: [
-                    { id: 'wood_plank', quantity: 3 }
-                ],
-                result: 'simple_bench',
-                quantity: 1,
-                station: 'crafting_table'
-            },
-            health_potion: {
-                name: '🧪 Poção de Cura',
-                description: 'Recupera 200 de vida instantaneamente.',
-                materials: [
-                    { id: 'herb', quantity: 3 },
-                    { id: 'water_flask', quantity: 1 }
-                ],
-                result: 'heal_potion',
-                quantity: 1,
-                station: 'cauldron'
-            },
-            mana_potion: {
-                name: '💙 Poção de Mana',
-                description: 'Recupera 100 de mana instantaneamente.',
-                materials: [
-                    { id: 'magic_herb', quantity: 2 },
-                    { id: 'water_flask', quantity: 1 }
-                ],
-                result: 'mana_potion',
-                quantity: 1,
-                station: 'cauldron'
-            },
-            hearty_stew: {
-                name: '🍲 Ensopado Reforçado',
-                description: 'Recupera 150 de vida e 50 de mana.',
-                materials: [
-                    { id: 'meat', quantity: 2 },
-                    { id: 'cenoura', quantity: 2 },
-                    { id: 'water_flask', quantity: 1 }
-                ],
-                result: 'hearty_stew',
-                quantity: 1,
-                station: 'cauldron'
-            },
-            iron_helmet: {
-                name: '🪖 Capacete de Ferro',
-                description: 'Proteção reforçada para a cabeça.',
-                materials: [
-                    { id: 'iron_ingot', quantity: 3 }
-                ],
-                result: 'capacete_ferro',
-                quantity: 1,
-                station: 'anvil'
-            },
-            iron_chestplate: {
-                name: '🛡️ Peitoral de Ferro',
-                description: 'Proteção pesada para o torso.',
-                materials: [
-                    { id: 'iron_ingot', quantity: 5 }
-                ],
-                result: 'peitoral_ferro',
-                quantity: 1,
-                station: 'anvil'
-            },
-            iron_sword: {
-                name: '⚔️ Espada de Ferro',
-                description: 'Uma espada resistente de ferro.',
-                materials: [
-                    { id: 'iron_ingot', quantity: 4 },
-                    { id: 'wood_plank', quantity: 1 }
-                ],
-                result: 'sword',
-                quantity: 1,
-                station: 'anvil'
-            }
-        };
-
-        // Locations
+        // Locations expandidas
         const LOCATIONS = {
             home: {
                 name: 'Sua Casa',
@@ -2011,16 +1879,17 @@
             },
             outside_back: {
                 name: 'Trilha dos Fundos',
-                description: 'Você sai pelos fundos do reino, encontrando uma trilha pouco usada.',
+                description: 'Você sai pelos fundos do reino, encontrando uma trilha pouco usada. A vegetação cresce solta e o caminho parece levar para uma área mais selvagem da floresta.',
                 actions: [
                     { name: '🌲 Seguir pela Trilha Norte', action: 'goBackForestTrailNorth' },
                     { name: '🌿 Seguir pela Trilha Sul', action: 'goBackForestTrailSouth' },
                     { name: '🔙 Voltar ao Reino', action: 'returnToBackGate' }
                 ]
             },
+
             back_forest_trail_north: {
                 name: 'Trilha Norte',
-                description: 'Uma trilha estreita que serpenteia por entre árvores centenárias.',
+                description: 'Uma trilha estreita que serpenteia por entre árvores centenárias. O chão é coberto por folhas secas e você caminha por um bom tempo... O ar fica mais fresco conforme avança.',
                 actions: [
                     { name: '🚶 Continuar pela Trilha', action: 'goAbandonedCemetery' },
                     { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
@@ -2028,15 +1897,16 @@
             },
             back_forest_trail_south: {
                 name: 'Trilha Sul',
-                description: 'O caminho se torna mais sombrio e úmido.',
+                description: 'O caminho se torna mais sombrio e úmido. Você ouve sons estranhos entre as árvores. Após caminhar por um bom tempo, algo parece diferente à frente...',
                 actions: [
                     { name: '🚶 Continuar pela Trilha', action: 'goSacredLake' },
                     { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
                 ]
             },
+
             sacred_lake: {
                 name: 'Clareira do Lago Sagrado',
-                description: 'Você encontra um lago de águas azul-turquesa, rodeado por flores que brilham suavemente.',
+                description: 'Após uma longa caminhada, você encontra um lago de águas azul-turquesa, rodeado por flores que brilham suavemente. A energia do local é palpável. Dizem que este é um local sagrado, escondido do resto do mundo.',
                 actions: [
                     { name: '💧 Mergulhar no Lago Sagrado', action: 'enterSacredLake' },
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
@@ -2044,26 +1914,41 @@
             },
             abandoned_cemetery: {
                 name: 'Cemitério Abandonado',
-                description: 'Um cemitério antigo e abandonado. As lápides estão cobertas de musgo.',
+                description: 'Após uma longa caminhada, você chega a um cemitério antigo e abandonado. As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
                 actions: [
                     { name: '🚪 Explorar o Cemitério', action: 'enterBackCemetery' },
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
                 ]
             },
+
             sacred_lake_interior: {
                 name: 'Dentro do Lago Sagrado',
-                description: 'Você mergulha nas águas cristalinas do lago sagrado.',
+                description: 'Você mergulha nas águas cristalinas do lago sagrado. Uma luz azulada envolve seu corpo, e você sente uma energia ancestral fluindo através de você. Bolhas de luz dançam ao redor, purificando sua alma.',
                 actions: [
                     { name: '🏊 Sair do Lago', action: 'exitSacredLake' }
                 ]
             },
             back_cemetery: {
                 name: 'Cemitério Abandonado',
-                description: 'Lápides em ruínas contam histórias esquecidas. Algo se move entre as sombras.',
+                description: 'Lápides em ruínas contam histórias esquecidas. Algo se move entre as sombras. O ar é pesado e frio, como se a própria morte pairasse no local.',
                 actions: [
                     { name: '🔍 Explorar o Cemitério', action: 'exploreBackCemetery' },
                     { name: '🔙 Voltar para a Entrada', action: 'goSacredLake' }
                 ]
+            }
+        };
+
+        const CRAFTING_RECIPES = {
+            book: {
+                name: '📖 Livro em Branco',
+                description: 'Um livro vazio para anotações.',
+                materials: [
+                    { id: 'paper', quantity: 3 },
+                    { id: 'leather', quantity: 2 }
+                ],
+                result: 'book',
+                quantity: 1,
+                station: 'crafting_table'
             }
         };
 
@@ -2130,16 +2015,20 @@
                 try {
                     const saved = JSON.parse(autosave);
                     if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        
+                        // Salvar o remainingCycleTime antes de carregar
                         const savedRemainingTime = saved.remainingCycleTime;
                         const savedTimeOfDay = saved.timeOfDay;
                         
                         gameState = saved;
                         
+                        // Parar ciclo atual se existir
                         if (gameState.dayCycleTimer) {
                             clearInterval(gameState.dayCycleTimer);
                             gameState.dayCycleTimer = null;
                         }
                         
+                        // Restaurar o remainingCycleTime
                         if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
                             gameState.remainingCycleTime = savedRemainingTime;
                             gameState.cycleStartTime = Date.now();
@@ -2148,10 +2037,12 @@
                             gameState.cycleStartTime = Date.now();
                         }
                         
+                        // Restaurar timeOfDay
                         if (savedTimeOfDay) {
                             gameState.timeOfDay = savedTimeOfDay;
                         }
                         
+                        // Resetar estados de sono
                         gameState.isSleeping = false;
                         if (gameState.sleepTimeout) {
                             clearInterval(gameState.sleepTimeout);
@@ -2160,8 +2051,7 @@
                         
                         document.getElementById('title-screen').style.display = 'none';
                         document.getElementById('game-ui').style.display = 'block';
-                        updateUI();
-                        startCycleTimer();
+                        updateUI();startCycleTimer();
                         
                         addLog('📂 Jogo continuado do autosave!');
                     } else {
@@ -2174,7 +2064,6 @@
                 }
             }
         }
-        
         function startNewGame() { document.getElementById('title-screen').style.display = 'none'; document.getElementById('character-creation-modal').classList.add('active'); }
         function loadGameFromTitle() { document.getElementById('title-screen').style.display = 'none'; loadGame(); }
         function cancelCharacterCreation() { document.getElementById('character-creation-modal').classList.remove('active'); document.getElementById('title-screen').style.display = 'flex'; }
@@ -2186,32 +2075,53 @@
             document.querySelector(`[data-race="${race}"]`).classList.add('selected');
             gameState.selectedRace = race;
             
+            // Travar gênero para Ninfa
             if (race === 'nymph') {
+                const wasMale = (gameState.selectedGender === 'masculino');
+                
                 gameState.selectedGender = 'feminino';
+                
+                // Atualizar UI dos gêneros
                 document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
                 document.querySelector(`[data-gender="feminino"]`).classList.add('selected');
                 
+                // Desabilitar opção masculina visualmente
                 const maleOption = document.querySelector(`[data-gender="masculino"]`);
                 maleOption.style.opacity = '0.5';
                 maleOption.style.cursor = 'not-allowed';
                 maleOption.style.pointerEvents = 'none';
+                maleOption.title = 'Ninfas são exclusivamente femininas';
                 
+                // Restaurar opção feminina
                 const femaleOption = document.querySelector(`[data-gender="feminino"]`);
                 femaleOption.style.opacity = '1';
                 femaleOption.style.cursor = 'pointer';
                 femaleOption.style.pointerEvents = 'auto';
+                
+                // Só avisar se o gênero anterior era masculino
+                if (wasMale) {
+                    Swal.fire({
+                        title: '🌸 Ninfa',
+                        text: 'Ninfas são entidades femininas. O gênero foi alterado para Feminino.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendi',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
             } else {
+                // Restaurar opções para outras raças
                 document.querySelectorAll('.gender-option').forEach(g => {
                     g.style.opacity = '1';
                     g.style.cursor = 'pointer';
                     g.style.pointerEvents = 'auto';
+                    g.title = '';
                 });
             }
         }
-        
         function selectGender(gender) {
             if (gameState.isDead) return;
-            if (gameState.selectedRace === 'nymph' && gender === 'masculino') return;
             
             document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
             document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
@@ -2255,11 +2165,6 @@
             gameState.isSleeping = false;
             gameState.sleepTimeout = null;
             gameState.location = 'home';
-            gameState.installedStations = {};
-            gameState.activeStation = null;
-            gameState.activeStationType = null;
-            gameState.craftingGrid = Array(9).fill(null);
-            gameState.selectedRecipe = null;
 
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
@@ -2268,16 +2173,16 @@
             addItemToInventory('apple', 3);
             addItemToInventory('bread', 2);
             addItemToChest('clock', 1);
-            addItemToInventory('crafting_table', 1);
             
             updateUI();
             startCycleTimer();
             
             Swal.fire({
-                title: `✨ Olá, ${name}`,
+                title: `✨ Olá, <strong>${name}</strong>`,
                 html: `<div style="text-align: center;">
-                    <p>Seja ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao Reino da Aurora!</p>
-                    <p style="margin-top: 10px;">Você ganhou uma Bancada de Trabalho! Instale-a em sua casa para começar a craftar.</p>
+                    <p>Seja ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao <strong style="color: #ffd700;">Reino da Aurora</strong>!</p>
+                    <p style="margin-top: 10px;">📜 Sua jornada começa agora.</p>
+                    <p style="margin-top: 5px; color: #888;">❤️ ${race.baseLife} Vida | 🔮 ${race.mana} Mana | ⚔️ ${race.baseAttack} Ataque</p>
                 </div>`,
                 icon: 'success',
                 confirmButtonText: 'Iniciar Jornada 🚀',
@@ -2300,9 +2205,10 @@
             document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
             document.getElementById('profile-bio-text').textContent = gameState.character.bio;
             
+            // NOVOS CAMPOS DE NÍVEL E EXPERIÊNCIA
             const level = gameState.character.level || 1;
             const exp = gameState.character.exp || 0;
-            const expForNextLevel = 100 * level;
+            const expForNextLevel = calculateExpForNextLevel(level);
             const expProgress = Math.min(100, (exp / expForNextLevel) * 100);
             
             document.getElementById('profile-level').textContent = level;
@@ -2311,6 +2217,16 @@
             document.getElementById('exp-current').textContent = exp;
             document.getElementById('exp-next').textContent = expForNextLevel;
             document.getElementById('exp-progress-bar').style.width = `${expProgress}%`;
+            
+            // Atualizar cor da barra baseado na porcentagem
+            const progressBar = document.getElementById('exp-progress-bar');
+            if (expProgress >= 100) {
+                progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #45a049)';
+            } else if (expProgress >= 75) {
+                progressBar.style.background = 'linear-gradient(90deg, #ffa500, #ff8c00)';
+            } else {
+                progressBar.style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)';
+            }
             
             const bonuses = calculateEquipmentBonuses();
             const bonusText = document.getElementById('equipment-bonus-text');
@@ -2332,7 +2248,6 @@
 
             document.getElementById('profile-modal').classList.add('active');
         }
-        
         function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
     
         function showEditProfile() {
@@ -2342,9 +2257,7 @@
             document.getElementById('edit-bio').value = gameState.character.bio;
             document.getElementById('edit-profile-modal').classList.add('active');
         }
-        
         function closeEditProfile() { document.getElementById('edit-profile-modal').classList.remove('active'); }
-        
         function saveProfileEdit() {
             const newName = document.getElementById('edit-name').value.trim();
             const newAge = document.getElementById('edit-age').value;
@@ -2366,23 +2279,28 @@
         function calculateEquipmentBonuses() {
             let attackBonus = 0;
             let defenseBonus = 0;
+            const brokenItems = [];
         
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
                 if (item) {
                     if ((item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
-                        // Item quebrado, não oferece bônus
+                        brokenItems.push(item.name);
                     } else {
                         attackBonus += item.attack || 0;
                         defenseBonus += item.defense || 0;
                     }
                 }
             }
+            
+            if (brokenItems.length > 0) {
+                addLog(`⚠️ ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} quebrada${brokenItems.length > 1 ? 's' : ''} e não oferecem proteção!`);
+            }
         
             return { attackBonus, defenseBonus };
         }
-        
         function calculateExpForNextLevel(level) { return 100 * level; }
+
 
         function updateUI() {
             if (!gameState.character) return;
@@ -2416,9 +2334,11 @@
             
             const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
             
+            // CORREÇÃO: Encontrar ou criar o container de localização e horário
             const playerInfoDiv = document.getElementById('player-info');
             let locationTimeContainer = document.getElementById('location-time-container');
             
+            // Se o container não existir, criar
             if (!locationTimeContainer) {
                 locationTimeContainer = document.createElement('div');
                 locationTimeContainer.id = 'location-time-container';
@@ -2426,10 +2346,12 @@
                 locationTimeContainer.style.gap = '10px';
                 locationTimeContainer.style.alignItems = 'center';
                 
+                // Criar o badge de localização
                 const newLocationBadge = document.createElement('div');
                 newLocationBadge.className = 'location-badge';
                 newLocationBadge.id = 'current-location';
                 
+                // Criar o indicador de horário
                 const timeIndicator = document.createElement('div');
                 timeIndicator.className = 'time-indicator';
                 timeIndicator.id = 'time-indicator';
@@ -2437,19 +2359,26 @@
                 locationTimeContainer.appendChild(newLocationBadge);
                 locationTimeContainer.appendChild(timeIndicator);
                 
+                // Inserir no início do playerInfoDiv
                 playerInfoDiv.insertBefore(locationTimeContainer, playerInfoDiv.firstChild);
             }
             
+            // Atualizar os elementos existentes
             const locationBadge = document.getElementById('current-location');
             const timeIndicator = document.getElementById('time-indicator');
             
-            if (locationBadge) locationBadge.textContent = locationName;
+            if (locationBadge) {
+                locationBadge.textContent = locationName;
+            }
+            
             if (timeIndicator) {
                 const timeIcon = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
                 const timeText = gameState.timeOfDay === 'day' ? 'Dia' : 'Noite';
-                timeIndicator.innerHTML = `<span class="time-icon">${timeIcon}</span><span class="time-text">${timeText}</span>`;
+                timeIndicator.innerHTML = `<span class="time-icon">${timeIcon}</span>
+                                        <span class="time-text">${timeText}</span>`;
             }
             
+            // Verificar e adicionar classe de warning se mana baixa e for dia
             const manaStat = document.querySelector('.stat:nth-child(2)');
             if (gameState.timeOfDay === 'day') {
                 const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
@@ -2494,6 +2423,7 @@
                     slot.setAttribute('ondragover', 'handleDragOver(event)');
                     slot.setAttribute('ondrop', 'handleDrop(event)');
                     
+                    // Adicionar evento de clique para usar itens (PC)
                     slot.onclick = (function(index) {
                         return function(e) {
                             e.stopPropagation();
@@ -2504,6 +2434,7 @@
                         };
                     })(i);
                     
+                    // Verificar se é dispositivo touch antes de adicionar eventos touch
                     if ('ontouchstart' in window) {
                         const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
                         const touchMoveHandler = (e) => handleTouchMove(e);
@@ -2534,7 +2465,6 @@
                 }
             }
         }
-        
         function updateFoodGrid() {
             const grid = document.getElementById('food-grid');
             grid.innerHTML = '';
@@ -2554,7 +2484,6 @@
                 }
             });
         }
-        
         function updateEquipmentDisplay() {
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
@@ -2577,16 +2506,20 @@
                 
                 const element = document.getElementById(`slot-${slot}`);
                 element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                
+                // Adicionar tooltip com informações de durabilidade
+                if (item && item.durability !== undefined) {
+                    element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`;
+                } else if (item) {
+                    element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`;
+                }
             }
         }
-        
         function updateGameContent() {
             const content = document.getElementById('game-content');
-            
-            if (gameState.activeStation) {
-                return;
-            }
-            
+            const location = LOCATIONS[gameState.location];
+        
+            // Se estiver em batalha, mostra apenas a interface de combate
             if (gameState.currentEnemy && !gameState.isDead) {
                 const enemy = gameState.currentEnemy;
                 const race = RACES[gameState.character.race];
@@ -2599,8 +2532,9 @@
                         <div style="position: absolute; top: 10px; right: 20px; font-size: 12px; color: #888;">⚔️ COMBATE</div>
                         <h2 class="location-title" style="color: #ff4444;">⚔️ BATALHA!</h2>
                         
+                        <!-- Inimigo -->
                         <div style="background: rgba(0,0,0,0.5); border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">${enemy.name === 'Dragão' ? '🐉' : (enemy.name === 'Goblin' ? '👺' : (enemy.name === 'Lobo' ? '🐺' : (enemy.name === 'Orc' ? '👹' : '🗿')))}</div>
+                            <div style="font-size: 48px; margin-bottom: 10px;">${enemy.name === 'Dragão Jovem' ? '🐉' : (enemy.name === 'Goblin' ? '👺' : (enemy.name === 'Lobo' ? '🐺' : (enemy.name === 'Orc' ? '👹' : '🗿')))}</div>
                             <div style="font-size: 24px; font-weight: bold; color: #ff4444;">${enemy.name}</div>
                             <div style="margin-top: 15px;">
                                 <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 15px;">
@@ -2614,6 +2548,7 @@
                             </div>
                         </div>
                         
+                        <!-- Jogador -->
                         <div style="background: rgba(0,0,0,0.5); border-radius: 15px; padding: 20px; margin-bottom: 20px; text-align: center;">
                             <div style="font-size: 24px; font-weight: bold; color: #ffd700;">${gameState.character.name}</div>
                             <div style="margin-top: 15px;">
@@ -2629,6 +2564,7 @@
                             </div>
                         </div>
                         
+                        <!-- Botões de combate -->
                         <div style="display: flex; gap: 15px; margin-top: 20px;">
                             <button class="action-btn danger" onclick="attack()" style="flex: 1; padding: 15px; font-size: 18px;">⚔️ ATACAR</button>
                             <button class="action-btn warning" onclick="run()" style="flex: 1; padding: 15px; font-size: 18px;">🏃 FUGIR</button>
@@ -2640,25 +2576,10 @@
                 return;
             }
         
-            const location = LOCATIONS[gameState.location];
-            
+            // Se não estiver em batalha, mostra a localização normal
             if (!location) {
                 content.innerHTML = `<h2 class="location-title">Erro</h2><div class="location-description">Localização não encontrada.</div>`;
                 return;
-            }
-            
-            // Adicionar ações das estações
-            const stationActions = getInstalledStationsActions();
-            const locationActions = [...location.actions];
-            
-            stationActions.forEach(stationAction => {
-                if (!locationActions.some(a => a.name === stationAction.name)) {
-                    locationActions.push(stationAction);
-                }
-            });
-            
-            if (stationActions.length > 0 && !locationActions.some(a => a.name === '📦 Recolher Estação')) {
-                locationActions.push({ name: '📦 Recolher Estação', action: 'showPickupStationMenu' });
             }
         
             let html = `
@@ -2675,6 +2596,8 @@
                     
                     <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
                         <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
+                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú (18 espaços)</p>
+                        
                         <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
                 `;
                 
@@ -2706,17 +2629,7 @@
                 }
                 
                 html += `</div></div>`;
-            } else {
-                html += `<div class="action-buttons">`;
-                locationActions.forEach(action => {
-                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
-                });
-                html += `</div>`;
-            }
-        
-            content.innerHTML = html;
-            
-            if (gameState.location === 'home' && gameState.chestOpen) {
+                
                 setTimeout(() => {
                     document.querySelectorAll('#chest-grid .inventory-slot').forEach((slot, idx) => {
                         const item = gameState.chest && gameState.chest[idx];
@@ -2735,7 +2648,15 @@
                         }
                     });
                 }, 100);
+            } else {
+                html += `<div class="action-buttons">`;
+                location.actions.forEach(action => {
+                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+                });
+                html += `</div>`;
             }
+        
+            content.innerHTML = html;
         }
 
         function addLog(message) {
@@ -2744,584 +2665,6 @@
             
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
-        }
-
-        // ========== STATION FUNCTIONS ==========
-        
-        function canInstallStation(locationId) {
-            const installableLocations = ['home', 'sacred_lake_interior', 'outside', 'farmlands', 'back_cemetery', 'sacred_lake', 'abandoned_cemetery'];
-            return installableLocations.includes(locationId);
-        }
-        
-        function installStation(index, stationItem) {
-            if (gameState.isDead) return;
-            
-            const currentLocation = gameState.location;
-            
-            if (!canInstallStation(currentLocation)) {
-                Swal.fire({
-                    title: '❌ Não é possível instalar',
-                    text: 'Você não pode instalar esta estação aqui. Tente em sua casa, em uma clareira ou em locais abertos.',
-                    icon: 'error',
-                    confirmButtonText: 'Entendi',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            if (!gameState.installedStations[currentLocation]) {
-                gameState.installedStations[currentLocation] = [];
-            }
-            
-            if (gameState.installedStations[currentLocation].includes(stationItem.stationType)) {
-                Swal.fire({
-                    title: '⚠️ Estação já instalada',
-                    text: `Você já tem uma ${stationItem.name} instalada aqui!`,
-                    icon: 'warning',
-                    confirmButtonText: 'Ok',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            gameState.installedStations[currentLocation].push(stationItem.stationType);
-            
-            if (gameState.inventory[index].quantity > 1) {
-                gameState.inventory[index].quantity--;
-            } else {
-                gameState.inventory[index] = null;
-            }
-            
-            addLog(`🔨 Você instalou ${stationItem.name} em ${LOCATIONS[currentLocation]?.name || currentLocation}.`);
-            
-            updateUI();
-            
-            Swal.fire({
-                title: '✅ Estação Instalada!',
-                text: `${stationItem.name} foi instalada com sucesso. Use as ações da localização para interagir com ela.`,
-                icon: 'success',
-                confirmButtonText: 'Ótimo!',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#4CAF50'
-            });
-        }
-        
-        function getInstalledStationsActions() {
-            const currentLocation = gameState.location;
-            const stations = gameState.installedStations[currentLocation] || [];
-            const actions = [];
-            
-            stations.forEach(stationType => {
-                switch(stationType) {
-                    case 'crafting_table':
-                        actions.push({ name: '🪚 Bancada de Trabalho', action: 'openCraftingStation' });
-                        break;
-                    case 'cauldron':
-                        actions.push({ name: '🧪 Caldeirão', action: 'openCauldronStation' });
-                        break;
-                    case 'anvil':
-                        actions.push({ name: '⚒️ Bigorna', action: 'openAnvilStation' });
-                        break;
-                }
-            });
-            
-            return actions;
-        }
-        
-        function showPickupStationMenu() {
-            if (gameState.isDead) return;
-            
-            const currentLocation = gameState.location;
-            const stations = gameState.installedStations[currentLocation] || [];
-            
-            if (stations.length === 0) {
-                addLog('📦 Não há estações para recolher aqui.');
-                return;
-            }
-            
-            let stationButtons = '';
-            stations.forEach(stationType => {
-                let stationName = '';
-                switch(stationType) {
-                    case 'crafting_table': stationName = '🪚 Bancada de Trabalho'; break;
-                    case 'cauldron': stationName = '🧪 Caldeirão'; break;
-                    case 'anvil': stationName = '⚒️ Bigorna'; break;
-                }
-                stationButtons += `<button class="action-btn" onclick="pickupStation('${stationType}')" style="margin: 5px; width: auto; padding: 10px 20px;">${stationName}</button>`;
-            });
-            
-            Swal.fire({
-                title: '📦 Recolher Estação',
-                html: `<div style="text-align: center;">
-                    <p>Selecione a estação que deseja recolher:</p>
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px;">
-                        ${stationButtons}
-                    </div>
-                    <p style="margin-top: 20px; color: #888; font-size: 12px;">⚠️ A estação voltará para seu inventário.</p>
-                </div>`,
-                icon: 'question',
-                confirmButtonText: 'Cancelar',
-                showConfirmButton: true,
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ff4444'
-            });
-        }
-        
-        function pickupStation(stationType) {
-            if (gameState.isDead) return;
-            
-            const currentLocation = gameState.location;
-            const stations = gameState.installedStations[currentLocation] || [];
-            const stationIndex = stations.indexOf(stationType);
-            
-            if (stationIndex === -1) {
-                addLog('❌ Estação não encontrada aqui.');
-                return;
-            }
-            
-            let emptySlot = -1;
-            for (let i = 0; i < 18; i++) {
-                if (!gameState.inventory[i]) {
-                    emptySlot = i;
-                    break;
-                }
-            }
-            
-            if (emptySlot === -1) {
-                Swal.fire({
-                    title: '❌ Inventário Cheio',
-                    text: 'Você não tem espaço no inventário para recolher esta estação.',
-                    icon: 'error',
-                    confirmButtonText: 'Ok',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            gameState.installedStations[currentLocation].splice(stationIndex, 1);
-            
-            let stationItem = null;
-            switch(stationType) {
-                case 'crafting_table': stationItem = { ...ITEMS.crafting_table, id: 'crafting_table', quantity: 1 }; break;
-                case 'cauldron': stationItem = { ...ITEMS.cauldron, id: 'cauldron', quantity: 1 }; break;
-                case 'anvil': stationItem = { ...ITEMS.anvil, id: 'anvil', quantity: 1 }; break;
-            }
-            
-            if (stationItem) {
-                gameState.inventory[emptySlot] = stationItem;
-                addLog(`📦 Você recolheu ${stationItem.name} para o inventário.`);
-            }
-            
-            const location = LOCATIONS[gameState.location];
-            if (location) {
-                location.actions = location.actions.filter(a => 
-                    a.name !== '🪚 Bancada de Trabalho' && 
-                    a.name !== '🧪 Caldeirão' && 
-                    a.name !== '⚒️ Bigorna' &&
-                    a.name !== '📦 Recolher Estação'
-                );
-            }
-            
-            updateUI();
-            
-            Swal.fire({
-                title: '✅ Estação Recolhida',
-                text: `${stationItem.name} foi recolhida para seu inventário.`,
-                icon: 'success',
-                confirmButtonText: 'Ok',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#4CAF50'
-            });
-        }
-        
-        function openCraftingStation() {
-            if (gameState.isDead) return;
-            gameState.activeStation = 'crafting_table';
-            gameState.activeStationType = 'crafting_table';
-            gameState.craftingGrid = Array(9).fill(null);
-            gameState.selectedRecipe = null;
-            showCraftingUI('Bancada de Trabalho', 'crafting_table');
-        }
-        
-        function openCauldronStation() {
-            if (gameState.isDead) return;
-            gameState.activeStation = 'cauldron';
-            gameState.activeStationType = 'cauldron';
-            gameState.craftingGrid = Array(9).fill(null);
-            gameState.selectedRecipe = null;
-            showCraftingUI('Caldeirão', 'cauldron');
-        }
-        
-        function openAnvilStation() {
-            if (gameState.isDead) return;
-            gameState.activeStation = 'anvil';
-            gameState.activeStationType = 'anvil';
-            gameState.craftingGrid = Array(9).fill(null);
-            gameState.selectedRecipe = null;
-            showCraftingUI('Bigorna', 'anvil');
-        }
-        
-        function closeStation() {
-            for (let i = 0; i < gameState.craftingGrid.length; i++) {
-                if (gameState.craftingGrid[i]) {
-                    addItemToInventory(gameState.craftingGrid[i].id, gameState.craftingGrid[i].quantity || 1);
-                }
-            }
-            gameState.activeStation = null;
-            gameState.activeStationType = null;
-            gameState.craftingGrid = Array(9).fill(null);
-            gameState.selectedRecipe = null;
-            updateUI();
-        }
-        
-        function getItemIcon(itemId) {
-            const icons = {
-                'paper': '📄', 'leather': '🧶', 'book': '📖', 'wood': '🪵',
-                'wood_plank': '🪑', 'iron_ingot': '⚙️', 'herb': '🌿',
-                'magic_herb': '✨', 'water_flask': '💧', 'heal_potion': '🧪',
-                'mana_potion': '💙', 'hearty_stew': '🍲', 'capacete_ferro': '🪖',
-                'peitoral_ferro': '🛡️', 'sword': '⚔️', 'meat': '🍖', 'cenoura': '🥕'
-            };
-            return icons[itemId] || '📦';
-        }
-        
-        function showCraftingUI(stationName, stationType) {
-            const recipes = Object.entries(CRAFTING_RECIPES).filter(([id, recipe]) => recipe.station === stationType);
-            
-            let recipesHtml = '<div style="display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; padding-right: 10px;">';
-            
-            recipes.forEach(([recipeId, recipe]) => {
-                let hasMaterials = true;
-                let materialsHtml = '';
-                
-                recipe.materials.forEach(material => {
-                    const playerAmount = countItemInInventory(material.id);
-                    const hasEnough = playerAmount >= material.quantity;
-                    if (!hasEnough) hasMaterials = false;
-                    
-                    const itemData = ITEMS[material.id];
-                    const itemName = itemData ? itemData.name : material.id;
-                    
-                    materialsHtml += `<div style="display: inline-block; margin: 0 5px; ${!hasEnough ? 'color: #ff4444;' : 'color: #4CAF50;'} font-size: 12px;">
-                        ${itemName}: ${playerAmount}/${material.quantity}
-                    </div>`;
-                });
-                
-                const isSelected = gameState.selectedRecipe === recipeId;
-                
-                recipesHtml += `
-                    <div style="background: rgba(0,0,0,0.5); border: 2px solid ${isSelected ? '#ffd700' : '#444'}; border-radius: 10px; padding: 10px; cursor: pointer;" onclick="selectRecipe('${recipeId}')">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;">
-                            <div>
-                                <div style="font-weight: bold; color: #ffd700; font-size: 14px;">${recipe.name}</div>
-                                <div style="font-size: 11px; color: #888;">${recipe.description}</div>
-                                <div style="margin-top: 5px;">${materialsHtml}</div>
-                            </div>
-                            <div style="font-size: 20px;">${isSelected ? '✅' : '📋'}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            recipesHtml += '</div>';
-            
-            let gridHtml = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 15px; border: 2px solid #ffd700;">';
-            
-            for (let i = 0; i < 9; i++) {
-                const item = gameState.craftingGrid[i];
-                
-                gridHtml += `
-                    <div class="crafting-slot" 
-                        style="aspect-ratio: 1; background: rgba(255,255,255,0.05); border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 5px; position: relative; cursor: pointer; transition: all 0.3s;"
-                        data-index="${i}"
-                        ondragover="handleCraftingGridDragOver(event)"
-                        ondrop="handleCraftingGridDrop(event)"
-                        onclick="handleCraftingGridClick(${i})">
-                        ${item ? `
-                            <span style="font-size: 20px;">${getItemIcon(item.id)}</span>
-                            <span class="item-name" style="font-size: 10px; color: #ffd700;">${item.name}</span>
-                            ${item.quantity > 1 ? `<span class="item-quantity" style="position: absolute; bottom: 2px; right: 2px; background: #ffd700; color: #1a1a2e; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px;">${item.quantity}</span>` : ''}
-                        ` : '<span style="color: #444; font-size: 24px;">⬜</span>'}
-                    </div>
-                `;
-            }
-            
-            gridHtml += '</div>';
-            
-            const craftButtonHtml = `
-                <div style="margin-top: 20px; text-align: center;">
-                    <button class="action-btn success" onclick="craftFromGrid()" style="padding: 15px 30px; font-size: 18px;">🔨 CRAFTAR</button>
-                    <button class="action-btn" onclick="clearCraftingGrid()" style="padding: 15px 30px; font-size: 18px; margin-left: 10px;">🗑️ Limpar Grid</button>
-                </div>
-            `;
-            
-            let previewHtml = '<div style="margin-top: 20px; text-align: center; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px;">';
-            if (gameState.selectedRecipe) {
-                const recipe = CRAFTING_RECIPES[gameState.selectedRecipe];
-                previewHtml += `
-                    <div style="color: #ffd700;">📦 Resultado:</div>
-                    <div style="font-size: 18px; margin: 10px 0;">${recipe.name}</div>
-                    <div style="font-size: 12px; color: #888;">${recipe.description}</div>
-                `;
-            } else {
-                previewHtml += '<div style="color: #888;">Selecione uma receita no menu ao lado</div>';
-            }
-            previewHtml += '</div>';
-            
-            const stationContent = document.getElementById('game-content');
-            stationContent.innerHTML = `
-                <div style="position: relative;">
-                    <button class="action-btn" onclick="closeStation()" style="position: absolute; top: 0; right: 0; background: #ff4444; padding: 8px 15px;">✖ Fechar</button>
-                    <h2 class="location-title">🔧 ${stationName}</h2>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 300px; gap: 20px;">
-                        <div>
-                            <div style="text-align: center; margin-bottom: 15px; color: #ffd700;">📦 Coloque os materiais na grade 3x3</div>
-                            ${gridHtml}
-                            ${craftButtonHtml}
-                            ${previewHtml}
-                        </div>
-                        
-                        <div>
-                            <div style="text-align: center; margin-bottom: 15px; color: #ffd700;">📜 Receitas Disponíveis</div>
-                            ${recipesHtml}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            setTimeout(() => {
-                document.querySelectorAll('.crafting-slot').forEach(slot => {
-                    const index = parseInt(slot.dataset.index);
-                    slot.addEventListener('touchstart', (e) => handleCraftingGridTouch(e, index));
-                });
-            }, 100);
-        }
-        
-        function selectRecipe(recipeId) {
-            if (gameState.selectedRecipe === recipeId) {
-                gameState.selectedRecipe = null;
-            } else {
-                gameState.selectedRecipe = recipeId;
-            }
-            showCraftingUI(
-                gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                gameState.activeStationType
-            );
-        }
-        
-        function handleCraftingGridClick(index) {
-            if (gameState.isDead) return;
-            
-            const slotItem = gameState.craftingGrid[index];
-            if (slotItem) {
-                addItemToInventory(slotItem.id, slotItem.quantity || 1);
-                gameState.craftingGrid[index] = null;
-                showCraftingUI(
-                    gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                    gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                    gameState.activeStationType
-                );
-            }
-        }
-        
-        function handleCraftingGridDragOver(event) {
-            event.preventDefault();
-        }
-        
-        function handleCraftingGridDrop(event) {
-            event.preventDefault();
-            if (gameState.isDead) return;
-            
-            const targetSlot = event.target.closest('.crafting-slot');
-            if (!targetSlot) return;
-            
-            const targetIndex = parseInt(targetSlot.dataset.index);
-            
-            if (draggedItemIndex !== null && draggedItemSource === 'inventory') {
-                const item = gameState.inventory[draggedItemIndex];
-                if (item && item.type !== 'station') {
-                    if (!gameState.craftingGrid[targetIndex]) {
-                        gameState.craftingGrid[targetIndex] = { ...item, quantity: 1 };
-                        
-                        if (item.quantity > 1) {
-                            item.quantity--;
-                        } else {
-                            gameState.inventory[draggedItemIndex] = null;
-                        }
-                        
-                        addLog(`📦 ${item.name} colocado na grade de crafting.`);
-                        showCraftingUI(
-                            gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                            gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                            gameState.activeStationType
-                        );
-                    }
-                }
-            }
-            
-            draggedItemIndex = null;
-            draggedItemSource = null;
-        }
-        
-        function handleCraftingGridTouch(e, index) {
-            if (gameState.isDead) return;
-            e.preventDefault();
-            
-            const slotItem = gameState.craftingGrid[index];
-            if (slotItem) {
-                addItemToInventory(slotItem.id, slotItem.quantity || 1);
-                gameState.craftingGrid[index] = null;
-                showCraftingUI(
-                    gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                    gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                    gameState.activeStationType
-                );
-            } else if (touchDraggedItem && touchDraggedSource === 'inventory') {
-                const item = gameState.inventory[touchDraggedIndex];
-                if (item && item.type !== 'station') {
-                    if (!gameState.craftingGrid[index]) {
-                        gameState.craftingGrid[index] = { ...item, quantity: 1 };
-                        
-                        if (item.quantity > 1) {
-                            item.quantity--;
-                        } else {
-                            gameState.inventory[touchDraggedIndex] = null;
-                        }
-                        
-                        addLog(`📦 ${item.name} colocado na grade de crafting.`);
-                        showCraftingUI(
-                            gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                            gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                            gameState.activeStationType
-                        );
-                    }
-                }
-                cleanupTouchDrag();
-            }
-        }
-        
-        function clearCraftingGrid() {
-            if (gameState.isDead) return;
-            
-            for (let i = 0; i < gameState.craftingGrid.length; i++) {
-                if (gameState.craftingGrid[i]) {
-                    addItemToInventory(gameState.craftingGrid[i].id, gameState.craftingGrid[i].quantity || 1);
-                    gameState.craftingGrid[i] = null;
-                }
-            }
-            
-            addLog('🗑️ Grade de crafting limpa.');
-            showCraftingUI(
-                gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                gameState.activeStationType
-            );
-        }
-        
-        function craftFromGrid() {
-            if (gameState.isDead) return;
-            
-            if (!gameState.selectedRecipe) {
-                addLog('❌ Selecione uma receita primeiro!');
-                return;
-            }
-            
-            const recipe = CRAFTING_RECIPES[gameState.selectedRecipe];
-            if (!recipe) return;
-            
-            const gridItems = {};
-            for (let i = 0; i < gameState.craftingGrid.length; i++) {
-                const item = gameState.craftingGrid[i];
-                if (item) {
-                    if (!gridItems[item.id]) gridItems[item.id] = 0;
-                    gridItems[item.id] += item.quantity || 1;
-                }
-            }
-            
-            let hasAllMaterials = true;
-            for (let material of recipe.materials) {
-                const amountInGrid = gridItems[material.id] || 0;
-                if (amountInGrid < material.quantity) {
-                    hasAllMaterials = false;
-                    break;
-                }
-            }
-            
-            if (!hasAllMaterials) {
-                addLog(`❌ Materiais insuficientes na grade para craftar ${recipe.name}.`);
-                return;
-            }
-            
-            for (let material of recipe.materials) {
-                let remainingToRemove = material.quantity;
-                
-                for (let i = 0; i < gameState.craftingGrid.length && remainingToRemove > 0; i++) {
-                    const item = gameState.craftingGrid[i];
-                    if (item && item.id === material.id) {
-                        const itemQty = item.quantity || 1;
-                        if (itemQty <= remainingToRemove) {
-                            remainingToRemove -= itemQty;
-                            gameState.craftingGrid[i] = null;
-                        } else {
-                            item.quantity = itemQty - remainingToRemove;
-                            remainingToRemove = 0;
-                        }
-                    }
-                }
-            }
-            
-            for (let i = 0; i < recipe.quantity; i++) {
-                addItemToInventory(recipe.result);
-            }
-            
-            addLog(`🔨 Você craftou ${recipe.quantity}x ${recipe.name}!`);
-            
-            showCraftingUI(
-                gameState.activeStationType === 'crafting_table' ? 'Bancada de Trabalho' : 
-                gameState.activeStationType === 'cauldron' ? 'Caldeirão' : 'Bigorna',
-                gameState.activeStationType
-            );
-            
-            updateUI();
-        }
-        
-        function countItemInInventory(itemId) {
-            let count = 0;
-            for (let i = 0; i < 18; i++) {
-                const item = gameState.inventory[i];
-                if (item && item.id === itemId) {
-                    count += item.quantity || 1;
-                }
-            }
-            return count;
-        }
-        
-        function removeItemFromInventoryById(itemId, quantity) {
-            let remaining = quantity;
-            
-            for (let i = 0; i < 18 && remaining > 0; i++) {
-                const item = gameState.inventory[i];
-                if (item && item.id === itemId) {
-                    if (item.quantity > remaining) {
-                        item.quantity -= remaining;
-                        remaining = 0;
-                    } else {
-                        remaining -= item.quantity || 1;
-                        gameState.inventory[i] = null;
-                    }
-                }
-            }
         }
 
         // ========== TOUCH DRAG AND DROP ==========
@@ -3371,7 +2714,6 @@
             isDragging = false;
             slot.classList.add('dragging');
         }
-        
         function handleTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             
@@ -3413,7 +2755,6 @@
                 }
             }
         }
-        
         function handleTouchEnd(e, originalIndex, originalSource) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -3479,7 +2820,6 @@
             
             cleanupTouchDrag();
         }
-        
         function handleTrashTouchMove(e) {
             if (!touchDraggedItem || gameState.isDead) return;
             e.preventDefault();
@@ -3500,7 +2840,6 @@
                 trashBin.classList.remove('drag-over-mobile');
             }
         }
-        
         function handleTrashTouchEnd(e) {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -3533,7 +2872,6 @@
             
             cleanupTouchDrag();
         }
-        
         function cleanupTouchDrag() {
             if (touchTimeout) {
                 clearTimeout(touchTimeout);
@@ -3564,17 +2902,9 @@
                 event.preventDefault();
                 return;
             }
-            const slot = event.target.closest('.inventory-slot');
-            if (!slot) return;
-            
-            draggedItemIndex = slot.dataset.index;
-            draggedItemSource = slot.dataset.source || 'inventory';
-            event.dataTransfer.setData('text/plain', JSON.stringify({
-                index: draggedItemIndex,
-                source: draggedItemSource
-            }));
+            draggedItemIndex = event.target.closest('.inventory-slot').dataset.index;
+            draggedItemSource = 'inventory';
         }
-        
         function handleDragOver(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -3582,7 +2912,6 @@
             }
             event.preventDefault();
         }
-        
         function handleDrop(event) {
             if (gameState.isDead) return;
             
@@ -3593,7 +2922,7 @@
             const targetIndex = targetSlot.dataset.index;
             const targetSource = targetSlot.dataset.source || 'inventory';
             
-            if (draggedItemIndex === null || targetIndex == draggedItemIndex) {
+            if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
                 draggedItemIndex = null;
                 draggedItemSource = null;
                 return;
@@ -3624,7 +2953,6 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-        
         function handleDropToTrash(event) {
             if (gameState.isDead) return;
             
@@ -3642,7 +2970,6 @@
             draggedItemIndex = null;
             draggedItemSource = null;
         }
-        
         function dragChestItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -3654,7 +2981,6 @@
             draggedItemIndex = slot.dataset.index;
             draggedItemSource = 'chest';
         }
-        
         function handleChestDrop(event) {
             if (gameState.isDead) return;
             
@@ -3712,7 +3038,6 @@
             
             updateUI();
         }
-        
         function closeChest() { gameState.chestOpen = false; updateUI(); }
     
         function useChestItem(index) {
@@ -3736,7 +3061,6 @@
                 addLog('❌ Inventário cheio!');
             }
         }
-        
         function organizeChest() {
             if (gameState.isDead) return;
             
@@ -3758,11 +3082,7 @@
         function addItemToInventory(itemId, quantity = 1) {
             if (gameState.isDead) return;
             
-            const itemTemplate = ITEMS[itemId];
-            if (!itemTemplate) return;
-            
-            const item = JSON.parse(JSON.stringify(itemTemplate));
-            item.id = itemId;
+            const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
             
             for (let i = 0; i < quantity; i++) {
                 let added = false;
@@ -3779,7 +3099,6 @@
                     for (let j = 0; j < 18; j++) {
                         if (!gameState.inventory[j]) {
                             gameState.inventory[j] = { ...item, id: itemId, quantity: item.consumable ? 1 : 1 };
-                            added = true;
                             break;
                         }
                     }
@@ -3788,20 +3107,17 @@
             
             updateUI();
         }
-        
         function addItemToChest(itemId, quantity = 1) {
-            if (gameState.isDead) return;
-            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+            if (gameState.isDead) { return; }
+            if (!gameState.chest) { gameState.chest = Array(18).fill(null); }
             
-            const itemTemplate = ITEMS[itemId];
-            if (!itemTemplate) return;
-            
-            const item = JSON.parse(JSON.stringify(itemTemplate));
+            const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
             item.id = itemId;
             
             for (let i = 0; i < quantity; i++) {
                 let added = false;
                 
+                // Tentar empilhar com itens existentes (apenas consumíveis)
                 if (item.consumable) {
                     for (let j = 0; j < 18; j++) {
                         if (gameState.chest[j] && gameState.chest[j].id === itemId && gameState.chest[j].consumable) {
@@ -3812,18 +3128,28 @@
                     }
                 }
                 
+                // Se não empilhou, encontrar slot vazio
                 if (!added) {
                     for (let j = 0; j < 18; j++) {
                         if (!gameState.chest[j]) {
-                            gameState.chest[j] = { ...item, id: itemId, quantity: item.consumable ? 1 : 1 };
+                            gameState.chest[j] = { 
+                                ...item, 
+                                id: itemId, 
+                                quantity: item.consumable ? 1 : 1 
+                            };
                             added = true;
                             break;
                         }
                     }
                 }
+                
+                if (!added) {return false;
+                }
             }
             
-            if (gameState.chestOpen) updateUI();
+            if (gameState.chestOpen) { updateUI(); }
+            
+            return true;
         }
 
         function removeItemFromInventory(index) {
@@ -3845,27 +3171,20 @@
             const item = gameState.inventory[index];
             if (!item) return;
             
-            if (item.type === 'food' || item.type === 'drink') { 
-                useFood(index); 
-            }
-            else if (item.id === 'clock') { 
-                showTimeRemaining(); 
-            }
-            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { 
-                equipItemFromInventory(index); 
-            }
-            else if (item.type === 'station') { 
-                installStation(index, item); 
-            }
+            // Verificar se é o relógio
+            
+
+            if (item.type === 'food' || item.type === 'drink') { useFood(index); }
+            else if (item.id === 'clock') { showTimeRemaining(); }
+            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
         }
-        
         function useFood(index) {
             if (gameState.isDead) return;
             
             const item = gameState.inventory[index];
             if (!item || (item.type !== 'food' && item.type !== 'drink')) return;
     
-            const newLife = Math.min(gameState.character.life + (item.heal || 0), gameState.character.maxLife);
+            const newLife = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
             const healed = newLife - gameState.character.life;
             gameState.character.life = newLife;
             
@@ -3905,7 +3224,6 @@
                 updateUI();
             }
         }
-        
         function equipItem(slot) {
             if (gameState.isDead) return;
             
@@ -3925,7 +3243,8 @@
         // ========== LOCATION ACTIONS ==========
 
         function go(location, message) {
-            if (gameState.isDead) return;
+            if (gameState.isDead) { return; }
+            gameState.last_location = location;
             gameState.location = location;
             updateUI();
             addLog(message);
@@ -3944,66 +3263,39 @@
         function goNorthVillage() { go('north_village', '🏘️ Você entra no Vilarejo Norte.'); }
         function goSouthVillage() { go('south_village', '🏘️ Você entra no Vilarejo Sul.'); }
         function goTavern() { go('tavern', '🍺 Você entra na Taberna do Porto.'); }
+        function leaveKingdomSecondary() { go('outside', '🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
         function returnToMainGate() { go('main_gate', '🚪 Você retorna ao Portão Principal do reino.'); }
         function goWeaponShop() { go('weaponshop', '⚔️ Bem-vindo à loja de armas.'); }
         function goArmorShop() { go('armorshop', '🛡️ Bem-vindo à loja de armaduras.'); }
         function goMarket() { go('market', '🍖 Você está no mercado.'); }
         function leaveKingdom() { go('outside', '🚪 Você saiu do reino. Tenha cuidado!'); }
         function rest() { if (gameState.isDead) return; if (gameState.location === 'home') { startSleep(); } }
+
         function goBackOutside() { go('outside_back', '🌲 Você chegou a Trilha principal do Oeste.'); }
         function goBackForestTrailNorth() { go('back_forest_trail_north', '🚶 Você segue pela trilha ao norte, adentrando a floresta selvagem.'); }
         function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha ao sul, onde a vegetação se torna mais densa e sombria.'); }
+
         function goSacredLake() { go('sacred_lake', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
         function goAbandonedCemetery() { go('abandoned_cemetery', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.'); }
+
         function returnToBackGate() { go('farmlands', '🚪 Você retorna pelo portão dos fundos e entra no reino novamente.'); }
+
         function enterSacredLake() { go('sacred_lake_interior', '💧 Você mergulha nas águas sagradas. Uma sensação de paz invade seu ser.'); }
-        function exitSacredLake() { go('back_forest_trail_north', '🏊 Você emerge do lago sagrado, se sentindo renovado e revigorado.'); }
-        function enterBackCemetery() { go('back_cemetery', '🪦 Você entra no cemitério abandonado. O ar é pesado e frio.'); }
-        function exploreBackCemetery() { addLog('🪦 Você explora o cemitério mas não encontra nada além de ossos antigos.'); }
+        function exitSacredLake() { go('back_forest_deep_north', '🏊 Você emerge do lago sagrado, se sentindo renovado e revigorado.'); }
 
         // ========== TIME SYSTEM FUNCTIONS ==========
-        
-        function startCycleTimer() {
-            if (gameState.dayCycleTimer) {
-                clearInterval(gameState.dayCycleTimer);
-                gameState.dayCycleTimer = null;
-            }
-            
-            if (gameState.remainingCycleTime === null || gameState.remainingCycleTime === undefined) {
-                gameState.cycleStartTime = Date.now();
-                gameState.remainingCycleTime = gameState.cycleDuration;
-            } else {
-                gameState.cycleStartTime = Date.now();
-            }
-            
-            gameState.dayCycleTimer = setInterval(() => {
-                if (gameState.isSleeping) return;
-                
-                const now = Date.now();
-                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                let remaining = gameState.remainingCycleTime - elapsed;
-                
-                if (remaining <= 0) {
-                    toggleTimeOfDay();
-                    gameState.cycleStartTime = Date.now();
-                    gameState.remainingCycleTime = gameState.cycleDuration;
-                }
-            }, 1000);
-        }
-        
-        function toggleTimeOfDay() {
-            gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
-            addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
-            updateUI();
-        }
+        function getTimeIcon() { return gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite'; }
+        function getTimeText() { return gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'; }
 
         function canSleep() {
             if (gameState.isDead || gameState.isSleeping) return false;
             
             if (gameState.timeOfDay === 'day') {
+                // Dia: precisa ter mana abaixo de 50%
                 const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
                 return manaPercent < 50;
             } else {
+                // Noite: sempre pode dormir
                 return true;
             }
         }
@@ -4015,6 +3307,7 @@
                 return '🌞 Dormir durante a noite... Você acordará de dia e recuperará toda sua mana!';
             }
         }
+        function getSleepDurationSeconds() { return 10; }
 
         function startSleep() {
             if (gameState.isDead || gameState.isSleeping) return;
@@ -4028,7 +3321,9 @@
             
             gameState.isSleeping = true;
             
+            // Pausar o ciclo principal enquanto dorme
             if (gameState.dayCycleTimer) {
+                // Salvar quanto tempo restava no ciclo atual
                 const now = Date.now();
                 const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
                 gameState.remainingCycleTime = Math.max(0, gameState.remainingCycleTime - elapsed);
@@ -4036,6 +3331,7 @@
                 gameState.dayCycleTimer = null;
             }
             
+            // Configurar modal
             const modal = document.getElementById('sleep-modal');
             const timerSpan = document.getElementById('sleep-timer');
             const messageSpan = document.getElementById('sleep-message');
@@ -4043,18 +3339,22 @@
             messageSpan.textContent = getSleepMessage();
             modal.classList.add('active');
             
-            const sleepDuration = 10;
+            // Calcular duração do sono (10 segundos = 20 minutos do jogo)
+            const sleepDuration = getSleepDurationSeconds(); // 10 segundos
             let secondsLeft = sleepDuration;
             timerSpan.textContent = secondsLeft;
             
+            // Registrar horário de início do sono
             const sleepStartTime = Date.now();
+            let elapsedSleepSeconds = 0;
             
+            // Timer para contar o sono
             if (gameState.sleepTimeout) clearInterval(gameState.sleepTimeout);
             
             gameState.sleepTimeout = setInterval(() => {
                 const now = Date.now();
-                const elapsed = Math.floor((now - sleepStartTime) / 1000);
-                secondsLeft = Math.max(0, sleepDuration - elapsed);
+                elapsedSleepSeconds = Math.floor((now - sleepStartTime) / 1000);
+                secondsLeft = Math.max(0, sleepDuration - elapsedSleepSeconds);
                 timerSpan.textContent = secondsLeft;
                 
                 if (secondsLeft <= 0) {
@@ -4075,6 +3375,7 @@
                 gameState.sleepTimeout = null;
             }
             
+            // Calcular quanto tempo dormiu
             const modal = document.getElementById('sleep-modal');
             const timerSpan = document.getElementById('sleep-timer');
             const secondsSlept = 10 - parseInt(timerSpan.textContent);
@@ -4083,49 +3384,74 @@
             completeSleep(true, secondsSlept);
         }
 
-        function completeSleep(earlyWake = false, secondsSlept = 10) {
+        function completeSleep(earlyWake = false, secondsSlept = 0) {
             const wasDay = gameState.timeOfDay === 'day';
             
-            const gameTimePassed = secondsSlept * 60;
+            // Calcular quanto tempo do jogo passou
+            // 1 segundo dormido = 2 minutos (120 segundos) do jogo
+            const gameTimePassed = secondsSlept * 60; // em segundos do jogo
             
-            addLog(`⏱️ Você dormiu por ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
+            addLog(`⏱️ Você durmiu por ${Math.floor(gameTimePassed / 60)} minutos e ${gameTimePassed % 60} segundos.`);
             
+            // Avançar o ciclo baseado no tempo dormido
             if (gameState.remainingCycleTime !== null) {
                 let newRemaining = gameState.remainingCycleTime - gameTimePassed;
                 
+                // Verificar quantos ciclos completos passaram
                 while (newRemaining <= 0) {
+                    // Alternar dia/noite para cada ciclo completo
                     toggleTimeOfDay();
                     newRemaining += gameState.cycleDuration;
                 }
                 gameState.remainingCycleTime = newRemaining;
             }
             
+            // Recuperar mana conforme o momento em que dormiu
             let manaRestored = 0;
             
             if (wasDay) {
+                // Dormiu de dia: recupera 20% da mana
                 manaRestored = Math.floor(gameState.character.maxMana * 0.2);
                 gameState.character.mana = Math.min(gameState.character.mana + manaRestored, gameState.character.maxMana);
                 addLog(`😴 Você dormiu durante o dia. Recuperou ${manaRestored} de mana (20%).`);
             } else {
+                // Dormiu de noite: recupera mana inteira
                 manaRestored = gameState.character.maxMana - gameState.character.mana;
                 gameState.character.mana = gameState.character.maxMana;
                 addLog(`😴 Você dormiu durante a noite. Recuperou toda sua mana! (+${manaRestored})`);
             }
             
+            // Pequena recuperação de vida também (20% da vida máxima)
             const lifeRestored = Math.floor(gameState.character.maxLife * 0.2);
             gameState.character.life = Math.min(gameState.character.life + lifeRestored, gameState.character.maxLife);
             addLog(`❤️ Você recuperou ${lifeRestored} de vida ao descansar.`);
             
             gameState.isSleeping = false;
             
+            // Fechar modal
             document.getElementById('sleep-modal').classList.remove('active');
             
+            // Reiniciar o ciclo com o tempo atualizado
             gameState.cycleStartTime = Date.now();
+            toggleTimeOfDay();
             startCycleTimer();
             
+            // Atualizar UI
             updateUI();
+            
+            if (earlyWake) {
+                addLog(`⚠️ Você acordou cedo! O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos.`);
+            }
         }
-        
+
+        function checkIfSleeping(actionName) {
+            if (gameState.isSleeping) {
+                addLog(`😴 Você está dormindo! Não pode ${actionName} agora.`);
+                return true;
+            }
+            return false;
+        }
+
         function showTimeRemaining() {
             if (!gameState.cycleStartTime) {
                 Swal.fire({
@@ -4139,6 +3465,7 @@
                 return;
             }
             
+            // Criar container HTML
             const createTimerHTML = () => {
                 const now = Date.now();
                 const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
@@ -4147,27 +3474,90 @@
                 const minutes = Math.floor(remaining / 60);
                 const seconds = remaining % 60;
                 
+                const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+                const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+                
+                // Calcular porcentagem do ciclo
                 const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
                 
                 return `
                     <div style="text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px;">
+                        <div style="font-size: 64px; margin-bottom: 20px; animation: pulse 1s ease-in-out infinite;">
                             ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
                         </div>
                         <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 15px; font-family: monospace;" id="live-timer">
                             ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
                         </div>
                         <div style="color: #888; margin-bottom: 15px; font-size: 16px;">
-                            Restante para ${gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA'}
+                            Restante para ${nextPhase}
                         </div>
                         <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
                             <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;" id="timer-progress"></div>
+                        </div>
+                        <div style="color: #aaa; font-size: 12px; margin-top: 10px;">
+                            📅 Cada ciclo dura ${Math.floor(gameState.cycleDuration / 60)} minutos de jogo
                         </div>
                     </div>
                 `;
             };
             
+            // Função para atualizar o timer
             let updateInterval;
+            
+            const updateTimer = () => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                let remaining = gameState.remainingCycleTime - elapsed;
+                
+                // Se o tempo acabou durante a visualização
+                if (remaining <= 0) {
+                    // Recuperar o estado atualizado
+                    const newElapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                    remaining = Math.max(0, gameState.remainingCycleTime - newElapsed);
+                }
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                // Atualizar timer
+                const timerElement = document.getElementById('live-timer');
+                if (timerElement) {
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                // Atualizar barra de progresso
+                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                const progressBar = document.getElementById('timer-progress');
+                if (progressBar) {
+                    progressBar.style.width = `${percentage}%`;
+                }
+                
+                // Verificar se o ciclo terminou e atualizar fase
+                if (remaining <= 0) {
+                    const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
+                    if (currentPhaseElement) {
+                        const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+                        const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+                        currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
+                    }
+                    
+                    // Atualizar ícone
+                    const iconElement = document.querySelector('.swal2-html-container div div:first-child');
+                    if (iconElement) {
+                        iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
+                    }
+                }
+            };
+            
+            // Estilo CSS para animação
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+            `;
+            document.head.appendChild(style);
             
             Swal.fire({
                 title: '⏰ Relógio',
@@ -4179,53 +3569,108 @@
                 confirmButtonColor: '#ffd700',
                 allowOutsideClick: false,
                 didOpen: () => {
+                    // Iniciar atualização a cada segundo
                     updateInterval = setInterval(() => {
+                        // Verificar se o Swal ainda está aberto
                         const swalContent = document.querySelector('.swal2-html-container');
                         if (swalContent) {
-                            const now = Date.now();
-                            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                            let remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
-                            
-                            const minutes = Math.floor(remaining / 60);
-                            const seconds = remaining % 60;
-                            
-                            const timerElement = document.getElementById('live-timer');
-                            if (timerElement) {
-                                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                            }
-                            
-                            const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
-                            const progressBar = document.getElementById('timer-progress');
-                            if (progressBar) {
-                                progressBar.style.width = `${percentage}%`;
-                            }
+                            updateTimer();
                         } else {
                             clearInterval(updateInterval);
                         }
                     }, 1000);
                 },
                 willClose: () => {
-                    if (updateInterval) clearInterval(updateInterval);
+                    // Limpar intervalo quando fechar
+                    if (updateInterval) {
+                        clearInterval(updateInterval);
+                    }
+                    // Remover o estilo adicionado
+                    if (style.parentNode) {
+                        style.parentNode.removeChild(style);
+                    }
                 }
             });
         }
 
-        // ========== CASTLE FUNCTIONS ==========
+        // ========== CYCLE MANAGEMENT ==========
+
+        function startCycleTimer() {
+            // Limpar timer existente se houver
+            if (gameState.dayCycleTimer) {
+                clearInterval(gameState.dayCycleTimer);
+                gameState.dayCycleTimer = null;
+            }
+            
+            // Se não houver tempo restante registrado, iniciar novo ciclo
+            if (gameState.remainingCycleTime === null || gameState.remainingCycleTime === undefined) {
+                gameState.cycleStartTime = Date.now();
+                gameState.remainingCycleTime = gameState.cycleDuration;
+            } else {
+                // Já tem um tempo restante (vindo do save), apenas atualizar o startTime
+                gameState.cycleStartTime = Date.now();
+            }
+            
+            // Atualizar timer a cada segundo
+            gameState.dayCycleTimer = setInterval(() => {
+                if (gameState.isSleeping) return;
+                
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                let remaining = gameState.remainingCycleTime - elapsed;
+                
+                if (remaining <= 0) {
+                    // Ciclo terminou, alternar dia/noite
+                    toggleTimeOfDay();
+                    // Reiniciar ciclo
+                    gameState.cycleStartTime = Date.now();
+                    gameState.remainingCycleTime = gameState.cycleDuration;
+                    
+                    // Verificar se o relógio está aberto e atualizar
+                    const swalContent = document.querySelector('.swal2-html-container');
+                    if (swalContent) {
+                        // Se o modal do relógio estiver aberto, atualizar a fase
+                        const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
+                        if (currentPhaseElement) {
+                            const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
+                            const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
+                            currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
+                        }
+                        
+                        const iconElement = document.querySelector('.swal2-html-container div div:first-child');
+                        if (iconElement) {
+                            iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
+                        }
+                    }
+                }
+            }, 1000);
+        }
+        function toggleTimeOfDay() {
+            gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
+            
+            addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
+            updateUI();
+        }
+
+        // ========== FUNÇÕES DO CASTELO ==========
 
         function talkToCaptain() {
             if (gameState.isDead) return;
             
             const messages = [
-                "Aventureiro, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites.",
-                "Já perdi muitos bons soldados para aquelas criaturas... Continue treinando e um dia poderá se tornar um guarda real!",
-                "Ouvi dizer que você enfrentou alguns monstros nas terras selvagens. Continue assim!"
+                "Aventureiro, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.",
+                "Já perdi muitos bons soldados para aquelas criaturas... Mas você tem potencial. Continue treinando e um dia poderá se tornar um guarda real!",
+                "Ouvi dizer que você enfrentou alguns monstros nas terras selvagens. Continue assim e talvez o Rei lhe conceda uma audiência especial."
             ];
             
             const randomMessage = messages[Math.floor(Math.random() * messages.length)];
             
             Swal.fire({
                 title: '🗡️ Capitão da Guarda',
-                html: `<div style="text-align: left;"><p>"${randomMessage}"</p></div>`,
+                html: `<div style="text-align: left;">
+                    <p style="margin-bottom: 15px;">"${randomMessage}"</p>
+                    ${Math.random() < 0.3 ? '<p style="color: #ffd700; margin-top: 10px;">🎁 Tome esta poção, você vai precisar!</p>' : ''}
+                </div>`,
                 icon: 'info',
                 confirmButtonText: 'Entendido',
                 background: '#1a1a2e',
@@ -4237,24 +3682,26 @@
             
             if (Math.random() < 0.3) {
                 addItemToInventory('heal_potion');
-                addLog('🎁 O Capitão te dá uma poção de cura!');
+                addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
             }
         }
-        
         function talkToKing() {
             if (gameState.isDead) return;
             
             const messages = [
-                "Aventureiro, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo!",
-                "Vejo bravura em seu coração. O reino precisa de heróis como você!",
-                "Se um dia desejar uma missão de grande importância, volte ao meu trono."
+                "Aventureiro, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.",
+                "Vejo bravura em seu coração. O reino precisa de heróis como você para enfrentar as trevas que se aproximam.",
+                "Se um dia desejar uma missão de grande importância, volte ao meu trono. Tenho uma tarefa que apenas os mais corajosos podem cumprir."
             ];
             
             const randomMessage = messages[Math.floor(Math.random() * messages.length)];
             
             Swal.fire({
                 title: '👑 Rei da Aurora',
-                html: `<div style="text-align: left;"><p>"${randomMessage}"</p></div>`,
+                html: `<div style="text-align: left;">
+                    <p style="margin-bottom: 15px; font-style: italic;">"${randomMessage}"</p>
+                    <p style="color: #ffd700; margin-top: 10px;">✨ O Rei o observa com admiração.</p>
+                </div>`,
                 icon: 'success',
                 confirmButtonText: 'Saudações, Majestade',
                 background: '#1a1a2e',
@@ -4265,28 +3712,18 @@
             addLog('👑 Rei: "' + randomMessage + '"');
         }
 
-        function acceptQuest() {
-            if (gameState.isDead) return;
-            
-            Swal.fire({
-                title: '📜 Quadro de Missões',
-                text: 'No momento não há missões disponíveis. Volte mais tarde!',
-                icon: 'info',
-                confirmButtonText: 'Ok',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-        }
-
+        // Substitua a função acceptRoyalQuest
         function acceptRoyalQuest() {
             if (gameState.isDead) return;
             
             Swal.fire({
                 title: '📜 Missão Real',
                 html: `<div style="text-align: left;">
-                    <p>"Herói, uma grande ameaça ronda nossas terras. Sua missão é eliminar <strong>5 monstros</strong> nas terras selvagens!"</p>
+                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 15px;">👑 Rei da Aurora:</p>
+                    <p>"Herói, uma grande ameaça ronda nossas terras. Criaturas das trevas estão se multiplicando e precisamos de alguém corajoso para enfrentá-las."</p>
+                    <p style="margin-top: 15px;">"Sua missão é eliminar <strong style="color: #ffd700;">5 monstros</strong> nas terras selvagens e trazer glória ao reino!"</p>
                     <p style="margin-top: 15px; color: #4CAF50;">🏆 Recompensa: 300 moedas de ouro</p>
+                    <p style="margin-top: 10px; color: #888;">"Você aceita este desafio, aventureiro?"</p>
                 </div>`,
                 icon: 'question',
                 showCancelButton: true,
@@ -4304,7 +3741,11 @@
                     
                     Swal.fire({
                         title: '📜 Missão Aceita!',
-                        html: `<p>Progresso: <strong>${gameState.royalQuest.kills}/${gameState.royalQuest.target}</strong> monstros derrotados</p>`,
+                        html: `<div style="text-align: left;">
+                            <p>Que a sorte esteja ao seu lado, herói!</p>
+                            <p style="margin-top: 10px;">📊 Progresso: <strong>${gameState.royalQuest.kills}/${gameState.royalQuest.target}</strong> monstros derrotados</p>
+                            <p style="margin-top: 10px; color: #ffd700;">💰 Recompensa: 300 moedas ao completar</p>
+                        </div>`,
                         icon: 'success',
                         confirmButtonText: 'Vamos lá!',
                         background: '#1a1a2e',
@@ -4312,17 +3753,29 @@
                         confirmButtonColor: '#4CAF50'
                     });
                     
-                    addLog('📜 Missão Real: Derrote 5 monstros!');
+                    addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
+                    addLog('📜 Missão Real: Derrote 5 monstros para ganhar uma recompensa especial!');
+                } else {
+                    Swal.fire({
+                        title: 'Missão Recusada',
+                        text: 'Talvez em outra ocasião, aventureiro. As portas do castelo estarão sempre abertas para você.',
+                        icon: 'info',
+                        confirmButtonText: 'Até logo',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    addLog('👑 Rei: "Entendo... quando estiver pronto, volte."');
                 }
             });
         }
 
-        // ========== TAVERN FUNCTIONS ==========
+        // ========== FUNÇÕES DA TABERNA ==========
     
         function buyBeer() { buyDrink('beer', 5); }
         function buyWine() { buyDrink('wine', 15); }
-        function buyCoffee() { buyDrink('coffee', 8); }
-        function buyMead() { buyDrink('mead', 12); }
+        function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
+        function buyMead() { if (gameState.isDead) return; buyDrink('mead', 12); }
         
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
@@ -4341,33 +3794,62 @@
                 addLog('❌ Moedas insuficientes!');
             }
         }
-        
         function listenStories() {
             if (gameState.isDead) return;
             
             const stories = [
-                { title: '📖 A Lenda do Herói das Montanhas', text: 'Há muito tempo, um herói chamado Aldric enfrentou o dragão das montanhas fumegantes.' },
-                { title: '📖 Terras Além-Mar', text: 'Além do mar oriental, existe um continente onde as árvores são feitas de cristal.' },
-                { title: '📖 A Grande Guerra', text: 'Há quinhentos anos, uma guerra devastadora quase destruiu nosso reino.' },
-                { title: '📖 O Tesouro Esquecido', text: 'Nas ruínas antigas, além da floresta proibida, existe um tesouro deixado pelos antigos.' }
+                {
+                    title: '📖 A Lenda do Herói das Montanhas',
+                    text: 'Há muito tempo, um herói chamado Aldric enfrentou o dragão das montanhas fumegantes. Com sua espada encantada, ele derrotou a besta e salvou todo o reino. Dizem que sua espada ainda está escondida em algum lugar, esperando por um novo herói digno...'
+                },
+                {
+                    title: '📖 Terras Além-Mar',
+                    text: 'Um mercador de barba grisalha conta sobre terras distantes: "Além do mar oriental, existe um continente onde as árvores são feitas de cristal e os rios brilham como prata líquida. Um dia, talvez, possamos navegar até lá..."'
+                },
+                {
+                    title: '📖 A Grande Guerra',
+                    text: 'Veteranos relembram: "Há quinhentos anos, uma guerra devastadora quase destruiu nosso reino. Foi quando o primeiro Rei da Aurora uniu todos os povos e construiu estas muralhas que nos protegem até hoje."'
+                },
+                {
+                    title: '📖 O Tesouro Esquecido',
+                    text: 'Um sussurro corre pela taverna: "Dizem que nas ruínas antigas, além da floresta proibida, existe um tesouro deixado pelos antigos. Mas poucos que entraram lá voltaram para contar a história..."'
+                }
             ];
             
             const story = stories[Math.floor(Math.random() * stories.length)];
+            const hasManaRestore = Math.random() < 0.2;
             
             Swal.fire({
                 title: story.title,
-                text: story.text,
+                html: `<div style="text-align: left; line-height: 1.6;">
+                    <p>${story.text}</p>
+                    ${hasManaRestore ? '<p style="margin-top: 15px; color: #4CAF50;">✨ As histórias te inspiram e você recupera 10 de mana!</p>' : ''}
+                </div>`,
                 icon: 'info',
                 confirmButtonText: 'Continuar ouvindo 🎵',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#ffd700'
+                confirmButtonColor: '#ffd700',
+                showCancelButton: true,
+                cancelButtonText: 'Sair da taverna',
+                cancelButtonColor: '#ff4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Se quiser, pode chamar novamente para continuar ouvindo
+                    // listenStories();
+                    addLog('📖 Você continua ouvindo as histórias...');
+                }
             });
             
             addLog(story.title + ': ' + story.text.substring(0, 50) + '...');
+            
+            if (hasManaRestore) {
+                gameState.character.mana = Math.min(gameState.character.mana + 10, gameState.character.maxMana);
+                addLog('🎵 As histórias inspiradoras recuperam 10 de mana!');
+            }
         }
 
-        // ========== FARM FUNCTIONS ==========
+        // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
     
         function visitFarmerHouse1() {
             if (gameState.isDead) return;
@@ -4376,7 +3858,11 @@
             
             Swal.fire({
                 title: '🏠 Fazenda do Miguel',
-                html: `<p>"Bem-vindo, viajante! A colheita está farta este ano."</p>${hasGift ? '<p>"Aqui, leve algumas cenouras frescas!"</p>' : ''}`,
+                html: `<div style="text-align: left;">
+                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 10px;">👨‍🌾 Miguel:</p>
+                    <p>"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."</p>
+                    ${hasGift ? '<p style="margin-top: 15px;">"Aqui, leve algumas cenouras frescas para sua jornada!"</p>' : ''}
+                </div>`,
                 icon: 'success',
                 confirmButtonText: hasGift ? 'Aceitar 🥕' : 'Agradecer',
                 background: '#1a1a2e',
@@ -4385,6 +3871,7 @@
             });
             
             addLog('🏠 Você visita a casa do Fazendeiro Miguel.');
+            addLog('👨‍🌾 Miguel: "Bem-vindo! A colheita está farta este ano!"');
             
             if (hasGift) {
                 addItemToInventory('cenoura');
@@ -4392,7 +3879,6 @@
             }
             updateUI();
         }
-        
         function visitFarmerHouse2() {
             if (gameState.isDead) return;
             
@@ -4400,7 +3886,11 @@
             
             Swal.fire({
                 title: '🏠 Fazenda da Ana',
-                html: `<p>"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."</p>${hasGift ? '<p>"Tome este pão que fiz agora mesmo!"</p>' : ''}`,
+                html: `<div style="text-align: left;">
+                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 10px;">👩‍🌾 Ana:</p>
+                    <p>"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."</p>
+                    ${hasGift ? '<p style="margin-top: 15px;">"Tome este pão que fiz agora mesmo, com todo carinho!"</p>' : ''}
+                </div>`,
                 icon: 'success',
                 confirmButtonText: hasGift ? 'Aceitar 🍞' : 'Agradecer',
                 background: '#1a1a2e',
@@ -4409,6 +3899,7 @@
             });
             
             addLog('🏠 Você visita a casa da Fazendeira Ana.');
+            addLog('👩‍🌾 Ana: "Que bom ver você! Tome este pão que fiz hoje."');
             
             if (hasGift) {
                 addItemToInventory('pao_fresco');
@@ -4420,6 +3911,7 @@
         function millGrains() {
             if (gameState.isDead) return;
             addLog('🌾 O moleiro mói seus grãos gratuitamente.');
+            addLog('🍞 Você pode comprar pão fresco agora.');
             updateUI();
         }
     
@@ -4435,23 +3927,24 @@
             }
         }
     
-        // ========== VILLAGE FUNCTIONS ==========
+        // ========== FUNÇÕES DOS VILAREJOS ==========
     
         function visitCarpenter() {
             if (gameState.isDead) return;
             addLog('🔨 O marceneiro mostra seus belos móveis de madeira.');
+            addLog('💬 "Se precisar de móveis para sua casa, estou aqui!"');
             updateUI();
         }
-        
         function visitArtisan() {
             if (gameState.isDead) return;
             addLog('🎨 O artesão trabalha em uma bela escultura de madeira.');
+            addLog('💬 "A arte é a alma do reino!"');
             updateUI();
         }
-        
         function visitWeaver() {
             if (gameState.isDead) return;
             addLog('🧵 A tecelã mostra seus tecidos coloridos.');
+            addLog('💬 "As cores vêm de plantas que cultivo no jardim!"');
             updateUI();
         }
 
@@ -4495,6 +3988,7 @@
         function buyApple() { buyItem('apple', 2); }
         function buyBread() { buyItem('bread', 2); }
         function buyMeat() { buyItem('meat', 5); }
+        function buyPotion() { buyItem('potion', 35); }
         function buyFish() { buyItem('fish', 5); }
         function buyCarrot() { buyItem('cenoura', 3); }
 
@@ -4539,7 +4033,7 @@
                 addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
             } else {
                 addLog('🏚️ Ruínas antigas... você encontra um baú!');
-                const items = ['katana', 'capacete_ferro', 'heal_potion'];
+                const items = ['katana', 'capacete_ferro', 'potion'];
                 const itemId = items[Math.floor(Math.random() * items.length)];
                 addItemToInventory(itemId);
                 addLog(`🎁 Você encontrou: ${ITEMS[itemId].name}!`);
@@ -4557,41 +4051,60 @@
             
             let playerAttack = race.baseAttack + bonuses.attackBonus;
             let damage = 0;
+            let attackType = "⚔️ Ataque corpo a corpo";
             
+            // Verificar se está usando arco na mão principal
             const mainhand = gameState.equipment.mainhand;
             const isUsingBow = mainhand && mainhand.id === 'bow';
             
             if (isUsingBow) {
+                // Procurar flechas no inventário
                 let arrowIndex = -1;
                 for (let i = 0; i < gameState.inventory.length; i++) {
-                    if (gameState.inventory[i] && gameState.inventory[i].id === 'arrow') {
+                    if (gameState.inventory[i] && gameState.inventory[i].id === 'flecha') {
                         arrowIndex = i;
                         break;
                     }
                 }
                 
                 if (arrowIndex !== -1) {
+                    // Tem flecha - usa dano fixo de 75 da flecha
                     damage = 75;
+                    attackType = "🏹 Ataque com Arco";
+                    
+                    // Consumir uma flecha
                     const arrow = gameState.inventory[arrowIndex];
                     if (arrow.quantity > 1) {
                         arrow.quantity--;
                     } else {
                         gameState.inventory[arrowIndex] = null;
                     }
-                    addLog(`🏹 Você disparou uma flecha causando ${damage} de dano!`);
+                    
+                    addLog(`🏹 Você disparou uma flecha causando ${damage} de dano! Flechas restantes: ${arrow.quantity ? arrow.quantity - 1 : 0}`);
                 } else {
+                    // Sem flechas - não causa dano
                     damage = 0;
+                    attackType = "🏹 Arco sem flechas!";
                     addLog(`❌ Seu arco está sem flechas! Compre mais na loja de armas.`);
                 }
             } else {
+                // Ataque normal com outras armas
                 damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
+                attackType = "⚔️ Ataque corpo a corpo";
             }
             
+            // Aplicar dano apenas se > 0
             if (damage > 0) {
                 gameState.currentEnemy.life -= damage;
-                addLog(`⚔️ Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
+                addLog(`${attackType}: Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
+            } else if (!isUsingBow) {
+                // Caso raro de dano 0 em ataque normal
+                damage = 1;
+                gameState.currentEnemy.life -= damage;
+                addLog(`${attackType}: Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
             }
         
+            // Verificar se inimigo morreu
             if (gameState.currentEnemy.life <= 0) {
                 addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
                 gameState.character.exp += gameState.currentEnemy.exp;
@@ -4600,12 +4113,13 @@
                 
                 if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
                     gameState.royalQuest.kills++;
-                    addLog(`📜 Progresso da Missão Real: ${gameState.royalQuest.kills}/${gameState.royalQuest.target}`);
+                    addLog(`📜 Progresso da Missão Real: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros derrotados.`);
                     
                     if (gameState.royalQuest.kills >= gameState.royalQuest.target && !gameState.royalQuest.rewarded) {
                         gameState.royalQuest.rewarded = true;
                         gameState.character.gold += 300;
-                        addLog(`👑 MISSÃO REAL COMPLETA! Você recebeu 300 moedas!`);
+                        addLog(`👑 MISSÃO REAL COMPLETA! Você recebeu 300 moedas de recompensa!`);
+                        addLog(`🏆 O Rei o declara um herói do reino!`);
                     }
                 }
                 
@@ -4617,14 +4131,21 @@
                 }
                 
                 gameState.currentEnemy = null;
-                updateUI();
+                checkAndApplyLevelUp(); updateUI();
                 return;
             }
             
+            // Inimigo contra-ataca
             const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
+            
             addLog(`💢 ${gameState.currentEnemy.name} contra-ataca causando ${enemyBaseDamage} de dano!`);
             
-            applyDamageWithArmor(enemyBaseDamage);
+            // Usar o sistema de armadura com durabilidade
+            const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
+            
+            if (totalAbsorbed > 0) {
+                addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
+            }
             
             if (gameState.character.life <= 0) {
                 playerDeath();
@@ -4632,40 +4153,79 @@
             
             updateUI();
         }
-        
         function run() {
             if (gameState.isDead || !gameState.currentEnemy) return;
             
+            // Chance de 50% de fugir
             if (Math.random() < 0.5) {
                 addLog(`🏃 Você conseguiu fugir de ${gameState.currentEnemy.name}!`);
                 gameState.currentEnemy = null;
                 updateUI();
             } else {
                 addLog(`❌ Não conseguiu fugir de ${gameState.currentEnemy.name}!`);
+                
                 const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
+                
                 addLog(`💢 ${gameState.currentEnemy.name} ataca enquanto você foge causando ${enemyBaseDamage} de dano!`);
-                applyDamageWithArmor(enemyBaseDamage);
+                
+                // Usar o sistema de armadura com durabilidade
+                const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
+                
+                if (totalAbsorbed > 0) {
+                    addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
+                }
                 
                 if (gameState.character.life <= 0) {
                     playerDeath();
                 }
+                
                 updateUI();
             }
         }
 
+        function playerDeath() {
+            gameState.character.life = 0;
+            gameState.isDead = true;
+            gameState.currentEnemy = null;
+            
+            addLog('💀 VOCÊ MORREU!');
+            localStorage.removeItem('twilight_autosave');
+            
+            updateUI();
+        }
+        
+        function calculateTotalDefenseWithDurability() {
+            let totalDefense = 0;
+            const brokenItems = [];
+            
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item && (item.type === 'armor' || item.type === 'shield')) {
+                    if (item.durability > 0) {
+                        totalDefense += item.defense;
+                    } else {
+                        brokenItems.push(item.name);
+                    }
+                }
+            }
+            
+            return { totalDefense, brokenItems };
+        }
         function applyDamageWithArmor(incomingDamage) {
             let remainingDamage = incomingDamage;
             
+            // Definir prioridade das armaduras (do que protege primeiro para o último)
             const armorPriority = [
-                { slot: 'offhand', name: 'Escudo' },
-                { slot: 'chest', name: 'Peitoral' },
-                { slot: 'pants', name: 'Calças' },
-                { slot: 'boots', name: 'Botas' },
-                { slot: 'helmet', name: 'Capacete' }
+                { slot: 'offhand', name: 'Escudo' },      // 1º - Escudo
+                { slot: 'chest', name: 'Peitoral' },      // 2º - Peitoral
+                { slot: 'pants', name: 'Calças' },        // 3º - Calças
+                { slot: 'boots', name: 'Botas' },         // 4º - Botas
+                { slot: 'helmet', name: 'Capacete' }      // 5º - Capacete
             ];
             
             const activeArmor = [];
             
+            // Coletar armaduras ativas na ordem de prioridade
             for (let priority of armorPriority) {
                 const item = gameState.equipment[priority.slot];
                 if (item && (item.type === 'armor' || item.type === 'shield') && item.durability > 0) {
@@ -4678,6 +4238,7 @@
                 }
             }
             
+            // Se não tem armadura, todo dano vai direto pra vida
             if (activeArmor.length === 0) {
                 gameState.character.life -= incomingDamage;
                 addLog(`💔 Sem armadura! Você perdeu ${incomingDamage} de vida!`);
@@ -4685,47 +4246,189 @@
             }
             
             let totalAbsorbed = 0;
-            let armorThatTookHit = [];
+            const absorptionLog = [];
+            let armorThatAbsorbed = false;
+            let armorThatTookHit = []; // Armaduras que participaram da absorção
             
+            // Aplicar absorção por prioridade
             for (let armor of activeArmor) {
                 if (remainingDamage <= 0) break;
                 
-                const absorbAmount = Math.min(remainingDamage, armor.defense);
+                const defenseValue = armor.defense;
+                
+                // Quanto esta armadura pode absorver
+                const absorbAmount = Math.min(remainingDamage, defenseValue);
                 
                 if (absorbAmount > 0) {
                     remainingDamage -= absorbAmount;
                     totalAbsorbed += absorbAmount;
+                    armorThatAbsorbed = true;
+                    
+                    // MARCA que esta armadura participou da absorção (tomou o golpe)
                     armorThatTookHit.push(armor);
+                    
+                    absorptionLog.push(`${armor.name} (${armor.item.name}) absorveu ${absorbAmount} de dano.`);
                 }
             }
             
+            // AGORA SIM: cada armadura que participou da absorção perde APENAS 1 de durabilidade
+            // INDEPENDENTE do quanto absorveu
+            const durabilityLog = [];
             for (let armor of armorThatTookHit) {
+                const oldDurability = armor.item.durability;
                 armor.item.durability = Math.max(0, armor.item.durability - 1);
+                const durabilityLost = oldDurability - armor.item.durability;
+                
+                durabilityLog.push(`${armor.name} (${armor.item.name}) perdeu ${durabilityLost} de durabilidade (${armor.item.durability}/${armor.item.maxDurability})`);
+                
+                // Verificar se quebrou
                 if (armor.item.durability === 0) {
-                    addLog(`⚠️ ${armor.item.name} se quebrou e não oferece mais proteção!`);
+                    durabilityLog.push(`⚠️ ${armor.item.name} se quebrou e não oferece mais proteção!`);
                 }
             }
             
+            // Log da absorção
             if (totalAbsorbed > 0) {
                 addLog(`🛡️ Dano recebido: ${incomingDamage} | Absorvido: ${totalAbsorbed} | Passou: ${remainingDamage}`);
+                absorptionLog.forEach(log => addLog(`   ${log}`));
+                durabilityLog.forEach(log => addLog(`   🔧 ${log}`));
             }
             
+            // Se nenhuma armadura absorveu dano (dano menor que a defesa da primeira?)
+            if (!armorThatAbsorbed && incomingDamage > 0) {
+                addLog(`⚠️ Nenhuma armadura conseguiu absorver o dano!`);
+            }
+            
+            // Aplicar dano restante à vida
             if (remainingDamage > 0) {
                 gameState.character.life -= remainingDamage;
                 addLog(`💔 Dano na vida: ${remainingDamage} pontos! (Vida: ${gameState.character.life}/${gameState.character.maxLife})`);
+            } else if (totalAbsorbed > 0) {
+                addLog(`✨ Todo o dano foi absorvido pelas armaduras!`);
             }
             
             return { totalAbsorbed, remainingDamage };
         }
+        function checkForBrokenArmor() {
+            const brokenItems = [];
+            
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item && (item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
+                    brokenItems.push(item.name);
+                }
+            }
+            
+            if (brokenItems.length > 0) {
+                addLog(`⚠️ ATENÇÃO: ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} completamente destruída${brokenItems.length > 1 ? 's' : ''}!`);
+            }
+            
+            return brokenItems;
+        }
+    
+        // ========== LEVEL SYSTEM ==========
 
-        function playerDeath() {
-            gameState.character.life = 0;
-            gameState.isDead = true;
-            gameState.currentEnemy = null;
+        function checkAndApplyLevelUp() {
+            if (!gameState.character || gameState.isDead) return false;
             
-            addLog('💀 VOCÊ MORREU!');
-            localStorage.removeItem('twilight_autosave');
+            let leveledUp = false;
+            let levelUpCount = 0;
+            const levelUps = [];
             
+            // Garantir que level e exp existam
+            if (gameState.character.level === undefined) gameState.character.level = 1;
+            if (gameState.character.exp === undefined) gameState.character.exp = 0;
+            
+            // Loop para múltiplos level ups de uma vez
+            while (true) {
+                const currentLevel = gameState.character.level;
+                const expNeeded = calculateExpForNextLevel(currentLevel);
+                
+                // Verificar se tem experiência suficiente para subir
+                if (gameState.character.exp >= expNeeded) {
+                    // Subir de nível
+                    gameState.character.exp -= expNeeded;
+                    gameState.character.level++;
+                    leveledUp = true;
+                    levelUpCount++;
+                } else {
+                    break;
+                }
+            }
+            
+            return leveledUp;
+        }
+        function addExperience(amount) {
+            if (!gameState.character || gameState.isDead) return false;
+            if (amount <= 0) return false;
+            
+            // Adicionar experiência
+            gameState.character.exp = (gameState.character.exp || 0) + amount;
+            
+            addLog(`✨ +${amount} EXP! (Total: ${gameState.character.exp})`);
+            
+            // Verificar e aplicar level up
+            const leveledUp = checkAndApplyLevelUp();
+            
+            // Atualizar UI se necessário
+            if (leveledUp) {
+                updateUI();
+            }
+            
+            return leveledUp;
+        }
+        function setLevel(newLevel, keepExp = false) {
+            if (!gameState.character || gameState.isDead) return;
+            if (newLevel < 1) newLevel = 1;
+            
+            const oldLevel = gameState.character.level || 1;
+            const levelDifference = newLevel - oldLevel;
+            
+            if (levelDifference > 0) {
+                for (let i = 0; i < levelDifference; i++) {
+                    gameState.character.maxLife += 50;
+                    gameState.character.maxMana += 25;
+                    
+                    const race = RACES[gameState.character.race];
+                    if (race) {
+                        race.baseAttack += 10;
+                        race.baseDefense += 5;
+                    }
+                }
+                
+                gameState.character.life = gameState.character.maxLife;
+                gameState.character.mana = gameState.character.maxMana;
+                
+                if (!keepExp) {
+                    gameState.character.exp = 0;
+                }
+                
+                addLog(`✨ Seu nível foi aumentado para ${newLevel}!`);
+                
+            } else if (levelDifference < 0) {
+                // Perder níveis (raro, mas pode acontecer em eventos especiais)
+                for (let i = 0; i < Math.abs(levelDifference); i++) {
+                    gameState.character.maxLife = Math.max(50, gameState.character.maxLife - 50);
+                    gameState.character.maxMana = Math.max(25, gameState.character.maxMana - 25);
+                    
+                    const race = RACES[gameState.character.race];
+                    if (race) {
+                        race.baseAttack = Math.max(10, race.baseAttack - 10);
+                        race.baseDefense = Math.max(5, race.baseDefense - 5);
+                    }
+                }
+                
+                if (gameState.character.life > gameState.character.maxLife) {
+                    gameState.character.life = gameState.character.maxLife;
+                }
+                if (gameState.character.mana > gameState.character.maxMana) {
+                    gameState.character.mana = gameState.character.maxMana;
+                }
+                
+                addLog(`⚠️ Seu nível foi reduzido para ${newLevel}!`);
+            }
+            
+            gameState.character.level = newLevel;
             updateUI();
         }
 
@@ -4746,7 +4449,6 @@
             a.click();
             addLog('💾 Jogo salvo!');
         }
-        
         function loadGame() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -4770,28 +4472,34 @@
                             return;
                         }
                         
+                        // Salvar o remainingCycleTime antes de carregar
                         const savedRemainingTime = loadedState.remainingCycleTime;
                         const savedTimeOfDay = loadedState.timeOfDay;
                         
                         gameState = loadedState;
                         
+                        // Garantir que o ciclo não está rodando
                         if (gameState.dayCycleTimer) {
                             clearInterval(gameState.dayCycleTimer);
                             gameState.dayCycleTimer = null;
                         }
                         
+                        // Restaurar o remainingCycleTime do save se ele existir
                         if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
                             gameState.remainingCycleTime = savedRemainingTime;
                             gameState.cycleStartTime = Date.now();
                         } else {
+                            // Se não tiver, iniciar um novo ciclo
                             gameState.remainingCycleTime = gameState.cycleDuration || 600;
                             gameState.cycleStartTime = Date.now();
                         }
                         
+                        // Restaurar o timeOfDay do save
                         if (savedTimeOfDay) {
                             gameState.timeOfDay = savedTimeOfDay;
                         }
                         
+                        // Resetar estados de sono
                         gameState.isSleeping = false;
                         if (gameState.sleepTimeout) {
                             clearInterval(gameState.sleepTimeout);
@@ -4804,9 +4512,13 @@
                         document.getElementById('game-ui').style.display = 'block';
                         
                         updateUI();
-                        startCycleTimer();
+                        startCycleTimer(); // Isso vai usar o remainingCycleTime salvo
                         
                         addLog('📂 Jogo carregado!');
+                        
+                        // Mostrar informação do tempo atual
+                        const currentPhase = gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite';
+                        addLog(`⏰ ${currentPhase} - Ciclo de tempo restaurado!`);
                         
                     } catch (err) {
                         alert('Erro ao carregar arquivo!');
@@ -4818,6 +4530,78 @@
             input.click();
         }
         
+        // ========== DIALOG SYSTEM ==========
+
+        async function showDialog(options) {
+            const {
+                title,
+                text,
+                icon = 'info',
+                confirmText = 'Continuar',
+                showCancel = false,
+                cancelText = 'Sair',
+                imageUrl = null,
+                imageWidth = null,
+                imageHeight = null
+            } = options;
+            
+            const result = await Swal.fire({
+                title: title,
+                text: text,
+                icon: icon,
+                confirmButtonText: confirmText,
+                showCancelButton: showCancel,
+                cancelButtonText: cancelText,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4a90e2',
+                cancelButtonColor: '#ff4444',
+                imageUrl: imageUrl,
+                imageWidth: imageWidth,
+                imageHeight: imageHeight,
+                customClass: {
+                    popup: 'swal-dark',
+                    title: 'swal-title'
+                }
+            });
+            
+            return result;
+        }
+        
+        function showCharacterDialog(character, message, options = {}) {
+            const race = RACES[gameState.character?.race];
+            const iconMap = {
+                'Rei': '👑',
+                'Capitão': '🗡️',
+                'Bardo': '🎵',
+                'Mercador': '💰',
+                'Fazendeiro': '🌾',
+                'Marceneiro': '🔨',
+                'Artesão': '🎨',
+                'Tecelã': '🧵'
+            };
+            
+            const charIcon = iconMap[character] || '💬';
+            
+            Swal.fire({
+                title: `${charIcon} ${character}`,
+                html: `<div style="text-align: left; line-height: 1.6;">${message}</div>`,
+                icon: options.icon || 'info',
+                confirmButtonText: options.confirmText || 'Continuar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                imageUrl: options.imageUrl,
+                imageWidth: options.imageWidth,
+                imageHeight: options.imageHeight,
+                customClass: {
+                    popup: 'swal-dark'
+                }
+            });
+        }
+    
+        // ========== INITIALIZE ==========
+
         function openCrystalBall() {
             if (gameState.isDead) {
                 addLog('💀 A bola de cristal está escura... você está morto.');
