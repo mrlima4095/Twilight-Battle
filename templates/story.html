@@ -3199,6 +3199,10 @@
             const item = gameState.inventory[index];
             if (!item) return;
             
+            if (item.useEffect && typeof window[item.useEffect] === 'function') {
+                window[item.useEffect]();
+                return;
+            }
             if (item.type === 'station') {
                 useStationItem(item.id);
             }
