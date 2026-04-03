@@ -3247,6 +3247,254 @@
             }
         }
     
+        // ========== STATION SYSTEM ==========
+        
+        function useStationItem(itemId) {
+            if (gameState.isDead) return;
+            
+            const item = ITEMS[itemId];
+            if (!item || item.type !== 'station') return;
+            
+            const currentLocation = gameState.location;
+            const locationData = LOCATIONS[currentLocation];
+            
+            if (!locationData.allowsStations) {
+                addLog(`❌ Você não pode montar ${item.name} aqui. Tente em sua casa ou em uma clareira aberta.`);
+                return;
+            }
+            
+            // Verificar se já existe uma estação deste tipo neste local
+            if (gameState.placedStations[currentLocation] && gameState.placedStations[currentLocation][itemId]) {
+                addLog(`⚠️ Já existe uma ${item.name} montada aqui!`);
+                return;
+            }
+            
+            // Remover item do inventário
+            let itemIndex = -1;
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const invItem = gameState.inventory[i];
+                if (invItem && invItem.id === itemId) {
+                    itemIndex = i;
+                    break;
+                }
+            }
+            
+            if (itemIndex === -1) return;
+            
+            // Remover o item
+            if (gameState.inventory[itemIndex].quantity > 1) {
+                gameState.inventory[itemIndex].quantity--;
+            } else {
+                gameState.inventory[itemIndex] = null;
+            }
+            
+            // Adicionar estação ao local
+            if (!gameState.placedStations[currentLocation]) {
+                gameState.placedStations[currentLocation] = {};
+            }
+            
+            gameState.placedStations[currentLocation][itemId] = {
+                id: itemId,
+                name: item.name,
+                stationType: item.stationType,
+                placedAt: Date.now()
+            };
+            
+            addLog(`🔨 Você montou ${item.name} aqui!`);
+            updateUI();
+        }
+        
+        function openStation(stationId) {
+            if (gameState.isDead) return;
+            
+            const currentLocation = gameState.location;
+            const station = gameState.placedStations[currentLocation]?.[stationId];
+            
+            if (!station) {
+                addLog(`❌ Não há ${stationId} montada aqui.`);
+                return;
+            }
+            
+            gameState.activeStation = {
+                ...station,
+                location: currentLocation
+            };
+            
+            updateUI(); // Isso vai mostrar a interface da estação
+        }
+        function closeStation() {
+            gameState.activeStation = null;
+            updateUI();
+        }
+        
+        function collectStation(stationId) {
+            if (gameState.isDead) return;
+            
+            const currentLocation = gameState.location;
+            const station = gameState.placedStations[currentLocation]?.[stationId];
+            
+            if (!station) {
+                addLog(`❌ Não há ${stationId} montada aqui para recolher.`);
+                return;
+            }
+            
+            // Adicionar de volta ao inventário
+            addItemToInventory(stationId, 1);
+            
+            // Remover do local
+            delete gameState.placedStations[currentLocation][stationId];
+            
+            // Se não há mais estações no local, limpar o objeto
+            if (Object.keys(gameState.placedStations[currentLocation]).length === 0) {
+                delete gameState.placedStations[currentLocation];
+            }
+            
+            // Fechar estação se estiver aberta
+            if (gameState.activeStation && gameState.activeStation.id === stationId) {
+                gameState.activeStation = null;
+            }
+            
+            addLog(`📦 Você recolheu ${station.name} para o inventário.`);
+            updateUI();
+        }
+        
+        function craftItem(recipeId) {
+            if (gameState.isDead) return;
+            if (!gameState.activeStation) {
+                addLog(`❌ Nenhuma estação ativa.`);
+                return;
+            }
+            
+            const recipe = CRAFTING_RECIPES[recipeId];
+            if (!recipe) return;
+            
+            // Verificar se a estação correta está sendo usada
+            if (recipe.station !== gameState.activeStation.stationType) {
+                addLog(`❌ Esta receita requer ${recipe.station.replace('_', ' ')}.`);
+                return;
+            }
+            
+            // Verificar materiais
+            const missingMaterials = [];
+            for (const material of recipe.materials) {
+                let totalQuantity = 0;
+                for (const item of gameState.inventory) {
+                    if (item && item.id === material.id) {
+                        totalQuantity += item.quantity || 1;
+                    }
+                }
+                
+                if (totalQuantity < material.quantity) {
+                    missingMaterials.push(`${material.quantity}x ${ITEMS[material.id]?.name || material.id} (tem ${totalQuantity})`);
+                }
+            }
+            
+            if (missingMaterials.length > 0) {
+                addLog(`❌ Materiais faltando: ${missingMaterials.join(', ')}`);
+                return;
+            }
+            
+            // Consumir materiais
+            for (const material of recipe.materials) {
+                let remaining = material.quantity;
+                for (let i = 0; i < gameState.inventory.length && remaining > 0; i++) {
+                    const item = gameState.inventory[i];
+                    if (item && item.id === material.id) {
+                        if (item.quantity >= remaining) {
+                            item.quantity -= remaining;
+                            if (item.quantity === 0) gameState.inventory[i] = null;
+                            remaining = 0;
+                        } else {
+                            remaining -= item.quantity;
+                            gameState.inventory[i] = null;
+                        }
+                    }
+                }
+            }
+            
+            // Adicionar resultado
+            for (let i = 0; i < recipe.quantity; i++) {
+                addItemToInventory(recipe.result, 1);
+            }
+            
+            addLog(`🔨 Você craftou ${recipe.quantity}x ${recipe.name}!`);
+            updateUI();
+        }
+        
+        function getAvailableRecipesForStation(stationType) {
+            const recipes = [];
+            for (const [id, recipe] of Object.entries(CRAFTING_RECIPES)) {
+                if (recipe.station === stationType) {
+                    recipes.push({ id, ...recipe });
+                }
+            }
+            return recipes;
+        }
+        
+        function renderStationUI() {
+            if (!gameState.activeStation) return null;
+            
+            const station = gameState.activeStation;
+            const recipes = getAvailableRecipesForStation(station.stationType);
+            
+            let materialsHtml = '';
+            for (const recipe of recipes) {
+                let canCraft = true;
+                let materialsList = '';
+                
+                for (const material of recipe.materials) {
+                    let playerQuantity = 0;
+                    for (const item of gameState.inventory) {
+                        if (item && item.id === material.id) {
+                            playerQuantity += item.quantity || 1;
+                        }
+                    }
+                    const hasEnough = playerQuantity >= material.quantity;
+                    if (!hasEnough) canCraft = false;
+                    materialsList += `<div style="color: ${hasEnough ? '#4CAF50' : '#ff4444'}; font-size: 12px;">
+                        ${material.quantity}x ${ITEMS[material.id]?.name || material.id} (${playerQuantity})
+                    </div>`;
+                }
+                
+                materialsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px; margin-bottom: 10px; border: 1px solid ${canCraft ? '#4CAF50' : '#ff4444'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <strong style="color: #ffd700; font-size: 16px;">${recipe.name}</strong>
+                                <div style="color: #888; font-size: 12px;">${recipe.description}</div>
+                                ${materialsList}
+                            </div>
+                            <button class="action-btn success" onclick="craftItem('${recipe.id}')" ${!canCraft ? 'disabled' : ''} style="padding: 8px 20px;">
+                                🔨 Craftar (${recipe.quantity}x)
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (recipes.length === 0) {
+                materialsHtml = '<p style="text-align: center; color: #888;">Nenhuma receita disponível para esta estação.</p>';
+            }
+            
+            return `
+                <div style="background: rgba(0,0,0,0.7); border-radius: 15px; padding: 20px; border: 2px solid #ffd700;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <h2 style="color: #ffd700; margin: 0;">🔨 ${station.name}</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="action-btn warning" onclick="collectStation('${station.id}')" style="padding: 8px 15px;">📦 Recolher Estação</button>
+                            <button class="action-btn" onclick="closeStation()" style="padding: 8px 15px;">❌ Fechar</button>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <p style="color: #fff;">Selecione uma receita para craftar:</p>
+                    </div>
+                    <div id="station-recipes">
+                        ${materialsHtml}
+                    </div>
+                </div>
+            `;
+        }
+    
         // ========== LOCATION ACTIONS ==========
 
         function go(location, message) {
