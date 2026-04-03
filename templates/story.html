@@ -3564,12 +3564,6 @@ function openBookEditor(bookIndex) {
         openBookReader(bookIndex);
         return;
     }
-    
-    // Salvar estado atual da batalha antes de abrir o editor
-    if (gameState.currentEnemy) {
-        gameState.savedEnemy = { ...gameState.currentEnemy };
-    }
-    
     activeBook = book;
     activeBookIndex = bookIndex;
     
@@ -3613,12 +3607,6 @@ function closeBookEditor() {
     
     activeBook = null;
     activeBookIndex = null;
-    
-    // Restaurar batalha se existia
-    if (gameState.savedEnemy) {
-        gameState.currentEnemy = gameState.savedEnemy;
-        delete gameState.savedEnemy;
-    }
     
     updateUI();
 }
@@ -3733,12 +3721,16 @@ function openBookReader(bookIndex) {
         attachBookEventListeners(container);
     }
     
-    gameState.currentEnemy = null;
+    if (gameState.savedEnemy) {
+        gameState.currentEnemy = gameState.savedEnemy;
+        delete gameState.savedEnemy;
+    }
 }
 
 function closeBookReader() {
     activeBook = null;
     activeBookIndex = null;
+    
     updateUI();
 }
 
