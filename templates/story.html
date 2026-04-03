@@ -4887,113 +4887,135 @@
         }
     
         // ========== INITIALIZE ==========
-
-        function showTimeRemaining() {
-            if (!gameState.cycleStartTime) {
-                Swal.fire({
-                    title: '⏰ Relógio',
-                    text: 'O ciclo de tempo ainda não foi iniciado!',
-                    icon: 'info',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    confirmButtonText: 'OK'
-                });
+        
+        function openCrystalBall() {
+            if (gameState.isDead) {
+                addLog('💀 A bola de cristal está escura... você está morto.');
                 return;
             }
             
-            let updateInterval;
-            
-            const createTimerHTML = () => {
-                const now = Date.now();
-                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
-                
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
-                
-                return `
-                    <div style="text-align: center;">
-                        <div style="font-size: 72px; margin-bottom: 15px; animation: pulse 1s ease-in-out infinite;">
-                            ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
-                        </div>
-                        <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 10px; font-family: monospace;" id="live-timer">
-                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
-                        </div>
-                        <div style="color: #aaa; margin-bottom: 20px; font-size: 14px;">
-                            ${gameState.timeOfDay === 'day' ? '🌞 Dia' : '🌙 Noite'} — Restante para ${gameState.timeOfDay === 'day' ? '🌙 Noite' : '☀️ Dia'}
-                        </div>
-                        <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
-                            <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;" id="timer-progress"></div>
-                        </div>
-                        <div style="color: #666; font-size: 12px; margin-top: 10px;">
-                            📅 Cada ciclo dura ${Math.floor(gameState.cycleDuration / 60)} minutos de jogo
-                        </div>
-                    </div>
-                `;
-            };
-            
-            const updateTimer = () => {
-                const now = Date.now();
-                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                let remaining = gameState.remainingCycleTime - elapsed;
-                
-                if (remaining <= 0) {
-                    const newElapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                    remaining = Math.max(0, gameState.remainingCycleTime - newElapsed);
-                }
-                
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
-                
-                const timerElement = document.getElementById('live-timer');
-                if (timerElement) {
-                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                }
-                
-                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
-                const progressBar = document.getElementById('timer-progress');
-                if (progressBar) {
-                    progressBar.style.width = `${percentage}%`;
-                }
-            };
-            
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.1); opacity: 0.8; }
-                }
-            `;
-            document.head.appendChild(style);
-            
             Swal.fire({
-                title: '⏰ Relógio Mágico',
-                html: createTimerHTML(),
+                title: '🔮 Bola de Cristal',
+                html: `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">✨</div>
+                        <p style="color: #ffd700; margin-bottom: 20px;">A bola de cristal brilha com energia mágica...</p>
+                        <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px; margin: 15px 0;">
+                            <input type="text" id="crystal-command" class="swal2-input" 
+                                   placeholder="Ex: gameState.character.gold += 100" 
+                                   style="width: 100%; background: #222; color: #ffd700; border: 1px solid #9370db; border-radius: 8px; padding: 12px; text-align: center; font-family: monospace;">
+                        </div>
+                        <p style="color: #888; font-size: 12px; margin-top: 10px;">
+                            ⚠️ Use com cuidado! Comandos maliciosos podem quebrar o jogo.
+                        </p>
+                        <p style="color: #666; font-size: 11px; margin-top: 5px;">
+                            💡 Dica: use "gameState.character" para ver seus dados
+                        </p>
+                    </div>
+                `,
                 icon: 'info',
-                confirmButtonText: 'Fechar',
+                confirmButtonText: '🔮 Executar Comando',
+                showCancelButton: true,
+                cancelButtonText: '❌ Cancelar',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#ffd700',
-                width: '500px',
+                confirmButtonColor: '#9370db',
+                cancelButtonColor: '#ff4444',
+                width: '550px',
                 padding: '1.5rem',
-                allowOutsideClick: false,
                 didOpen: () => {
-                    updateInterval = setInterval(() => {
-                        const swalContent = document.querySelector('.swal2-html-container');
-                        if (swalContent) {
-                            updateTimer();
-                        } else {
-                            clearInterval(updateInterval);
-                        }
-                    }, 1000);
+                    const input = document.getElementById('crystal-command');
+                    if (input) {
+                        input.focus();
+                        input.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                Swal.clickConfirm();
+                            }
+                        });
+                    }
                 },
-                willClose: () => {
-                    if (updateInterval) clearInterval(updateInterval);
-                    if (style.parentNode) style.parentNode.removeChild(style);
+                preConfirm: () => {
+                    const command = document.getElementById('crystal-command')?.value.trim();
+                    if (!command) {
+                        Swal.showValidationMessage('❌ Digite um comando para executar!');
+                        return false;
+                    }
+                    return command;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    try {
+                        const evalResult = eval(result.value);
+                        updateUI();
+                        
+                        const resultStr = evalResult !== undefined ? JSON.stringify(evalResult, null, 2) : 'undefined';
+                        const truncatedResult = resultStr.length > 500 ? resultStr.substring(0, 500) + '...' : resultStr;
+                        
+                        Swal.fire({
+                            title: '✨ Comando Executado',
+                            html: `
+                                <div style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
+                                    <p style="color: #4CAF50; margin-bottom: 15px;">Comando executado com sucesso!</p>
+                                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px; text-align: left;">
+                                        <p style="color: #ffd700; margin-bottom: 10px; font-size: 14px;">📜 Comando:</p>
+                                        <pre style="background: #222; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; color: #ffd700; margin-bottom: 15px;">${escapeHtml(result.value)}</pre>
+                                        <p style="color: #ffd700; margin-bottom: 10px; font-size: 14px;">📊 Resultado:</p>
+                                        <pre style="background: #222; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; color: #4CAF50; max-height: 200px; overflow-y: auto;">${escapeHtml(truncatedResult)}</pre>
+                                    </div>
+                                </div>
+                            `,
+                            icon: 'success',
+                            confirmButtonText: '🔮 Continuar',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#9370db',
+                            width: '600px',
+                            padding: '1.5rem'
+                        });
+                        
+                        addLog(`🔮 Bola de Cristal: ${result.value.substring(0, 100)}${result.value.length > 100 ? '...' : ''}`);
+                        if (evalResult !== undefined) {
+                            addLog(`📊 Resultado: ${JSON.stringify(evalResult, null, 2).substring(0, 150)}`);
+                        }
+                        
+                    } catch (error) {
+                        Swal.fire({
+                            title: '❌ Erro Mágico',
+                            html: `
+                                <div style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 10px;">💥</div>
+                                    <p style="color: #ff4444; margin-bottom: 15px;">A magia falhou!</p>
+                                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px;">
+                                        <pre style="background: #222; padding: 10px; border-radius: 5px; overflow-x: auto; font-size: 12px; color: #ff4444;">${escapeHtml(error.message)}</pre>
+                                    </div>
+                                    <p style="color: #888; margin-top: 15px; font-size: 12px;">Verifique a sintaxe do comando e tente novamente.</p>
+                                </div>
+                            `,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ff4444',
+                            width: '550px',
+                            padding: '1.5rem'
+                        });
+                        
+                        addLog(`❌ Bola de Cristal: ${error.message}`);
+                    }
                 }
             });
+        }
+        
+        // Função auxiliar para escapar HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
         
         document.addEventListener('DOMContentLoaded', function() {
