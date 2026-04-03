@@ -2434,9 +2434,13 @@
                     slot.onclick = (function(index) {
                         return function(e) {
                             e.stopPropagation();
-                            const itemExists = gameState.inventory[index];
-                            if (itemExists) {
-                                useItem(index);
+                            const item = gameState.inventory[index];
+                            if (item) {
+                                if (item.type === 'station') {
+                                    useStationItem(item.id);
+                                } else {
+                                    useItem(index);
+                                }
                             }
                         };
                     })(i);
