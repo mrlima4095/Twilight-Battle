@@ -3721,15 +3721,20 @@ function openBookReader(bookIndex) {
         attachBookEventListeners(container);
     }
     
-    if (gameState.savedEnemy) {
-        gameState.currentEnemy = gameState.savedEnemy;
-        delete gameState.savedEnemy;
+    if (gameState.currentEnemy) {
+        gameState.savedEnemy = { ...gameState.currentEnemy };
+        gameState.currentEnemy = null;
     }
 }
 
 function closeBookReader() {
     activeBook = null;
     activeBookIndex = null;
+    
+    if (gameState.savedEnemy) {
+        gameState.currentEnemy = gameState.savedEnemy;
+        delete gameState.savedEnemy;
+    }
     
     updateUI();
 }
@@ -3745,57 +3750,6 @@ function attachBookEventListeners(container) {
             btn.parentNode.replaceChild(newBtn, btn);
         }
     });
-}
-
-// Funções de exemplo para livros root
-function castFireball() {
-    if (gameState.currentEnemy) {
-        const damage = 100;
-        gameState.currentEnemy.life -= damage;
-        addLog(`🔥 Bola de Fogo! Você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
-        
-        if (gameState.currentEnemy.life <= 0) {
-            addLog(`✨ Você derrotou ${gameState.currentEnemy.name} com magia!`);
-            gameState.character.exp += gameState.currentEnemy.exp;
-            gameState.character.gold += gameState.currentEnemy.gold;
-            gameState.currentEnemy = null;
-            checkAndApplyLevelUp();
-        }
-        updateUI();
-        
-        Swal.fire({
-            title: '🔥 Bola de Fogo!',
-            text: `Você causou ${damage} de dano!`,
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false,
-            background: '#1a1a2e',
-            color: '#fff'
-        });
-    } else {
-        Swal.fire({
-            title: 'Sem inimigo',
-            text: 'Não há inimigo para atacar!',
-            icon: 'info',
-            confirmButtonText: 'OK',
-            background: '#1a1a2e',
-            color: '#fff'
-        });
-    }
-}
-
-function learnRecipe(recipeId) {
-    Swal.fire({
-        title: '📖 Aprendendo Receita',
-        html: `<p>Você aprendeu a fazer ${ITEMS[recipeId]?.name || recipeId}!</p>
-               <p>Vá até uma bancada de trabalho para craftar.</p>`,
-        icon: 'success',
-        confirmButtonText: 'Entendi',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#4CAF50'
-    });
-    addLog(`📖 Você aprendeu a receita de ${ITEMS[recipeId]?.name || recipeId}!`);
 }
 
 // Função auxiliar para escapar HTML
