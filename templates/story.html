@@ -4888,85 +4888,110 @@
     
         // ========== INITIALIZE ==========
 
-        function openCrystalBall() {
-            if (gameState.isDead) {
-                addLog('💀 A bola de cristal está escura... você está morto.');
+        function showTimeRemaining() {
+            if (!gameState.cycleStartTime) {
+                Swal.fire({
+                    title: '⏰ Relógio',
+                    text: 'O ciclo de tempo ainda não foi iniciado!',
+                    icon: 'info',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
             
+            let updateInterval;
+            
+            const createTimerHTML = () => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                
+                return `
+                    <div style="text-align: center;">
+                        <div style="font-size: 72px; margin-bottom: 15px; animation: pulse 1s ease-in-out infinite;">
+                            ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
+                        </div>
+                        <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 10px; font-family: monospace;" id="live-timer">
+                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+                        </div>
+                        <div style="color: #aaa; margin-bottom: 20px; font-size: 14px;">
+                            ${gameState.timeOfDay === 'day' ? '🌞 Dia' : '🌙 Noite'} — Restante para ${gameState.timeOfDay === 'day' ? '🌙 Noite' : '☀️ Dia'}
+                        </div>
+                        <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
+                            <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;" id="timer-progress"></div>
+                        </div>
+                        <div style="color: #666; font-size: 12px; margin-top: 10px;">
+                            📅 Cada ciclo dura ${Math.floor(gameState.cycleDuration / 60)} minutos de jogo
+                        </div>
+                    </div>
+                `;
+            };
+            
+            const updateTimer = () => {
+                const now = Date.now();
+                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                let remaining = gameState.remainingCycleTime - elapsed;
+                
+                if (remaining <= 0) {
+                    const newElapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+                    remaining = Math.max(0, gameState.remainingCycleTime - newElapsed);
+                }
+                
+                const minutes = Math.floor(remaining / 60);
+                const seconds = remaining % 60;
+                
+                const timerElement = document.getElementById('live-timer');
+                if (timerElement) {
+                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                const progressBar = document.getElementById('timer-progress');
+                if (progressBar) {
+                    progressBar.style.width = `${percentage}%`;
+                }
+            };
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.1); opacity: 0.8; }
+                }
+            `;
+            document.head.appendChild(style);
+            
             Swal.fire({
-                title: '🔮 Bola de Cristal',
-                html: `<div style="text-align: left;">
-                    <p style="color: #ffd700; margin-bottom: 15px;">✨ A bola de cristal brilha com energia mágica...</p>
-                    <p style="margin-bottom: 10px;">Digite um comando para executar:</p>
-                    <input type="text" id="crystal-command" class="swal2-input" placeholder="Ex: gameState.character.gold += 100" style="background: #333; color: #fff; border: 1px solid #ffd700;">
-                    <p style="color: #888; font-size: 12px; margin-top: 10px;">⚠️ Use com cuidado! Comandos maliciosos podem quebrar o jogo.</p>
-                </div>`,
+                title: '⏰ Relógio Mágico',
+                html: createTimerHTML(),
                 icon: 'info',
-                confirmButtonText: '🔮 Executar',
-                showCancelButton: true,
-                cancelButtonText: 'Fechar',
+                confirmButtonText: 'Fechar',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#9370db',
-                cancelButtonColor: '#ff4444',
+                confirmButtonColor: '#ffd700',
+                width: '500px',
+                padding: '1.5rem',
+                allowOutsideClick: false,
                 didOpen: () => {
-                    const input = document.getElementById('crystal-command');
-                    if (input) input.focus();
-                },
-                preConfirm: () => {
-                    const command = document.getElementById('crystal-command')?.value;
-                    if (!command) {
-                        Swal.showValidationMessage('Digite um comando!');
-                        return false;
-                    }
-                    return command;
-                }
-            }).then((result) => {
-                if (result.isConfirmed && result.value) {
-                    try {
-                        const evalResult = eval(result.value);
-                        updateUI();
-                        
-                        if (evalResult !== undefined) {
-                            addLog(`🔮 Bola de Cristal: ${JSON.stringify(evalResult, null, 2)}`);
-                            Swal.fire({
-                                title: '✨ Comando Executado',
-                                html: `<div style="text-align: left;">
-                                    <p style="color: #4CAF50;">Comando executado com sucesso!</p>
-                                    <p style="color: #ffd700; margin-top: 10px;">Resultado:</p>
-                                    <pre style="background: #333; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(evalResult, null, 2)}</pre>
-                                </div>`,
-                                icon: 'success',
-                                confirmButtonText: 'OK',
-                                background: '#1a1a2e',
-                                color: '#fff',
-                                confirmButtonColor: '#9370db'
-                            });
+                    updateInterval = setInterval(() => {
+                        const swalContent = document.querySelector('.swal2-html-container');
+                        if (swalContent) {
+                            updateTimer();
                         } else {
-                            addLog(`🔮 Bola de Cristal executou o comando!`);
-                            Swal.fire({
-                                title: '✨ Comando Executado',
-                                text: 'Comando executado com sucesso!',
-                                icon: 'success',
-                                confirmButtonText: 'OK',
-                                background: '#1a1a2e',
-                                color: '#fff',
-                                confirmButtonColor: '#9370db'
-                            });
+                            clearInterval(updateInterval);
                         }
-                    } catch (error) {
-                        addLog(`❌ Bola de Cristal: ${error.message}`);
-                        Swal.fire({
-                            title: '❌ Erro',
-                            text: error.message,
-                            icon: 'error',
-                            confirmButtonText: 'OK',
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            confirmButtonColor: '#ff4444'
-                        });
-                    }
+                    }, 1000);
+                },
+                willClose: () => {
+                    if (updateInterval) clearInterval(updateInterval);
+                    if (style.parentNode) style.parentNode.removeChild(style);
                 }
             });
         }
