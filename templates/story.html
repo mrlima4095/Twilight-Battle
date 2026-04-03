@@ -3187,12 +3187,18 @@
             const item = gameState.inventory[index];
             if (!item) return;
             
-            // Verificar se é o relógio
-            
-
-            if (item.type === 'food' || item.type === 'drink') { useFood(index); }
-            else if (item.id === 'clock') { showTimeRemaining(); }
-            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
+            if (item.type === 'station') {
+                useStationItem(item.id);
+            }
+            else if (item.type === 'food' || item.type === 'drink') { 
+                useFood(index); 
+            }
+            else if (item.id === 'clock') { 
+                showTimeRemaining(); 
+            }
+            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { 
+                equipItemFromInventory(index); 
+            }
         }
         function useFood(index) {
             if (gameState.isDead) return;
