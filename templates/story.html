@@ -1695,7 +1695,8 @@
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
 
             clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
-            // Adicione ao objeto ITEMS:
+            crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
+
             paper: { name: 'Papel', type: 'material', consumable: false, description: 'Folhas de papel em branco.' },
             leather: { name: 'Couro', type: 'material', consumable: false, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'tool', consumable: false, description: 'Um livro vazio esperando para ser escrito.' },
@@ -1710,7 +1711,6 @@
                 allowsStations: true,
                 actions: [
                     { name: '😴 Dormir', action: 'rest' },
-                    { name: '🔮 Bola de Cristal', action: 'openCrystalBall' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
                     { name: '🚪 Sair para a Rua', action: 'goNorthVillage' }
                 ]
