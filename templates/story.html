@@ -1690,10 +1690,14 @@
             wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
             coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
             mead: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
-            liquor: { name: 'Licor de Mel', type: 'drink', heal: 50, mana: 25, description: 'Recupera 50 de vida e 25 de mana', consumable: true },
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
 
-            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' }
+            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
+            // Adicione ao objeto ITEMS:
+            paper: { name: 'Papel', type: 'material', consumable: false, description: 'Folhas de papel em branco.' },
+            leather: { name: 'Couro', type: 'material', consumable: false, description: 'Couro de alta qualidade.' },
+            book: { name: 'Livro', type: 'tool', consumable: false, description: 'Um livro vazio esperando para ser escrito.' },
+            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
         };
 
         // Locations expandidas
@@ -3758,8 +3762,7 @@
         function buyWine() { buyDrink('wine', 15); }
         function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
         function buyMead() { if (gameState.isDead) return; buyDrink('mead', 12); }
-        function buyLiqueur() { if (gameState.isDead) return; buyDrink('liquor', 20); }
-    
+        
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
             if (gameState.character.gold >= cost) {
