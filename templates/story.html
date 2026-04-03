@@ -3799,32 +3799,6 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Modificar a função useItem para abrir livros
-function useItem(index) {
-    if (gameState.isDead) return;
-    
-    const item = gameState.inventory[index];
-    if (!item) return;
-    
-    if (item.useEffect && typeof window[item.useEffect] === 'function') {
-        window[item.useEffect]();
-        return;
-    }
-    if (item.type === 'station') {
-        useStationItem(item.id);
-    }
-    else if (item.type === 'food' || item.type === 'drink') { 
-        useFood(index); 
-    }
-    else if (item.id === 'clock') { 
-        showTimeRemaining(); 
-    }
-    else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { 
-        equipItemFromInventory(index); 
-    }
-}
-    
-    
         // ========== LOCATION ACTIONS ==========
 
         function go(location, message) {
