@@ -3539,17 +3539,35 @@
 
 let activeBook = null;
 let activeBookIndex = null;
-
 function openBookEditor(bookIndex) {
     if (gameState.isDead) return;
     
     const book = gameState.inventory[bookIndex];
     if (!book || book.type !== 'book') return;
     
+    // Verificar se está em batalha
+    if (gameState.currentEnemy && !book.signed) {
+        Swal.fire({
+            title: '⚔️ Em Combate!',
+            html: '<p>Você não pode escrever em um livro enquanto está em batalha!</p><p>Derrote ou fuja do inimigo primeiro.</p>',
+            icon: 'warning',
+            confirmButtonText: 'Entendi',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
+        });
+        return;
+    }
+    
     // Se o livro já está assinado, abre como leitor
     if (book.signed) {
         openBookReader(bookIndex);
         return;
+    }
+    
+    // Salvar estado atual da batalha antes de abrir o editor
+    if (gameState.currentEnemy) {
+        gameState.savedEnemy = { ...gameState.currentEnemy };
     }
     
     activeBook = book;
@@ -3571,24 +3589,14 @@ function openBookEditor(bookIndex) {
             </div>
             
             <div class="input-group">
-                <label for="book-content" style="color: #ffd700;">📝 Conteúdo (HTML permitido)</label>
+                <label for="book-content" style="color: #ffd700;">📝 Conteúdo</label>
                 <textarea id="book-content" rows="15" style="width: 100%; padding: 12px; font-family: monospace; background: #0a0a1a; color: #fff; border: 1px solid #ffd700; border-radius: 8px;">${escapeHtml(book.content || '')}</textarea>
-            </div>
-            
-            <div style="margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px;">
-                <p style="color: #888; font-size: 12px; margin: 0;">
-                    💡 Dica: Você pode usar HTML para formatar seu livro! Use &lt;h1&gt;, &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, etc.
-                    ${book.root ? '<span style="color: #4CAF50;">✅ Este é um livro ROOT - pode executar JavaScript!</span>' : '<span style="color: #ffa500;">⚠️ Livro comum - apenas HTML seguro (sem JavaScript)</span>'}
-                </p>
             </div>
         </div>
     `;
     
     const gameContent = document.getElementById('game-content');
     gameContent.innerHTML = editorHTML;
-    
-    // Fechar qualquer batalha ativa
-    gameState.currentEnemy = null;
 }
 
 function closeBookEditor() {
@@ -3605,6 +3613,13 @@ function closeBookEditor() {
     
     activeBook = null;
     activeBookIndex = null;
+    
+    // Restaurar batalha se existia
+    if (gameState.savedEnemy) {
+        gameState.currentEnemy = gameState.savedEnemy;
+        delete gameState.savedEnemy;
+    }
+    
     updateUI();
 }
 
