@@ -2670,6 +2670,18 @@
                     html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
                 });
                 html += `</div>`;
+                // Dentro do else que mostra os action-buttons, adicionar:
+                if (location.allowsStations && gameState.placedStations[gameState.location] && Object.keys(gameState.placedStations[gameState.location]).length > 0) {
+                    html += `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
+                        <h4 style="color: #ffd700; margin-bottom: 10px;">🔧 Estações Montadas:</h4>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+                    
+                    for (const [stationId, station] of Object.entries(gameState.placedStations[gameState.location])) {
+                        html += `<button class="action-btn" onclick="openStation('${stationId}')" style="background: #9370db; flex: 0 1 auto;">🔨 ${station.name}</button>`;
+                    }
+                    
+                    html += `</div></div>`;
+                }
             }
         
             content.innerHTML = html;
