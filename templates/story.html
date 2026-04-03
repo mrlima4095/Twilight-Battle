@@ -1938,6 +1938,20 @@
             }
         };
 
+        const CRAFTING_RECIPES = {
+            book: {
+                name: '📖 Livro em Branco',
+                description: 'Um livro vazio para anotações.',
+                materials: [
+                    { id: 'paper', quantity: 3 },
+                    { id: 'leather', quantity: 2 }
+                ],
+                result: 'book',
+                quantity: 1,
+                station: 'crafting_table'
+            }
+        };
+
         // Monsters
         const MONSTERS = {
             goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 0 },
