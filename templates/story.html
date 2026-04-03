@@ -1619,8 +1619,10 @@
             cycleStartTime: null,
             cycleDuration: 600, // 20 minutos em segundos (20 * 60)
             remainingCycleTime: null, // Para quando dormir
+            placedStations: {},  // NOVO: { locationId: { stationId: stationData } }
+            activeStation: null,  // NOVO: estação atualmente aberte
         };
-    
+        
         // Race definitions
         const RACES = {
             elf: { 
