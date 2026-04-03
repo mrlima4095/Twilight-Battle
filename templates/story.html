@@ -4897,18 +4897,6 @@
             
             alert(evalResult !== undefined ? JSON.stringify(evalResult, null, 2) : 'undefined')
         }
-        
-        // Função auxiliar para escapar HTML
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-        
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
             document.getElementById('game-ui').style.display = 'none';
