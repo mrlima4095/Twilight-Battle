@@ -4894,23 +4894,81 @@
                 return;
             }
             
-            const command = prompt(gameState.character.name.toLowerCase() + ' $');
-            
-            if (command) {
-                try {
-                    const result = eval(command);
-                    updateUI();
-                    
-                    if (result !== undefined) {
-                        addLog(`🔮 Bola de Cristal: ${JSON.stringify(result, null, 2)}`);
-                    } else {
-                        addLog('🔮 A Bola de Cristal executou o comando!');
+            Swal.fire({
+                title: '🔮 Bola de Cristal',
+                html: `<div style="text-align: left;">
+                    <p style="color: #ffd700; margin-bottom: 15px;">✨ A bola de cristal brilha com energia mágica...</p>
+                    <p style="margin-bottom: 10px;">Digite um comando para executar:</p>
+                    <input type="text" id="crystal-command" class="swal2-input" placeholder="Ex: gameState.character.gold += 100" style="background: #333; color: #fff; border: 1px solid #ffd700;">
+                    <p style="color: #888; font-size: 12px; margin-top: 10px;">⚠️ Use com cuidado! Comandos maliciosos podem quebrar o jogo.</p>
+                </div>`,
+                icon: 'info',
+                confirmButtonText: '🔮 Executar',
+                showCancelButton: true,
+                cancelButtonText: 'Fechar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#9370db',
+                cancelButtonColor: '#ff4444',
+                didOpen: () => {
+                    const input = document.getElementById('crystal-command');
+                    if (input) input.focus();
+                },
+                preConfirm: () => {
+                    const command = document.getElementById('crystal-command')?.value;
+                    if (!command) {
+                        Swal.showValidationMessage('Digite um comando!');
+                        return false;
                     }
-                } catch (error) {
-                    addLog(`❌ Erro: ${error.message}`);
-                    alert(`❌ Erro:\n${error.message}`);
+                    return command;
                 }
-            }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    try {
+                        const evalResult = eval(result.value);
+                        updateUI();
+                        
+                        if (evalResult !== undefined) {
+                            addLog(`🔮 Bola de Cristal: ${JSON.stringify(evalResult, null, 2)}`);
+                            Swal.fire({
+                                title: '✨ Comando Executado',
+                                html: `<div style="text-align: left;">
+                                    <p style="color: #4CAF50;">Comando executado com sucesso!</p>
+                                    <p style="color: #ffd700; margin-top: 10px;">Resultado:</p>
+                                    <pre style="background: #333; padding: 10px; border-radius: 5px; overflow-x: auto;">${JSON.stringify(evalResult, null, 2)}</pre>
+                                </div>`,
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#9370db'
+                            });
+                        } else {
+                            addLog(`🔮 Bola de Cristal executou o comando!`);
+                            Swal.fire({
+                                title: '✨ Comando Executado',
+                                text: 'Comando executado com sucesso!',
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#9370db'
+                            });
+                        }
+                    } catch (error) {
+                        addLog(`❌ Bola de Cristal: ${error.message}`);
+                        Swal.fire({
+                            title: '❌ Erro',
+                            text: error.message,
+                            icon: 'error',
+                            confirmButtonText: 'OK',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ff4444'
+                        });
+                    }
+                }
+            });
         }
         
         document.addEventListener('DOMContentLoaded', function() {
