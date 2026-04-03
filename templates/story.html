@@ -2524,6 +2524,11 @@
         }
         function updateGameContent() {
             const content = document.getElementById('game-content');
+            if (gameState.activeStation && !gameState.currentEnemy) {
+                content.innerHTML = renderStationUI();
+                return;
+            }
+            
             const location = LOCATIONS[gameState.location];
         
             // Se estiver em batalha, mostra apenas a interface de combate
