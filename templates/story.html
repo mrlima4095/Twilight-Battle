@@ -1864,8 +1864,7 @@
                 name: 'Vilarejo Sul',
                 description: 'Vilarejo conhecido pelos tecelões e tintureiros. Tecidos coloridos secam nas varandas.',
                 actions: [
-                    { name: '🧵 Visitar Tecelão', action: 'visitWeaver' },
-                    { name: '🎨 Comprar Tecido Colorido (25💰)', action: 'buyCloth' },
+                    { name: '🧵 Visitar Tecelã', action: 'visitWeaver' },
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
@@ -4578,25 +4577,66 @@ function escapeHtml(text) {
             addLog('💬 "A arte é a alma do reino!"');
             updateUI();
         }
-        function visitWeaver() {
+        async function visitWeaver() {
             if (gameState.isDead) return;
-            addLog('🧵 A tecelã mostra seus tecidos coloridos.');
-            addLog('💬 "As cores vêm de plantas que cultivo no jardim!"');
-            updateUI();
-        }
-
-        function buyCloth() {
-            if (gameState.isDead) return;
-            if (gameState.character.gold >= 25) {
-                gameState.character.gold -= 25;
-                addItemToInventory('tecido');
-                addLog('🎨 Você comprou Tecido Colorido por 25 moedas.');
-                updateUI();
+            
+            const result = await Swal.fire({
+                title: '🧵 Isadora, a Tecelã',
+                html: `<div style="text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <div style="font-size: 50px;">🧵</div>
+                        <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Isadora</div>
+                    </div>
+                    <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">
+                        "Bem-vindo ao meu tear! Tenho os tecidos mais finos de todo o reino. 
+                        As cores vêm de plantas que cultivo no meu próprio jardim."
+                    </p>
+                    <p style="color: #888; font-style: italic;">"Que tal levar um tecido colorido para suas aventuras?"</p>
+                </div>`,
+                icon: 'info',
+                confirmButtonText: '🛒 Comprar Tecido (25💰)',
+                cancelButtonText: '❌ Sair',
+                showCancelButton: true,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444'
+            });
+            
+            if (result.isConfirmed) {
+                if (gameState.character.gold >= 25) {
+                    gameState.character.gold -= 25;
+                    addItemToInventory('tecido');
+                    addLog('🎨 Você comprou Tecido Colorido com Isadora por 25 moedas.');
+                    
+                    Swal.fire({
+                        title: '🧵 Compra Realizada!',
+                        text: 'Você adquiriu um Tecido Colorido. Volte sempre!',
+                        icon: 'success',
+                        confirmButtonText: 'Obrigado!',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700',
+                        timer: 2000
+                    });
+                    updateUI();
+                } else {
+                    Swal.fire({
+                        title: '❌ Moedas Insuficientes!',
+                        text: 'Você precisa de 25 moedas para comprar o tecido.',
+                        icon: 'error',
+                        confirmButtonText: 'Voltar depois',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    addLog('❌ Moedas insuficientes para comprar o tecido com Isadora!');
+                }
             } else {
-                addLog('❌ Moedas insuficientes!');
+                addLog('🧵 Isadora: "Volte sempre que precisar de tecidos coloridos!"');
             }
         }
-    
+
         // ========== SHOP FUNCTIONS ==========
         
         function buyItem(itemId, cost) {
