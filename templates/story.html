@@ -1931,16 +1931,25 @@
                     { name: '🏊 Sair do Lago', action: 'exitSacredLake' }
                 ]
             },
-            abandoned_cemetery: {
-                name: 'Cemitério Abandonado',
-                description: 'Após uma longa caminhada, você chega a um cemitério antigo e abandonado. As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
+            abandoned_cemetery_gate: {
+                name: 'Portão do Cemitério Abandonado',
+                description: 'Após uma longa caminhada, você chega ao portão do cemitério antigo e abandonado.'
                 allowsStations: true,
                 actions: [
-                    { name: '🚪 Explorar o Cemitério', action: 'enterBackCemetery' },
+                    { name: '🚪 Explorar o Cemitério', action: 'enterAbandonedCemetery' },
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
                 ]
             }
-            abandoned_cemetery_interior
+            abandoned_cemetery: {
+                name: 'Cemitério Abandonado',
+                description: 'As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
+                allowsStations: true,
+                actions: [
+                    { name: '', action: '' },
+                    { name: '', action: '' },
+                    { name: '🔙 Sair do Cemitério', action: 'enterAbandonedCemetery' },
+                ]
+            }
         };
 
         const CRAFTING_RECIPES = {
