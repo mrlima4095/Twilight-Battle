@@ -4953,7 +4953,6 @@ function escapeHtml(text) {
             if (onGreet) onGreet();
         }
 
-
         function visitFarmerHouse1() {
             showHouseDialog({
                 name: 'Miguel',
@@ -4968,10 +4967,36 @@ function escapeHtml(text) {
                     "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
                 ],
                 sleepingMessage: 'Miguel está dormindo! Volte quando amanhecer...',
-                dialogMessage: `Bem-vind${gameState.gender === 'masculino' ? 'o' : 'a'}, ${gameState.character.name}! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco.`,
+                greeting: `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}, ${gameState.character.name}! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco.`,
+                farewell: "Que os deuses abençoem sua jornada! Volte sempre que precisar descansar.",
                 sleepChance: 0.7,
                 absentChance: 0.3,
-                absentMessage: 'Miguel não está em casa, volte mais tarde!'
+                absentMessage: 'Miguel não está em casa, volte mais tarde!',
+                
+                // Tópicos para conversar
+                topics: [
+                    { 
+                        name: '🌾 Sobre a colheita', 
+                        message: '"Este ano tivemos uma colheita farta! O trigo cresceu alto e as frutas estão doces como mel."' 
+                    },
+                    { 
+                        name: '🚜 Dicas de fazenda', 
+                        message: '"O segredo é acordar antes do sol nascer. A terra agradece quando cuidamos dela com dedicação."' 
+                    },
+                    { 
+                        name: '🐔 Animais', 
+                        message: '"Minhas galinhas estão botando ovos todos os dias. Quer alguns? Infelizmente não posso vender agora..."' 
+                    },
+                    { 
+                        name: '💬 Tudo bem?', 
+                        message: `"Tudo bem sim, ${gameState.character.name}! E você, como está sua aventura? Cuidado com os monstros na floresta!"` 
+                    }
+                ],
+                
+                // Callbacks
+                onSleep: () => addLog('😴 Miguel está descansando após um longo dia no campo.'),
+                onAbsent: () => addLog('🌾 Miguel foi cuidar da plantação. Volte mais tarde!'),
+                onGreet: () => addLog('👨‍🌾 Miguel acena com um sorriso largo enquanto seca o suor da testa.')
             });
         }
         function visitFarmerHouse2() {
@@ -4988,10 +5013,43 @@ function escapeHtml(text) {
                     "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."
                 ],
                 sleepingMessage: 'Ana está dormindo! Volte quando amanhecer...',
-                dialogMessage: 'Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje.',
+                greeting: 'Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje.',
+                farewell: "Volte sempre que quiser um pão quentinho! Que a jornada seja leve.",
                 sleepChance: 0.7,
                 absentChance: 0.3,
-                absentMessage: 'Ana não está em casa, volte mais tarde!'
+                absentMessage: 'Ana não está em casa, volte mais tarde!',
+                
+                // Loja da Ana - vende alimentos
+                shopItems: [
+                    { id: 'pao_fresco', price: 8 },
+                ],
+                buyPriceMultiplier: 1.0,
+                shopkeeperName: 'Dona Ana',
+                
+                // Tópicos para conversar
+                topics: [
+                    { 
+                        name: '🍞 Pão fresco', 
+                        message: '"Meu pão é feito com farinha do moinho do vale. Receita da minha avó, segredo de família!"' 
+                    },
+                    { 
+                        name: '📜 Receitas especiais', 
+                        message: '"Um dia ainda vou te ensinar minha receita de pão com ervas. Fica uma delícia com café quente!"' 
+                    },
+                    { 
+                        name: '🏘️ Família', 
+                        message: '"Meu marido trabalha nos campos, e meus filhos ajudam na padaria. Somos uma família unida, graças a Deus."' 
+                    },
+                    { 
+                        name: '💬 Tudo bem?', 
+                        message: `"Estou bem sim, ${gameState.character.name}! O movimento hoje está bom. E você, precisa de algo?"` 
+                    }
+                ],
+                
+                // Callbacks
+                onSleep: () => addLog('😴 Ana foi descansar depois de um dia inteiro assando pães.'),
+                onAbsent: () => addLog('🍞 Ana saiu para comprar mais farinha no moinho. Volte mais tarde!'),
+                onGreet: () => addLog('👩‍🌾 Ana sorri e oferece um pedaço de pão enquanto conversa.')
             });
         }
 
