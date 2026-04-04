@@ -3957,9 +3957,7 @@ function escapeHtml(text) {
             
             if (earlyWake) {
                 addLog(`⚠️ Você acordou cedo! O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos.`);
-            } else {
-                toggleTimeOfDay();
-            }
+            } 
             
             // Atualizar UI
             updateUI();
