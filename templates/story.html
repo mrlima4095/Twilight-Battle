@@ -5352,7 +5352,7 @@
             
             // 60% de chance de encontrar um lobo
             if (Math.random() < 0.6) {
-                gameState.currentEnemy = CREATURES.wolf;
+                gameState.currentEnemy = { ...CREATURES.wolf };
                 addLog(`🐺 Um Lobo Selvagem emerge das sombras da floresta, seus olhos brilhando no escuro!`);
             } else {
                 addLog('🌲 A floresta está silenciosa... por enquanto. Você encontra alguns cogumelos pelo caminho.');
