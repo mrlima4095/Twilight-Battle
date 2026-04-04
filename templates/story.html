@@ -3531,230 +3531,230 @@
             `;
         }
 
-// ========== BOOK SYSTEM ==========
-
-let activeBook = null;
-let activeBookIndex = null;
-function openBookEditor(bookIndex) {
-    if (gameState.isDead) return;
-    
-    const book = gameState.inventory[bookIndex];
-    if (!book || book.type !== 'book') return;
-    
-    // Verificar se está em batalha
-    if (gameState.currentEnemy && !book.signed) {
-        Swal.fire({
-            title: '⚔️ Em Combate!',
-            html: '<p>Você não pode escrever em um livro enquanto está em batalha!</p><p>Derrote ou fuja do inimigo primeiro.</p>',
-            icon: 'warning',
-            confirmButtonText: 'Entendi',
-            background: '#1a1a2e',
-            color: '#fff',
-            confirmButtonColor: '#ffd700'
-        });
-        return;
-    }
-    
-    // Se o livro já está assinado, abre como leitor
-    if (book.signed) {
-        openBookReader(bookIndex);
-        return;
-    }
-    activeBook = book;
-    activeBookIndex = bookIndex;
-    
-    const editorHTML = `
-        <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                <h2 style="color: #ffd700; margin: 0;">📖 Editor do Livro</h2>
-                <div style="display: flex; gap: 10px;">
-                    <button class="action-btn" onclick="closeBookEditor()" style="background: #666;">❌ Fechar</button>
-                    <button class="action-btn success" onclick="signBook()" style="background: #ffd700; color: #1a1a2e;">✍️ Assinar</button>
-                </div>
-            </div>
+        // ========== BOOK SYSTEM ==========
+        
+        let activeBook = null;
+        let activeBookIndex = null;
+        function openBookEditor(bookIndex) {
+            if (gameState.isDead) return;
             
-            <div class="input-group">
-                <label for="book-title" style="color: #ffd700;">📌 Título do Livro</label>
-                <input type="text" id="book-title" value="${escapeHtml(book.title || 'Livro sem título')}" style="width: 100%; padding: 12px; font-size: 18px;">
-            </div>
+            const book = gameState.inventory[bookIndex];
+            if (!book || book.type !== 'book') return;
             
-            <div class="input-group">
-                <label for="book-content" style="color: #ffd700;">📝 Conteúdo</label>
-                <textarea id="book-content" rows="15" style="width: 100%; padding: 12px; font-family: monospace; background: #0a0a1a; color: #fff; border: 1px solid #ffd700; border-radius: 8px;">${escapeHtml(book.content || '')}</textarea>
-            </div>
-        </div>
-    `;
-    
-    const gameContent = document.getElementById('game-content');
-    gameContent.innerHTML = editorHTML;
-}
-
-function closeBookEditor() {
-    // Salvar alterações atuais
-    const titleInput = document.getElementById('book-title');
-    const contentInput = document.getElementById('book-content');
-    
-    if (titleInput && contentInput && activeBook && activeBookIndex !== null) {
-        activeBook.title = titleInput.value;
-        activeBook.content = contentInput.value;
-        gameState.inventory[activeBookIndex] = activeBook;
-        addLog('📝 Alterações salvas no livro.');
-    }
-    
-    activeBook = null;
-    activeBookIndex = null;
-    
-    updateUI();
-}
-
-async function signBook() {
-    if (!activeBook || activeBook.signed) return;
-    
-    const titleInput = document.getElementById('book-title');
-    const contentInput = document.getElementById('book-content');
-    
-    // Salvar conteúdo atual
-    activeBook.title = titleInput.value;
-    activeBook.content = contentInput.value;
-    
-    const result = await Swal.fire({
-        title: '✍️ Assinar Livro',
-        html: `
-            <div style="text-align: left;">
-                <p>Digite o nome para assinar este livro:</p>
-                <input type="text" id="signer-name" class="swal2-input" value="${gameState.character.name}" style="margin-top: 10px;">
-            </div>
-        `,
-        confirmButtonText: 'Assinar',
-        cancelButtonText: 'Cancelar',
-        showCancelButton: true,
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#ffd700',
-        cancelButtonColor: '#ff4444',
-        preConfirm: () => {
-            const name = document.getElementById('signer-name').value.trim();
-            if (!name) {
-                Swal.showValidationMessage('Digite um nome para assinar!');
-                return false;
+            // Verificar se está em batalha
+            if (gameState.currentEnemy && !book.signed) {
+                Swal.fire({
+                    title: '⚔️ Em Combate!',
+                    html: '<p>Você não pode escrever em um livro enquanto está em batalha!</p><p>Derrote ou fuja do inimigo primeiro.</p>',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
             }
-            return name;
-        }
-    });
-    
-    if (result.isConfirmed && result.value) {
-        activeBook.signed = true;
-        activeBook.signer = result.value;
-        activeBook.signedAt = new Date().toLocaleString();
-        
-        gameState.inventory[activeBookIndex] = activeBook;
-        
-        Swal.fire({
-            title: '📜 Livro Assinado!',
-            html: `<p>O livro "${activeBook.title}" foi assinado por <strong>${activeBook.signer}</strong>.</p>
-                   <p>Agora ele está永久mente selado e não pode mais ser editado.</p>`,
-            icon: 'success',
-            confirmButtonText: 'OK',
-            background: '#1a1a2e',
-            color: '#fff',
-            confirmButtonColor: '#4CAF50'
-        });
-        
-        addLog(`✍️ ${gameState.character.name} assinou o livro "${activeBook.title}"!`);
-        
-        activeBook = null;
-        activeBookIndex = null;
-        updateUI();
-    }
-}
-
-function openBookReader(bookIndex) {
-    if (gameState.isDead) return;
-    
-    const book = gameState.inventory[bookIndex];
-    if (!book || book.type !== 'book') return;
-    
-    activeBook = book;
-    activeBookIndex = bookIndex;
-    
-    // Criar sandbox para executar JS se for root
-    const readerHTML = `
-        <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <h2 style="color: #ffd700; margin: 0;">📖 ${escapeHtml(book.title || 'Livro')}</h2>
-                    ${book.signed ? `<p style="color: #888; margin: 5px 0 0 0; font-size: 12px;">✍️ Assinado por: ${escapeHtml(book.signer)}</p>` : ''}
-                </div>
-                <button class="action-btn" onclick="closeBookReader()" style="background: #666;">❌ Fechar</button>
-            </div>
             
-            <div id="book-content-container" style="background: #0a0a1a; border-radius: 12px; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; border: 1px solid #333;">
-                ${book.content || '<p><em>Este livro está em branco...</em></p>'}
-            </div>
-        </div>
-    `;
-    
-    const gameContent = document.getElementById('game-content');
-    gameContent.innerHTML = readerHTML;
-    
-    // Se for root book, permitir execução de scripts
-    if (book.root) {
-        // Executar scripts no container
-        const container = document.getElementById('book-content-container');
-        const scripts = container.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            if (oldScript.src) {
-                newScript.src = oldScript.src;
-            } else {
-                newScript.textContent = oldScript.textContent;
+            // Se o livro já está assinado, abre como leitor
+            if (book.signed) {
+                openBookReader(bookIndex);
+                return;
             }
-            document.body.appendChild(newScript);
-            document.body.removeChild(newScript);
-        });
-        
-        // Adicionar botões e funcionalidades ao container
-        attachBookEventListeners(container);
-    }
-    
-    if (gameState.currentEnemy) {
-        gameState.savedEnemy = { ...gameState.currentEnemy };
-        gameState.currentEnemy = null;
-    }
-}
-
-function closeBookReader() {
-    activeBook = null;
-    activeBookIndex = null;
-    
-    if (gameState.savedEnemy) {
-        gameState.currentEnemy = gameState.savedEnemy;
-        delete gameState.savedEnemy;
-    }
-    
-    updateUI();
-}
-
-function attachBookEventListeners(container) {
-    // Procurar e adicionar listeners para botões dentro do livro
-    const buttons = container.querySelectorAll('button');
-    buttons.forEach(btn => {
-        if (!btn.hasAttribute('data-listener-attached')) {
-            btn.setAttribute('data-listener-attached', 'true');
-            // Clonar para remover event listeners antigos
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
+            activeBook = book;
+            activeBookIndex = bookIndex;
+            
+            const editorHTML = `
+                <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <h2 style="color: #ffd700; margin: 0;">📖 Editor do Livro</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="action-btn" onclick="closeBookEditor()" style="background: #666;">❌ Fechar</button>
+                            <button class="action-btn success" onclick="signBook()" style="background: #ffd700; color: #1a1a2e;">✍️ Assinar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="book-title" style="color: #ffd700;">📌 Título do Livro</label>
+                        <input type="text" id="book-title" value="${escapeHtml(book.title || 'Livro sem título')}" style="width: 100%; padding: 12px; font-size: 18px;">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="book-content" style="color: #ffd700;">📝 Conteúdo</label>
+                        <textarea id="book-content" rows="15" style="width: 100%; padding: 12px; font-family: monospace; background: #0a0a1a; color: #fff; border: 1px solid #ffd700; border-radius: 8px;">${escapeHtml(book.content || '')}</textarea>
+                    </div>
+                </div>
+            `;
+            
+            const gameContent = document.getElementById('game-content');
+            gameContent.innerHTML = editorHTML;
         }
-    });
-}
-
-// Função auxiliar para escapar HTML
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+        
+        function closeBookEditor() {
+            // Salvar alterações atuais
+            const titleInput = document.getElementById('book-title');
+            const contentInput = document.getElementById('book-content');
+            
+            if (titleInput && contentInput && activeBook && activeBookIndex !== null) {
+                activeBook.title = titleInput.value;
+                activeBook.content = contentInput.value;
+                gameState.inventory[activeBookIndex] = activeBook;
+                addLog('📝 Alterações salvas no livro.');
+            }
+            
+            activeBook = null;
+            activeBookIndex = null;
+            
+            updateUI();
+        }
+        
+        async function signBook() {
+            if (!activeBook || activeBook.signed) return;
+            
+            const titleInput = document.getElementById('book-title');
+            const contentInput = document.getElementById('book-content');
+            
+            // Salvar conteúdo atual
+            activeBook.title = titleInput.value;
+            activeBook.content = contentInput.value;
+            
+            const result = await Swal.fire({
+                title: '✍️ Assinar Livro',
+                html: `
+                    <div style="text-align: left;">
+                        <p>Digite o nome para assinar este livro:</p>
+                        <input type="text" id="signer-name" class="swal2-input" value="${gameState.character.name}" style="margin-top: 10px;">
+                    </div>
+                `,
+                confirmButtonText: 'Assinar',
+                cancelButtonText: 'Cancelar',
+                showCancelButton: true,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                cancelButtonColor: '#ff4444',
+                preConfirm: () => {
+                    const name = document.getElementById('signer-name').value.trim();
+                    if (!name) {
+                        Swal.showValidationMessage('Digite um nome para assinar!');
+                        return false;
+                    }
+                    return name;
+                }
+            });
+            
+            if (result.isConfirmed && result.value) {
+                activeBook.signed = true;
+                activeBook.signer = result.value;
+                activeBook.signedAt = new Date().toLocaleString();
+                
+                gameState.inventory[activeBookIndex] = activeBook;
+                
+                Swal.fire({
+                    title: '📜 Livro Assinado!',
+                    html: `<p>O livro "${activeBook.title}" foi assinado por <strong>${activeBook.signer}</strong>.</p>
+                           <p>Agora ele está永久mente selado e não pode mais ser editado.</p>`,
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50'
+                });
+                
+                addLog(`✍️ ${gameState.character.name} assinou o livro "${activeBook.title}"!`);
+                
+                activeBook = null;
+                activeBookIndex = null;
+                updateUI();
+            }
+        }
+        
+        function openBookReader(bookIndex) {
+            if (gameState.isDead) return;
+            
+            const book = gameState.inventory[bookIndex];
+            if (!book || book.type !== 'book') return;
+            
+            activeBook = book;
+            activeBookIndex = bookIndex;
+            
+            // Criar sandbox para executar JS se for root
+            const readerHTML = `
+                <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h2 style="color: #ffd700; margin: 0;">📖 ${escapeHtml(book.title || 'Livro')}</h2>
+                            ${book.signed ? `<p style="color: #888; margin: 5px 0 0 0; font-size: 12px;">✍️ Assinado por: ${escapeHtml(book.signer)}</p>` : ''}
+                        </div>
+                        <button class="action-btn" onclick="closeBookReader()" style="background: #666;">❌ Fechar</button>
+                    </div>
+                    
+                    <div id="book-content-container" style="background: #0a0a1a; border-radius: 12px; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; border: 1px solid #333;">
+                        ${book.content || '<p><em>Este livro está em branco...</em></p>'}
+                    </div>
+                </div>
+            `;
+            
+            const gameContent = document.getElementById('game-content');
+            gameContent.innerHTML = readerHTML;
+            
+            // Se for root book, permitir execução de scripts
+            if (book.root) {
+                // Executar scripts no container
+                const container = document.getElementById('book-content-container');
+                const scripts = container.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    if (oldScript.src) {
+                        newScript.src = oldScript.src;
+                    } else {
+                        newScript.textContent = oldScript.textContent;
+                    }
+                    document.body.appendChild(newScript);
+                    document.body.removeChild(newScript);
+                });
+                
+                // Adicionar botões e funcionalidades ao container
+                attachBookEventListeners(container);
+            }
+            
+            if (gameState.currentEnemy) {
+                gameState.savedEnemy = { ...gameState.currentEnemy };
+                gameState.currentEnemy = null;
+            }
+        }
+        
+        function closeBookReader() {
+            activeBook = null;
+            activeBookIndex = null;
+            
+            if (gameState.savedEnemy) {
+                gameState.currentEnemy = gameState.savedEnemy;
+                delete gameState.savedEnemy;
+            }
+            
+            updateUI();
+        }
+        
+        function attachBookEventListeners(container) {
+            // Procurar e adicionar listeners para botões dentro do livro
+            const buttons = container.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (!btn.hasAttribute('data-listener-attached')) {
+                    btn.setAttribute('data-listener-attached', 'true');
+                    // Clonar para remover event listeners antigos
+                    const newBtn = btn.cloneNode(true);
+                    btn.parentNode.replaceChild(newBtn, btn);
+                }
+            });
+        }
+        
+        // Função auxiliar para escapar HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // ========== LOCATION ACTIONS ==========
 
