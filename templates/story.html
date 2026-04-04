@@ -4961,10 +4961,10 @@ async function handleGreetInteraction(config) {
         }
     
         // ========== FUNÇÕES DOS VILAREJOS ==========
-
-        function visitCarpenter() {
-            showHouseDialog({
-                name: 'Carlos, o Marceneiro',
+        
+        async function visitCarpenter() {
+            await showHouseDialog({
+                name: 'Carlos',
                 emoji: '🔨',
                 sleepyEmoji: '😴🔨',
                 location: 'oficina do marceneiro',
@@ -4975,18 +4975,94 @@ async function handleGreetInteraction(config) {
                     "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
                 ],
                 sleepingMessage: 'Carlos está dormindo na oficina. Volte durante o dia!',
-                dialogMessage: `Bem-vind${gameState.character.gender == 'masculino' ? 'o' : 'a'}! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar.`,
+                greeting: `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar.`,
+                farewell: "Volte sempre! Se precisar de móveis ou reparos, estou aqui!",
                 sleepChance: 0.7,
                 absentChance: 0.2,
-                absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!'
+                absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!',
+                
+                // Loja do marceneiro
+                shopItems: [
+                    { id: 'wooden_shield', price: 45 },
+                    { id: 'bow', price: 40 },
+                    { id: 'arrow', price: 3 }
+                ],
+                buyPriceMultiplier: 0.95, // 5% de desconto
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4, // Compra por 40% do valor
+                shopkeeperName: 'Marceneiro Carlos',
+                
+                // Assuntos para conversar
+                topics: [
+                    { 
+                        name: '🪵 Sobre a madeira', 
+                        message: '"Uso madeira de carvalho das florestas do norte. É a mais resistente que existe!"' 
+                    },
+                    { 
+                        name: '🔨 Trabalhos recentes', 
+                        message: '"Terminei uma bela mesa de jantar para a taverna. O dono ficou muito satisfeito!"' 
+                    },
+                    { 
+                        name: '📜 Histórias do ofício', 
+                        message: '"Aprendi marcenaria com meu avô. Ele dizia que a madeira tem alma e cada peça conta uma história."' 
+                    },
+                    { 
+                        name: '💬 Como vai o trabalho?', 
+                        message: '"Estou cheio de encomendas! O reino está crescendo e todos precisam de móveis."' 
+                    }
+                ],
+                
+                // Callbacks
+                onSleep: () => addLog('🔨 Carlos está descansando após um longo dia de trabalho.'),
+                onAbsent: () => addLog('🌲 Carlos foi para a floresta buscar madeira de qualidade.'),
+                onGreet: () => addLog('🔨 Carlos acena com a mão enquanto lixa uma peça de madeira.')
             });
         }
-
-        function visitArtisan() {
-            if (gameState.isDead) return;
-            addLog('🎨 O artesão trabalha em uma bela escultura de madeira.');
-            addLog('💬 "A arte é a alma do reino!"');
-            updateUI();
+        async function visitArtisan() {
+            await showHouseDialog({
+                name: 'Mateus',
+                emoji: '🎨',
+                sleepyEmoji: '😴🎨',
+                location: 'ateliê do artesão',
+                sleepyMessages: [
+                    "*Pincéis caem no chão* Zzz... Arte... Zzz...",
+                    "*Acordando com tinta no rosto* Ah! O ateliê já fechou por hoje.",
+                    "Preciso descansar minha criatividade... Volte amanhã."
+                ],
+                sleepingMessage: 'Mateus está dormindo no ateliê. Volte durante o dia!',
+                greeting: `"Ah, ${gameState.character.name}! A arte é a alma do reino. Entre e admire minhas criações!"`,
+                farewell: "Que a inspiração te acompanhe! Volte sempre!",
+                sleepChance: 0.7,
+                absentChance: 0.25,
+                absentMessage: 'Mateus foi buscar inspiração na natureza. Volte mais tarde!',
+                
+                // Sem loja (shopItems = null ou omitir)
+                canSellToNPC: false, // Não compra itens
+                
+                // Apenas assuntos para conversar
+                topics: [
+                    { 
+                        name: '🎭 Sobre suas obras', 
+                        message: '"Esta escultura que vê aqui levou duas semanas para ficar pronta. É a minha favorita."' 
+                    },
+                    { 
+                        name: '🎨 Inspiração', 
+                        message: '"A natureza é minha maior musa. As cores do pôr do sol me inspiram profundamente."' 
+                    },
+                    { 
+                        name: '💬 Como está a criatividade?', 
+                        message: '"Hoje estou muito inspirado! Terminei uma pintura que representa a lenda do herói das montanhas."' 
+                    },
+                    { 
+                        name: '👋 Apenas admirar', 
+                        message: '"Fique à vontade para olhar as obras. Cada uma tem sua própria história."' 
+                    }
+                ],
+                
+                onSleep: () => addLog('🎨 Mateus dorme sonhando com novas criações.'),
+                onAbsent: () => addLog('🌅 Mateus foi pintar o pôr do sol em algum lugar especial.'),
+                onGreet: () => addLog('🎨 Mateus acena animado enquanto mostra uma nova escultura.')
+            });
         }
         async function visitWeaver() {
             await showHouseDialog({
