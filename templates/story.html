@@ -2002,7 +2002,7 @@
         };
 
         // Monsters
-        const MONSTERS = {
+        const CREATURES = {
             goblin: { name: 'Goblin', life: 150, attack: 30, defense: 10, exp: 50, gold: 0 },
             wolf: { name: 'Lobo', life: 200, attack: 40, defense: 15, exp: 75, gold: 0 },
             orc: { name: 'Orc', life: 400, attack: 70, defense: 30, exp: 150, gold: 0 },
@@ -2596,12 +2596,12 @@
                             <div style="font-size: 24px; font-weight: bold; color: #ff4444;">${enemy.name}</div>
                             <div style="margin-top: 15px;">
                                 <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 15px;">
-                                    <div><span style="color: #ff4444;">❤️</span> <strong>${enemy.life}</strong> / ${MONSTERS[enemy.id]?.life || enemy.life}</div>
+                                    <div><span style="color: #ff4444;">❤️</span> <strong>${enemy.life}</strong> / ${CREATURES[enemy.id]?.life || enemy.life}</div>
                                     <div><span style="color: #ffa500;">⚔️</span> ${enemy.attack}</div>
                                     <div><span style="color: #4CAF50;">🛡️</span> ${enemy.defense}</div>
                                 </div>
                                 <div class="health-bar" style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 20px;">
-                                    <div style="width: ${(enemy.life / (MONSTERS[enemy.id]?.life || enemy.life)) * 100}%; background: linear-gradient(90deg, #ff4444, #cc0000); height: 100%; transition: width 0.3s;"></div>
+                                    <div style="width: ${(enemy.life / (CREATURES[enemy.id]?.life || enemy.life)) * 100}%; background: linear-gradient(90deg, #ff4444, #cc0000); height: 100%; transition: width 0.3s;"></div>
                                 </div>
                             </div>
                         </div>
@@ -5351,19 +5351,10 @@
             if (gameState.isDead) return;
             
             // 60% de chance de encontrar um lobo
-            if (Math.random() < 0.6) {
+            if (Math.random() < 0.4) {
                 // Criar lobo com stats balanceados
-                const wolf = {
-                    name: 'Lobo Selvagem',
-                    life: 180,
-                    maxLife: 180,
-                    attack: 35,
-                    defense: 12,
-                    exp: 60,
-                    gold: 15,
-                    id: 'wolf'
-                };
-                gameState.currentEnemy = wolf;
+            
+                gameState.currentEnemy = CREATURES.wolf;
                 addLog(`🐺 Um Lobo Selvagem emerge das sombras da floresta, seus olhos brilhando no escuro!`);
             } else {
                 addLog('🌲 A floresta está silenciosa... por enquanto. Você encontra alguns cogumelos pelo caminho.');
@@ -5373,7 +5364,7 @@
                     const finds = ['apple', 'bread', 'meat'];
                     const find = finds[Math.floor(Math.random() * finds.length)];
                     addItemToInventory(find);
-                    addLog(`🍄 Você encontrou ${ITEMS[find].name} abandonado perto de uma árvore caída!`);
+                    addLog(`🍄 Você encontrou ${ITEMS[find].name} perto de uma árvore caída!`);
                 }
             }
             updateUI();
