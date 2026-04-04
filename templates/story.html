@@ -1937,7 +1937,7 @@
                 allowsStations: true,
                 actions: [
                     { name: '🚪 Explorar o Cemitério', action: 'enterAbandonedCemetery' },
-                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
+                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
                 ]
             }
             abandoned_cemetery: {
@@ -1947,7 +1947,7 @@
                 actions: [
                     { name: '', action: '' },
                     { name: '', action: '' },
-                    { name: '🔙 Sair do Cemitério', action: 'enterAbandonedCemetery' },
+                    { name: '🔙 Sair do Cemitério', action: 'exitAbandonedCemetery' },
                 ]
             }
         };
@@ -3797,12 +3797,15 @@ function escapeHtml(text) {
         function goBackForestTrailSouth() { go('back_forest_trail_south', '🚶 Você segue pela trilha ao sul, onde a vegetação se torna mais densa e sombria.'); }
 
         function goSacredLake() { go('sacred_lake', '💧 Após caminhar por um bom tempo, você encontra uma clareira com um lago de águas azul-turquesa!'); }
-        function goAbandonedCemetery() { go('abandoned_cemetery', '🪦 Após uma longa caminhada, você se depara com um antigo cemitério abandonado.'); }
+        function goAbandonedCemetery() { go('abandoned_cemetery_gate', '🚪 Após uma longa caminhada, você se depara com os portões do cemitério abandonado.'); }
 
         function returnToBackGate() { go('farmlands', '🚪 Você retorna pelo portão dos fundos e entra no reino novamente.'); }
 
         function enterSacredLake() { go('sacred_lake_interior', '💧 Você mergulha nas águas sagradas. Uma sensação de paz invade seu ser.'); }
         function exitSacredLake() { go('sacred_lake', '🏊 Você emerge do lago sagrado, se sentindo renovado e revigorado.'); }
+
+        function enterAbandonedCemetery() { go('abandoned_cemetery', '🪦 Você entrou no cemitério abandonado.'); }
+        function exitAbandonedCemetery() { go('abandoned_cemetery_gate', '🚪 Você saiu do cemitério abandonado.'); }
 
         // ========== TIME SYSTEM FUNCTIONS ==========
         function getTimeIcon() { return gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite'; }
