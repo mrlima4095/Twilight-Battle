@@ -3953,15 +3953,16 @@ function escapeHtml(text) {
             
             // Reiniciar o ciclo com o tempo atualizado
             gameState.cycleStartTime = Date.now();
-            toggleTimeOfDay();
             startCycleTimer();
-            
-            // Atualizar UI
-            updateUI();
             
             if (earlyWake) {
                 addLog(`⚠️ Você acordou cedo! O tempo avançou ${Math.floor(gameTimePassed / 60)} minutos.`);
+            } else {
+                toggleTimeOfDay();
             }
+            
+            // Atualizar UI
+            updateUI();
         }
 
         function checkIfSleeping(actionName) {
