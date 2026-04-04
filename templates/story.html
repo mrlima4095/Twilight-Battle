@@ -4360,15 +4360,78 @@ function escapeHtml(text) {
         }
 
         // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
-    
         function visitFarmerHouse1() {
             if (gameState.isDead) return;
             
-            // Chance do NPC não estar em casa (30% de chance)
+            // Função auxiliar para verificar se é dia ou noite
+            function isDayTime() {
+                const hour = new Date().getHours();
+                return hour >= 6 && hour < 20;
+            }
+            
+            const isDay = isDayTime();
             const isHome = Math.random() < 0.7;
             
-            if (!isHome) {
-                // Popup no canto da tela
+            // Falas para quando está com sono
+            const sleepyLines = [
+                "*Bocejo* Miguel: " + '"Quem está aí a esta hora? Já estou indo dormir, volta amanhã..."',
+                "*Olhos vermelhos* Miguel: " + '"Já é tarde, vizinho. Amanhã cedo a gente conversa..."',
+                "Miguel: " + '"Ah... já está escuro. Preciso descansar para a colheita de amanhã."',
+                "*Porta entreaberta* Miguel: " + '"Hora de dormir, meu amigo. Volte quando o sol nascer."',
+                "Miguel: " + '"Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."'
+            ];
+            
+            // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
+            if (!isDay && !isHome) {
+                const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
+                
+                Swal.fire({
+                    title: '🌙 Miguel - Dormindo',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">😴👨‍🌾</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'Voltar depois',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                addLog('🏠 Você foi na casa do Miguel - Ele não atendeu a porta');
+                updateUI();
+                return;
+            }
+            
+            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
+            if (!isDay && isHome) {
+                Swal.fire({
+                    title: '🚪 Miguel - Atende a Porta',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">👨‍🌾</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5;">"Que surpresa ver você a esta hora! Infelizmente já guardei tudo e não tenho nada para oferecer hoje. Volte amanhã durante o dia."</p>
+                        <p style="margin-top: 10px; color: #ff9999;">⚠️ Por ser tarde, ele não pode te dar presentes.</p>
+                    </div>`,
+                    icon: 'warning',
+                    confirmButtonText: 'Entender',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                addLog('🏠 Você foi na casa do Miguel - Ele atendeu a porta (mas não deu presente)');
+                updateUI();
+                return;
+            }
+            
+            // Caso 3: Dia - NPC pode estar ausente
+            if (isDay && !isHome) {
                 Swal.fire({
                     title: '🏠 Ausente',
                     text: 'Miguel não está em casa, volte mais tarde!',
@@ -4382,15 +4445,14 @@ function escapeHtml(text) {
                     color: '#fff'
                 });
                 
-                addLog('🏠 Você visita a casa do Fazendeiro Miguel, mas ele não está em casa.');
+                addLog('🏠 Você foi na casa do Miguel - Ele não estava em casa');
                 updateUI();
                 return;
             }
             
-            // Chance de ganhar presente (60%)
+            // Caso 4: Dia - NPC está em casa (conversa normal com presente)
             const hasGift = Math.random() < 0.6;
             
-            // Dialog do personagem
             Swal.fire({
                 title: '👨‍🌾 Miguel',
                 html: `<div style="text-align: left;">
@@ -4408,24 +4470,86 @@ function escapeHtml(text) {
                 confirmButtonColor: '#ffd700'
             });
             
-            // Log da conversa
-            addLog('🏠 Você visita a casa do Fazendeiro Miguel e conversa com ele.');
-            addLog('👨‍🌾 Miguel: "Bem-vindo, viajante! A colheita está farta este ano."');
+            addLog('🏠 Você foi na casa do Miguel - Ele atendeu a porta');
             
             if (hasGift) {
                 addItemToInventory('cenoura');
-                addLog('🎁 Miguel te dá algumas cenouras frescas como presente!');
+                addLog('🎁 Miguel te deu cenouras');
             }
             updateUI();
         }
         function visitFarmerHouse2() {
             if (gameState.isDead) return;
             
-            // Chance do NPC não estar em casa (30% de chance)
+            // Função auxiliar para verificar se é dia ou noite
+            function isDayTime() {
+                const hour = new Date().getHours();
+                return hour >= 6 && hour < 20;
+            }
+            
+            const isDay = isDayTime();
             const isHome = Math.random() < 0.7;
             
-            if (!isHome) {
-                // Popup no canto da tela
+            // Falas para quando está com sono
+            const sleepyLines = [
+                "*Cochilando* Ana: " + '"Quem bate? Ah... Já fechei a padaria por hoje..."',
+                "Ana: " + '"Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!"',
+                "*Voz sonolenta* Ana: " + '"Já está tarde... Preciso acordar cedo para fazer o pão..."',
+                "Ana: " + '"O galo já dormiu, eu também deveria. Até amanhã!"',
+                "*Espreguiçando* Ana: " + '"Que horas são? Já está escuro... Volte quando clarear."'
+            ];
+            
+            // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
+            if (!isDay && !isHome) {
+                const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
+                
+                Swal.fire({
+                    title: '🌙 Ana - Dormindo',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">😴👩‍🌾</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'Voltar depois',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                addLog('🏠 Você foi na casa da Ana - Ela não atendeu a porta');
+                updateUI();
+                return;
+            }
+            
+            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
+            if (!isDay && isHome) {
+                Swal.fire({
+                    title: '🚪 Ana - Atende a Porta',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">👩‍🌾</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5;">"A essa hora? Já guardei todos os pães e estou quase indo dormir. Sem querer ser rude, mas volte amanhã cedo para o café da manhã."</p>
+                        <p style="margin-top: 10px; color: #ff9999;">⚠️ Por ser tarde, ela não pode te dar presentes.</p>
+                    </div>`,
+                    icon: 'warning',
+                    confirmButtonText: 'Entender',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                addLog('🏠 Você foi na casa da Ana - Ela atendeu a porta (mas não deu presente)');
+                updateUI();
+                return;
+            }
+            
+            // Caso 3: Dia - NPC pode estar ausente
+            if (isDay && !isHome) {
                 Swal.fire({
                     title: '🏠 Ausente',
                     text: 'Ana não está em casa, volte mais tarde!',
@@ -4439,15 +4563,14 @@ function escapeHtml(text) {
                     color: '#fff'
                 });
                 
-                addLog('🏠 Você visita a casa da Fazendeira Ana, mas ela não está em casa.');
+                addLog('🏠 Você foi na casa da Ana - Ela não estava em casa');
                 updateUI();
                 return;
             }
             
-            // Chance de ganhar presente (60%)
+            // Caso 4: Dia - NPC está em casa (conversa normal com presente)
             const hasGift = Math.random() < 0.6;
             
-            // Dialog do personagem
             Swal.fire({
                 title: '👩‍🌾 Ana',
                 html: `<div style="text-align: left;">
@@ -4465,13 +4588,11 @@ function escapeHtml(text) {
                 confirmButtonColor: '#ffd700'
             });
             
-            // Log da conversa
-            addLog('🏠 Você visita a casa da Fazendeira Ana e conversa com ela.');
-            addLog('👩‍🌾 Ana: "Que bom ver você! O cheiro do pão fresco está no ar."');
+            addLog('🏠 Você foi na casa da Ana - Ela atendeu a porta');
             
             if (hasGift) {
                 addItemToInventory('pao_fresco');
-                addLog('🎁 Ana te dá um pão fresco como presente!');
+                addLog('🎁 Ana te deu pão fresco');
             }
             updateUI();
         }
