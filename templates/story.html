@@ -1773,11 +1773,11 @@
                 name: 'Mercado Central',
                 description: 'Barracas coloridas vendendo alimentos frescos e suprimentos.',
                 actions: [
-                    { name: '🍎 Maçã (10💰)', action: 'buyApple' },
-                    { name: '🍞 Pão (15💰)', action: 'buyBread' },
-                    { name: '🥩 Carne (30💰)', action: 'buyMeat' },
-                    { name: '🐟 Peixe Fresco (25💰)', action: 'buyFish' },
-                    { name: '🥕 Cenoura (8💰)', action: 'buyCarrot' },
+                    { name: '🍎 Maçã (2💰)', action: 'buyApple' },
+                    { name: '🍞 Pão (2💰)', action: 'buyBread' },
+                    { name: '🥩 Carne (5💰)', action: 'buyMeat' },
+                    { name: '🐟 Peixe Fresco (10💰)', action: 'buyFish' },
+                    { name: '🥕 Cenoura (1💰)', action: 'buyCarrot' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
             },
@@ -1939,7 +1939,7 @@
                     { name: '🚪 Explorar o Cemitério', action: 'enterAbandonedCemetery' },
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
                 ]
-            }
+            },
             abandoned_cemetery: {
                 name: 'Cemitério Abandonado',
                 description: 'As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
@@ -4664,9 +4664,8 @@ function escapeHtml(text) {
         function buyApple() { buyItem('apple', 2); }
         function buyBread() { buyItem('bread', 2); }
         function buyMeat() { buyItem('meat', 5); }
-        function buyPotion() { buyItem('potion', 35); }
-        function buyFish() { buyItem('fish', 5); }
-        function buyCarrot() { buyItem('cenoura', 3); }
+        function buyFish() { buyItem('fish', 10); }
+        function buyCarrot() { buyItem('cenoura', 1); }
 
         // ========== EXPLORATION ==========
 
