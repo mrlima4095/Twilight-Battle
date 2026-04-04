@@ -5351,9 +5351,7 @@
             if (gameState.isDead) return;
             
             // 60% de chance de encontrar um lobo
-            if (Math.random() < 0.4) {
-                // Criar lobo com stats balanceados
-            
+            if (Math.random() < 0.6) {
                 gameState.currentEnemy = CREATURES.wolf;
                 addLog(`🐺 Um Lobo Selvagem emerge das sombras da floresta, seus olhos brilhando no escuro!`);
             } else {
@@ -5364,7 +5362,7 @@
                     const finds = ['apple', 'bread', 'meat'];
                     const find = finds[Math.floor(Math.random() * finds.length)];
                     addItemToInventory(find);
-                    addLog(`🍄 Você encontrou ${ITEMS[find].name} perto de uma árvore caída!`);
+                    addLog(`🍄 Você encontrou ${ITEMS[find].name} abandonado perto de uma árvore caída!`);
                 }
             }
             updateUI();
