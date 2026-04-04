@@ -4392,14 +4392,18 @@ async function showHouseDialog(config) {
         ],
         sleepingMessage: "🌙 Dormindo",
         absentMessage: "🏠 Ausente",
-        shopItems: null, // Array de itens para loja: [{ id: 'itemId', price: 10, quantity: 1 }]
-        buyPriceMultiplier: 1.0, // Multiplicador para preços de compra (1.0 = preço normal)
-        sellPriceMultiplier: 0.5, // Multiplicador para preços de venda (50% do valor)
-        canSellToNPC: false, // Se o NPC compra itens do jogador
-        topics: null, // Array de assuntos: [{ name: 'Assunto', message: 'Texto de resposta', action: null }]
-        greeting: null, // Mensagem de saudação personalizada
-        farewell: "Volte sempre!", // Mensagem de despedida
-        shopkeeperName: null // Nome para exibir na loja
+        shopItems: null,
+        buyPriceMultiplier: 1.0,
+        sellPriceMultiplier: 0.5,
+        canSellToNPC: false,
+        topics: null,
+        greeting: null,
+        farewell: "Volte sempre!",
+        shopkeeperName: null,
+        onSleep: null,
+        onAbsent: null,
+        onGreet: null,
+        onFarewell: null
     };
     
     // Mesclar configurações
@@ -4417,7 +4421,7 @@ async function showHouseDialog(config) {
     
     // CASO 1: Noite e NPC está dormindo
     if (!isDay && !isHome) {
-        const sleepResult = await Swal.fire({
+        await Swal.fire({
             title: '🌙 Dormindo',
             text: sleepingMessage,
             icon: 'info',
@@ -4515,82 +4519,138 @@ async function showHouseDialog(config) {
         });
     }
     
-    // Botão de Saudação/Despedida
+    // Botão de Saudação (sempre disponível)
     actionButtons.push({
         text: '👋 Apenas cumprimentar',
         value: 'greet',
         color: '#4a90e2'
     });
     
-    actionButtons.push({
-        text: '🚪 Sair',
-        value: 'exit',
-        color: '#ff4444'
-    });
-    
-    // Menu principal de interação
-    const mainResult = await Swal.fire({
-        title: `${emoji} ${name}`,
-        html: `<div style="text-align: left;">
-            <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
-        </div>`,
-        icon: 'info',
-        showCancelButton: true,
-        showDenyButton: actionButtons.length > 2,
-        confirmButtonText: actionButtons[0]?.text || 'Continuar',
-        denyButtonText: actionButtons[1]?.text || 'Sair',
-        cancelButtonText: actionButtons[2]?.text || 'Voltar',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: actionButtons[0]?.color || '#4a90e2',
-        denyButtonColor: actionButtons[1]?.color || '#ff4444',
-        cancelButtonColor: '#888'
-    });
-    
-    let selectedAction = 'greet';
-    if (mainResult.isConfirmed && actionButtons[0]) {
-        selectedAction = actionButtons[0].value;
-    } else if (mainResult.isDenied && actionButtons[1]) {
-        selectedAction = actionButtons[1].value;
-    } else if (mainResult.isDismissed && actionButtons[2]) {
-        selectedAction = actionButtons[2].value;
-    } else if (!mainResult.isConfirmed && !mainResult.isDenied && !mainResult.isDismissed) {
-        selectedAction = 'exit';
+    // Se não houver nenhum botão, mostrar apenas uma mensagem
+    if (actionButtons.length === 0) {
+        await Swal.fire({
+            title: `${emoji} ${name}`,
+            text: greetingText,
+            icon: 'info',
+            confirmButtonText: 'Voltar',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
+        });
+        updateUI();
+        return { success: true, action: 'none' };
     }
     
-    // Processar ação selecionada
-    switch (selectedAction) {
-        case 'shop':
-            await handleShopInteraction(finalConfig);
-            break;
-        case 'sell':
-            await handleSellInteraction(finalConfig);
-            break;
-        case 'talk':
-            await handleTalkInteraction(finalConfig);
-            break;
-        case 'greet':
-            await handleGreetInteraction(finalConfig);
-            break;
-        default:
-            if (onFarewell) onFarewell();
-            addLog(`🏠 Você se despediu de ${name}. ${farewell}`);
-            await Swal.fire({
-                title: `${emoji} ${name}`,
-                text: farewell,
-                icon: 'info',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 2000,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
+    // Menu principal de interação (SEM botão Sair)
+    let result;
+    
+    if (actionButtons.length === 1) {
+        // Apenas um botão
+        result = await Swal.fire({
+            title: `${emoji} ${name}`,
+            html: `<div style="text-align: left;">
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
+            </div>`,
+            icon: 'info',
+            showConfirmButton: true,
+            showCancelButton: false,
+            confirmButtonText: actionButtons[0].text,
+            confirmButtonColor: actionButtons[0].color,
+            background: '#1a1a2e',
+            color: '#fff'
+        });
+        
+        if (result.isConfirmed) {
+            await processAction(actionButtons[0].value, finalConfig);
+        }
+    } 
+    else if (actionButtons.length === 2) {
+        // Dois botões: Confirm e Deny
+        result = await Swal.fire({
+            title: `${emoji} ${name}`,
+            html: `<div style="text-align: left;">
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
+            </div>`,
+            icon: 'info',
+            showConfirmButton: true,
+            showDenyButton: true,
+            confirmButtonText: actionButtons[0].text,
+            denyButtonText: actionButtons[1].text,
+            confirmButtonColor: actionButtons[0].color,
+            denyButtonColor: actionButtons[1].color,
+            background: '#1a1a2e',
+            color: '#fff'
+        });
+        
+        if (result.isConfirmed) {
+            await processAction(actionButtons[0].value, finalConfig);
+        } else if (result.isDenied) {
+            await processAction(actionButtons[1].value, finalConfig);
+        }
+    }
+    else {
+        // Três ou mais botões - usar menu com opções numeradas
+        const optionsHtml = actionButtons.map((btn, idx) => 
+            `<button class="action-btn" onclick="window.selectAction(${idx})" style="margin: 8px; width: calc(50% - 16px); background: ${btn.color};">${btn.text}</button>`
+        ).join('');
+        
+        // Criar elemento para mostrar opções
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = optionsHtml;
+        
+        result = await Swal.fire({
+            title: `${emoji} ${name}`,
+            html: `<div style="text-align: left;">
+                <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
+                    ${optionsHtml}
+                </div>
+            </div>`,
+            icon: 'info',
+            showConfirmButton: false,
+            showCancelButton: true,
+            cancelButtonText: '❌ Fechar',
+            cancelButtonColor: '#ff4444',
+            background: '#1a1a2e',
+            color: '#fff',
+            didOpen: () => {
+                window.selectAction = async (idx) => {
+                    Swal.close();
+                    await processAction(actionButtons[idx].value, finalConfig);
+                    delete window.selectAction;
+                };
+            },
+            willClose: () => {
+                if (window.selectAction) delete window.selectAction;
+                if (onFarewell) onFarewell();
+                addLog(`🏠 Você se despediu de ${name}. ${farewell}`);
+            }
+        });
     }
     
     updateUI();
-    return { success: true, action: selectedAction };
+    return { success: true };
 }
+
+// Função auxiliar para processar ações
+async function processAction(action, config) {
+    switch (action) {
+        case 'shop':
+            await handleShopInteraction(config);
+            break;
+        case 'sell':
+            await handleSellInteraction(config);
+            break;
+        case 'talk':
+            await handleTalkInteraction(config);
+            break;
+        case 'greet':
+            await handleGreetInteraction(config);
+            break;
+    }
+}
+
+// Função auxiliar para loja
 async function handleShopInteraction(config) {
     const { name, emoji, shopItems, buyPriceMultiplier = 1.0, shopkeeperName } = config;
     
@@ -4600,7 +4660,7 @@ async function handleShopInteraction(config) {
     }
     
     // Construir lista de itens
-    let itemsHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+    let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
     for (let i = 0; i < shopItems.length; i++) {
         const item = shopItems[i];
         const itemData = ITEMS[item.id];
@@ -4609,71 +4669,70 @@ async function handleShopInteraction(config) {
         const price = Math.floor(item.price * buyPriceMultiplier);
         itemsHtml += `
             <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
+                <div style="flex: 1;">
                     <strong style="color: #ffd700;">${itemData.name}</strong>
                     <div style="font-size: 12px; color: #888;">${itemData.description || ''}</div>
                     <div style="font-size: 14px; color: #4CAF50;">💰 ${price} moedas</div>
                 </div>
                 <button class="action-btn success" onclick="window.buyShopItem(${i}, ${price}, '${item.id}')" style="padding: 5px 15px; font-size: 14px;">
-                    Comprar
+                    🛒 Comprar
                 </button>
             </div>
         `;
     }
     itemsHtml += '</div>';
     
-    // Armazenar config para uso no botão
     window.currentShopConfig = { config, items: shopItems };
+    
+    window.buyShopItem = (index, price, itemId) => {
+        if (gameState.character.gold >= price) {
+            gameState.character.gold -= price;
+            addItemToInventory(itemId);
+            addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${name}.`);
+            updateUI();
+            
+            Swal.fire({
+                title: '✅ Compra Realizada!',
+                text: `Você adquiriu ${ITEMS[itemId].name}.`,
+                icon: 'success',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        } else {
+            Swal.fire({
+                title: '❌ Moedas Insuficientes!',
+                text: `Você precisa de ${price} moedas para comprar ${ITEMS[itemId].name}.`,
+                icon: 'error',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        }
+    };
     
     await Swal.fire({
         title: `🛒 Loja de ${shopkeeperName || name}`,
         html: itemsHtml,
         icon: 'info',
-        confirmButtonText: 'Voltar',
+        confirmButtonText: '🔙 Voltar',
         background: '#1a1a2e',
         color: '#fff',
         confirmButtonColor: '#ffd700',
-        didOpen: () => {
-            // Injetar função global para comprar
-            window.buyShopItem = (index, price, itemId) => {
-                if (gameState.character.gold >= price) {
-                    gameState.character.gold -= price;
-                    addItemToInventory(itemId);
-                    addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${name}.`);
-                    updateUI();
-                    
-                    Swal.fire({
-                        title: 'Compra Realizada!',
-                        text: `Você adquiriu ${ITEMS[itemId].name}.`,
-                        icon: 'success',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Moedas Insuficientes!',
-                        text: `Você precisa de ${price} moedas para comprar ${ITEMS[itemId].name}.`,
-                        icon: 'error',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                }
-            };
-        },
         willClose: () => {
             delete window.buyShopItem;
             delete window.currentShopConfig;
         }
     });
 }
+
+// Função auxiliar para vender itens
 async function handleSellInteraction(config) {
     const { name, emoji, sellPriceMultiplier = 0.5 } = config;
     
@@ -4681,10 +4740,12 @@ async function handleSellInteraction(config) {
     const sellableItems = [];
     for (let i = 0; i < gameState.inventory.length; i++) {
         const item = gameState.inventory[i];
-        if (item && item.consumable !== false) { // Itens não-equipáveis geralmente são vendáveis
+        if (item && item.consumable !== false) {
             const basePrice = item.value || 10;
             const sellPrice = Math.floor(basePrice * sellPriceMultiplier);
-            sellableItems.push({ index: i, item, sellPrice });
+            if (sellPrice > 0) {
+                sellableItems.push({ index: i, item, sellPrice });
+            }
         }
     }
     
@@ -4702,27 +4763,25 @@ async function handleSellInteraction(config) {
     }
     
     // Construir lista de itens
-    let itemsHtml = '<div style="max-height: 300px; overflow-y: auto;">';
+    let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
     for (let i = 0; i < sellableItems.length; i++) {
         const { item, sellPrice, index } = sellableItems[i];
         const quantity = item.quantity || 1;
         itemsHtml += `
             <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
+                <div style="flex: 1;">
                     <strong style="color: #ffd700;">${item.name}</strong>
                     ${quantity > 1 ? `<span style="color: #888;"> x${quantity}</span>` : ''}
                     <div style="font-size: 12px; color: #888;">${item.description || ''}</div>
                     <div style="font-size: 14px; color: #ffa500;">💰 Vende por: ${sellPrice} moedas</div>
                 </div>
                 <button class="action-btn warning" onclick="window.sellItem(${index}, ${sellPrice})" style="padding: 5px 15px; font-size: 14px;">
-                    Vender
+                    💰 Vender
                 </button>
             </div>
         `;
     }
     itemsHtml += '</div>';
-    
-    window.currentSellConfig = { config, items: sellableItems };
     
     window.sellItem = (index, price) => {
         const item = gameState.inventory[index];
@@ -4737,7 +4796,7 @@ async function handleSellInteraction(config) {
             updateUI();
             
             Swal.fire({
-                title: 'Venda Realizada!',
+                title: '✅ Venda Realizada!',
                 text: `Você recebeu ${price} moedas por ${item.name}.`,
                 icon: 'success',
                 toast: true,
@@ -4748,7 +4807,6 @@ async function handleSellInteraction(config) {
                 color: '#fff'
             });
             
-            // Recarregar a interface de venda
             setTimeout(() => handleSellInteraction(config), 500);
         }
     };
@@ -4757,21 +4815,21 @@ async function handleSellInteraction(config) {
         title: `💰 Vender para ${name}`,
         html: itemsHtml,
         icon: 'info',
-        confirmButtonText: 'Voltar',
+        confirmButtonText: '🔙 Voltar',
         background: '#1a1a2e',
         color: '#fff',
         confirmButtonColor: '#ffd700',
         willClose: () => {
             delete window.sellItem;
-            delete window.currentSellConfig;
         }
     });
 }
+
+// Função auxiliar para conversar sobre assuntos
 async function handleTalkInteraction(config) {
     const { name, emoji, topics = [] } = config;
     
     if (topics.length === 0) {
-        // Assuntos padrão
         const defaultTopics = [
             { name: '👋 Cumprimentar', message: `"Olá, ${gameState.character.name}! Prazer em conhecê-lo."` },
             { name: '🌤️ Clima', message: '"O clima tem estado agradável ultimamente. As colheitas estão boas!"' },
@@ -4779,78 +4837,79 @@ async function handleTalkInteraction(config) {
             { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
         ];
         
-        const topicButtons = defaultTopics.map((topic, idx) => 
-            `${idx + 1}. ${topic.name}`
-        ).join('\n');
+        let selectedTopic = null;
         
-        const result = await Swal.fire({
+        const topicHtml = defaultTopics.map((topic, idx) => 
+            `<button class="action-btn" onclick="window.selectTopic(${idx})" style="margin: 8px; width: calc(50% - 16px);">${topic.name}</button>`
+        ).join('');
+        
+        await Swal.fire({
             title: `${emoji} Conversar com ${name}`,
             html: `<div style="text-align: left;">
                 <p>${name} olha para você e pergunta:</p>
                 <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-                <div style="margin-top: 15px;">
-                    ${defaultTopics.map((topic, idx) => `
-                        <button class="action-btn" onclick="window.selectTopic(${idx})" style="margin: 5px; width: calc(50% - 10px);">${topic.name}</button>
-                    `).join('')}
+                <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+                    ${topicHtml}
                 </div>
             </div>`,
             icon: 'info',
             showConfirmButton: false,
             showCancelButton: true,
-            cancelButtonText: 'Voltar',
+            cancelButtonText: '🔙 Voltar',
+            cancelButtonColor: '#ff4444',
             background: '#1a1a2e',
             color: '#fff',
-            cancelButtonColor: '#ff4444',
             didOpen: () => {
                 window.selectTopic = async (idx) => {
-                    const topic = defaultTopics[idx];
+                    selectedTopic = defaultTopics[idx];
+                    Swal.close();
                     await Swal.fire({
                         title: `${emoji} ${name}`,
-                        text: topic.message,
+                        text: selectedTopic.message,
                         icon: 'info',
                         confirmButtonText: 'Continuar',
                         background: '#1a1a2e',
                         color: '#fff',
                         confirmButtonColor: '#ffd700'
                     });
-                    handleTalkInteraction(config);
+                    delete window.selectTopic;
                 };
             },
             willClose: () => {
-                delete window.selectTopic;
+                if (window.selectTopic) delete window.selectTopic;
             }
         });
-        
         return;
     }
     
     // Usar tópicos personalizados
-    const topicButtons = topics.map((topic, idx) => 
-        `<button class="action-btn" onclick="window.selectCustomTopic(${idx})" style="margin: 5px; width: calc(50% - 10px);">${topic.name}</button>`
+    const topicHtml = topics.map((topic, idx) => 
+        `<button class="action-btn" onclick="window.selectCustomTopic(${idx})" style="margin: 8px; width: calc(50% - 16px); background: #9370db;">${topic.name}</button>`
     ).join('');
     
-    const result = await Swal.fire({
+    await Swal.fire({
         title: `${emoji} Conversar com ${name}`,
         html: `<div style="text-align: left;">
             <p>${name} olha para você e pergunta:</p>
             <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-            <div style="margin-top: 15px; display: flex; flex-wrap: wrap;">
-                ${topicButtons}
+            <div style="display: flex; flex-wrap: wrap; justify-content: center;">
+                ${topicHtml}
             </div>
         </div>`,
         icon: 'info',
         showConfirmButton: false,
         showCancelButton: true,
-        cancelButtonText: 'Voltar',
+        cancelButtonText: '🔙 Voltar',
+        cancelButtonColor: '#ff4444',
         background: '#1a1a2e',
         color: '#fff',
-        cancelButtonColor: '#ff4444',
         didOpen: () => {
             window.selectCustomTopic = async (idx) => {
                 const topic = topics[idx];
                 let message = typeof topic.message === 'function' ? topic.message() : topic.message;
                 
-                // Executar ação se houver
+                Swal.close();
+                
                 if (topic.action) {
                     await topic.action();
                 }
@@ -4864,14 +4923,16 @@ async function handleTalkInteraction(config) {
                     color: '#fff',
                     confirmButtonColor: '#ffd700'
                 });
-                handleTalkInteraction(config);
+                delete window.selectCustomTopic;
             };
         },
         willClose: () => {
-            delete window.selectCustomTopic;
+            if (window.selectCustomTopic) delete window.selectCustomTopic;
         }
     });
 }
+
+// Função auxiliar para apenas cumprimentar
 async function handleGreetInteraction(config) {
     const { name, emoji, onGreet } = config;
     
@@ -4880,7 +4941,10 @@ async function handleGreetInteraction(config) {
         `"Saudações, aventureiro! Que os deuses te protejam."`,
         `"Bom dia! Está um belo dia para explorar, não acha?"`,
         `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
-        `"${gameState.character.name}! Entre, entre. Fique à vontade."`
+        `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
+        `"Puxa, como você está forte hoje! Tem treinado muito?"`,
+        `"Que bom ver você! Como posso ajudar hoje?"`,
+        `"Olá, viajante! Tem trazido boas notícias?"`
     ];
     
     const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
