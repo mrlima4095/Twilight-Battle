@@ -4400,7 +4400,7 @@ function escapeHtml(text) {
                 const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
                 
                 Swal.fire({
-                    title: 'Miguel - Dormindo',
+                    title: '👨🌾 Miguel',
                     html: `<div style="text-align: left;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                             <div style="font-size: 50px;">😴👨‍🌾</div>
@@ -4415,7 +4415,7 @@ function escapeHtml(text) {
                     confirmButtonColor: '#ffd700'
                 });
                 
-                addLog('🏠 Você foi na casa do Miguel - Ele não atendeu a porta');
+                addLog('🏠 Você foi na casa do Miguel - Ele não pode coversar, volte durante o dia!');
                 updateUI();
                 return;
                 
@@ -4442,7 +4442,7 @@ function escapeHtml(text) {
             }
             
             // Caso 4: Dia - NPC está em casa (conversa normal com presente)
-            const hasGift = Math.random() < 0.2;
+            const hasGift = Math.random() < 0.;
             
             Swal.fire({
                 title: '👨🌾 Miguel',
