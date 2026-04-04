@@ -1798,7 +1798,6 @@
                 description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
                 actions: [
                     { name: '🚪 Entrar no Salão Principal', action: 'goGreatHall' },
-                    { name: '👑 Ir para a Sala do Trono', action: 'goThroneRoom' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
             },
@@ -1817,7 +1816,6 @@
                 description: 'A majestosa sala onde o Rei da Aurora recebe seus súditos.',
                 actions: [
                     { name: '👑 Falar com o Rei', action: 'talkToKing' },
-                    { name: '📜 Receber Missão Real', action: 'acceptRoyalQuest' },
                     { name: '🚪 Voltar para o Salão', action: 'goGreatHall' }
                 ]
             },
@@ -4258,7 +4256,7 @@ function escapeHtml(text) {
                 : '';
             
             await showHouseDialog({
-                name: 'Rei Alaric, O Iluminado',
+                name: 'Rei Mago',
                 emoji: '👑',
                 sleepyEmoji: '😴👑',
                 location: 'sala do trono',
@@ -4269,25 +4267,11 @@ function escapeHtml(text) {
                     "*Bocejando* A coroa é pesada... Preciso descansar."
                 ],
                 sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
-                greeting: `Aventureiro ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questProgress}`,
+                greeting: `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questProgress}`,
                 farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
                 sleepChance: 0.8, // Rei dorme mais cedo
                 absentChance: 0.3,
                 absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
-                
-                // Loja real (itens raros e caros)
-                shopItems: [
-                    { id: 'katana', price: 150 },      // Espada rara com desconto real
-                    { id: 'capacete_ferro', price: 60 },
-                    { id: 'peitoral_ferro', price: 90 },
-                    { id: 'calcas_ferro', price: 50 },
-                    { id: 'iron_boots', price: 35 },
-                    { id: 'heal_potion', price: 60 }    // Poção mais cara, mas de qualidade real
-                ],
-                buyPriceMultiplier: 0.95, // 5% de desconto para heróis do reino
-                canSellToNPC: true,
-                sellPriceMultiplier: 0.6, // Rei compra itens raros por 60% do valor (mais generoso)
-                shopkeeperName: 'Tesouro Real - Suprimentos de Elite',
                 
                 // Assuntos para conversar com o rei
                 topics: [
@@ -4368,64 +4352,6 @@ function escapeHtml(text) {
                     }
                 },
                 onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
-            });
-        }
-
-        // Substitua a função acceptRoyalQuest
-        function acceptRoyalQuest() {
-            if (gameState.isDead) return;
-            
-            Swal.fire({
-                title: '📜 Missão Real',
-                html: `<div style="text-align: left;">
-                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 15px;">👑 Rei da Aurora:</p>
-                    <p>"Herói, uma grande ameaça ronda nossas terras. Criaturas das trevas estão se multiplicando e precisamos de alguém corajoso para enfrentá-las."</p>
-                    <p style="margin-top: 15px;">"Sua missão é eliminar <strong style="color: #ffd700;">5 monstros</strong> nas terras selvagens e trazer glória ao reino!"</p>
-                    <p style="margin-top: 15px; color: #4CAF50;">🏆 Recompensa: 300 moedas de ouro</p>
-                    <p style="margin-top: 10px; color: #888;">"Você aceita este desafio, aventureiro?"</p>
-                </div>`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: '✅ Aceitar Missão',
-                cancelButtonText: '❌ Recusar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#4CAF50',
-                cancelButtonColor: '#ff4444'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    if (!gameState.royalQuest) {
-                        gameState.royalQuest = { kills: 0, target: 5, rewarded: false };
-                    }
-                    
-                    Swal.fire({
-                        title: '📜 Missão Aceita!',
-                        html: `<div style="text-align: left;">
-                            <p>Que a sorte esteja ao seu lado, herói!</p>
-                            <p style="margin-top: 10px;">📊 Progresso: <strong>${gameState.royalQuest.kills}/${gameState.royalQuest.target}</strong> monstros derrotados</p>
-                            <p style="margin-top: 10px; color: #ffd700;">💰 Recompensa: 300 moedas ao completar</p>
-                        </div>`,
-                        icon: 'success',
-                        confirmButtonText: 'Vamos lá!',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#4CAF50'
-                    });
-                    
-                    addLog('👑 Rei: "Herói, sua missão é eliminar ameaças nas terras selvagens e trazer glória ao reino!"');
-                    addLog('📜 Missão Real: Derrote 5 monstros para ganhar uma recompensa especial!');
-                } else {
-                    Swal.fire({
-                        title: 'Missão Recusada',
-                        text: 'Talvez em outra ocasião, aventureiro. As portas do castelo estarão sempre abertas para você.',
-                        icon: 'info',
-                        confirmButtonText: 'Até logo',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    addLog('👑 Rei: "Entendo... quando estiver pronto, volte."');
-                }
             });
         }
 
