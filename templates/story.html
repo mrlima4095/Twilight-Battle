@@ -4441,9 +4441,6 @@ function escapeHtml(text) {
                 return;
             }
             
-            // Caso 4: Dia - NPC está em casa (conversa normal com presente)
-            const hasGift = Math.random() < 0.3;
-            
             Swal.fire({
                 title: '👨🌾 Miguel',
                 html: `<div style="text-align: left;">
@@ -4463,10 +4460,6 @@ function escapeHtml(text) {
             
             addLog('🏠 Você foi na casa do Miguel - Ele atendeu a porta');
             
-            if (hasGift) {
-                addItemToInventory('cenoura');
-                addLog('🎁 Miguel te deu cenouras');
-            }
             updateUI();
         }
         function visitFarmerHouse2() {
@@ -4477,19 +4470,39 @@ function escapeHtml(text) {
             
             // Falas para quando está com sono
             const sleepyLines = [
-                "*Cochilando* Ana: " + '"Quem bate? Ah... Já fechei a padaria por hoje..."',
-                "Ana: " + '"Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!"',
-                "*Voz sonolenta* Ana: " + '"Já está tarde... Preciso acordar cedo para fazer o pão..."',
-                "Ana: " + '"O galo já dormiu, eu também deveria. Até amanhã!"',
-                "*Espreguiçando* Ana: " + '"Que horas são? Já está escuro... Volte quando clarear."'
+                "*Cochilando* Quem bate? Ah... Já fechei a padaria por hoje..."',
+                "Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!"',
+                "*Voz sonolenta* Já está tarde... Preciso acordar cedo para fazer o pão..."',
+                "O galo já dormiu, eu também deveria. Até amanhã!"',
+                "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."'
             ];
             
             // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
             if (!isDay && !isHome) {
+                Swal.fire({
+                    title: '🌙 Dormindo',
+                    text: 'Ana esta dormindo! Volte quando amanhecer...',
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                addLog('🏠 Você foi na casa do Miguel - Ele estava dormindo');
+                updateUI();
+                return;
+            }
+            
+            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
+            if (!isDay && isHome) {
                 const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
                 
                 Swal.fire({
-                    title: '🌙 Ana - Dormindo',
+                    title: '👩🌾 Ana',
                     html: `<div style="text-align: left;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                             <div style="font-size: 50px;">😴👩‍🌾</div>
@@ -4505,30 +4518,6 @@ function escapeHtml(text) {
                 });
                 
                 addLog('🏠 Você foi na casa da Ana - Ela não atendeu a porta');
-                updateUI();
-                return;
-            }
-            
-            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
-            if (!isDay && isHome) {
-                Swal.fire({
-                    title: '🚪 Ana - Atende a Porta',
-                    html: `<div style="text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">👩‍🌾</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
-                        </div>
-                        <p style="font-size: 16px; line-height: 1.5;">"A essa hora? Já guardei todos os pães e estou quase indo dormir. Sem querer ser rude, mas volte amanhã cedo para o café da manhã."</p>
-                        <p style="margin-top: 10px; color: #ff9999;">⚠️ Por ser tarde, ela não pode te dar presentes.</p>
-                    </div>`,
-                    icon: 'warning',
-                    confirmButtonText: 'Entender',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                
-                addLog('🏠 Você foi na casa da Ana - Ela atendeu a porta (mas não deu presente)');
                 updateUI();
                 return;
             }
@@ -4557,7 +4546,7 @@ function escapeHtml(text) {
             const hasGift = Math.random() < 0.6;
             
             Swal.fire({
-                title: '👩‍🌾 Ana',
+                title: '👩🌾 Ana',
                 html: `<div style="text-align: left;">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                         <div style="font-size: 50px;">👩‍🌾</div>
