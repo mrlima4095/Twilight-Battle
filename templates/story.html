@@ -4472,13 +4472,7 @@ function escapeHtml(text) {
         function visitFarmerHouse2() {
             if (gameState.isDead) return;
             
-            // Função auxiliar para verificar se é dia ou noite
-            function isDayTime() {
-                const hour = new Date().getHours();
-                return hour >= 6 && hour < 20;
-            }
-            
-            const isDay = isDayTime();
+            const isDay = gameState.timeOfDay === 'day';
             const isHome = Math.random() < 0.7;
             
             // Falas para quando está com sono
