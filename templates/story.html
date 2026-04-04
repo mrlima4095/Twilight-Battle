@@ -4371,63 +4371,122 @@ function escapeHtml(text) {
 
         // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
     
-        function visitFarmerHouse1() {
-            if (gameState.isDead) return;
-            
-            const hasGift = Math.random() < 0.6;
-            
-            Swal.fire({
-                title: '🏠 Fazenda do Miguel',
-                html: `<div style="text-align: left;">
-                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 10px;">👨‍🌾 Miguel:</p>
-                    <p>"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."</p>
-                    ${hasGift ? '<p style="margin-top: 15px;">"Aqui, leve algumas cenouras frescas para sua jornada!"</p>' : ''}
-                </div>`,
-                icon: 'success',
-                confirmButtonText: hasGift ? 'Aceitar 🥕' : 'Agradecer',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-            
-            addLog('🏠 Você visita a casa do Fazendeiro Miguel.');
-            addLog('👨‍🌾 Miguel: "Bem-vindo! A colheita está farta este ano!"');
-            
-            if (hasGift) {
-                addItemToInventory('cenoura');
-                addLog('🎁 Miguel te dá algumas cenouras frescas!');
-            }
-            updateUI();
-        }
-        function visitFarmerHouse2() {
-            if (gameState.isDead) return;
-            
-            const hasGift = Math.random() < 0.6;
-            
-            Swal.fire({
-                title: '🏠 Fazenda da Ana',
-                html: `<div style="text-align: left;">
-                    <p style="font-size: 18px; color: #ffd700; margin-bottom: 10px;">👩‍🌾 Ana:</p>
-                    <p>"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."</p>
-                    ${hasGift ? '<p style="margin-top: 15px;">"Tome este pão que fiz agora mesmo, com todo carinho!"</p>' : ''}
-                </div>`,
-                icon: 'success',
-                confirmButtonText: hasGift ? 'Aceitar 🍞' : 'Agradecer',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-            
-            addLog('🏠 Você visita a casa da Fazendeira Ana.');
-            addLog('👩‍🌾 Ana: "Que bom ver você! Tome este pão que fiz hoje."');
-            
-            if (hasGift) {
-                addItemToInventory('pao_fresco');
-                addLog('🎁 Ana te dá um pão fresco!');
-            }
-            updateUI();
-        }
+function visitFarmerHouse1() {
+    if (gameState.isDead) return;
+    
+    // Chance do NPC não estar em casa (30% de chance)
+    const isHome = Math.random() < 0.7;
+    
+    if (!isHome) {
+        // Popup no canto da tela
+        Swal.fire({
+            title: '🏠 Ausente',
+            text: 'Miguel não está em casa, volte mais tarde!',
+            icon: 'info',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#1a1a2e',
+            color: '#fff'
+        });
         
+        addLog('🏠 Você visita a casa do Fazendeiro Miguel, mas ele não está em casa.');
+        updateUI();
+        return;
+    }
+    
+    // Chance de ganhar presente (60%)
+    const hasGift = Math.random() < 0.6;
+    
+    // Dialog do personagem
+    Swal.fire({
+        title: '👨‍🌾 Miguel',
+        html: `<div style="text-align: left;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 50px;">👨‍🌾</div>
+                <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
+            </div>
+            <p style="font-size: 16px; line-height: 1.5;">"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."</p>
+            ${hasGift ? '<p style="margin-top: 15px; color: #ffd700;">✨ "Aqui, leve algumas cenouras frescas para sua jornada!" ✨</p>' : ''}
+        </div>`,
+        icon: 'success',
+        confirmButtonText: hasGift ? 'Aceitar Presente 🥕' : 'Continuar Jornada',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonColor: '#ffd700'
+    });
+    
+    // Log da conversa
+    addLog('🏠 Você visita a casa do Fazendeiro Miguel e conversa com ele.');
+    addLog('👨‍🌾 Miguel: "Bem-vindo, viajante! A colheita está farta este ano."');
+    
+    if (hasGift) {
+        addItemToInventory('cenoura');
+        addLog('🎁 Miguel te dá algumas cenouras frescas como presente!');
+    }
+    updateUI();
+}
+
+function visitFarmerHouse2() {
+    if (gameState.isDead) return;
+    
+    // Chance do NPC não estar em casa (30% de chance)
+    const isHome = Math.random() < 0.7;
+    
+    if (!isHome) {
+        // Popup no canto da tela
+        Swal.fire({
+            title: '🏠 Ausente',
+            text: 'Ana não está em casa, volte mais tarde!',
+            icon: 'info',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            background: '#1a1a2e',
+            color: '#fff'
+        });
+        
+        addLog('🏠 Você visita a casa da Fazendeira Ana, mas ela não está em casa.');
+        updateUI();
+        return;
+    }
+    
+    // Chance de ganhar presente (60%)
+    const hasGift = Math.random() < 0.6;
+    
+    // Dialog do personagem
+    Swal.fire({
+        title: '👩‍🌾 Ana',
+        html: `<div style="text-align: left;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 50px;">👩‍🌾</div>
+                <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
+            </div>
+            <p style="font-size: 16px; line-height: 1.5;">"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."</p>
+            ${hasGift ? '<p style="margin-top: 15px; color: #ffd700;">✨ "Tome este pão que fiz agora mesmo, com todo carinho!" ✨</p>' : ''}
+        </div>`,
+        icon: 'success',
+        confirmButtonText: hasGift ? 'Aceitar Presente 🍞' : 'Continuar Jornada',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonColor: '#ffd700'
+    });
+    
+    // Log da conversa
+    addLog('🏠 Você visita a casa da Fazendeira Ana e conversa com ela.');
+    addLog('👩‍🌾 Ana: "Que bom ver você! O cheiro do pão fresco está no ar."');
+    
+    if (hasGift) {
+        addItemToInventory('pao_fresco');
+        addLog('🎁 Ana te dá um pão fresco como presente!');
+    }
+    updateUI();
+}
+
         function millGrains() {
             if (gameState.isDead) return;
             addLog('🌾 O moleiro mói seus grãos gratuitamente.');
