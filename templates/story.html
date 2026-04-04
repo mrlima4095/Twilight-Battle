@@ -3842,6 +3842,13 @@
         function enterAbandonedCemetery() { go('abandoned_cemetery', '🪦 Você entrou no cemitério abandonado.'); }
         function exitAbandonedCemetery() { go('abandoned_cemetery_gate', '🚪 Você saiu do cemitério abandonado.'); }
 
+        function goDarkForest() { go('dark_forest', '🌲 Você entra na Floresta Sombria. As árvores bloqueiam a luz do sol e o ar fica mais frio.'); }
+        function goSouthTradeRoute() { go('south_trade_route', '🛤️ Você chega à Estrada Comercial Sul. O caminho é bem cuidado e seguro.'); }
+        function goEastPlains() { go('east_plains', '🌾 Você segue para o leste pela vasta planície.'); }
+        function returnToOutside() { go('outside', '🌅 Você retorna à Planície da Aurora, onde o céu se abre novamente.'); }
+        function goSouthVillages() { go('south_villages', '🏘️ Você chega às aldeias do sul, um movimentado centro comercial.'); }
+        function continueEast() { addLog('🌾 A planície continua se estendendo à sua frente. Você caminha por um tempo, mas decide voltar por enquanto.'); updateUI(); }
+
         // ========== TIME SYSTEM FUNCTIONS ==========
         function getTimeIcon() { return gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite'; }
         function getTimeText() { return gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'; }
