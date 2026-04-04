@@ -4363,30 +4363,44 @@ function escapeHtml(text) {
         function visitFarmerHouse1() {
             if (gameState.isDead) return;
             
-            // Função auxiliar para verificar se é dia ou noite
-            function isDayTime() {
-                const hour = new Date().getHours();
-                return hour >= 6 && hour < 20;
-            }
-            
-            const isDay = isDayTime();
+            const isDay = gameState.timeOfDay === 'day';
             const isHome = Math.random() < 0.7;
             
             // Falas para quando está com sono
             const sleepyLines = [
-                "*Bocejo* Miguel: " + '"Quem está aí a esta hora? Já estou indo dormir, volta amanhã..."',
-                "*Olhos vermelhos* Miguel: " + '"Já é tarde, vizinho. Amanhã cedo a gente conversa..."',
-                "Miguel: " + '"Ah... já está escuro. Preciso descansar para a colheita de amanhã."',
-                "*Porta entreaberta* Miguel: " + '"Hora de dormir, meu amigo. Volte quando o sol nascer."',
-                "Miguel: " + '"Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."'
+                "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã..."'
+                "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
+                "Ah... já está escuro. Preciso descansar para a colheita de amanhã.",
+                "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
+                "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
             ];
             
             // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
             if (!isDay && !isHome) {
+                Swal.fire({
+                    title: '🌙 Dormindo',
+                    text: 'Miguel esta dormindo! Volte quando amanhecer...',
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                addLog('🏠 Você foi na casa do Miguel - Ele estava dormindo');
+                updateUI();
+                return;
+            }
+            
+            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
+            if (!isDay && isHome) {
                 const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
                 
                 Swal.fire({
-                    title: '🌙 Miguel - Dormindo',
+                    title: 'Miguel - Dormindo',
                     html: `<div style="text-align: left;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                             <div style="font-size: 50px;">😴👨‍🌾</div>
@@ -4404,30 +4418,7 @@ function escapeHtml(text) {
                 addLog('🏠 Você foi na casa do Miguel - Ele não atendeu a porta');
                 updateUI();
                 return;
-            }
-            
-            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
-            if (!isDay && isHome) {
-                Swal.fire({
-                    title: '🚪 Miguel - Atende a Porta',
-                    html: `<div style="text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">👨‍🌾</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
-                        </div>
-                        <p style="font-size: 16px; line-height: 1.5;">"Que surpresa ver você a esta hora! Infelizmente já guardei tudo e não tenho nada para oferecer hoje. Volte amanhã durante o dia."</p>
-                        <p style="margin-top: 10px; color: #ff9999;">⚠️ Por ser tarde, ele não pode te dar presentes.</p>
-                    </div>`,
-                    icon: 'warning',
-                    confirmButtonText: 'Entender',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
                 
-                addLog('🏠 Você foi na casa do Miguel - Ele atendeu a porta (mas não deu presente)');
-                updateUI();
-                return;
             }
             
             // Caso 3: Dia - NPC pode estar ausente
@@ -4451,10 +4442,10 @@ function escapeHtml(text) {
             }
             
             // Caso 4: Dia - NPC está em casa (conversa normal com presente)
-            const hasGift = Math.random() < 0.6;
+            const hasGift = Math.random() < 0.2;
             
             Swal.fire({
-                title: '👨‍🌾 Miguel',
+                title: '👨🌾 Miguel',
                 html: `<div style="text-align: left;">
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                         <div style="font-size: 50px;">👨‍🌾</div>
