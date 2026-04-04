@@ -1711,6 +1711,7 @@
 
         // Locations expandidas
         const LOCATIONS = {
+            // Reino da Aurora
             home: {
                 name: 'Sua Casa',
                 description: 'Um lar aconchegante. Você pode descansar e recuperar suas forças.',
@@ -1872,16 +1873,7 @@
                     { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
-            outside: {
-                name: 'Fora do Reino',
-                description: 'Terras selvagens perigosas. Monstros espreitam nas sombras.',
-                actions: [
-                    { name: '🌳 Explorar a Floresta', action: 'exploreForest' },
-                    { name: '⛰️ Ir para as Montanhas', action: 'goMountains' },
-                    { name: '🏚️ Ruínas Antigas', action: 'goRuins' },
-                    { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
-                ]
-            },
+            
             outside_back: {
                 name: 'Trilha dos Fundos',
                 description: 'Você sai pelos fundos do reino, encontrando uma trilha pouco usada. A vegetação cresce solta e o caminho parece levar para uma área mais selvagem da floresta.',
@@ -1892,7 +1884,6 @@
                     { name: '🔙 Voltar ao Reino', action: 'returnToBackGate' }
                 ]
             },
-
             back_forest_trail_north: {
                 name: 'Trilha Norte',
                 description: 'Uma trilha estreita que serpenteia por entre árvores centenárias. O chão é coberto por folhas secas e você caminha por um bom tempo... O ar fica mais fresco conforme avança.',
@@ -1943,6 +1934,55 @@
                     { name: '', action: '' },
                     { name: '', action: '' },
                     { name: '🔙 Sair do Cemitério', action: 'exitAbandonedCemetery' },
+                ]
+            },
+            
+            outside: {
+                name: '🌅 Planície da Aurora',
+                description: `Uma vasta planície banhada pela luz d${gameState.timeOfDay === 'day' ? 'o amanhecer': 'a lua'}. A grama balança suavemente com o vento. Ao norte, uma floresta densa e escura; ao sul, uma estrada comercial bem cuidada; ao leste, a planície se estende até onde a vista alcança.`,
+                allowsStations: true,
+                actions: [
+                    { name: '🌲 Seguir para a Trilha Norte', action: 'goDarkForest' },
+                    { name: '🛤️ Seguir para a Estrada Sul ()', action: 'goSouthTradeRoute' },
+                    { name: '➡️ Seguir para a Planície Leste', action: 'goEastPlains' },
+                    { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
+                ]
+            },
+            dark_forest: {
+                name: '🌲 Floresta Sombria',
+                description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
+                actions: [
+                    { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
+                    { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
+                ]
+            },
+            
+            south_trade_route: {
+                name: '🛤️ Estrada Comercial Sul',
+                description: 'Uma estrada de terra bem compactada, ladeada por arbustos e árvores esparsas. Você vê carroças de comerciantes passando ocasionalmente. Esta rota leva às prósperas aldeias do sul do reino.',
+                allowsStations: true,
+                actions: [
+                    { name: '➡️ Seguir para o Sul', action: 'goSouthVillages' },
+                    { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
+                ]
+            },
+            
+            east_plains: {
+                name: '🌾 Planície Leste',
+                description: 'A planície se estende infinitamente à sua frente. O vento sopra forte por aqui, e você pode ver rebanhos de animais selvagens ao longe. O caminho parece continuar por muito tempo.',
+                allowsStations: true,
+                actions: [
+                    { name: '➡️ Continuar para o Leste', action: 'continueEast' },
+                    { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
+                ]
+            },
+        
+            south_villages: {
+                name: '🏘️ Aldeias do Sul',
+                description: 'Você chega a uma região com pequenas aldeias comerciais. Mercadores viajam entre elas levando mercadorias para todo o reino. O local é pacífico e próspero.',
+                allowsStations: true,
+                actions: [
+                    { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' }
                 ]
             }
         };
