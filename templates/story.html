@@ -4562,78 +4562,26 @@ function escapeHtml(text) {
             addLog('💬 "Se precisar de móveis para sua casa, estou aqui!"');
             updateUI();
         }
-function visitFarmerHouse1() {
-    showHouseDialog({
-        name: 'Miguel',
-        emoji: '👨‍🌾',
-        sleepyEmoji: '😴👨‍🌾',
-        location: 'casa do Miguel',
-        sleepyMessages: [
-            "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
-            "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
-            "Ah... já está escuro. Preciso descansar para a colheita de amanhã.",
-            "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
-            "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
-        ],
-        sleepingMessage: 'Miguel está dormindo! Volte quando amanhecer...',
-        dialogMessage: '"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."',
-        giftMessage: '"Aqui, leve algumas cenouras frescas para sua jornada!"',
-        gift: { itemId: 'cenoura', quantity: 3 },
-        giftChance: 0.5,
-        sleepChance: 0.7,
-        absentChance: 0.3,
-        absentMessage: 'Miguel não está em casa, volte mais tarde!'
-    });
-}
 
-// Substituir a função visitFarmerHouse2
-function visitFarmerHouse2() {
-    showHouseDialog({
-        name: 'Ana',
-        emoji: '👩‍🌾',
-        sleepyEmoji: '😴👩‍🌾',
-        location: 'casa da Ana',
-        sleepyMessages: [
-            "*Cochilando* Quem bate? Ah... Já fechei a padaria por hoje...",
-            "Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!",
-            "*Voz sonolenta* Já está tarde... Preciso acordar cedo para fazer o pão...",
-            "O galo já dormiu, eu também deveria. Até amanhã!",
-            "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."
-        ],
-        sleepingMessage: 'Ana está dormindo! Volte quando amanhecer...',
-        dialogMessage: '"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."',
-        giftMessage: '"Tome este pão que fiz agora mesmo, com todo carinho!"',
-        gift: { itemId: 'pao_fresco', quantity: 1 },
-        giftChance: 0.6,
-        sleepChance: 0.7,
-        absentChance: 0.3,
-        absentMessage: 'Ana não está em casa, volte mais tarde!'
-    });
-}
-
-// Exemplo para um novo NPC - Marceneiro
-function visitCarpenter() {
-    showHouseDialog({
-        name: 'Carlos, o Marceneiro',
-        emoji: '🔨',
-        sleepyEmoji: '😴🔨',
-        location: 'oficina do marceneiro',
-        sleepyMessages: [
-            "*Ronco suave* Zzz... Madeira... Zzz...",
-            "*Acordando* Quem está aí? A oficina já fechou, amigo.",
-            "Mãos calejadas... Preciso descansar para o trabalho de amanhã.",
-            "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
-        ],
-        sleepingMessage: 'Carlos está dormindo na oficina. Volte durante o dia!',
-        dialogMessage: '"Bem-vindo! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar."',
-        giftMessage: '"Tome este pedaço de madeira trabalhada, pode ser útil!"',
-        gift: { itemId: 'wood', quantity: 2 },
-        giftChance: 0.4,
-        sleepChance: 0.7,
-        absentChance: 0.2,
-        absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!'
-    });
-}
+        function visitCarpenter() {
+            showHouseDialog({
+                name: 'Carlos, o Marceneiro',
+                emoji: '🔨',
+                sleepyEmoji: '😴🔨',
+                location: 'oficina do marceneiro',
+                sleepyMessages: [
+                    "*Ronco suave* Zzz... Madeira... Zzz...",
+                    "*Acordando* Quem está aí? A oficina já fechou, amigo.",
+                    "Mãos calejadas... Preciso descansar para o trabalho de amanhã.",
+                    "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
+                ],
+                sleepingMessage: 'Carlos está dormindo na oficina. Volte durante o dia!',
+                dialogMessage: `Bem-vind${gameState.character.gender == 'masculino' ? 'o' : 'a'}! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar.`,
+                sleepChance: 0.7,
+                absentChance: 0.2,
+                absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!'
+            });
+        }
 
         function visitArtisan() {
             if (gameState.isDead) return;
