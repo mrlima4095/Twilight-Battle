@@ -5347,49 +5347,34 @@
 
         // ========== EXPLORATION ==========
 
-        function exploreForest() {
+        function exploreDarkForest() {
             if (gameState.isDead) return;
+            
+            // 60% de chance de encontrar um lobo
             if (Math.random() < 0.6) {
-                const monsters = ['goblin', 'wolf', 'orc'];
-                const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
-                gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
-                addLog(`⚠️ Um ${gameState.currentEnemy.name} apareceu!`);
+                // Criar lobo com stats balanceados
+                const wolf = {
+                    name: 'Lobo Selvagem',
+                    life: 180,
+                    maxLife: 180,
+                    attack: 35,
+                    defense: 12,
+                    exp: 60,
+                    gold: 15,
+                    id: 'wolf'
+                };
+                gameState.currentEnemy = wolf;
+                addLog(`🐺 Um Lobo Selvagem emerge das sombras da floresta, seus olhos brilhando no escuro!`);
             } else {
-                addLog('🌳 A floresta está tranquila... por enquanto.');
+                addLog('🌲 A floresta está silenciosa... por enquanto. Você encontra alguns cogumelos pelo caminho.');
+                
+                // Chance de encontrar itens na floresta
                 if (Math.random() < 0.3) {
-                    addItemToInventory('apple', 1);
-                    addLog('🍎 Você encontrou uma maçã silvestre!');
+                    const finds = ['apple', 'bread', 'meat'];
+                    const find = finds[Math.floor(Math.random() * finds.length)];
+                    addItemToInventory(find);
+                    addLog(`🍄 Você encontrou ${ITEMS[find].name} abandonado perto de uma árvore caída!`);
                 }
-            }
-            updateUI();
-        }
-
-        function goMountains() {
-            if (gameState.isDead) return;
-            if (Math.random() < 0.5) {
-                const monsters = ['orc', 'troll'];
-                const monsterId = monsters[Math.floor(Math.random() * monsters.length)];
-                gameState.currentEnemy = { ...MONSTERS[monsterId], id: monsterId };
-                addLog(`⚠️ Um ${gameState.currentEnemy.name} emerge das montanhas!`);
-            } else {
-                addLog('⛰️ As montanhas são perigosas, mas você encontra minérios.');
-                gameState.character.gold += 20;
-                addLog('💰 Você encontrou 20 moedas!');
-            }
-            updateUI();
-        }
-
-        function goRuins() {
-            if (gameState.isDead) return;
-            if (Math.random() < 0.4) {
-                gameState.currentEnemy = { ...MONSTERS['dragon'], id: 'dragon' };
-                addLog('⚠️ UM DRAGÃO GUARDA AS RUÍNAS!');
-            } else {
-                addLog('🏚️ Ruínas antigas... você encontra um baú!');
-                const items = ['katana', 'capacete_ferro', 'potion'];
-                const itemId = items[Math.floor(Math.random() * items.length)];
-                addItemToInventory(itemId);
-                addLog(`🎁 Você encontrou: ${ITEMS[itemId].name}!`);
             }
             updateUI();
         }
