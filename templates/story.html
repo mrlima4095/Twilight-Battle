@@ -4175,62 +4175,200 @@ function escapeHtml(text) {
 
         // ========== FUNÇÕES DO CASTELO ==========
 
-        function talkToCaptain() {
+        async function talkToCaptain() {
             if (gameState.isDead) return;
             
-            const messages = [
-                "Aventureiro, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.",
-                "Já perdi muitos bons soldados para aquelas criaturas... Mas você tem potencial. Continue treinando e um dia poderá se tornar um guarda real!",
-                "Ouvi dizer que você enfrentou alguns monstros nas terras selvagens. Continue assim e talvez o Rei lhe conceda uma audiência especial."
-            ];
-            
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-            
-            Swal.fire({
-                title: '🗡️ Capitão da Guarda',
-                html: `<div style="text-align: left;">
-                    <p style="margin-bottom: 15px;">"${randomMessage}"</p>
-                    ${Math.random() < 0.3 ? '<p style="color: #ffd700; margin-top: 10px;">🎁 Tome esta poção, você vai precisar!</p>' : ''}
-                </div>`,
-                icon: 'info',
-                confirmButtonText: 'Entendido',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
+            await showHouseDialog({
+                name: 'Capitão Aldric',
+                emoji: '🗡️',
+                sleepyEmoji: '😴🗡️',
+                location: 'quartel da guarda',
+                sleepyMessages: [
+                    "*Ronco militar* Zzz... Guarda... Zzz...",
+                    "*Acordando de repente* Quem está aí? O quartel já fechou!",
+                    "Plantão noturno... Preciso descansar para a guarda de amanhã.",
+                    "*Espreguiçando* Volte durante o dia, soldado!"
+                ],
+                sleepingMessage: 'O Capitão está descansando após o treinamento. Volte durante o dia!',
+                greeting: `Aventureiro ${gameState.character.name}, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.`,
+                farewell: "Que os deuses te protejam em suas missões, soldado!",
+                sleepChance: 0.7,
+                absentChance: 0.2,
+                absentMessage: 'O Capitão está em patrulha nas muralhas. Volte mais tarde!',
+                
+                // Loja do capitão (itens militares)
+                shopItems: [
+                    { id: 'sword', price: 30 },  // Preço com desconto para aventureiros
+                    { id: 'wooden_shield', price: 25 },
+                    { id: 'heal_potion', price: 40 },
+                    { id: 'arrow', price: 1 }     // Flechas mais baratas para recrutas
+                ],
+                buyPriceMultiplier: 0.85, // 15% de desconto para aventureiros aliados
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4, // Compra equipamentos usados por 40% do valor
+                shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
+                
+                // Assuntos para conversar
+                topics: [
+                    { 
+                        name: '⚔️ Treinamento', 
+                        message: '"Se quiser treinar, o campo de batalha fica atrás do quartel. Posso te dar algumas lições quando tiver tempo."' 
+                    },
+                    { 
+                        name: '👥 A Guarda Real', 
+                        message: '"Tenho 50 soldados sob meu comando. Homens e mulheres corajosos que juram proteger o reino com suas vidas."' 
+                    },
+                    { 
+                        name: '🐉 Ameaças Recentes', 
+                        message: '"Relatos de monstros maiores estão chegando. Um dragão foi avistado nas montanhas ao norte. Tome cuidado se for para lá."' 
+                    },
+                    { 
+                        name: '📜 Missões Disponíveis', 
+                        message: '"Precisamos de alguém para patrulhar a estrada leste. Os comerciantes estão sendo atacados. Interessado?"',
+                        action: () => {
+                            addLog('📜 Capitão Aldric: "Pense na missão e volte se estiver interessado!"');
+                        }
+                    },
+                    { 
+                        name: '💬 Como estão as coisas?', 
+                        message: `"Cansado, mas firme. O reino precisa de guardas vigilantes. E você, ${gameState.character.name}, como está sua jornada?"` 
+                    }
+                ],
+                
+                // Callbacks
+                onSleep: () => addLog('😴 O Capitão está descansando. Até amanhã, soldados!'),
+                onAbsent: () => addLog('🗡️ O Capitão está inspecionando as muralhas.'),
+                onGreet: () => {
+                    addLog('🗡️ Capitão Aldric acena respeitosamente.');
+                    // Chance de ganhar poção ao cumprimentar
+                    if (Math.random() < 0.3) {
+                        addItemToInventory('heal_potion');
+                        addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
+                    }
+                },
+                onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
             });
-            
-            addLog('🗡️ Capitão: "' + randomMessage + '"');
-            
-            if (Math.random() < 0.3) {
-                addItemToInventory('heal_potion');
-                addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
-            }
         }
-        function talkToKing() {
+        async function talkToKing() {
             if (gameState.isDead) return;
             
-            const messages = [
-                "Aventureiro, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.",
-                "Vejo bravura em seu coração. O reino precisa de heróis como você para enfrentar as trevas que se aproximam.",
-                "Se um dia desejar uma missão de grande importância, volte ao meu trono. Tenho uma tarefa que apenas os mais corajosos podem cumprir."
-            ];
+            // Verificar missão real ativa para mostrar progresso
+            const questProgress = gameState.royalQuest && !gameState.royalQuest.rewarded 
+                ? `<p style="color: #ffd700; margin-top: 10px;">📜 Progresso da Missão: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros</p>`
+                : '';
             
-            const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-            
-            Swal.fire({
-                title: '👑 Rei da Aurora',
-                html: `<div style="text-align: left;">
-                    <p style="margin-bottom: 15px; font-style: italic;">"${randomMessage}"</p>
-                    <p style="color: #ffd700; margin-top: 10px;">✨ O Rei o observa com admiração.</p>
-                </div>`,
-                icon: 'success',
-                confirmButtonText: 'Saudações, Majestade',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
+            await showHouseDialog({
+                name: 'Rei Alaric, O Iluminado',
+                emoji: '👑',
+                sleepyEmoji: '😴👑',
+                location: 'sala do trono',
+                sleepyMessages: [
+                    "*Respiração profunda* Zzz... Reino... Zzz...",
+                    "*Acordando* Quem ousa perturbar o descanso real?",
+                    "O rei já se recolheu. Volte amanhã durante a audiência.",
+                    "*Bocejando* A coroa é pesada... Preciso descansar."
+                ],
+                sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
+                greeting: `Aventureiro ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questProgress}`,
+                farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
+                sleepChance: 0.8, // Rei dorme mais cedo
+                absentChance: 0.3,
+                absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
+                
+                // Loja real (itens raros e caros)
+                shopItems: [
+                    { id: 'katana', price: 150 },      // Espada rara com desconto real
+                    { id: 'capacete_ferro', price: 60 },
+                    { id: 'peitoral_ferro', price: 90 },
+                    { id: 'calcas_ferro', price: 50 },
+                    { id: 'iron_boots', price: 35 },
+                    { id: 'heal_potion', price: 60 }    // Poção mais cara, mas de qualidade real
+                ],
+                buyPriceMultiplier: 0.95, // 5% de desconto para heróis do reino
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.6, // Rei compra itens raros por 60% do valor (mais generoso)
+                shopkeeperName: 'Tesouro Real - Suprimentos de Elite',
+                
+                // Assuntos para conversar com o rei
+                topics: [
+                    { 
+                        name: '👑 Sobre o Reino', 
+                        message: '"O Reino da Aurora foi fundado por meu bisavô há trezentos anos. Desde então, temos prosperado sob a proteção dos deuses."' 
+                    },
+                    { 
+                        name: '⚔️ Ameaça nas Fronteiras', 
+                        message: '"As criaturas das trevas estão se multiplicando. Suspeito que algo está despertando nas profundezas das montanhas proibidas."' 
+                    },
+                    { 
+                        name: '📜 Histórias Antigas', 
+                        message: '"Diz a lenda que há um artefato escondido nas ruínas antigas, capaz de banir as trevas para sempre. Será que você é o herói destinado a encontrá-lo?"' 
+                    },
+                    { 
+                        name: '🏆 Recompensas', 
+                        message: '"Para aqueles que servem o reino com bravura, as recompensas são generosas. Terras, títulos e tesouros aguardam os mais corajosos."' 
+                    },
+                    { 
+                        name: '💬 Tudo bem, Majestade?', 
+                        message: `"O peso da coroa é constante, mas ver aventureiros como você dedicados ao reino renova minhas esperanças. Continue assim, ${gameState.character.name}."` 
+                    },
+                    { 
+                        name: '✨ Bênção Real', 
+                        message: '"Que os deuses te abençoem em sua jornada. Leve esta bênção como proteção."',
+                        action: () => {
+                            // Bênção especial - só pode receber uma vez por dia
+                            const lastBlessing = localStorage.getItem('last_royal_blessing');
+                            const now = Date.now();
+                            const oneDay = 24 * 60 * 60 * 1000;
+                            
+                            if (!lastBlessing || (now - parseInt(lastBlessing)) > oneDay) {
+                                const healAmount = Math.floor(gameState.character.maxLife * 0.3);
+                                const manaAmount = Math.floor(gameState.character.maxMana * 0.2);
+                                gameState.character.life = Math.min(gameState.character.life + healAmount, gameState.character.maxLife);
+                                gameState.character.mana = Math.min(gameState.character.mana + manaAmount, gameState.character.maxMana);
+                                localStorage.setItem('last_royal_blessing', now.toString());
+                                
+                                addLog(`👑 O Rei te abençoou! Você recuperou ${healAmount} de vida e ${manaAmount} de mana.`);
+                                Swal.fire({
+                                    title: '✨ Bênção Real Recebida!',
+                                    text: `Você foi abençoado pelo Rei! +${healAmount}❤️ +${manaAmount}🔮`,
+                                    icon: 'success',
+                                    confirmButtonText: 'Agradecer',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                                updateUI();
+                            } else {
+                                addLog('👑 O Rei já te abençoou hoje. Volte amanhã para outra bênção.');
+                                Swal.fire({
+                                    title: '⏰ Ainda não...',
+                                    text: 'O Rei já te abençoou hoje. Volte amanhã para receber outra bênção.',
+                                    icon: 'info',
+                                    confirmButtonText: 'Entendi',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                            }
+                        }
+                    }
+                ],
+                
+                // Callbacks especiais
+                onSleep: () => addLog('😴 O Rei descansa em seus aposentos. Até amanhã.'),
+                onAbsent: () => addLog('👑 O Rei está em conselho com os nobres do reino.'),
+                onGreet: () => {
+                    addLog('👑 Você se curva respeitosamente diante do Rei Alaric.');
+                    // Rei pode dar ouro ocasionalmente
+                    if (Math.random() < 0.15) {
+                        const goldAmount = 50 + Math.floor(Math.random() * 100);
+                        gameState.character.gold += goldAmount;
+                        addLog(`👑 Sua Majestade te concede ${goldAmount} moedas de ouro pela sua lealdade!`);
+                        updateUI();
+                    }
+                },
+                onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
             });
-            
-            addLog('👑 Rei: "' + randomMessage + '"');
         }
 
         // Substitua a função acceptRoyalQuest
