@@ -4974,19 +4974,13 @@ async function handleGreetInteraction(config) {
                     "Mãos calejadas... Preciso descansar para o trabalho de amanhã.",
                     "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
                 ],
-                sleepingMessage: 'Carlos está dormindo na oficina. Volte durante o dia!',
+                sleepingMessage: 'Carlos está dormindo. Volte durante o dia!',
                 greeting: `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar.`,
                 farewell: "Volte sempre! Se precisar de móveis ou reparos, estou aqui!",
                 sleepChance: 0.7,
                 absentChance: 0.2,
                 absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!',
                 
-                // Loja do marceneiro
-                shopItems: [
-                    { id: 'wooden_shield', price: 45 },
-                    { id: 'bow', price: 40 },
-                    { id: 'arrow', price: 3 }
-                ],
                 buyPriceMultiplier: 0.95, // 5% de desconto
                 canSellToNPC: true,
                 sellPriceMultiplier: 0.4, // Compra por 40% do valor
@@ -4996,19 +4990,19 @@ async function handleGreetInteraction(config) {
                 topics: [
                     { 
                         name: '🪵 Sobre a madeira', 
-                        message: '"Uso madeira de carvalho das florestas do norte. É a mais resistente que existe!"' 
+                        message: 'Uso madeira de carvalho das florestas do norte. É a mais resistente que existe!' 
                     },
                     { 
                         name: '🔨 Trabalhos recentes', 
-                        message: '"Terminei uma bela mesa de jantar para a taverna. O dono ficou muito satisfeito!"' 
+                        message: 'Terminei uma bela mesa de jantar para a taverna. O dono ficou muito satisfeito!' 
                     },
                     { 
                         name: '📜 Histórias do ofício', 
-                        message: '"Aprendi marcenaria com meu avô. Ele dizia que a madeira tem alma e cada peça conta uma história."' 
+                        message: 'Aprendi marcenaria com meu avô. Ele dizia que a madeira tem alma e cada peça conta uma história.' 
                     },
                     { 
                         name: '💬 Como vai o trabalho?', 
-                        message: '"Estou cheio de encomendas! O reino está crescendo e todos precisam de móveis."' 
+                        message: 'Estou cheio de encomendas! O reino está crescendo e todos precisam de móveis.' 
                     }
                 ],
                 
@@ -5043,19 +5037,19 @@ async function handleGreetInteraction(config) {
                 topics: [
                     { 
                         name: '🎭 Sobre suas obras', 
-                        message: '"Esta escultura que vê aqui levou duas semanas para ficar pronta. É a minha favorita."' 
+                        message: 'Esta escultura que vê aqui levou duas semanas para ficar pronta. É a minha favorita.' 
                     },
                     { 
                         name: '🎨 Inspiração', 
-                        message: '"A natureza é minha maior musa. As cores do pôr do sol me inspiram profundamente."' 
+                        message: 'A natureza é minha maior musa. As cores do pôr do sol me inspiram profundamente.' 
                     },
                     { 
                         name: '💬 Como está a criatividade?', 
-                        message: '"Hoje estou muito inspirado! Terminei uma pintura que representa a lenda do herói das montanhas."' 
+                        message: 'Hoje estou muito inspirado! Terminei uma pintura que representa a lenda do herói das montanhas.' 
                     },
                     { 
                         name: '👋 Apenas admirar', 
-                        message: '"Fique à vontade para olhar as obras. Cada uma tem sua própria história."' 
+                        message: 'Fique à vontade para olhar as obras. Cada uma tem sua própria história.' 
                     }
                 ],
                 
