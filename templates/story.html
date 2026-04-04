@@ -4941,7 +4941,6 @@ async function handleGreetInteraction(config) {
             });
         }
 
-
         function millGrains() {
             if (gameState.isDead) return;
             addLog('🌾 O moleiro mói seus grãos gratuitamente.');
@@ -4990,63 +4989,58 @@ async function handleGreetInteraction(config) {
             updateUI();
         }
         async function visitWeaver() {
-            if (gameState.isDead) return;
-            
-            const result = await Swal.fire({
-                title: '🧵 Isadora, a Tecelã',
-                html: `<div style="text-align: left;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 50px;">🧵</div>
-                        <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Isadora</div>
-                    </div>
-                    <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">
-                        "Bem-vindo ao meu tear! Tenho os tecidos mais finos de todo o reino. 
-                        As cores vêm de plantas que cultivo no meu próprio jardim."
-                    </p>
-                    <p style="color: #888; font-style: italic;">"Que tal levar um tecido colorido para suas aventuras?"</p>
-                </div>`,
-                icon: 'info',
-                confirmButtonText: '🛒 Comprar Tecido (25💰)',
-                cancelButtonText: '❌ Sair',
-                showCancelButton: true,
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#4CAF50',
-                cancelButtonColor: '#ff4444'
+            await showHouseDialog({
+                name: 'Isadora',
+                emoji: '🧵',
+                sleepyEmoji: '😴🧵',
+                location: 'oficina da tecelã',
+                sleepyMessages: [
+                    "*Ronco suave* Tecendo... sonhos... Zzz...",
+                    "*Acordando* Quem está aí? A oficina já fechou por hoje.",
+                    "Mãos cansadas... Preciso descansar para tecer amanhã.",
+                    "*Espreguiçando* Já é tarde. Volte amanhã que terei tecidos novos!"
+                ],
+                sleepingMessage: 'Isadora está dormindo na oficina. Volte durante o dia!',
+                greeting: `Bem-vindo à minha oficina de tecelagem! Tenho os tecidos mais finos de todo o reino. As cores vêm de plantas que cultivo no meu próprio jardim.`,
+                farewell: "Que os fios da sorte te acompanhem! Volte sempre!",
+                sleepChance: 0.7,
+                absentChance: 0.2,
+                absentMessage: 'Isadora saiu para colher plantas para tingir tecidos. Volte mais tarde!',
+                
+                // Loja com itens
+                shopItems: [
+                    { id: 'tecido', price: 25, quantity: -1 } // -1 = estoque infinito
+                ],
+                buyPriceMultiplier: 1.0,
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4, // Compra por 40% do valor
+                shopkeeperName: 'Tecelã Isadora',
+                
+                // Assuntos para conversar
+                topics: [
+                    { 
+                        name: '🎨 Sobre os tecidos', 
+                        message: '"Cada cor vem de uma planta diferente. O azul vem das flores do lago sagrado, o vermelho das bagas da floresta..."' 
+                    },
+                    { 
+                        name: '🌿 Jardim de plantas', 
+                        message: '"Tenho um jardim secreto atrás da oficina. Lá cultivo todas as plantas que uso para tingir."' 
+                    },
+                    { 
+                        name: '📜 Histórias do reino', 
+                        message: '"Dizem que há um tear mágico escondido nas ruínas antigas. Quem o encontrar pode tecer a própria realidade..."' 
+                    },
+                    { 
+                        name: '💬 Tudo bem?', 
+                        message: `"Estou bem, sim! E você, ${gameState.character.name}? A aventura tem sido boa?"` 
+                    }
+                ],
+                
+                // Callbacks opcionais
+                onSleep: () => addLog('😴 Isadora está descansando após um longo dia de trabalho.'),
+                onAbsent: () => addLog('🌿 Isadora saiu para buscar mais plantas para tingimento.'),
+                onGreet: () => addLog('🧵 Isadora sorri e acena enquanto continua tecendo.')
             });
-            
-            if (result.isConfirmed) {
-                if (gameState.character.gold >= 25) {
-                    gameState.character.gold -= 25;
-                    addItemToInventory('tecido');
-                    addLog('🎨 Você comprou Tecido Colorido com Isadora por 25 moedas.');
-                    
-                    Swal.fire({
-                        title: '🧵 Compra Realizada!',
-                        text: 'Você adquiriu um Tecido Colorido. Volte sempre!',
-                        icon: 'success',
-                        confirmButtonText: 'Obrigado!',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700',
-                        timer: 2000
-                    });
-                    updateUI();
-                } else {
-                    Swal.fire({
-                        title: '❌ Moedas Insuficientes!',
-                        text: 'Você precisa de 25 moedas para comprar o tecido.',
-                        icon: 'error',
-                        confirmButtonText: 'Voltar depois',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    addLog('❌ Moedas insuficientes para comprar o tecido com Isadora!');
-                }
-            } else {
-                addLog('🧵 Isadora: "Volte sempre que precisar de tecidos coloridos!"');
-            }
         }
 
         // ========== SHOP FUNCTIONS ==========
