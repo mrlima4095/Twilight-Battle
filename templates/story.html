@@ -4373,26 +4373,113 @@ function escapeHtml(text) {
         }
 
         // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
-        function visitFarmerHouse1() {
-            if (gameState.isDead) return;
+// Substituir a função visitFarmerHouse1
+function visitFarmerHouse1() {
+    showHouseDialog({
+        name: 'Miguel',
+        emoji: '👨‍🌾',
+        sleepyEmoji: '😴👨‍🌾',
+        location: 'casa do Miguel',
+        sleepyMessages: [
+            "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
+            "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
+            "Ah... já está escuro. Preciso descansar para a colheita de amanhã.",
+            "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
+            "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
+        ],
+        sleepingMessage: 'Miguel está dormindo! Volte quando amanhecer...',
+        dialogMessage: '"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."',
+        giftMessage: '"Aqui, leve algumas cenouras frescas para sua jornada!"',
+        gift: { itemId: 'cenoura', quantity: 3 },
+        giftChance: 0.5,
+        sleepChance: 0.7,
+        absentChance: 0.3,
+        absentMessage: 'Miguel não está em casa, volte mais tarde!'
+    });
+}
+
+// Substituir a função visitFarmerHouse2
+function visitFarmerHouse2() {
+    showHouseDialog({
+        name: 'Ana',
+        emoji: '👩‍🌾',
+        sleepyEmoji: '😴👩‍🌾',
+        location: 'casa da Ana',
+        sleepyMessages: [
+            "*Cochilando* Quem bate? Ah... Já fechei a padaria por hoje...",
+            "Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!",
+            "*Voz sonolenta* Já está tarde... Preciso acordar cedo para fazer o pão...",
+            "O galo já dormiu, eu também deveria. Até amanhã!",
+            "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."
+        ],
+        sleepingMessage: 'Ana está dormindo! Volte quando amanhecer...',
+        dialogMessage: '"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."',
+        giftMessage: '"Tome este pão que fiz agora mesmo, com todo carinho!"',
+        gift: { itemId: 'pao_fresco', quantity: 1 },
+        giftChance: 0.6,
+        sleepChance: 0.7,
+        absentChance: 0.3,
+        absentMessage: 'Ana não está em casa, volte mais tarde!'
+    });
+}
+
+// Exemplo para um novo NPC - Marceneiro
+function visitCarpenter() {
+    showHouseDialog({
+        name: 'Carlos, o Marceneiro',
+        emoji: '🔨',
+        sleepyEmoji: '😴🔨',
+        location: 'oficina do marceneiro',
+        sleepyMessages: [
+            "*Ronco suave* Zzz... Madeira... Zzz...",
+            "*Acordando* Quem está aí? A oficina já fechou, amigo.",
+            "Mãos calejadas... Preciso descansar para o trabalho de amanhã.",
+            "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
+        ],
+        sleepingMessage: 'Carlos está dormindo na oficina. Volte durante o dia!',
+        dialogMessage: '"Bem-vindo! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar."',
+        giftMessage: '"Tome este pedaço de madeira trabalhada, pode ser útil!"',
+        gift: { itemId: 'wood', quantity: 2 },
+        giftChance: 0.4,
+        sleepChance: 0.7,
+        absentChance: 0.2,
+        absentMessage: 'Carlos saiu para buscar madeira na floresta. Volte mais tarde!'
+    });
+}
+
+        async function showHouseDialog(config) {
+            if (gameState.isDead) { return { success: false, reason: 'dead' }; }
             
             const isDay = gameState.timeOfDay === 'day';
-            const isHome = Math.random() < 0.7;
             
-            // Falas para quando está com sono
-            const sleepyLines = [
-                "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
-                "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
-                "Ah... já está escuro. Preciso descansar para a colheita de amanhã.",
-                "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
-                "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
-            ];
+            // Configurações padrão
+            const defaults = {
+                sleepChance: 0.7,
+                canBeAbsent: true,
+                absentChance: 0.4,
+                sleepyMessages: [
+                    "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
+                    "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
+                    "Ah... já está escuro. Preciso descansar para amanhã.",
+                    "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
+                    "Desculpe, mas já me recolhi. Volte amanhã."
+                ],
+                sleepingMessage: "🌙 Dormindo",
+                absentMessage: "🏠 Ausente"
+            };
             
-            // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
+            // Mesclar configurações fornecidas com padrões
+            const finalConfig = { ...defaults, ...config };
+            const { name, emoji, sleepyEmoji, sleepyMessages, sleepingMessage, dialogMessage, sleepChance, canBeAbsent, absentChance, absentMessage, location, onSuccess, onGift } = finalConfig;
+            
+            // Determinar se está em casa (aleatório baseado na chance de sono)
+            const isHome = Math.random() < (1 - sleepChance);
+            
+            // CASO 1: Noite e NPC está dormindo (não atende)
             if (!isDay && !isHome) {
-                Swal.fire({
+                await Swal.fire({
                     title: '🌙 Dormindo',
-                    text: 'Miguel esta dormindo! Volte quando amanhecer...',
+                    text: sleepingMessage,
                     icon: 'info',
                     toast: true,
                     position: 'top-end',
@@ -4403,21 +4490,21 @@ function escapeHtml(text) {
                     color: '#fff'
                 });
                 
-                addLog('🏠 Você foi na casa do Miguel - Ele estava dormindo');
+                addLog(`🏠 Você foi na ${location} - ${name} estava dormindo`);
                 updateUI();
-                return;
+                return { success: false, reason: 'sleeping' };
             }
             
-            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
+            // CASO 2: Noite e NPC está acordado (raro)
             if (!isDay && isHome) {
-                const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
+                const randomLine = sleepyMessages[Math.floor(Math.random() * sleepyMessages.length)];
                 
-                Swal.fire({
-                    title: '👨🌾 Miguel',
+                await Swal.fire({
+                    title: `${sleepyEmoji || emoji} ${name}`,
                     html: `<div style="text-align: left;">
                         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">😴👨‍🌾</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
+                            <div style="font-size: 50px;">${sleepyEmoji || emoji}</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">${name}</div>
                         </div>
                         <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
                     </div>`,
@@ -4428,17 +4515,16 @@ function escapeHtml(text) {
                     confirmButtonColor: '#ffd700'
                 });
                 
-                addLog('🏠 Você foi na casa do Miguel - Ele não pode coversar, volte durante o dia!');
+                addLog(`🏠 Você foi na ${location} - ${name} não pode conversar, volte durante o dia!`);
                 updateUI();
-                return;
-                
+                return { success: false, reason: 'sleepy' };
             }
             
-            // Caso 3: Dia - NPC pode estar ausente
-            if (isDay && !isHome) {
-                Swal.fire({
-                    title: '🏠 Ausente',
-                    text: 'Miguel não está em casa, volte mais tarde!',
+            // CASO 3: Dia - NPC pode estar ausente
+            if (isDay && canBeAbsent && Math.random() < absentChance) {
+                await Swal.fire({
+                    title: absentMessage,
+                    text: `${name} não está em casa, volte mais tarde!`,
                     icon: 'info',
                     toast: true,
                     position: 'top-end',
@@ -4449,139 +4535,36 @@ function escapeHtml(text) {
                     color: '#fff'
                 });
                 
-                addLog('🏠 Você foi na casa do Miguel - Ele não estava em casa');
+                addLog(`🏠 Você foi na ${location} - ${name} não estava em casa`);
                 updateUI();
-                return;
+                return { success: false, reason: 'absent' };
             }
             
-            Swal.fire({
-                title: '👨🌾 Miguel',
-                html: `<div style="text-align: left;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 50px;">👨‍🌾</div>
-                        <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeiro Miguel</div>
-                    </div>
-                    <p style="font-size: 16px; line-height: 1.5;">"Bem-vindo, viajante! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco."</p>
-                    ${hasGift ? '<p style="margin-top: 15px; color: #ffd700;">✨ "Aqui, leve algumas cenouras frescas para sua jornada!" ✨</p>' : ''}
-                </div>`,
+            // CASO 4: Dia - NPC está em casa (conversa normal)
+            const dialogHtml = `<div style="text-align: left;">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <div style="font-size: 50px;">${emoji}</div>
+                    <div style="font-weight: bold; font-size: 20px; color: #ffd700;">${name}</div>
+                </div>
+                <p style="font-size: 16px; line-height: 1.5;">${dialogMessage}</p>
+            </div>`;
+            
+            const result = await Swal.fire({
+                title: `${emoji} ${name}`,
+                html: dialogHtml,
                 icon: 'success',
-                confirmButtonText: hasGift ? 'Aceitar Presente 🥕' : 'Continuar Jornada',
+                confirmButtonText: hasGift ? 'Aceitar Presente 🎁' : 'Continuar Jornada',
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700'
             });
             
-            addLog('🏠 Você foi na casa do Miguel - Ele atendeu a porta');
+            addLog(`🏠 Você foi na ${location} - ${name} atendeu a porta`);
             
+            if (onSuccess) onSuccess();
             updateUI();
-        }
-        function visitFarmerHouse2() {
-            if (gameState.isDead) return;
             
-            const isDay = gameState.timeOfDay === 'day';
-            const isHome = Math.random() < 0.7;
-            
-            // Falas para quando está com sono
-            const sleepyLines = [
-                "*Cochilando* Quem bate? Ah... Já fechei a padaria por hoje...",
-                "Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!",
-                "*Voz sonolenta* Já está tarde... Preciso acordar cedo para fazer o pão...",
-                "O galo já dormiu, eu também deveria. Até amanhã!",
-                "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."
-            ];
-            
-            // Caso 1: Noite e NPC está dormindo (70% de chance de não atender)
-            if (!isDay && !isHome) {
-                Swal.fire({
-                    title: '🌙 Dormindo',
-                    text: 'Ana esta dormindo! Volte quando amanhecer...',
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog('🏠 Você foi na casa do Miguel - Ele estava dormindo');
-                updateUI();
-                return;
-            }
-            
-            // Caso 2: Noite e NPC está acordado (raro - 30% de chance)
-            if (!isDay && isHome) {
-                const randomLine = sleepyLines[Math.floor(Math.random() * sleepyLines.length)];
-                
-                Swal.fire({
-                    title: '👩🌾 Ana',
-                    html: `<div style="text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">😴👩‍🌾</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
-                        </div>
-                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
-                    </div>`,
-                    icon: 'info',
-                    confirmButtonText: 'Voltar depois',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                
-                addLog('🏠 Você foi na casa da Ana - Ela não atendeu a porta');
-                updateUI();
-                return;
-            }
-            
-            // Caso 3: Dia - NPC pode estar ausente
-            if (isDay && !isHome) {
-                Swal.fire({
-                    title: '🏠 Ausente',
-                    text: 'Ana não está em casa, volte mais tarde!',
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog('🏠 Você foi na casa da Ana - Ela não estava em casa');
-                updateUI();
-                return;
-            }
-            
-            // Caso 4: Dia - NPC está em casa (conversa normal com presente)
-            const hasGift = Math.random() < 0.6;
-            
-            Swal.fire({
-                title: '👩🌾 Ana',
-                html: `<div style="text-align: left;">
-                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div style="font-size: 50px;">👩‍🌾</div>
-                        <div style="font-weight: bold; font-size: 20px; color: #ffd700;">Fazendeira Ana</div>
-                    </div>
-                    <p style="font-size: 16px; line-height: 1.5;">"Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje."</p>
-                    ${hasGift ? '<p style="margin-top: 15px; color: #ffd700;">✨ "Tome este pão que fiz agora mesmo, com todo carinho!" ✨</p>' : ''}
-                </div>`,
-                icon: 'success',
-                confirmButtonText: hasGift ? 'Aceitar Presente 🍞' : 'Continuar Jornada',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700'
-            });
-            
-            addLog('🏠 Você foi na casa da Ana - Ela atendeu a porta');
-            
-            if (hasGift) {
-                addItemToInventory('pao_fresco');
-                addLog('🎁 Ana te deu pão fresco');
-            }
-            updateUI();
+            return { success: true, hasGift: hasGift };
         }
 
         function millGrains() {
