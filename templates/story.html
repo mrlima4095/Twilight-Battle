@@ -549,14 +549,15 @@
 
             paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
             leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
-            book: { name: 'Livro', 
-                type: 'book', 
-                consumable: false, 
-                description: 'Um livro para escrever suas histórias.',
-                title: 'Livro',
-                content: '',
-                signed: false, signer: null, root: false },
+            book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
             crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' }
+            sleeping_bag: { 
+                name: 'Saco de Dormir', 
+                type: 'station', 
+                stationType: 'sleeping_bag',
+                consumable: false, 
+                description: 'Um saco de dormir portátil. Permite descansar ao ar livre onde estações são permitidas.' 
+            }
         };
 
         // Locations expandidas
