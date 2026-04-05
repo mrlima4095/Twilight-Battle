@@ -49,36 +49,14 @@
         .profile-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px #9370db; }
 
         /* Main layout */
-        .main-layout {
-            display: grid;
-            grid-template-columns: 300px 1fr 300px;
-            gap: 20px;
-        }
+        .main-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; }
 
         /* Sidebars */
-        .inventory-panel, .equipment-panel {
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #ffd700;
-            backdrop-filter: blur(10px);
-        }
-        .panel-title {
-            color: #ffd700;
-            margin-bottom: 15px;
-            font-size: 18px;
-            text-align: center;
-            border-bottom: 1px solid #ffd700;
-            padding-bottom: 5px;
-        }
+        .inventory-panel, .equipment-panel { background: rgba(0, 0, 0, 0.7); border-radius: 15px; padding: 20px; border: 1px solid #ffd700; backdrop-filter: blur(10px); }
+        .panel-title { color: #ffd700; margin-bottom: 15px; font-size: 18px; text-align: center; border-bottom: 1px solid #ffd700; padding-bottom: 5px; }
 
         /* Inventory grid */
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
+        .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
         .inventory-slot {
             aspect-ratio: 1;
             background: rgba(255, 255, 255, 0.05);
@@ -96,19 +74,9 @@
             text-align: center;
             -webkit-tap-highlight-color: transparent;
         }
-        .inventory-slot:hover {
-            border-color: #ffd700;
-            transform: scale(1.05);
-        }
-        .inventory-slot.has-item {
-            background: rgba(255, 215, 0, 0.1);
-            border-color: #ffd700;
-        }
-        .inventory-slot .item-name {
-            font-weight: bold;
-            color: #ffd700;
-            font-size: 10px;
-        }
+        .inventory-slot:hover { border-color: #ffd700; transform: scale(1.05); }
+        .inventory-slot.has-item { background: rgba(255, 215, 0, 0.1); border-color: #ffd700; }
+        .inventory-slot .item-name { font-weight: bold; color: #ffd700; font-size: 10px; }
         .inventory-slot .item-quantity {
             position: absolute;
             bottom: 2px;
@@ -177,16 +145,8 @@
         }
 
         /* Equipment slots */
-        .equipment-slots {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .equipment-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+        .equipment-slots { display: flex; flex-direction: column; gap: 10px; }
+        .equipment-row { display: flex; gap: 10px; justify-content: center; }
         .equipment-slot {
             width: 80px;
             height: 80px;
@@ -202,10 +162,7 @@
             font-size: 10px;
             text-align: center;
         }
-        .equipment-slot.has-item {
-            background: rgba(76, 175, 80, 0.1);
-            border-color: #4CAF50;
-        }
+        .equipment-slot.has-item { background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; }
         .equipment-slot .slot-label {
             position: absolute;
             top: -8px;
