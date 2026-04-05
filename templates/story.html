@@ -2360,6 +2360,41 @@
             if (!gameState.activeStation) return null;
             
             const station = gameState.activeStation;
+            if (station.stationType === 'sleeping_bag') {
+                const canSleepNow = canSleep();
+                const sleepMessage = getSleepMessage();
+                
+                return `
+                    <div style="background: rgba(0,0,0,0.8); border-radius: 20px; padding: 25px; border: 2px solid #ffd700; text-align: center;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                            <h2 style="color: #ffd700; margin: 0;">🛌 ${station.name}</h2>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="action-btn warning" onclick="collectStation('${station.id}')" style="padding: 8px 15px;">📦 Recolher</button>
+                                <button class="action-btn" onclick="closeStation()" style="padding: 8px 15px;">❌ Fechar</button>
+                            </div>
+                        </div>
+                        
+                        <div style="margin: 30px 0;">
+                            <div style="font-size: 80px; margin-bottom: 20px;">🛌⛺</div>
+                            <p style="color: #fff; margin-bottom: 20px;">Um saco de dormir aconchegante para descansar ao ar livre.</p>
+                            
+                            <div style="background: rgba(255,215,0,0.1); border-radius: 15px; padding: 20px; margin: 20px 0;">
+                                <h3 style="color: #ffd700;">😴 Dormir ao Ar Livre</h3>
+                                <p style="color: #fff;">${sleepMessage}</p>
+                                ${!canSleepNow && gameState.timeOfDay === 'day' ? 
+                                    '<p style="color: #ffa500;">⚠️ Você não está cansado o suficiente para dormir agora (mana > 50%)</p>' : 
+                                    ''
+                                }
+                            </div>
+                            
+                            <button class="action-btn success" onclick="startSleepInBag()" ${!canSleepNow ? 'disabled' : ''} style="padding: 15px 40px; font-size: 18px;">
+                                😴 Dormir no Saco de Dormir
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
             const recipes = getAvailableRecipesForStation(station.stationType);
             
             let materialsHtml = '';
