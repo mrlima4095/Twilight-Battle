@@ -515,36 +515,45 @@
 
         // Items database
         const ITEMS = {
+            // Weapons
             sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
             katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
             machete: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
             dagger: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
-            wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
+            // | 
+            // | Guns like
             bow: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
-            arrow: { name: 'Flecha', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
-            staff: { name: 'Cajado', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Foco mágico' },
-            capacete_couro: { name: 'Capacete de Couro', type: 'armor', slot: 'helmet', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Proteção leve' },
-            capacete_ferro: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, durability: 80, maxDurability: 80, description: 'Proteção pesada' },
-            peitoral_couro: { name: 'Peitoral de Couro', type: 'armor', slot: 'chest', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Armadura leve' },
-            peitoral_ferro: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, durability: 120, maxDurability: 120, description: 'Armadura pesada' },
-            calcas_couro: { name: 'Calças de Couro', type: 'armor', slot: 'pants', attack: 0, defense: 15, durability: 30, maxDurability: 30, description: 'Proteção para as pernas' },
-            calcas_ferro: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
-            botas_couro: { name: 'Botas de Couro', type: 'armor', slot: 'boots', attack: 0, defense: 10, durability: 20, maxDurability: 20, description: 'Calçado simples' },
+            // | Munition
+            arrow: { name: 'Flecha', type: 'ammo', damage: 50, description: 'Munição para arco. Causa 50 de dano por flecha.', consumable: true },
+            iron_arrow: { name: 'Flecha de Ferro', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
+            // Armors
+            iron_hemlet: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, durability: 80, maxDurability: 80, description: 'Proteção pesada' },
+            iron_chestplate: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, durability: 120, maxDurability: 120, description: 'Armadura pesada' },
+            iron_leggings: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
             iron_boots: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
+            // |//|
+            // Foods
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
-            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            heal_potion: { name: 'Poção de Cura', type: 'food', heal: 300, description: 'Recupera 300 de vida', consumable: true },
             fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
-            pao_fresco: { name: 'Pão Fresco', type: 'food', heal: 90, description: 'Recupera 90 de vida', consumable: true },
+            
+            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
+            raw_meat { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação', consumable: true }
+            // |
+            // | Drinks
             beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
             wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
             coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
-            mead: { name: 'Hidromel', type: 'drink', heal: 35, mana: 15, description: 'Recupera 35 de vida e 15 de mana', consumable: true },
+            // Magic
+            
+            // Tools
+            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
+            
+            // Station
+            
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
 
-            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
 
             paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
@@ -3145,7 +3154,6 @@
                 shopItems: [
                     { id: 'sword', price: 30 },  // Preço com desconto para aventureiros
                     { id: 'wooden_shield', price: 25 },
-                    { id: 'heal_potion', price: 40 },
                     { id: 'arrow', price: 1 }     // Flechas mais baratas para recrutas
                 ],
                 buyPriceMultiplier: 0.85, // 15% de desconto para aventureiros aliados
@@ -3185,11 +3193,6 @@
                 onAbsent: () => addLog('🗡️ O Capitão está inspecionando as muralhas.'),
                 onGreet: () => {
                     addLog('🗡️ Capitão Aldric acena respeitosamente.');
-                    // Chance de ganhar poção ao cumprimentar
-                    if (Math.random() < 0.3) {
-                        addItemToInventory('heal_potion');
-                        addLog('🎁 O Capitão te dá uma poção de cura pela sua coragem!');
-                    }
                 },
                 onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
             });
@@ -3307,7 +3310,6 @@
         function buyBeer() { buyDrink('beer', 5); }
         function buyWine() { buyDrink('wine', 15); }
         function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
-        function buyMead() { if (gameState.isDead) return; buyDrink('mead', 12); }
         
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
