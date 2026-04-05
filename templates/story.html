@@ -550,7 +550,7 @@
             paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
             leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
-            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' }
+            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
             sleeping_bag: { 
                 name: 'Saco de Dormir', 
                 type: 'station', 
@@ -579,7 +579,7 @@
                 actions: [
                     { name: '⚔️ Loja de Armas', action: 'goWeaponShop' },
                     { name: '🛡️ Loja de Armaduras', action: 'goArmorShop' },
-                    { name: '🌉 Ir para a Ponte Leste', action: 'goEastBridge' },
+                    { name: '🌉 Ir para a Ponte Oeste', action: 'goWestBridge' },
                     { name: '🏘️ Entrar no Vilarejo Norte', action: 'goNorthVillage' },
                     { name: '🏘️ Entrar no Vilarejo Sul', action: 'goSouthVillage' },
                     { name: '🏛️ Ir para a Praça Principal', action: 'goToMainSquare' },
@@ -670,8 +670,8 @@
                     { name: '🚪 Voltar para o Salão', action: 'goGreatHall' }
                 ]
             },
-            east_bridge: {
-                name: 'Ponte Leste',
+            west_bridge: {
+                name: 'Ponte Oeste',
                 description: 'Uma ponte de pedra que atravessa o Rio Aurora. Do outro lado, os campos agrícolas se estendem.',
                 actions: [
                     { name: '🌾 Atravessar para os Campos', action: 'goFarmlands' },
@@ -687,7 +687,7 @@
                     { name: '🏠 Casa do Fazendeiro Miguel', action: 'visitFarmerHouse1' },
                     { name: '🏠 Casa da Fazendeira Ana', action: 'visitFarmerHouse2' },
                     { name: '🚪 Portão Secundário (Sair do Reino)', action: 'goBackOutside' },
-                    { name: '🌉 Voltar para a Ponte', action: 'goEastBridge' }
+                    { name: '🌉 Voltar para a Ponte', action: 'goWestBridge' }
                 ]
             },
             mill: {
@@ -720,7 +720,7 @@
                 name: 'Portão Principal',
                 description: 'O enorme portão de ferro que protege a entrada principal do reino. Guardas vigiam constantemente.',
                 actions: [
-                    { name: '🚪 Sair do Reino (Terras Selvagens)', action: 'leaveKingdom' },
+                    { name: '🚪 Sair do Reino', action: 'leaveKingdom' },
                     { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
@@ -2664,7 +2664,7 @@
         function goCastleGate() { go('castle_gate', '🏰 Você entra no pátio do castelo.'); }
         function goGreatHall() { go('great_hall', '🚪 Você entra no majestoso Salão Principal.'); }
         function goThroneRoom() { go('throne_room', '👑 Você entra na Sala do Trono.'); }
-        function goEastBridge() { go('east_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
+        function goWestBridge() { go('west_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
         function goFarmlands() { go('farmlands', '🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
         function goMill() { go('mill', '🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
         function goNorthVillage() { go('north_village', '🏘️ Você entra no Vilarejo Norte.'); }
