@@ -531,7 +531,10 @@
             iron_chestplate: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, durability: 120, maxDurability: 120, description: 'Armadura pesada' },
             iron_leggings: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
             iron_boots: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
-            // |//|
+            // |
+            // | Shields
+            wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
+            iron_shield: { name: 'Escudo de Ferro', type: 'shield', slot: 'offhand', attack: 0, defense: 75, durability: 150, maxDurability: 150, description: 'Proteção reforçada' },
             // Foods
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
@@ -551,15 +554,18 @@
             clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
             
             // Station
+            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
+            
+            // Materials
+            paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
+            leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
+            book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
+            
             
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
 
-            paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
-            leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
-            book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
-            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
             sleeping_bag: { 
                 name: 'Saco de Dormir', 
                 type: 'station', 
