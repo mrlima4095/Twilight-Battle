@@ -7,1223 +7,152 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: #fff; }
-        .game-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-
-        /* Header */
-        .game-header {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            backdrop-filter: blur(10px);
-        }
-        .game-title { font-size: 2em; color: #ffd700; }
-        
-        .player-info { display: flex; gap: 20px; align-items: center; }
-        .player-stats { display: flex; gap: 30px; }
-        .stat {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .stat-value { font-size: 24px; font-weight: bold; color: #ffd700; }
-        .stat-label { font-size: 12px; color: #888; }
-        
-        .location-badge { background: #4a90e2; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
-
-        /* Profile Button */
-        .profile-btn { background: #9370db; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-        .profile-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px #9370db; }
-
-        /* Main layout */
-        .main-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; }
-
-        /* Sidebars */
-        .inventory-panel, .equipment-panel { background: rgba(0, 0, 0, 0.7); border-radius: 15px; padding: 20px; border: 1px solid #ffd700; backdrop-filter: blur(10px); }
-        .panel-title { color: #ffd700; margin-bottom: 15px; font-size: 18px; text-align: center; border-bottom: 1px solid #ffd700; padding-bottom: 5px; }
-
-        /* Inventory grid */
-        .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
-        .inventory-slot {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #444;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 5px;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 12px;
-            text-align: center;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .inventory-slot:hover { border-color: #ffd700; transform: scale(1.05); }
-        .inventory-slot.has-item { background: rgba(255, 215, 0, 0.1); border-color: #ffd700; }
-        .inventory-slot .item-name { font-weight: bold; color: #ffd700; font-size: 10px; }
-        .inventory-slot .item-quantity {
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
-            background: #ffd700;
-            color: #1a1a2e;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-        }
-        .inventory-slot.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-            filter: grayscale(100%);
-        }
-        .inventory-slot.dragging {
-            opacity: 0.5;
-            transform: scale(0.95);
-            transition: all 0.2s;
-        }
-        .inventory-slot.drag-over {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.2);
-            transform: scale(1.02);
-        }
-        
-        /* Feedback visual para touch delay */
-        .inventory-slot.touch-waiting {
-            background: rgba(255, 215, 0, 0.3);
-            transform: scale(0.98);
-            transition: all 0.1s;
-            border-color: #ffd700;
-        }
-        .trash-bin {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(255, 68, 68, 0.2);
-            border: 2px dashed #ff4444;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .trash-bin:hover {
-            background: rgba(255, 68, 68, 0.3);
-            border-color: #ff0000;
-        }
-        .trash-bin.drag-over {
-            background: rgba(255, 68, 68, 0.5);
-            border-color: #ff0000;
-            transform: scale(1.05);
-        }
-        .trash-bin.drag-over-mobile {
-            background: rgba(255, 68, 68, 0.5);
-            border-color: #ff0000;
-            transform: scale(1.05);
-        }
-        .trash-bin.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        /* Equipment slots */
-        .equipment-slots { display: flex; flex-direction: column; gap: 10px; }
-        .equipment-row { display: flex; gap: 10px; justify-content: center; }
-        .equipment-slot {
-            width: 80px;
-            height: 80px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #444;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 5px;
-            position: relative;
-            font-size: 10px;
-            text-align: center;
-        }
-        .equipment-slot.has-item { background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; }
-        .equipment-slot .slot-label {
-            position: absolute;
-            top: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 8px;
-            white-space: nowrap;
-        }
-        .equipment-slot .item-name {
-            font-weight: bold;
-            color: #4CAF50;
-            font-size: 10px;
-        }
-        .equipment-slot.disabled {
-            opacity: 0.5;
-            pointer-events: none;
-            filter: grayscale(100%);
-        }
-
-        /* Center panel */
-        .game-panel {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 15px;
-            padding: 20px;
-            border: 1px solid #ffd700;
-            backdrop-filter: blur(10px);
-        }
-
-        .location-title {
-            color: #ffd700;
-            font-size: 24px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .location-description {
-            color: #fff;
-            margin-bottom: 30px;
-            line-height: 1.6;
-            text-align: center;
-        }
-
-        .action-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        .action-btn {
-            padding: 15px;
-            background: linear-gradient(45deg, #4a90e2, #357abd);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .action-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
-        }
-        .action-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            filter: grayscale(100%);
-        }
-        .action-btn.danger {
-            background: linear-gradient(45deg, #ff4444, #cc0000);
-        }
-        .action-btn.success {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-        }
-        .action-btn.warning {
-            background: linear-gradient(45deg, #ffa500, #ff8c00);
-        }
-
-        /* Combat log */
-        .combat-log {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .log-entry {
-            padding: 5px;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
-            font-size: 14px;
-        }
-        .log-entry:last-child {
-            border-bottom: none;
-        }
-
-        /* Title Screen */
-        .title-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0a0a1a, #1a1a3a);
-            z-index: 2000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .title-content {
-            text-align: center;
-            padding: 40px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 3px solid #ffd700;
-            border-radius: 30px;
-            backdrop-filter: blur(10px);
-            max-width: 500px;
-            width: 90%;
-        }
-        .title-content h1 {
-            color: #ffd700;
-            font-size: 48px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-        .title-content h2 {
-            color: #fff;
-            font-size: 24px;
-            margin-bottom: 40px;
-            opacity: 0.8;
-        }
-
-        .title-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .title-btn {
-            padding: 20px;
-            font-size: 24px;
-            font-weight: bold;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            background: linear-gradient(45deg, #4a90e2, #357abd);
-            color: white;
-        }
-        .title-btn:hover:not(:disabled) {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px #4a90e2;
-        }
-        .title-btn.continue {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-        }
-        .title-btn.continue:hover:not(:disabled) {
-            box-shadow: 0 0 30px #4CAF50;
-        }
-        .title-btn.load {
-            background: linear-gradient(45deg, #9370db, #7b5fb0);
-        }
-        .title-btn.load:hover:not(:disabled) {
-            box-shadow: 0 0 30px #9370db;
-        }
-        .title-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-            filter: grayscale(100%);
-        }
-
-        /* Character creation modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-        .modal.active {
-            display: flex;
-        }
-        .modal-content {
-            background: #1a1a2e;
-            border: 2px solid #ffd700;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 700px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-title {
-            color: #ffd700;
-            font-size: 28px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .race-selector {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .race-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #444;
-            border-radius: 10px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-        }
-        .race-card:hover {
-            border-color: #ffd700;
-            transform: translateY(-5px);
-        }
-        .race-card.selected {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-        }
-        .race-name {
-            color: #ffd700;
-            font-size: 20px;
-            margin-bottom: 10px;
-        }
-        .race-stats {
-            color: #fff;
-            font-size: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-        .input-group label {
-            display: block;
-            color: #ffd700;
-            margin-bottom: 5px;
-        }
-        .input-group input, .input-group select, .input-group textarea {
-            width: 100%;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #ffd700;
-            border-radius: 5px;
-            color: #fff;
-        }
-        .input-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-        .input-group input:disabled, .input-group textarea:disabled {
-            opacity: 0.5;
-        }
-
-        .gender-selector {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-        .gender-option {
-            padding: 10px 30px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid #444;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .gender-option.selected {
-            border-color: #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-        }
-
-        /* Food items */
-        .food-item {
-            background: rgba(76, 175, 80, 0.2);
-            border-color: #4CAF50 !important;
-        }
-
-        /* Save/Load buttons */
-        .save-load-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .save-btn, .load-btn, .menu-btn {
-            padding: 10px 20px;
-            background: #4a90e2;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled), .menu-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
-        }
-        .save-btn:disabled, .load-btn:disabled, .menu-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .menu-btn {
-            background: #ffa500;
-        }
-        .menu-btn:hover:not(:disabled) {
-            box-shadow: 0 5px 15px #ffa500;
-        }
-
-        /* Death screen */
-        .death-screen {
-            text-align: center;
-            padding: 50px;
-        }
-        .death-screen h2 {
-            color: #ff4444;
-            font-size: 48px;
-            margin-bottom: 20px;
-        }
-        .death-screen p {
-            color: #fff;
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-        .death-screen .warning {
-            color: #ff4444;
-            font-size: 14px;
-            margin-top: 20px;
-        }
-
-        .restart-btn {
-            padding: 15px 40px;
-            background: #ffd700;
-            color: #1a1a2e;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .restart-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px #ffd700;
-        }
-
-        /* Death overlay */
-        .death-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-        .death-overlay.active {
-            display: flex;
-            pointer-events: all;
-        }
-        .death-message {
-            background: #1a1a2e;
-            border: 3px solid #ff4444;
-            border-radius: 20px;
-            padding: 50px;
-            text-align: center;
-            max-width: 600px;
-        }
-        .death-message h1 {
-            color: #ff4444;
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-        .death-message p {
-            color: #fff;
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-
-        /* Profile Modal */
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        .profile-avatar {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 215, 0, 0.2);
-            border: 3px solid #ffd700;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-        }
-        .profile-info {
-            flex: 1;
-        }
-        .profile-name {
-            font-size: 32px;
-            color: #ffd700;
-            margin-bottom: 5px;
-        }
-        .profile-race {
-            color: #888;
-            margin-bottom: 10px;
-        }
-        .profile-stats {
-            display: flex;
-            gap: 20px;
-        }
-        .profile-stat {
-            text-align: center;
-        }
-        .profile-stat-value {
-            font-size: 20px;
-            color: #ffd700;
-        }
-        .profile-stat-label {
-            font-size: 12px;
-            color: #888;
-        }
-        .profile-bio {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .profile-bio h3 {
-            color: #ffd700;
-            margin-bottom: 10px;
-        }
-        .profile-bio p {
-            color: #fff;
-            line-height: 1.6;
-        }
-        .edit-profile-btn {
-            width: 100%;
-            padding: 15px;
-            background: #9370db;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        .edit-profile-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px #9370db;
-        }
-
-        /* Tooltip */
-        .tooltip {
-            position: relative;
-            display: inline-block;
-        }
-        .tooltip .tooltiptext {
-            visibility: hidden;
-            width: 200px;
-            background-color: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #ffd700;
-            position: absolute;
-            z-index: 1;
-            bottom: 125%;
-            left: 50%;
-            margin-left: -100px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            font-size: 12px;
-        }
-        .tooltip:hover .tooltiptext {
-            visibility: visible;
-            opacity: 1;
-        }
-        
-        @media (max-width: 1024px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .inventory-panel,
-            .equipment-panel {
-                order: 2;
-            }
-            
-            .game-panel {
-                order: 1;
-            }
-            
-            .game-header {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .player-info {
-                flex-direction: column;
-                width: 100%;
-            }
-            
-            .player-stats {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .save-load-buttons {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .game-container {
-                padding: 10px;
-            }
-            
-            .game-header {
-                padding: 15px;
-                border-radius: 12px;
-            }
-            
-            .game-title {
-                font-size: 1.5em;
-                text-align: center;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-                gap: 10px;
-            }
-            
-            .profile-btn {
-                width: 40px;
-                height: 40px;
-                font-size: 20px;
-            }
-            
-            .player-stats {
-                gap: 10px;
-            }
-            
-            .stat {
-                padding: 6px 12px;
-            }
-            
-            .stat-value {
-                font-size: 18px;
-            }
-            
-            .stat-label {
-                font-size: 10px;
-            }
-            
-            .location-badge {
-                padding: 8px 15px;
-                font-size: 14px;
-                text-align: center;
-                margin-bottom: 10px;
-            }
-            
-            .save-load-buttons {
-                gap: 8px;
-            }
-            
-            .save-btn, .load-btn, .menu-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-            
-            .inventory-panel,
-            .equipment-panel {
-                padding: 15px;
-            }
-            
-            .panel-title {
-                font-size: 16px;
-            }
-            
-            .inventory-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 8px;
-            }
-            
-            .inventory-slot {
-                font-size: 10px;
-                padding: 8px;
-            }
-            
-            .inventory-slot .item-name {
-                font-size: 9px;
-            }
-            
-            .inventory-slot .item-quantity {
-                width: 16px;
-                height: 16px;
-                font-size: 9px;
-            }
-            
-            .equipment-slots {
-                gap: 8px;
-            }
-            
-            .equipment-slot {
-                width: 70px;
-                height: 70px;
-                font-size: 9px;
-            }
-            
-            .equipment-slot .slot-label {
-                font-size: 7px;
-                white-space: nowrap;
-                top: -10px;
-            }
-            
-            .equipment-slot .item-name {
-                font-size: 9px;
-            }
-            
-            .game-panel {
-                padding: 15px;
-            }
-            
-            .location-title {
-                font-size: 20px;
-                margin-bottom: 15px;
-            }
-            
-            .location-description {
-                font-size: 14px;
-                margin-bottom: 20px;
-            }
-            
-            .action-buttons {
-                grid-template-columns: 1fr;
-                gap: 8px;
-            }
-            
-            .action-btn {
-                padding: 12px;
-                font-size: 14px;
-            }
-            
-            .combat-log {
-                max-height: 150px;
-                font-size: 12px;
-            }
-            
-            .log-entry {
-                font-size: 12px;
-                padding: 6px;
-            }
-            
-            .modal-content {
-                padding: 20px;
-                max-width: 95%;
-            }
-            
-            .modal-title {
-                font-size: 22px;
-            }
-            
-            .race-selector {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .race-card {
-                padding: 12px;
-            }
-            
-            .race-name {
-                font-size: 18px;
-            }
-            
-            .race-stats {
-                font-size: 12px;
-            }
-            
-            .gender-selector {
-                flex-direction: column;
-                gap: 10px;
-                align-items: stretch;
-            }
-            
-            .gender-option {
-                text-align: center;
-                padding: 10px;
-            }
-            
-            .profile-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .profile-avatar {
-                width: 80px;
-                height: 80px;
-                font-size: 40px;
-                margin: 0 auto;
-            }
-            
-            .profile-name {
-                font-size: 24px;
-            }
-            
-            .profile-stats {
-                justify-content: center;
-            }
-            
-            .title-content {
-                padding: 30px 20px;
-                max-width: 95%;
-            }
-            
-            .title-content h1 {
-                font-size: 32px;
-            }
-            
-            .title-content h2 {
-                font-size: 18px;
-                margin-bottom: 30px;
-            }
-            
-            .title-btn {
-                padding: 15px;
-                font-size: 18px;
-            }
-            
-            .chest-container .inventory-grid {
-                grid-template-columns: repeat(3, 1fr) !important;
-            }
-            
-            .trash-bin {
-                font-size: 12px;
-                padding: 8px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .game-container {
-                padding: 8px;
-            }
-            
-            .game-title {
-                font-size: 1.2em;
-            }
-            
-            .profile-btn {
-                width: 35px;
-                height: 35px;
-                font-size: 18px;
-            }
-            
-            .player-stats {
-                gap: 6px;
-            }
-            
-            .stat {
-                padding: 4px 8px;
-            }
-            
-            .stat-value {
-                font-size: 14px;
-            }
-            
-            .stat-label {
-                font-size: 8px;
-            }
-            
-            .location-badge {
-                font-size: 12px;
-                padding: 6px 12px;
-            }
-            
-            .inventory-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 6px;
-            }
-            
-            .inventory-slot {
-                min-height: 60px;
-                font-size: 9px;
-                padding: 5px;
-            }
-            
-            .equipment-slot {
-                width: 60px;
-                height: 60px;
-            }
-            
-            .location-title {
-                font-size: 18px;
-            }
-            
-            .location-description {
-                font-size: 12px;
-            }
-            
-            .action-btn {
-                padding: 10px;
-                font-size: 12px;
-            }
-            
-            .title-content h1 {
-                font-size: 24px;
-            }
-            
-            .title-content h2 {
-                font-size: 14px;
-            }
-            
-            .title-btn {
-                padding: 12px;
-                font-size: 16px;
-            }
-        }
-        
-        @media (max-width: 768px) and (orientation: landscape) {
-            .main-layout {
-                display: block;
-            }
-            
-            .inventory-panel,
-            .equipment-panel {
-                margin-bottom: 15px;
-            }
-            
-            .inventory-grid {
-                grid-template-columns: repeat(6, 1fr);
-            }
-            
-            .equipment-slots {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-            }
-            
-            .equipment-row {
-                flex-direction: column;
-            }
-            
-            .game-header {
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-            
-            .player-stats {
-                flex-wrap: wrap;
-            }
-            
-            .combat-log {
-                max-height: 100px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            button, 
-            .inventory-slot,
-            .equipment-slot,
-            .race-card,
-            .gender-option {
-                cursor: pointer;
-                -webkit-tap-highlight-color: transparent;
-            }
-            
-            .action-btn:active {
-                transform: scale(0.98);
-            }
-            
-            .inventory-slot:active {
-                transform: scale(0.95);
-            }
-            
-            .combat-log {
-                -webkit-overflow-scrolling: touch;
-            }
-            
-            .modal-content {
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-
-        .time-indicator {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 15px;
-            border-radius: 25px;
-            border: 1px solid #ffd700;
-        }
-        
-        .time-icon {
-            font-size: 20px;
-        }
-        
-        .time-text {
-            font-weight: bold;
-            color: #ffd700;
-        }
-        
-        /* Sleep Modal */
-        .sleep-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        
-        .sleep-modal.active {
-            display: flex;
-        }
-        
-        .sleep-content {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            border: 3px solid #ffd700;
-            border-radius: 30px;
-            padding: 40px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            animation: pulseGlow 2s infinite;
-        }
-        
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
-        }
-        
-        .sleep-content h2 {
-            color: #ffd700;
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-        
-        .sleep-content .sleep-icon {
-            font-size: 80px;
-            margin: 20px 0;
-            animation: sleepZzz 1.5s ease-in-out infinite;
-        }
-        
-        @keyframes sleepZzz {
-            0%, 100% { transform: translateY(0px); opacity: 1; }
-            50% { transform: translateY(-10px); opacity: 0.7; }
-        }
-        
-        .sleep-content .timer-text {
-            font-size: 48px;
-            color: #ffd700;
-            font-weight: bold;
-            margin: 20px 0;
-            font-family: monospace;
-        }
-        
-        .sleep-content .sleep-message {
-            color: #fff;
-            margin-bottom: 20px;
-            font-size: 16px;
-        }
-        
-        .wake-btn {
-            padding: 15px 40px;
-            background: linear-gradient(45deg, #ffa500, #ff8c00);
-            border: none;
-            border-radius: 50px;
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 20px;
-        }
-        
-        .wake-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px #ffa500;
-        }
-        
-        /* Status effect for low mana warning */
-        .stat.low-mana {
-            animation: warningPulse 1s ease-in-out infinite;
-            border: 1px solid #ff4444;
-        }
-        
-        @keyframes warningPulse {
-            0%, 100% { background: rgba(255, 68, 68, 0.1); }
-            50% { background: rgba(255, 68, 68, 0.3); }
-        }
-        
-        /* Adicione no final do <style> */
-        .swal-dark {
-            border: 2px solid #ffd700 !important;
-            border-radius: 20px !important;
-        }
-        
-        .swal-dark .swal2-title {
-            color: #ffd700 !important;
-        }
-        
-        .swal-dark .swal2-html-container {
-            color: #fff !important;
-        }
-        
-        .swal-dark .swal2-confirm {
-            background: #ffd700 !important;
-            color: #1a1a2e !important;
-            font-weight: bold !important;
-        }
-        
-        .swal-dark .swal2-cancel {
-            background: #ff4444 !important;
-        }
-
-        /* Profile exp bar */
-        #profile-exp-section {
-            background: rgba(0, 0, 0, 0.5);
-            border-left: 3px solid #ffd700;
-        }
-
-        #exp-progress-bar {
-            transition: width 0.5s ease-out;
-        }
-
-        /* Responsividade para telas pequenas */
-        @media (max-width: 768px) {
-            .profile-stats {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .profile-stat {
-                min-width: 70px;
-            }
-        }
-    </style>
+            * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+            body { background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; color: #fff; }
+            .game-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+            .game-header { background: rgba(0, 0, 0, 0.5); border-radius: 15px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 215, 0, 0.3); backdrop-filter: blur(10px); }
+            .game-title { font-size: 2em; color: #ffd700; }
+            .player-info { display: flex; gap: 20px; align-items: center; }
+            .player-stats { display: flex; gap: 30px; }
+            .stat { background: rgba(255, 255, 255, 0.1); padding: 10px 20px; border-radius: 10px; text-align: center; }
+            .stat-value { font-size: 24px; font-weight: bold; color: #ffd700; }
+            .stat-label { font-size: 12px; color: #888; }
+            .location-badge { background: #4a90e2; padding: 10px 20px; border-radius: 10px; font-weight: bold; }
+            .profile-btn { background: #9370db; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+            .profile-btn:hover { transform: scale(1.1); box-shadow: 0 0 20px #9370db; }
+            .main-layout { display: grid; grid-template-columns: 300px 1fr 300px; gap: 20px; }
+            .inventory-panel, .equipment-panel { background: rgba(0, 0, 0, 0.7); border-radius: 15px; padding: 20px; border: 1px solid #ffd700; backdrop-filter: blur(10px); }
+            .panel-title { color: #ffd700; margin-bottom: 15px; font-size: 18px; text-align: center; border-bottom: 1px solid #ffd700; padding-bottom: 5px; }
+            .inventory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+            .inventory-slot { aspect-ratio: 1; background: rgba(255, 255, 255, 0.05); border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 5px; position: relative; cursor: pointer; transition: all 0.3s; font-size: 12px; text-align: center; -webkit-tap-highlight-color: transparent; }
+            .inventory-slot:hover { border-color: #ffd700; transform: scale(1.05); }
+            .inventory-slot.has-item { background: rgba(255, 215, 0, 0.1); border-color: #ffd700; }
+            .inventory-slot .item-name { font-weight: bold; color: #ffd700; font-size: 10px; }
+            .inventory-slot .item-quantity { position: absolute; bottom: 2px; right: 2px; background: #ffd700; color: #1a1a2e; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+            .inventory-slot.disabled { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+            .inventory-slot.dragging { opacity: 0.5; transform: scale(0.95); transition: all 0.2s; }
+            .inventory-slot.drag-over { border-color: #ffd700; background: rgba(255, 215, 0, 0.2); transform: scale(1.02); }
+            .inventory-slot.touch-waiting { background: rgba(255, 215, 0, 0.3); transform: scale(0.98); transition: all 0.1s; border-color: #ffd700; }
+            .trash-bin { margin-top: 10px; padding: 10px; background: rgba(255, 68, 68, 0.2); border: 2px dashed #ff4444; border-radius: 8px; text-align: center; cursor: pointer; transition: all 0.3s; }
+            .trash-bin:hover { background: rgba(255, 68, 68, 0.3); border-color: #ff0000; }
+            .trash-bin.drag-over { background: rgba(255, 68, 68, 0.5); border-color: #ff0000; transform: scale(1.05); }
+            .trash-bin.drag-over-mobile { background: rgba(255, 68, 68, 0.5); border-color: #ff0000; transform: scale(1.05); }
+            .trash-bin.disabled { opacity: 0.3; pointer-events: none; }
+            .equipment-slots { display: flex; flex-direction: column; gap: 10px; }
+            .equipment-row { display: flex; gap: 10px; justify-content: center; }
+            .equipment-slot { width: 80px; height: 80px; background: rgba(255, 255, 255, 0.05); border: 2px solid #444; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 5px; position: relative; font-size: 10px; text-align: center; }
+            .equipment-slot.has-item { background: rgba(76, 175, 80, 0.1); border-color: #4CAF50; }
+            .equipment-slot .slot-label { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); background: #333; padding: 2px 6px; border-radius: 10px; font-size: 8px; white-space: nowrap; }
+            .equipment-slot .item-name { font-weight: bold; color: #4CAF50; font-size: 10px; }
+            .equipment-slot.disabled { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+            .game-panel { background: rgba(0, 0, 0, 0.5); border-radius: 15px; padding: 20px; border: 1px solid #ffd700; backdrop-filter: blur(10px); }
+            .location-title { color: #ffd700; font-size: 24px; margin-bottom: 20px; text-align: center; }
+            .location-description { color: #fff; margin-bottom: 30px; line-height: 1.6; text-align: center; }
+            .action-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 30px; }
+            .action-btn { padding: 15px; background: linear-gradient(45deg, #4a90e2, #357abd); border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+            .action-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4); }
+            .action-btn:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); }
+            .action-btn.danger { background: linear-gradient(45deg, #ff4444, #cc0000); }
+            .action-btn.success { background: linear-gradient(45deg, #4CAF50, #45a049); }
+            .action-btn.warning { background: linear-gradient(45deg, #ffa500, #ff8c00); }
+            .combat-log { background: rgba(0, 0, 0, 0.3); border-radius: 10px; padding: 15px; max-height: 200px; overflow-y: auto; }
+            .log-entry { padding: 5px; border-bottom: 1px solid rgba(255, 215, 0, 0.2); font-size: 14px; }
+            .log-entry:last-child { border-bottom: none; }
+            .title-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0a0a1a, #1a1a3a); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+            .title-content { text-align: center; padding: 40px; background: rgba(0, 0, 0, 0.7); border: 3px solid #ffd700; border-radius: 30px; backdrop-filter: blur(10px); max-width: 500px; width: 90%; }
+            .title-content h1 { color: #ffd700; font-size: 48px; margin-bottom: 20px; text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            .title-content h2 { color: #fff; font-size: 24px; margin-bottom: 40px; opacity: 0.8; }
+            .title-buttons { display: flex; flex-direction: column; gap: 15px; }
+            .title-btn { padding: 20px; font-size: 24px; font-weight: bold; border: none; border-radius: 15px; cursor: pointer; transition: all 0.3s; background: linear-gradient(45deg, #4a90e2, #357abd); color: white; }
+            .title-btn:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 0 30px #4a90e2; }
+            .title-btn.continue { background: linear-gradient(45deg, #4CAF50, #45a049); }
+            .title-btn.continue:hover:not(:disabled) { box-shadow: 0 0 30px #4CAF50; }
+            .title-btn.load { background: linear-gradient(45deg, #9370db, #7b5fb0); }
+            .title-btn.load:hover:not(:disabled) { box-shadow: 0 0 30px #9370db; }
+            .title-btn:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(100%); }
+            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 1000; justify-content: center; align-items: center; }
+            .modal.active { display: flex; }
+            .modal-content { background: #1a1a2e; border: 2px solid #ffd700; border-radius: 20px; padding: 40px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto; }
+            .modal-title { color: #ffd700; font-size: 28px; margin-bottom: 30px; text-align: center; }
+            .race-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px; }
+            .race-card { background: rgba(255, 255, 255, 0.05); border: 2px solid #444; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.3s; text-align: center; }
+            .race-card:hover { border-color: #ffd700; transform: translateY(-5px); }
+            .race-card.selected { border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+            .race-name { color: #ffd700; font-size: 20px; margin-bottom: 10px; }
+            .race-stats { color: #fff; font-size: 14px; }
+            .input-group { margin-bottom: 20px; }
+            .input-group label { display: block; color: #ffd700; margin-bottom: 5px; }
+            .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid #ffd700; border-radius: 5px; color: #fff; }
+            .input-group textarea { min-height: 100px; resize: vertical; }
+            .input-group input:disabled, .input-group textarea:disabled { opacity: 0.5; }
+            .gender-selector { display: flex; gap: 20px; justify-content: center; }
+            .gender-option { padding: 10px 30px; background: rgba(255, 255, 255, 0.05); border: 2px solid #444; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+            .gender-option.selected { border-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+            .food-item { background: rgba(76, 175, 80, 0.2); border-color: #4CAF50 !important; }
+            .save-load-buttons { display: flex; gap: 10px; margin-top: 20px; }
+            .save-btn, .load-btn, .menu-btn { padding: 10px 20px; background: #4a90e2; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+            .save-btn:hover:not(:disabled), .load-btn:hover:not(:disabled), .menu-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4); }
+            .save-btn:disabled, .load-btn:disabled, .menu-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+            .menu-btn { background: #ffa500; }
+            .menu-btn:hover:not(:disabled) { box-shadow: 0 5px 15px #ffa500; }
+            .death-screen { text-align: center; padding: 50px; }
+            .death-screen h2 { color: #ff4444; font-size: 48px; margin-bottom: 20px; }
+            .death-screen p { color: #fff; font-size: 18px; margin-bottom: 30px; }
+            .death-screen .warning { color: #ff4444; font-size: 14px; margin-top: 20px; }
+            .restart-btn { padding: 15px 40px; background: #ffd700; color: #1a1a2e; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+            .restart-btn:hover { transform: scale(1.1); box-shadow: 0 0 30px #ffd700; }
+            .death-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); z-index: 999; display: none; justify-content: center; align-items: center; pointer-events: none; }
+            .death-overlay.active { display: flex; pointer-events: all; }
+            .death-message { background: #1a1a2e; border: 3px solid #ff4444; border-radius: 20px; padding: 50px; text-align: center; max-width: 600px; }
+            .death-message h1 { color: #ff4444; font-size: 64px; margin-bottom: 20px; }
+            .death-message p { color: #fff; font-size: 18px; margin-bottom: 30px; }
+            .profile-header { display: flex; align-items: center; gap: 30px; margin-bottom: 30px; }
+            .profile-avatar { width: 100px; height: 100px; background: rgba(255, 215, 0, 0.2); border: 3px solid #ffd700; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+            .profile-info { flex: 1; }
+            .profile-name { font-size: 32px; color: #ffd700; margin-bottom: 5px; }
+            .profile-race { color: #888; margin-bottom: 10px; }
+            .profile-stats { display: flex; gap: 20px; }
+            .profile-stat { text-align: center; }
+            .profile-stat-value { font-size: 20px; color: #ffd700; }
+            .profile-stat-label { font-size: 12px; color: #888; }
+            .profile-bio { background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+            .profile-bio h3 { color: #ffd700; margin-bottom: 10px; }
+            .profile-bio p { color: #fff; line-height: 1.6; }
+            .edit-profile-btn { width: 100%; padding: 15px; background: #9370db; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; }
+            .edit-profile-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px #9370db; }
+            .tooltip { position: relative; display: inline-block; }
+            .tooltip .tooltiptext { visibility: hidden; width: 200px; background-color: rgba(0, 0, 0, 0.9); color: #fff; text-align: center; padding: 10px; border-radius: 8px; border: 1px solid #ffd700; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; font-size: 12px; }
+            .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+            @media (max-width: 1024px) { .main-layout { grid-template-columns: 1fr; gap: 15px; } .inventory-panel, .equipment-panel { order: 2; } .game-panel { order: 1; } .game-header { flex-direction: column; gap: 15px; } .player-info { flex-direction: column; width: 100%; } .player-stats { flex-wrap: wrap; justify-content: center; } .save-load-buttons { width: 100%; justify-content: center; } }
+            @media (max-width: 768px) { .game-container { padding: 10px; } .game-header { padding: 15px; border-radius: 12px; } .game-title { font-size: 1.5em; text-align: center; display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; } .profile-btn { width: 40px; height: 40px; font-size: 20px; } .player-stats { gap: 10px; } .stat { padding: 6px 12px; } .stat-value { font-size: 18px; } .stat-label { font-size: 10px; } .location-badge { padding: 8px 15px; font-size: 14px; text-align: center; margin-bottom: 10px; } .save-load-buttons { gap: 8px; } .save-btn, .load-btn, .menu-btn { padding: 8px 12px; font-size: 12px; } .inventory-panel, .equipment-panel { padding: 15px; } .panel-title { font-size: 16px; } .inventory-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } .inventory-slot { font-size: 10px; padding: 8px; } .inventory-slot .item-name { font-size: 9px; } .inventory-slot .item-quantity { width: 16px; height: 16px; font-size: 9px; } .equipment-slots { gap: 8px; } .equipment-slot { width: 70px; height: 70px; font-size: 9px; } .equipment-slot .slot-label { font-size: 7px; white-space: nowrap; top: -10px; } .equipment-slot .item-name { font-size: 9px; } .game-panel { padding: 15px; } .location-title { font-size: 20px; margin-bottom: 15px; } .location-description { font-size: 14px; margin-bottom: 20px; } .action-buttons { grid-template-columns: 1fr; gap: 8px; } .action-btn { padding: 12px; font-size: 14px; } .combat-log { max-height: 150px; font-size: 12px; } .log-entry { font-size: 12px; padding: 6px; } .modal-content { padding: 20px; max-width: 95%; } .modal-title { font-size: 22px; } .race-selector { grid-template-columns: 1fr; gap: 10px; } .race-card { padding: 12px; } .race-name { font-size: 18px; } .race-stats { font-size: 12px; } .gender-selector { flex-direction: column; gap: 10px; align-items: stretch; } .gender-option { text-align: center; padding: 10px; } .profile-header { flex-direction: column; text-align: center; gap: 15px; } .profile-avatar { width: 80px; height: 80px; font-size: 40px; margin: 0 auto; } .profile-name { font-size: 24px; } .profile-stats { justify-content: center; } .title-content { padding: 30px 20px; max-width: 95%; } .title-content h1 { font-size: 32px; } .title-content h2 { font-size: 18px; margin-bottom: 30px; } .title-btn { padding: 15px; font-size: 18px; } .chest-container .inventory-grid { grid-template-columns: repeat(3, 1fr) !important; } .trash-bin { font-size: 12px; padding: 8px; } }
+            @media (max-width: 480px) { .game-container { padding: 8px; } .game-title { font-size: 1.2em; } .profile-btn { width: 35px; height: 35px; font-size: 18px; } .player-stats { gap: 6px; } .stat { padding: 4px 8px; } .stat-value { font-size: 14px; } .stat-label { font-size: 8px; } .location-badge { font-size: 12px; padding: 6px 12px; } .inventory-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; } .inventory-slot { min-height: 60px; font-size: 9px; padding: 5px; } .equipment-slot { width: 60px; height: 60px; } .location-title { font-size: 18px; } .location-description { font-size: 12px; } .action-btn { padding: 10px; font-size: 12px; } .title-content h1 { font-size: 24px; } .title-content h2 { font-size: 14px; } .title-btn { padding: 12px; font-size: 16px; } }
+            @media (max-width: 768px) and (orientation: landscape) { .main-layout { display: block; } .inventory-panel, .equipment-panel { margin-bottom: 15px; } .inventory-grid { grid-template-columns: repeat(6, 1fr); } .equipment-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; } .equipment-row { flex-direction: column; } .game-header { flex-direction: row; flex-wrap: wrap; } .player-stats { flex-wrap: wrap; } .combat-log { max-height: 100px; } }
+            @media (max-width: 768px) { button, .inventory-slot, .equipment-slot, .race-card, .gender-option { cursor: pointer; -webkit-tap-highlight-color: transparent; } .action-btn:active { transform: scale(0.98); } .inventory-slot:active { transform: scale(0.95); } .combat-log { -webkit-overflow-scrolling: touch; } .modal-content { -webkit-overflow-scrolling: touch; } }
+            .time-indicator { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.6); padding: 8px 15px; border-radius: 25px; border: 1px solid #ffd700; }
+            .time-icon { font-size: 20px; }
+            .time-text { font-weight: bold; color: #ffd700; }
+            .sleep-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.95); z-index: 2000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+            .sleep-modal.active { display: flex; }
+            .sleep-content { background: linear-gradient(135deg, #1a1a2e, #16213e); border: 3px solid #ffd700; border-radius: 30px; padding: 40px; text-align: center; max-width: 400px; width: 90%; animation: pulseGlow 2s infinite; }
+            @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); } 50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); } }
+            .sleep-content h2 { color: #ffd700; font-size: 32px; margin-bottom: 20px; }
+            .sleep-content .sleep-icon { font-size: 80px; margin: 20px 0; animation: sleepZzz 1.5s ease-in-out infinite; }
+            @keyframes sleepZzz { 0%, 100% { transform: translateY(0px); opacity: 1; } 50% { transform: translateY(-10px); opacity: 0.7; } }
+            .sleep-content .timer-text { font-size: 48px; color: #ffd700; font-weight: bold; margin: 20px 0; font-family: monospace; }
+            .sleep-content .sleep-message { color: #fff; margin-bottom: 20px; font-size: 16px; }
+            .wake-btn { padding: 15px 40px; background: linear-gradient(45deg, #ffa500, #ff8c00); border: none; border-radius: 50px; color: white; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; margin-top: 20px; }
+            .wake-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px #ffa500; }
+            .stat.low-mana { animation: warningPulse 1s ease-in-out infinite; border: 1px solid #ff4444; }
+            @keyframes warningPulse { 0%, 100% { background: rgba(255, 68, 68, 0.1); } 50% { background: rgba(255, 68, 68, 0.3); } }
+            .swal-dark { border: 2px solid #ffd700 !important; border-radius: 20px !important; }
+            .swal-dark .swal2-title { color: #ffd700 !important; }
+            .swal-dark .swal2-html-container { color: #fff !important; }
+            .swal-dark .swal2-confirm { background: #ffd700 !important; color: #1a1a2e !important; font-weight: bold !important; }
+            .swal-dark .swal2-cancel { background: #ff4444 !important; }
+            #profile-exp-section { background: rgba(0, 0, 0, 0.5); border-left: 3px solid #ffd700; }
+            #exp-progress-bar { transition: width 0.5s ease-out; }
+            @media (max-width: 768px) { .profile-stats { flex-wrap: wrap; gap: 10px; } .profile-stat { min-width: 70px; } }
+        </style>
 </head>
 <body>
     <!-- Title Screen -->
