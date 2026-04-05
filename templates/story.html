@@ -4245,7 +4245,7 @@
                 
                 // Chance de encontrar itens na floresta
                 if (Math.random() < 0.3) {
-                    const finds = ['raw_meat'];
+                    const finds = ['apple', 'bread'];
                     const find = finds[Math.floor(Math.random() * finds.length)];
                     addItemToInventory(find);
                     addLog(`🍄 Você encontrou ${ITEMS[find].name} abandonado perto de uma árvore caída!`);
