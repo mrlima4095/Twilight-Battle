@@ -567,8 +567,8 @@
             leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
             wood: { name: 'Madeira', type: 'material', value: 2, description: 'Madeira comum.', consumable: true },
-            
-            string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' }
+            wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
+            string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
             tecido: { name: 'Tecido Colorido', type: 'material', value: 25, description: 'Tecido fino para confecção', consumable: false },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
@@ -845,7 +845,13 @@
             },
             strin: {
                 name: '🧵 Linha',
-                description: 'Linha para cozer'
+                description: 'Linha para cozer',
+                materials: [
+                    { id: 'wool', quantity: 1 },
+                ],
+                result: 'string',
+                quantity: 2,
+                station: 'loom'
             }
         };
 
