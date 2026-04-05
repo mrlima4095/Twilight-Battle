@@ -2816,6 +2816,23 @@
             
             addLog('😴 Você foi dormir...');
         }
+        function startSleepInBag() {
+            if (gameState.isDead || gameState.isSleeping) return;
+            
+            // Verificar se pode dormir
+            if (!canSleep()) {
+                if (gameState.timeOfDay === 'day') {
+                    addLog('⚠️ Você não está cansado o suficiente para dormir! Sua mana está acima de 50%.');
+                }
+                return;
+            }
+            
+            // Fechar a estação
+            closeStation();
+            
+            // Chamar a função de dormir normal
+            startSleep();
+        }
 
         function wakeUp() {
             if (!gameState.isSleeping) return;
