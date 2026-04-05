@@ -552,9 +552,13 @@
             
             // Tools
             clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
-            
+            compass: { name: 'Bússola', type: 'tool', consumable: false, description: 'Indica a direção norte.' },
+            lantern: { name: 'Lanterna', type: 'tool', consumable: false, description: 'Ilumina lugares escuros.', durability: 200, maxDurability: 200 },
+    
             // Station
             crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
+            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', value: 150, description: 'Para reparar e melhorar equipamentos.', consumable: false },
+            alchemy_table: { name: 'Mesa de Alquimia', type: 'station', stationType: 'alchemy', value: 200, description: 'Permite criar poções e elixires.', consumable: false },
             
             loom: { name: 'Tear', type: 'station', stationType: 'loom', description: 'Para tecer tecidos e roupas.', consumable: false },
 
