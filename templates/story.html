@@ -758,7 +758,7 @@
                 allowsStations: true,
                 actions: [
                     { name: '💧 Mergulhar no Lago Sagrado', action: 'enterSacredLake' },
-                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailNorth' }
+                    { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
                 ]
             },
             sacred_lake_interior: {
@@ -789,7 +789,7 @@
             },
             
             outside: {
-                name: '🌅 Planície da Aurora',
+                name: 'Planície da Aurora',
                 description: `Uma vasta planície banhada pela luz d${gameState.timeOfDay === 'day' ? 'o amanhecer': 'a lua'}. A grama balança suavemente com o vento. Ao norte, uma floresta densa e escura; ao sul, uma estrada comercial bem cuidada; ao leste, a planície se estende até onde a vista alcança.`,
                 allowsStations: true,
                 actions: [
@@ -800,7 +800,7 @@
                 ]
             },
             dark_forest: {
-                name: '🌲 Floresta Sombria',
+                name: 'Floresta Sombria',
                 description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
                 actions: [
                     { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
@@ -809,7 +809,7 @@
             },
             
             south_trade_route: {
-                name: '🛤️ Estrada Comercial Sul',
+                name: ' Estrada Comercial Sul',
                 description: 'Uma estrada de terra bem compactada, ladeada por arbustos e árvores esparsas. Você vê carroças de comerciantes passando ocasionalmente. Esta rota leva às prósperas aldeias do sul do reino.',
                 allowsStations: true,
                 actions: [
@@ -817,9 +817,8 @@
                     { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
                 ]
             },
-            
             east_plains: {
-                name: '🌾 Planície Leste',
+                name: 'Planície Leste',
                 description: 'A planície se estende infinitamente à sua frente. O vento sopra forte por aqui, e você pode ver rebanhos de animais selvagens ao longe. O caminho parece continuar por muito tempo.',
                 allowsStations: true,
                 actions: [
@@ -827,9 +826,8 @@
                     { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
                 ]
             },
-        
             south_villages: {
-                name: '🏘️ Aldeias do Sul',
+                name: 'Aldeias do Sul',
                 description: 'Você chega a uma região com pequenas aldeias comerciais. Mercadores viajam entre elas levando mercadorias para todo o reino. O local é pacífico e próspero.',
                 allowsStations: true,
                 actions: [
