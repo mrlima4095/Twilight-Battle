@@ -2351,11 +2351,6 @@
             // Fechar estação se estiver aberta
             if (gameState.activeStation && gameState.activeStation.id === stationId) {
                 gameState.activeStation = null;
-                // Limpar o timer da fornalha se estiver rodando
-                if (window.furnaceInterval) {
-                    clearInterval(window.furnaceInterval);
-                    window.furnaceInterval = null;
-                }
             }
             
             addLog(`📦 Você recolheu ${station.name} para o inventário.`);
