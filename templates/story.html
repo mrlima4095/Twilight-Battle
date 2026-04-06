@@ -2625,17 +2625,19 @@
 
 // ========== FORNALHA (FURNACE) FUNCTIONS ==========
 
-let furnaceInputSelectionCallback = null;
-let furnaceFuelSelectionCallback = null;
-
-// Timer global da fornalha (independente de estar aberta ou não)
 let furnaceGlobalInterval = null;
 
-// Iniciar o timer global da fornalha (chamar uma vez no início do jogo)
+// Iniciar o timer global da fornalha
 function startFurnaceGlobalTimer() {
     if (furnaceGlobalInterval) return;
     
     furnaceGlobalInterval = setInterval(() => {
+        // Garantir que furnaceJobs existe
+        if (!gameState.furnaceJobs) {
+            gameState.furnaceJobs = {};
+            return;
+        }
+        
         // Verificar todas as fornalhas com jobs ativos
         for (const furnaceId in gameState.furnaceJobs) {
             const job = gameState.furnaceJobs[furnaceId];
@@ -2666,13 +2668,31 @@ function startFurnaceGlobalTimer() {
     }, 1000);
 }
 
+function getFurnaceJob() {
+    // Garantir que furnaceJobs existe
+    if (!gameState.furnaceJobs) {
+        gameState.furnaceJobs = {};
+    }
+    
+    if (!gameState.activeStation) return null;
+    
+    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
+    
+    if (!gameState.furnaceJobs[furnaceId]) {
+        gameState.furnaceJobs[furnaceId] = {};
+    }
+    
+    return gameState.furnaceJobs[furnaceId];
+}
+
 function openFurnaceInputSelector() {
     if (gameState.isDead) return;
     
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
-    if (currentJob && currentJob.isCooking) {
+    if (!currentJob) return;
+    
+    if (currentJob.isCooking) {
         addLog('❌ A fornalha está funcionando no momento! Aguarde terminar.');
         return;
     }
@@ -2724,21 +2744,18 @@ function openFurnaceInputSelector() {
         const item = gameState.inventory[index];
         if (!item) return;
         
-        const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
+        const currentJobLocal = getFurnaceJob();
+        if (!currentJobLocal) return;
         
-        if (!gameState.furnaceJobs[furnaceId]) {
-            gameState.furnaceJobs[furnaceId] = {};
-        }
-        
-        gameState.furnaceJobs[furnaceId].inputItem = {
+        currentJobLocal.inputItem = {
             id: item.id,
             name: item.name,
             quantity: 1,
             inventoryIndex: index
         };
         
-        gameState.furnaceJobs[furnaceId].isCooking = false;
-        gameState.furnaceJobs[furnaceId].resultItem = null;
+        currentJobLocal.isCooking = false;
+        currentJobLocal.resultItem = null;
         
         Swal.close();
         updateUI();
@@ -2762,10 +2779,11 @@ function openFurnaceInputSelector() {
 function openFurnaceFuelSelector() {
     if (gameState.isDead) return;
     
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
-    if (currentJob && currentJob.isCooking) {
+    if (!currentJob) return;
+    
+    if (currentJob.isCooking) {
         addLog('❌ A fornalha está funcionando no momento! Aguarde terminar.');
         return;
     }
@@ -2816,13 +2834,10 @@ function openFurnaceFuelSelector() {
         const item = gameState.inventory[index];
         if (!item) return;
         
-        const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
+        const currentJobLocal = getFurnaceJob();
+        if (!currentJobLocal) return;
         
-        if (!gameState.furnaceJobs[furnaceId]) {
-            gameState.furnaceJobs[furnaceId] = {};
-        }
-        
-        gameState.furnaceJobs[furnaceId].fuelItem = {
+        currentJobLocal.fuelItem = {
             id: item.id,
             name: item.name,
             burnTime: FUEL_ITEMS[item.id].burnTime,
@@ -2849,8 +2864,7 @@ function openFurnaceFuelSelector() {
 }
 
 function clearFurnaceInput() {
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
     if (currentJob && currentJob.inputItem && !currentJob.isCooking) {
         delete currentJob.inputItem;
@@ -2860,8 +2874,7 @@ function clearFurnaceInput() {
 }
 
 function clearFurnaceFuel() {
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
     if (currentJob && currentJob.fuelItem && !currentJob.isCooking) {
         delete currentJob.fuelItem;
@@ -2873,10 +2886,11 @@ function clearFurnaceFuel() {
 function startFurnaceCooking() {
     if (gameState.isDead) return;
     
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
-    if (!currentJob || !currentJob.inputItem || !currentJob.fuelItem) {
+    if (!currentJob) return;
+    
+    if (!currentJob.inputItem || !currentJob.fuelItem) {
         addLog('❌ Coloque um item para assar e um combustível primeiro!');
         return;
     }
@@ -2938,10 +2952,11 @@ function startFurnaceCooking() {
 function claimFurnaceResult() {
     if (gameState.isDead) return;
     
-    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-    const currentJob = gameState.furnaceJobs[furnaceId];
+    const currentJob = getFurnaceJob();
     
-    if (!currentJob || !currentJob.resultItem) {
+    if (!currentJob) return;
+    
+    if (!currentJob.resultItem) {
         addLog('❌ Não há nenhum item pronto para retirar!');
         return;
     }
@@ -2956,6 +2971,7 @@ function claimFurnaceResult() {
     addLog(`📦 Você retirou ${currentJob.resultItem.name} da fornalha!`);
     
     // Limpar o job
+    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
     delete gameState.furnaceJobs[furnaceId];
     
     updateUI();
@@ -5341,6 +5357,8 @@ function claimFurnaceResult() {
             document.getElementById('game-ui').style.display = 'none';
             
             checkForContinueButton();
+            // Dentro do DOMContentLoaded, após as outras inicializações
+startFurnaceGlobalTimer();
             
             setInterval(() => {
                 if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
