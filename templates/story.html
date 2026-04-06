@@ -2438,10 +2438,10 @@
             // ========== FORNALHA (FURNACE) ==========
             if (station.stationType === 'furnace') {
                 const furnaceId = `${station.location}_${station.id}`;
-                const currentJob = gameState.furnaceJobs[furnaceId];
+                const currentJob = gameState.furnaceJobs?.[furnaceId];
                 
                 return `
-                    <div style="background: rgba(0,0,0,0.8); border-radius: 20px; padding: 25px; border: 2px solid #ffa500; text-align: center;">
+                    <div class="furnace-container">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                             <h2 style="color: #ffa500; margin: 0;">🔥 ${station.name}</h2>
                             <div style="display: flex; gap: 10px;">
@@ -2450,56 +2450,58 @@
                             </div>
                         </div>
                         
-                        <div style="display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 15px; align-items: center; margin: 30px 0;">
-                            <!-- Slot de Entrada (Item para assar) -->
-                            <div style="background: rgba(0,0,0,0.5); border: 2px solid #ffa500; border-radius: 15px; padding: 15px; text-align: center;">
-                                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">📥 ENTRADA</div>
-                                <div id="furnace-input-slot" class="inventory-slot" style="width: 100px; height: 100px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;" onclick="openFurnaceInputSelector()">
-                                    ${currentJob && currentJob.inputItem ? 
-                                        `<span class="item-name" style="font-size: 14px;">${currentJob.inputItem.name}</span>
+                        <div class="furnace-grid">
+                            <!-- Slot de Entrada -->
+                            <div class="furnace-slot">
+                                <div class="furnace-slot-label">📥 ENTRADA</div>
+                                <div class="furnace-slot-content ${!currentJob?.inputItem ? 'empty' : ''}" onclick="openFurnaceInputSelector()">
+                                    ${currentJob?.inputItem ? 
+                                        `<span class="item-name">${currentJob.inputItem.name}</span>
                                          ${currentJob.inputItem.quantity > 1 ? `<span class="item-quantity">${currentJob.inputItem.quantity}</span>` : ''}` :
-                                        `<span style="color: #666; font-size: 12px;">Selecionar Item</span>`
+                                        `<span>Selecionar Item</span>`
                                     }
                                 </div>
-                                ${currentJob && currentJob.inputItem ? 
-                                    `<button class="action-btn" onclick="clearFurnaceInput()" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">🗑️ Remover</button>` : ''
+                                ${currentJob?.inputItem && !currentJob.isCooking ? 
+                                    `<button class="furnace-remove-btn" onclick="clearFurnaceInput()">🗑️ Remover</button>` : ''
                                 }
                             </div>
                             
-                            <div style="font-size: 30px;">➕</div>
+                            <div class="furnace-arrow">➕</div>
                             
                             <!-- Slot de Combustível -->
-                            <div style="background: rgba(0,0,0,0.5); border: 2px solid #ffa500; border-radius: 15px; padding: 15px; text-align: center;">
-                                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">🔥 COMBUSTÍVEL</div>
-                                <div id="furnace-fuel-slot" class="inventory-slot" style="width: 100px; height: 100px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;" onclick="openFurnaceFuelSelector()">
-                                    ${currentJob && currentJob.fuelItem ? 
-                                        `<span class="item-name" style="font-size: 14px;">${currentJob.fuelItem.name}</span>
+                            <div class="furnace-slot">
+                                <div class="furnace-slot-label">🔥 COMBUSTÍVEL</div>
+                                <div class="furnace-slot-content ${!currentJob?.fuelItem ? 'empty' : ''}" onclick="openFurnaceFuelSelector()">
+                                    ${currentJob?.fuelItem ? 
+                                        `<span class="item-name">${currentJob.fuelItem.name}</span>
                                          <span style="font-size: 10px; color: #ffa500;">⏱️ ${currentJob.fuelItem.burnTime}s</span>` :
-                                        `<span style="color: #666; font-size: 12px;">Selecionar Combustível</span>`
+                                        `<span>Selecionar Combustível</span>`
                                     }
                                 </div>
-                                ${currentJob && currentJob.fuelItem ? 
-                                    `<button class="action-btn" onclick="clearFurnaceFuel()" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">🗑️ Remover</button>` : ''
+                                ${currentJob?.fuelItem && !currentJob.isCooking ? 
+                                    `<button class="furnace-remove-btn" onclick="clearFurnaceFuel()">🗑️ Remover</button>` : ''
                                 }
                             </div>
                             
-                            <div style="font-size: 30px;">➡️</div>
+                            <div class="furnace-arrow">➡️</div>
                             
                             <!-- Slot de Resultado -->
-                            <div style="background: rgba(0,0,0,0.5); border: 2px solid #4CAF50; border-radius: 15px; padding: 15px; text-align: center;">
-                                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">✨ RESULTADO</div>
-                                <div id="furnace-result-slot" class="inventory-slot" style="width: 100px; height: 100px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-                                    ${currentJob && currentJob.isCooking ? 
+                            <div class="furnace-result-slot">
+                                <div class="furnace-slot-label">✨ RESULTADO</div>
+                                <div class="furnace-slot-content">
+                                    ${currentJob?.isCooking ? 
                                         `<div style="text-align: center;">
                                             <div style="font-size: 30px; margin-bottom: 10px;">🔥⏳</div>
                                             <div style="font-size: 12px; color: #ffa500;">Assando...</div>
-                                            <div class="progress-bar" style="width: 100%; background: #333; border-radius: 5px; margin-top: 10px; height: 8px;">
-                                                <div style="width: ${((currentJob.totalTime - currentJob.remainingTime) / currentJob.totalTime) * 100}%; background: #ffa500; height: 100%; border-radius: 5px;"></div>
+                                            <div class="progress-bar-container">
+                                                <div class="progress-bar-fill" style="width: ${((currentJob.totalTime - currentJob.remainingTime) / currentJob.totalTime) * 100}%;"></div>
                                             </div>
                                         </div>` :
-                                        (currentJob && currentJob.resultItem ? 
-                                            `<span class="item-name" style="font-size: 14px;">${currentJob.resultItem.name}</span>
-                                             <button class="action-btn success" onclick="claimFurnaceResult()" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">📦 Pegar</button>` :
+                                        (currentJob?.resultItem ? 
+                                            `<div>
+                                                <span class="item-name">${currentJob.resultItem.name}</span>
+                                                <button class="furnace-remove-btn" style="background: #4CAF50; margin-top: 10px;" onclick="claimFurnaceResult()">📦 Pegar</button>
+                                            </div>` :
                                             `<span style="color: #666; font-size: 12px;">Aguardando</span>`
                                         )
                                     }
@@ -2507,7 +2509,7 @@
                             </div>
                         </div>
                         
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px;" class="furnace-recipes">
                             <h4 style="color: #ffd700; margin-bottom: 10px;">📜 Receitas Disponíveis</h4>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
                                 <div style="background: rgba(255,165,0,0.1); padding: 10px; border-radius: 8px;">
@@ -2519,13 +2521,12 @@
                             </div>
                         </div>
                         
-                        <button class="action-btn success" onclick="startFurnaceCooking()" style="margin-top: 20px; padding: 12px 30px;" ${!currentJob || currentJob.isCooking || !currentJob.inputItem || !currentJob.fuelItem ? 'disabled' : ''}>
+                        <button class="furnace-start-btn" onclick="startFurnaceCooking()" ${!currentJob || currentJob.isCooking || !currentJob?.inputItem || !currentJob?.fuelItem ? 'disabled' : ''}>
                             🔥 INICIAR COZIMENTO
                         </button>
                     </div>
                 `;
             }
-            
             // ========== SACO DE DORMIR ==========
             if (station.stationType === 'sleeping_bag') {
                 const canSleepNow = canSleep();
