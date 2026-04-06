@@ -152,6 +152,233 @@
         #profile-exp-section { background: rgba(0, 0, 0, 0.5); border-left: 3px solid #ffd700; }
         #exp-progress-bar { transition: width 0.5s ease-out; }
         @media (max-width: 768px) { .profile-stats { flex-wrap: wrap; gap: 10px; } .profile-stat { min-width: 70px; } }
+/* ========== FORNALHA MOBILE RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .furnace-container {
+        padding: 10px !important;
+    }
+    
+    .furnace-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px !important;
+        margin: 15px 0 !important;
+    }
+    
+    .furnace-slot {
+        width: 100% !important;
+        max-width: 120px !important;
+        margin: 0 auto !important;
+    }
+    
+    .furnace-slot .inventory-slot {
+        width: 100px !important;
+        height: 100px !important;
+        margin: 0 auto !important;
+    }
+    
+    .furnace-arrow {
+        transform: rotate(90deg) !important;
+        margin: 5px auto !important;
+        font-size: 24px !important;
+    }
+    
+    .furnace-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .furnace-buttons button {
+        width: 100% !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+    }
+    
+    .furnace-recipes {
+        font-size: 12px !important;
+        padding: 10px !important;
+    }
+    
+    .furnace-recipes div {
+        font-size: 11px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .furnace-slot .inventory-slot {
+        width: 80px !important;
+        height: 80px !important;
+    }
+    
+    .furnace-slot .inventory-slot .item-name {
+        font-size: 11px !important;
+    }
+    
+    .furnace-slot .inventory-slot button {
+        font-size: 10px !important;
+        padding: 4px 8px !important;
+    }
+    
+    .furnace-recipes {
+        font-size: 10px !important;
+    }
+}
+
+/* Estilos gerais para a fornalha */
+.furnace-container {
+    background: rgba(0,0,0,0.8);
+    border-radius: 20px;
+    padding: 25px;
+    border: 2px solid #ffa500;
+    text-align: center;
+}
+
+.furnace-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    gap: 15px;
+    align-items: center;
+    margin: 30px 0;
+}
+
+.furnace-slot {
+    background: rgba(0,0,0,0.5);
+    border: 2px solid #ffa500;
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+}
+
+.furnace-slot-label {
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.furnace-slot-content {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.furnace-slot-content.empty {
+    color: #666;
+    font-size: 12px;
+}
+
+.furnace-slot-content .item-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.furnace-slot-content .item-quantity {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: #ffd700;
+    color: #1a1a2e;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.furnace-remove-btn {
+    margin-top: 10px;
+    padding: 5px 10px;
+    font-size: 12px;
+    background: #ff4444;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+
+.furnace-arrow {
+    font-size: 30px;
+    color: #ffa500;
+}
+
+.furnace-result-slot {
+    background: rgba(0,0,0,0.5);
+    border: 2px solid #4CAF50;
+    border-radius: 15px;
+    padding: 15px;
+    text-align: center;
+}
+
+.furnace-start-btn {
+    margin-top: 20px;
+    padding: 12px 30px;
+    background: linear-gradient(45deg, #4CAF50, #45a049);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.furnace-start-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+}
+
+.furnace-start-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    filter: grayscale(100%);
+}
+
+.progress-bar-container {
+    width: 100%;
+    background: #333;
+    border-radius: 5px;
+    margin-top: 10px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    background: #ffa500;
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.3s;
+}
+
+/* Landscape mode */
+@media (max-width: 768px) and (orientation: landscape) {
+    .furnace-grid {
+        display: grid !important;
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 8px !important;
+    }
+    
+    .furnace-arrow {
+        transform: none !important;
+        font-size: 20px !important;
+    }
+    
+    .furnace-slot .inventory-slot {
+        width: 70px !important;
+        height: 70px !important;
+    }
+    
+    .furnace-slot .inventory-slot .item-name {
+        font-size: 9px !important;
+    }
+}
     </style>
 </head>
 <body>
