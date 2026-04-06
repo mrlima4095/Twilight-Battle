@@ -2313,7 +2313,6 @@
             gameState.activeStation = null;
             updateUI();
         }
-        
         function collectStation(stationId) {
             if (gameState.isDead) return;
             
@@ -2323,6 +2322,20 @@
             if (!station) {
                 addLog(`❌ Não há ${stationId} montada aqui para recolher.`);
                 return;
+            }
+            
+            // Se for uma fornalha e tiver job ativo, não pode recolher
+            if (station.stationType === 'furnace') {
+                const furnaceId = `${currentLocation}_${stationId}`;
+                const currentJob = gameState.furnaceJobs[furnaceId];
+                
+                if (currentJob && (currentJob.isCooking || currentJob.resultItem || currentJob.inputItem || currentJob.fuelItem)) {
+                    addLog(`❌ Não é possível recolher a fornalha enquanto ela tiver itens dentro!`);
+                    return;
+                }
+                
+                // Limpar possíveis jobs residuais
+                delete gameState.furnaceJobs[furnaceId];
             }
             
             // Adicionar de volta ao inventário
@@ -2339,12 +2352,17 @@
             // Fechar estação se estiver aberta
             if (gameState.activeStation && gameState.activeStation.id === stationId) {
                 gameState.activeStation = null;
+                // Limpar o timer da fornalha se estiver rodando
+                if (window.furnaceInterval) {
+                    clearInterval(window.furnaceInterval);
+                    window.furnaceInterval = null;
+                }
             }
             
             addLog(`📦 Você recolheu ${station.name} para o inventário.`);
             updateUI();
         }
-        
+
         function craftItem(recipeId) {
             if (gameState.isDead) return;
             if (!gameState.activeStation) {
