@@ -471,6 +471,7 @@
             remainingCycleTime: null, // Para quando dormir
             placedStations: {},  // NOVO: { locationId: { stationId: stationData } }
             activeStation: null,  // NOVO: estação atualmente aberte
+            furnaceJobs: {}, // { locationId_stationId: { inputItem, fuelItem, remainingTime, totalTime, resultItem, inputSlot, fuelSlot } }
         };
         
         // Race definitions
@@ -583,6 +584,11 @@
             shirt: { name: 'Camisa', type: 'armor', slot: 'chest', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Uma camisa para seu corpo' },
             pants: { name: 'Calças', type: 'armor', slot: 'pants', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calças para suas pernas' },
             boots: { name: 'Botas', type: 'armor', slot: 'boots', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calçado para seus pés' }
+        };
+        const FUEL_ITEMS = {
+            wood: { name: 'Madeira', burnTime: 8, value: 5 },
+            paper: { name: 'Papel', burnTime: 4, value: 1 },
+            coal: { name: 'Carvão', burnTime: 20, value: 15 }
         };
 
         // Locations expandidas
@@ -907,12 +913,7 @@
             }
         };
 
-        const FUEL_ITEMS = {
-            wood: { name: 'Madeira', burnTime: 8, value: 5 },      // 8 segundos
-            paper: { name: 'Papel', burnTime: 4, value: 1 },       // 4 segundos
-            coal: { name: 'Carvão', burnTime: 20, value: 15 },     // 20 segundos
-            raw_meat: { name: 'Carne Crua', burnTime: 0, value: 0 } // Não é combustível
-        };
+        
 
         // Monsters
         const CREATURES = {
