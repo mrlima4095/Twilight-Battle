@@ -226,58 +226,13 @@
 }
 
 /* Estilos gerais para a fornalha */
-.furnace-container {
-    background: rgba(0,0,0,0.8);
-    border-radius: 20px;
-    padding: 25px;
-    border: 2px solid #ffa500;
-    text-align: center;
-}
-
-.furnace-grid {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr auto 1fr;
-    gap: 15px;
-    align-items: center;
-    margin: 30px 0;
-}
-
-.furnace-slot {
-    background: rgba(0,0,0,0.5);
-    border: 2px solid #ffa500;
-    border-radius: 15px;
-    padding: 15px;
-    text-align: center;
-}
-
-.furnace-slot-label {
-    color: #888;
-    font-size: 12px;
-    margin-bottom: 10px;
-}
-
-.furnace-slot-content {
-    width: 100px;
-    height: 100px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-.furnace-slot-content.empty {
-    color: #666;
-    font-size: 12px;
-}
-
-.furnace-slot-content .item-name {
-    font-size: 14px;
-    font-weight: bold;
-    color: #ffd700;
-}
-
+.furnace-container { background: rgba(0,0,0,0.8); border-radius: 20px; padding: 25px; border: 2px solid #ffa500; text-align: center; }
+.furnace-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 15px; align-items: center; margin: 30px 0; }
+.furnace-slot { background: rgba(0,0,0,0.5); border: 2px solid #ffa500; border-radius: 15px; padding: 15px; text-align: center; }
+.furnace-slot-label { color: #888; font-size: 12px; margin-bottom: 10px; }
+.furnace-slot-content { width: 100px; height: 100px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+.furnace-slot-content.empty { color: #666; font-size: 12px; }
+.furnace-slot-content .item-name { font-size: 14px; font-weight: bold; color: #ffd700; }
 .furnace-slot-content .item-quantity {
     position: absolute;
     bottom: 2px;
@@ -294,29 +249,9 @@
     font-weight: bold;
 }
 
-.furnace-remove-btn {
-    margin-top: 10px;
-    padding: 5px 10px;
-    font-size: 12px;
-    background: #ff4444;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
-}
-
-.furnace-arrow {
-    font-size: 30px;
-    color: #ffa500;
-}
-
-.furnace-result-slot {
-    background: rgba(0,0,0,0.5);
-    border: 2px solid #4CAF50;
-    border-radius: 15px;
-    padding: 15px;
-    text-align: center;
-}
+.furnace-remove-btn { margin-top: 10px; padding: 5px 10px; font-size: 12px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer; }
+.furnace-arrow { font-size: 30px; color: #ffa500; }
+.furnace-result-slot { background: rgba(0,0,0,0.5); border: 2px solid #4CAF50; border-radius: 15px; padding: 15px; text-align: center; }
 
 .furnace-start-btn {
     margin-top: 20px;
@@ -741,7 +676,7 @@
         };
         const CREATURES = {
             wolf: { name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
-            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] }
+            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] },
             cow: {
                 name: 'Vaca',
                 life: 100,
@@ -2888,403 +2823,401 @@
             `;
         }
 
-                // ========== FORNALHA (FURNACE) FUNÇÕES ATUALIZADAS ==========
-                
-                let furnaceGlobalInterval = null;
-                
-                // Iniciar o timer global da fornalha
-function startFurnaceGlobalTimer() {
-    if (furnaceGlobalInterval) return;
-    
-    furnaceGlobalInterval = setInterval(() => {
-        if (!gameState.furnaceJobs) {
-            gameState.furnaceJobs = {};
-            return;
-        }
+        // ========== FORNALHA (FURNACE) FUNÇÕES ATUALIZADAS ==========
         
-        for (const furnaceId in gameState.furnaceJobs) {
-            const job = gameState.furnaceJobs[furnaceId];
-            if (job && job.isCooking && !job.isPaused) {
-                // Primeiro, verificar e consumir combustível
-                const hasFuel = checkAndConsumeFuel(furnaceId, job);
-                
-                if (!hasFuel) {
-                    continue;
+        let furnaceGlobalInterval = null;
+        
+        // Iniciar o timer global da fornalha
+        function startFurnaceGlobalTimer() {
+            if (furnaceGlobalInterval) return;
+            
+            furnaceGlobalInterval = setInterval(() => {
+                if (!gameState.furnaceJobs) {
+                    gameState.furnaceJobs = {};
+                    return;
                 }
                 
-                // Diminuir o tempo restante do item atual
-                job.remainingTime--;
-                
-                if (job.remainingTime <= 0) {
-                    // Um item foi completado
-                    job.completedCount++;
-                    
-                    // Verificar se ainda tem itens na fila
-                    if (job.totalItemsToCook > 0) {
-                        // Decrementar APENAS se ainda tem itens para assar
-                        job.totalItemsToCook--;
+                for (const furnaceId in gameState.furnaceJobs) {
+                    const job = gameState.furnaceJobs[furnaceId];
+                    if (job && job.isCooking && !job.isPaused) {
+                        // Primeiro, verificar e consumir combustível
+                        const hasFuel = checkAndConsumeFuel(furnaceId, job);
                         
-                        if (job.totalItemsToCook > 0) {
-                            // Ainda tem itens, reiniciar o timer
-                            job.remainingTime = job.cookTimePerItem;
-                            addLog(`🔥 ${job.completedCount}/${job.completedCount + job.totalItemsToCook} assado! +${job.resultName}`);
-                        } else {
-                            // Acabaram os itens
-                            job.isCooking = false;
-                            job.isPaused = false;
-                            job.remainingTime = 0;
-                            addLog(`✨ Todos os ${job.completedCount} itens foram assados!`);
+                        if (!hasFuel) {
+                            continue;
                         }
-                    } else {
-                        // Não tem mais itens na fila - parar
-                        job.isCooking = false;
-                        job.isPaused = false;
-                        job.remainingTime = 0;
-                        addLog(`✨ Cozimento finalizado! ${job.completedCount} itens prontos.`);
+                        
+                        // Diminuir o tempo restante do item atual
+                        job.remainingTime--;
+                        
+                        if (job.remainingTime <= 0) {
+                            // Um item foi completado
+                            job.completedCount++;
+                            
+                            // Verificar se ainda tem itens na fila
+                            if (job.totalItemsToCook > 0) {
+                                // Decrementar APENAS se ainda tem itens para assar
+                                job.totalItemsToCook--;
+                                
+                                if (job.totalItemsToCook > 0) {
+                                    // Ainda tem itens, reiniciar o timer
+                                    job.remainingTime = job.cookTimePerItem;
+                                    addLog(`🔥 ${job.completedCount}/${job.completedCount + job.totalItemsToCook} assado! +${job.resultName}`);
+                                } else {
+                                    // Acabaram os itens
+                                    job.isCooking = false;
+                                    job.isPaused = false;
+                                    job.remainingTime = 0;
+                                    addLog(`✨ Todos os ${job.completedCount} itens foram assados!`);
+                                }
+                            } else {
+                                // Não tem mais itens na fila - parar
+                                job.isCooking = false;
+                                job.isPaused = false;
+                                job.remainingTime = 0;
+                                addLog(`✨ Cozimento finalizado! ${job.completedCount} itens prontos.`);
+                            }
+                            
+                            if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
+                                updateUI();
+                            }
+                        } else if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
+                            updateUI();
+                        }
                     }
+                }
+            }, 1000);
+        }
+        function checkAndConsumeFuel(furnaceId, job) {
+            // Se não tem tempo de combustível, tenta pegar mais
+            if (!job.fuelRemainingTime || job.fuelRemainingTime <= 0) {
+                // Procurar mais combustível no inventário
+                let fuelFound = false;
+                
+                for (let i = 0; i < gameState.inventory.length; i++) {
+                    const item = gameState.inventory[i];
+                    if (item && FUEL_ITEMS[item.id] && FUEL_ITEMS[item.id].burnTime > 0) {
+                        // Consumir 1 unidade de combustível
+                        if (item.quantity > 1) {
+                            item.quantity--;
+                        } else {
+                            gameState.inventory[i] = null;
+                        }
+                        
+                        job.fuelRemainingTime = FUEL_ITEMS[item.id].burnTime;
+                        job.fuelItemId = item.id;
+                        job.fuelType = item.name;
+                        fuelFound = true;
+                        break;
+                    }
+                }
+                
+                if (!fuelFound) {
+                    // INTERROMPER O ASSAMENTO - sem combustível
+                    job.isCooking = false;
+                    job.isPaused = true;
+                    job.pausedReason = 'sem_combustivel';
+                    
+                    // Mostrar toast de alerta
+                    Swal.fire({
+                        title: '⚠️ Falta de Combustível!',
+                        text: `A fornalha parou! Adicione mais combustível para continuar.`,
+                        icon: 'warning',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    addLog(`⚠️ Fornalha interrompida: falta de combustível!`);
                     
                     if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
                         updateUI();
                     }
-                } else if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
-                    updateUI();
+                    return false;
                 }
             }
+            
+            // Diminuir o tempo de combustível
+            job.fuelRemainingTime--;
+            return true;
         }
-    }, 1000);
-}
-                // Verificar e consumir combustível
-function checkAndConsumeFuel(furnaceId, job) {
-    // Se não tem tempo de combustível, tenta pegar mais
-    if (!job.fuelRemainingTime || job.fuelRemainingTime <= 0) {
-        // Procurar mais combustível no inventário
-        let fuelFound = false;
-        
-        for (let i = 0; i < gameState.inventory.length; i++) {
-            const item = gameState.inventory[i];
-            if (item && FUEL_ITEMS[item.id] && FUEL_ITEMS[item.id].burnTime > 0) {
-                // Consumir 1 unidade de combustível
-                if (item.quantity > 1) {
-                    item.quantity--;
-                } else {
-                    gameState.inventory[i] = null;
-                }
-                
-                job.fuelRemainingTime = FUEL_ITEMS[item.id].burnTime;
-                job.fuelItemId = item.id;
-                job.fuelType = item.name;
-                fuelFound = true;
-                break;
+
+        function getFurnaceJob() {
+            if (!gameState.furnaceJobs) {
+                gameState.furnaceJobs = {};
             }
-        }
-        
-        if (!fuelFound) {
-            // INTERROMPER O ASSAMENTO - sem combustível
-            job.isCooking = false;
-            job.isPaused = true;
-            job.pausedReason = 'sem_combustivel';
             
-            // Mostrar toast de alerta
-            Swal.fire({
-                title: '⚠️ Falta de Combustível!',
-                text: `A fornalha parou! Adicione mais combustível para continuar.`,
-                icon: 'warning',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
+            if (!gameState.activeStation) return null;
             
-            addLog(`⚠️ Fornalha interrompida: falta de combustível!`);
+            const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
             
-            if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
-                updateUI();
+            if (!gameState.furnaceJobs[furnaceId]) {
+                gameState.furnaceJobs[furnaceId] = {};
             }
-            return false;
+            
+            return gameState.furnaceJobs[furnaceId];
         }
-    }
-    
-    // Diminuir o tempo de combustível
-    job.fuelRemainingTime--;
-    return true;
-}
 
-                function getFurnaceJob() {
-                    if (!gameState.furnaceJobs) {
-                        gameState.furnaceJobs = {};
-                    }
-                    
-                    if (!gameState.activeStation) return null;
-                    
-                    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-                    
-                    if (!gameState.furnaceJobs[furnaceId]) {
-                        gameState.furnaceJobs[furnaceId] = {};
-                    }
-                    
-                    return gameState.furnaceJobs[furnaceId];
-                }
-
-function openFurnaceInputSelector() {
-    if (gameState.isDead) return;
-    
-    const currentJob = getFurnaceJob();
-    if (!currentJob) return;
-    
-    if (currentJob.isCooking && !currentJob.isPaused) {
-        addLog('❌ A fornalha está funcionando! Pare o processo primeiro.');
-        return;
-    }
-    
-    // Coletar itens que podem ser assados
-    const cookableItems = [];
-    for (let i = 0; i < gameState.inventory.length; i++) {
-        const item = gameState.inventory[i];
-        if (item && FURNACE_RECIPES[item.id]) {
-            const recipe = FURNACE_RECIPES[item.id];
-            cookableItems.push({ 
-                index: i, 
-                item: item, 
-                quantity: item.quantity || 1,
-                recipe: recipe
-            });
-        }
-    }
-    
-    if (cookableItems.length === 0) {
-        Swal.fire({
-            title: '❌ Nenhum Item Assável',
-            text: 'Você não tem nenhum item que pode ser assado na fornalha! (Ex: Carne Crua)',
-            icon: 'warning',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            background: '#1a1a2e',
-            color: '#fff'
-        });
-        return;
-    }
-    
-    let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-    for (let i = 0; i < cookableItems.length; i++) {
-        const { item, index, quantity, recipe } = cookableItems[i];
-        
-        itemsHtml += `
-            <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="flex: 1;">
-                        <strong style="color: #ffd700;">${item.name}</strong>
-                        <span style="color: #888;"> x${quantity}</span>
-                        <div style="font-size: 12px; color: #888;">${recipe.resultName} (${recipe.cookTime}s cada)</div>
-                    </div>
-                    <button class="action-btn success" onclick="window.selectFurnaceInput(${index})" style="padding: 5px 15px;">
-                        📥 Colocar Tudo (${quantity})
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    itemsHtml += '</div>';
-    
-    window.selectFurnaceInput = function(index) {
-        const item = gameState.inventory[index];
-        if (!item) return;
-        
-        const qty = item.quantity || 1;
-        const recipe = FURNACE_RECIPES[item.id];
-        if (!recipe) return;
-        
-        // Remover TODOS os itens do inventário
-        gameState.inventory[index] = null;
-        
-        const currentJobLocal = getFurnaceJob();
-        if (!currentJobLocal) return;
-        
-        // Se já tem o mesmo tipo de item na fila, NÃO permite misturar
-        if (currentJobLocal.inputItemId && currentJobLocal.inputItemId !== item.id) {
-            addLog(`❌ Já tem ${currentJobLocal.inputItemName} na fornalha! Termine ou remova primeiro.`);
-            updateUI();
-            Swal.close();
-            return;
-        }
-        
-        // Configurar o job
-        currentJobLocal.inputItemId = item.id;
-        currentJobLocal.inputItemName = item.name;
-        currentJobLocal.cookTimePerItem = recipe.cookTime;
-        currentJobLocal.resultId = recipe.result;
-        currentJobLocal.resultName = recipe.resultName;
-        currentJobLocal.totalItemsToCook = qty;  // Itens RESTANTES para assar
-        currentJobLocal.completedCount = 0;       // Itens já assados
-        currentJobLocal.remainingTime = recipe.cookTime; // Tempo do item atual
-        currentJobLocal.isCooking = false;
-        currentJobLocal.isPaused = false;
-        currentJobLocal.pausedReason = null;
-        
-        Swal.close();
-        updateUI();
-        addLog(`📥 Você colocou ${qty}x ${item.name} na fornalha para assar.`);
-    };
-    
-    Swal.fire({
-        title: '🔥 Selecionar Item para Assar',
-        html: itemsHtml,
-        icon: 'info',
-        confirmButtonText: '🔙 Voltar',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#ffd700',
-        willClose: function() {
-            delete window.selectFurnaceInput;
-        }
-    });
-}
-
-                function stopFurnaceCooking() {
-                    if (gameState.isDead) return;
-                    
-                    const currentJob = getFurnaceJob();
-                    if (!currentJob) return;
-                    
-                    if (!currentJob.isCooking && !currentJob.isPaused) {
-                        addLog('❌ A fornalha não está funcionando!');
-                        return;
-                    }
-                    
-                    Swal.fire({
-                        title: '⏹️ Parar Cozimento?',
-                        text: `Tem certeza? ${currentJob.totalItemsToCook + currentJob.completedCount} item(ns) ainda na fila serão perdidos.`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Sim, parar',
-                        cancelButtonText: 'Cancelar',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ff4444',
-                        cancelButtonColor: '#ffd700'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            currentJob.isCooking = false;
-                            currentJob.isPaused = false;
-                            currentJob.totalItemsToCook = 0;
-                            currentJob.remainingTime = 0;
-                            
-                            addLog(`⏹️ Processo de cozimento interrompido!`);
-                            updateUI();
-                        }
+        function openFurnaceInputSelector() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getFurnaceJob();
+            if (!currentJob) return;
+            
+            if (currentJob.isCooking && !currentJob.isPaused) {
+                addLog('❌ A fornalha está funcionando! Pare o processo primeiro.');
+                return;
+            }
+            
+            // Coletar itens que podem ser assados
+            const cookableItems = [];
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && FURNACE_RECIPES[item.id]) {
+                    const recipe = FURNACE_RECIPES[item.id];
+                    cookableItems.push({ 
+                        index: i, 
+                        item: item, 
+                        quantity: item.quantity || 1,
+                        recipe: recipe
                     });
                 }
-function openFurnaceFuelSelector() {
-    if (gameState.isDead) return;
-    
-    const currentJob = getFurnaceJob();
-    if (!currentJob) return;
-    
-    if (currentJob.isCooking && !currentJob.isPaused) {
-        addLog('❌ A fornalha está funcionando! Pare o processo primeiro.');
-        return;
-    }
-    
-    // Coletar combustíveis
-    const fuelItems = [];
-    for (let i = 0; i < gameState.inventory.length; i++) {
-        const item = gameState.inventory[i];
-        if (item && FUEL_ITEMS[item.id] && FUEL_ITEMS[item.id].burnTime > 0) {
-            fuelItems.push({ 
-                index: i, 
-                item: item, 
-                burnTime: FUEL_ITEMS[item.id].burnTime,
-                quantity: item.quantity || 1
+            }
+            
+            if (cookableItems.length === 0) {
+                Swal.fire({
+                    title: '❌ Nenhum Item Assável',
+                    text: 'Você não tem nenhum item que pode ser assado na fornalha! (Ex: Carne Crua)',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (let i = 0; i < cookableItems.length; i++) {
+                const { item, index, quantity, recipe } = cookableItems[i];
+                
+                itemsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffd700;">${item.name}</strong>
+                                <span style="color: #888;"> x${quantity}</span>
+                                <div style="font-size: 12px; color: #888;">${recipe.resultName} (${recipe.cookTime}s cada)</div>
+                            </div>
+                            <button class="action-btn success" onclick="window.selectFurnaceInput(${index})" style="padding: 5px 15px;">
+                                📥 Colocar Tudo (${quantity})
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            itemsHtml += '</div>';
+            
+            window.selectFurnaceInput = function(index) {
+                const item = gameState.inventory[index];
+                if (!item) return;
+                
+                const qty = item.quantity || 1;
+                const recipe = FURNACE_RECIPES[item.id];
+                if (!recipe) return;
+                
+                // Remover TODOS os itens do inventário
+                gameState.inventory[index] = null;
+                
+                const currentJobLocal = getFurnaceJob();
+                if (!currentJobLocal) return;
+                
+                // Se já tem o mesmo tipo de item na fila, NÃO permite misturar
+                if (currentJobLocal.inputItemId && currentJobLocal.inputItemId !== item.id) {
+                    addLog(`❌ Já tem ${currentJobLocal.inputItemName} na fornalha! Termine ou remova primeiro.`);
+                    updateUI();
+                    Swal.close();
+                    return;
+                }
+                
+                // Configurar o job
+                currentJobLocal.inputItemId = item.id;
+                currentJobLocal.inputItemName = item.name;
+                currentJobLocal.cookTimePerItem = recipe.cookTime;
+                currentJobLocal.resultId = recipe.result;
+                currentJobLocal.resultName = recipe.resultName;
+                currentJobLocal.totalItemsToCook = qty;  // Itens RESTANTES para assar
+                currentJobLocal.completedCount = 0;       // Itens já assados
+                currentJobLocal.remainingTime = recipe.cookTime; // Tempo do item atual
+                currentJobLocal.isCooking = false;
+                currentJobLocal.isPaused = false;
+                currentJobLocal.pausedReason = null;
+                
+                Swal.close();
+                updateUI();
+                addLog(`📥 Você colocou ${qty}x ${item.name} na fornalha para assar.`);
+            };
+            
+            Swal.fire({
+                title: '🔥 Selecionar Item para Assar',
+                html: itemsHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: function() {
+                    delete window.selectFurnaceInput;
+                }
             });
         }
-    }
-    
-    if (fuelItems.length === 0) {
-        Swal.fire({
-            title: '❌ Nenhum Combustível',
-            text: 'Você não tem combustível! (Madeira, Papel ou Carvão)',
-            icon: 'warning',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000,
-            background: '#1a1a2e',
-            color: '#fff'
-        });
-        return;
-    }
-    
-    let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-    for (let i = 0; i < fuelItems.length; i++) {
-        const { item, index, burnTime, quantity } = fuelItems[i];
-        
-        itemsHtml += `
-            <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="flex: 1;">
-                        <strong style="color: #ffa500;">🔥 ${item.name}</strong>
-                        <span style="color: #888;"> x${quantity}</span>
-                        <div style="font-size: 12px; color: #ffa500;">⏱️ Queima por: ${burnTime} segundos cada</div>
+
+        function stopFurnaceCooking() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getFurnaceJob();
+            if (!currentJob) return;
+            
+            if (!currentJob.isCooking && !currentJob.isPaused) {
+                addLog('❌ A fornalha não está funcionando!');
+                return;
+            }
+            
+            Swal.fire({
+                title: '⏹️ Parar Cozimento?',
+                text: `Tem certeza? ${currentJob.totalItemsToCook + currentJob.completedCount} item(ns) ainda na fila serão perdidos.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, parar',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#ffd700'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentJob.isCooking = false;
+                    currentJob.isPaused = false;
+                    currentJob.totalItemsToCook = 0;
+                    currentJob.remainingTime = 0;
+                    
+                    addLog(`⏹️ Processo de cozimento interrompido!`);
+                    updateUI();
+                }
+            });
+        }
+        function openFurnaceFuelSelector() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getFurnaceJob();
+            if (!currentJob) return;
+            
+            if (currentJob.isCooking && !currentJob.isPaused) {
+                addLog('❌ A fornalha está funcionando! Pare o processo primeiro.');
+                return;
+            }
+            
+            // Coletar combustíveis
+            const fuelItems = [];
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && FUEL_ITEMS[item.id] && FUEL_ITEMS[item.id].burnTime > 0) {
+                    fuelItems.push({ 
+                        index: i, 
+                        item: item, 
+                        burnTime: FUEL_ITEMS[item.id].burnTime,
+                        quantity: item.quantity || 1
+                    });
+                }
+            }
+            
+            if (fuelItems.length === 0) {
+                Swal.fire({
+                    title: '❌ Nenhum Combustível',
+                    text: 'Você não tem combustível! (Madeira, Papel ou Carvão)',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (let i = 0; i < fuelItems.length; i++) {
+                const { item, index, burnTime, quantity } = fuelItems[i];
+                
+                itemsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffa500;">🔥 ${item.name}</strong>
+                                <span style="color: #888;"> x${quantity}</span>
+                                <div style="font-size: 12px; color: #ffa500;">⏱️ Queima por: ${burnTime} segundos cada</div>
+                            </div>
+                            <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index})" style="padding: 5px 15px;">
+                                🔥 Colocar Tudo (${quantity})
+                            </button>
+                        </div>
                     </div>
-                    <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index})" style="padding: 5px 15px;">
-                        🔥 Colocar Tudo (${quantity})
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-    itemsHtml += '</div>';
-    
-    window.selectFurnaceFuel = function(index) {
-        const item = gameState.inventory[index];
-        if (!item) return;
-        
-        const qty = item.quantity || 1;
-        const burnTime = FUEL_ITEMS[item.id].burnTime;
-        
-        // Remover TODOS os combustíveis do inventário
-        gameState.inventory[index] = null;
-        
-        const currentJobLocal = getFurnaceJob();
-        if (!currentJobLocal) return;
-        
-        // Adicionar tempo de combustível
-        const totalBurnTime = burnTime * qty;
-        
-        if (currentJobLocal.fuelRemainingTime && currentJobLocal.fuelRemainingTime > 0) {
-            currentJobLocal.fuelRemainingTime += totalBurnTime;
-        } else {
-            currentJobLocal.fuelRemainingTime = totalBurnTime;
+                `;
+            }
+            itemsHtml += '</div>';
+            
+            window.selectFurnaceFuel = function(index) {
+                const item = gameState.inventory[index];
+                if (!item) return;
+                
+                const qty = item.quantity || 1;
+                const burnTime = FUEL_ITEMS[item.id].burnTime;
+                
+                // Remover TODOS os combustíveis do inventário
+                gameState.inventory[index] = null;
+                
+                const currentJobLocal = getFurnaceJob();
+                if (!currentJobLocal) return;
+                
+                // Adicionar tempo de combustível
+                const totalBurnTime = burnTime * qty;
+                
+                if (currentJobLocal.fuelRemainingTime && currentJobLocal.fuelRemainingTime > 0) {
+                    currentJobLocal.fuelRemainingTime += totalBurnTime;
+                } else {
+                    currentJobLocal.fuelRemainingTime = totalBurnTime;
+                }
+                
+                currentJobLocal.fuelItemId = item.id;
+                currentJobLocal.fuelType = item.name;
+                
+                Swal.close();
+                updateUI();
+                addLog(`🔥 Você colocou ${qty}x ${item.name} como combustível (+${totalBurnTime}s).`);
+            };
+            
+            Swal.fire({
+                title: '🔥 Selecionar Combustível',
+                html: itemsHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: function() {
+                    delete window.selectFurnaceFuel;
+                }
+            });
         }
-        
-        currentJobLocal.fuelItemId = item.id;
-        currentJobLocal.fuelType = item.name;
-        
-        Swal.close();
-        updateUI();
-        addLog(`🔥 Você colocou ${qty}x ${item.name} como combustível (+${totalBurnTime}s).`);
-    };
-    
-    Swal.fire({
-        title: '🔥 Selecionar Combustível',
-        html: itemsHtml,
-        icon: 'info',
-        confirmButtonText: '🔙 Voltar',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#ffd700',
-        willClose: function() {
-            delete window.selectFurnaceFuel;
-        }
-    });
-}
 
-
-                function startFurnaceCooking() {
+        function startFurnaceCooking() {
                     if (gameState.isDead) return;
                     
                     const currentJob = getFurnaceJob();
@@ -3317,81 +3250,81 @@ function openFurnaceFuelSelector() {
                     updateUI();
                 }
                 
-function claimFurnaceResult() {
-    if (gameState.isDead) return;
-    
-    const currentJob = getFurnaceJob();
-    if (!currentJob) return;
-    
-    if (currentJob.completedCount === 0) {
-        addLog('❌ Não há nenhum item pronto para retirar!');
-        return;
-    }
-    
-    // Pegar TODOS os itens prontos
-    const totalReady = currentJob.completedCount;
-    
-    if (totalReady > 0) {
-        // Adicionar ao inventário
-        for (let i = 0; i < totalReady; i++) {
-            addItemToInventory(currentJob.resultId, 1);
-        }
-        
-        addLog(`📦 Você retirou ${totalReady}x ${currentJob.resultName} da fornalha!`);
-        
-        // Resetar os contadores de itens prontos
-        currentJob.completedCount = 0;
-        
-        // Se não tem mais itens na fila e não está cozinhando, limpar o job
-        if (currentJob.totalItemsToCook === 0 && !currentJob.isCooking) {
-            const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-            delete gameState.furnaceJobs[furnaceId];
-        }
-        
-        updateUI();
-    }
-}
-
-                function clearFurnaceInput() {
-                    const currentJob = getFurnaceJob();
-                    
-                    if (currentJob && (currentJob.inputItemId || currentJob.totalItemsToCook > 0) && !currentJob.isCooking) {
-                        // Perguntar se quer descartar os itens
-                        Swal.fire({
-                            title: '🗑️ Remover Itens?',
-                            text: `${currentJob.totalItemsToCook + currentJob.completedCount} item(ns) serão perdidos.`,
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonText: 'Sim, remover',
-                            cancelButtonText: 'Cancelar',
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            confirmButtonColor: '#ff4444',
-                            cancelButtonColor: '#ffd700'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                delete currentJob.inputItemId;
-                                delete currentJob.inputItemName;
-                                delete currentJob.totalItemsToCook;
-                                delete currentJob.totalItemsAdded;
-                                delete currentJob.completedCount;
-                                delete currentJob.remainingTime;
-                                delete currentJob.resultStack;
-                                currentJob.isCooking = false;
-                                currentJob.isPaused = false;
-                                
-                                addLog('📤 Todos os itens foram removidos da fornalha.');
-                                updateUI();
-                            }
-                        });
-                    } else if (currentJob && !currentJob.isCooking) {
-                        addLog('❌ Não há itens para remover.');
-                    } else {
-                        addLog('❌ Pare o cozimento primeiro antes de remover os itens.');
-                    }
+        function claimFurnaceResult() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getFurnaceJob();
+            if (!currentJob) return;
+            
+            if (currentJob.completedCount === 0) {
+                addLog('❌ Não há nenhum item pronto para retirar!');
+                return;
+            }
+            
+            // Pegar TODOS os itens prontos
+            const totalReady = currentJob.completedCount;
+            
+            if (totalReady > 0) {
+                // Adicionar ao inventário
+                for (let i = 0; i < totalReady; i++) {
+                    addItemToInventory(currentJob.resultId, 1);
                 }
                 
-                function clearFurnaceFuel() {
+                addLog(`📦 Você retirou ${totalReady}x ${currentJob.resultName} da fornalha!`);
+                
+                // Resetar os contadores de itens prontos
+                currentJob.completedCount = 0;
+                
+                // Se não tem mais itens na fila e não está cozinhando, limpar o job
+                if (currentJob.totalItemsToCook === 0 && !currentJob.isCooking) {
+                    const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
+                    delete gameState.furnaceJobs[furnaceId];
+                }
+                
+                updateUI();
+            }
+        }
+
+        function clearFurnaceInput() {
+            const currentJob = getFurnaceJob();
+            
+            if (currentJob && (currentJob.inputItemId || currentJob.totalItemsToCook > 0) && !currentJob.isCooking) {
+                // Perguntar se quer descartar os itens
+                Swal.fire({
+                    title: '🗑️ Remover Itens?',
+                    text: `${currentJob.totalItemsToCook + currentJob.completedCount} item(ns) serão perdidos.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sim, remover',
+                    cancelButtonText: 'Cancelar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ff4444',
+                    cancelButtonColor: '#ffd700'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        delete currentJob.inputItemId;
+                        delete currentJob.inputItemName;
+                        delete currentJob.totalItemsToCook;
+                        delete currentJob.totalItemsAdded;
+                        delete currentJob.completedCount;
+                        delete currentJob.remainingTime;
+                        delete currentJob.resultStack;
+                        currentJob.isCooking = false;
+                        currentJob.isPaused = false;
+                        
+                        addLog('📤 Todos os itens foram removidos da fornalha.');
+                        updateUI();
+                    }
+                });
+            } else if (currentJob && !currentJob.isCooking) {
+                addLog('❌ Não há itens para remover.');
+            } else {
+                addLog('❌ Pare o cozimento primeiro antes de remover os itens.');
+            }
+        }
+        
+        function clearFurnaceFuel() {
                     if (gameState.isDead) return;
                     
                     const currentJob = getFurnaceJob();
