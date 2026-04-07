@@ -2995,35 +2995,50 @@
                                 <span style="color: #888;"> x${quantity}</span>
                                 <div style="font-size: 12px; color: #ffa500;">⏱️ Queima por: ${burnTime} segundos cada</div>
                             </div>
-                            <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index})" style="padding: 5px 15px;">
-                                🔥 Colocar
-                            </button>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index}, 1)" style="padding: 5px 12px; font-size: 12px;">
+                                    +1
+                                </button>
+                                <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index}, ${Math.min(5, quantity)})" style="padding: 5px 12px; font-size: 12px;">
+                                    +${Math.min(5, quantity)}
+                                </button>
+                                <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index}, ${quantity})" style="padding: 5px 12px; font-size: 12px;">
+                                    +${quantity}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 `;
             }
             itemsHtml += '</div>';
             
-            window.selectFurnaceFuel = function(index) {
+            window.selectFurnaceFuel = function(index, qtyToAdd) {
                 const item = gameState.inventory[index];
                 if (!item) return;
                 
-                const qty = item.quantity || 1;
-                const burnTime = FUEL_ITEMS[item.id].burnTime;
+                const actualQty = Math.min(qtyToAdd, item.quantity || 1);
+                if (actualQty <= 0) return;
                 
-                // Remover TODOS os combustíveis do inventário
-                gameState.inventory[index] = null;
+                const burnTime = FUEL_ITEMS[item.id].burnTime;
+                const totalBurnTimeAdded = burnTime * actualQty;
+                
+                // Remover os combustíveis do inventário
+                if (item.quantity > actualQty) {
+                    item.quantity -= actualQty;
+                } else {
+                    gameState.inventory[index] = null;
+                }
                 
                 const currentJobLocal = getFurnaceJob();
                 if (!currentJobLocal) return;
                 
                 // Adicionar tempo de combustível
-                const totalBurnTime = burnTime * qty;
-                
                 if (currentJobLocal.fuelRemainingTime && currentJobLocal.fuelRemainingTime > 0) {
-                    currentJobLocal.fuelRemainingTime += totalBurnTime;
+                    currentJobLocal.fuelRemainingTime += totalBurnTimeAdded;
+                    currentJobLocal.fuelQuantityAdded = (currentJobLocal.fuelQuantityAdded || 0) + actualQty;
                 } else {
-                    currentJobLocal.fuelRemainingTime = totalBurnTime;
+                    currentJobLocal.fuelRemainingTime = totalBurnTimeAdded;
+                    currentJobLocal.fuelQuantityAdded = actualQty;
                 }
                 
                 currentJobLocal.fuelItemId = item.id;
@@ -3031,7 +3046,7 @@
                 
                 Swal.close();
                 updateUI();
-                addLog(`🔥 Você colocou ${qty}x ${item.name} como combustível (+${totalBurnTime}s).`);
+                addLog(`🔥 Você colocou ${actualQty}x ${item.name} como combustível (+${totalBurnTimeAdded}s). Total de combustível na fornalha: ${currentJobLocal.fuelQuantityAdded}x`);
             };
             
             Swal.fire({
@@ -3047,7 +3062,7 @@
                 }
             });
         }
-        
+
         function startFurnaceCooking() {
             if (gameState.isDead) return;
             
@@ -3206,38 +3221,62 @@
                 }
             });
         }
-        
-        function clearFurnaceInput() {
+        function clearFurnaceFuel() {
             if (gameState.isDead) return;
             
             const currentJob = getFurnaceJob();
             if (!currentJob) return;
             
-            if (!currentJob.inputItemId && (!currentJob.totalItemsToCook || currentJob.totalItemsToCook <= 0) && (!currentJob.completedCount || currentJob.completedCount <= 0)) {
-                addLog('❌ Não há itens para remover.');
+            if (!currentJob.fuelRemainingTime || currentJob.fuelRemainingTime <= 0) {
+                addLog('❌ Não há combustível para remover.');
                 return;
             }
             
             if (currentJob.isCooking && !currentJob.isPaused) {
-                addLog('❌ Pare o cozimento primeiro antes de remover os itens.');
+                addLog('❌ Pare o cozimento primeiro antes de remover o combustível.');
                 return;
             }
             
-            const itemsToReturn = currentJob.totalItemsToCook || 0; // Itens não assados
-            const itemsCompleted = currentJob.completedCount || 0; // Itens já prontos
-            const currentCookingItem = (currentJob.remainingTime > 0 && currentJob.remainingTime < currentJob.cookTimePerItem) ? 1 : 0; // Item sendo assado
+            const remainingSeconds = currentJob.fuelRemainingTime;
+            const fuelItemId = currentJob.fuelItemId;
+            const fuelType = currentJob.fuelType;
+            const burnTimePerUnit = FUEL_ITEMS[fuelItemId]?.burnTime || 0;
+            const totalAdded = currentJob.fuelQuantityAdded || 0;
+            
+            // Verificar se os dados são consistentes
+            if (burnTimePerUnit === 0) {
+                addLog('❌ Erro: Tipo de combustível inválido.');
+                return;
+            }
+            
+            // Calcular quantas unidades COMPLETAS e INTACTAS de combustível restam
+            let unitsToReturn = Math.floor(remainingSeconds / burnTimePerUnit);
+            
+            // Garantir que não devolva mais do que foi colocado
+            unitsToReturn = Math.min(unitsToReturn, totalAdded);
+            
+            // Calcular quanto foi queimado para exibir
+            const totalSecondsAdded = totalAdded * burnTimePerUnit;
+            const burnedSeconds = totalSecondsAdded - remainingSeconds;
+            const wastedSeconds = remainingSeconds - (unitsToReturn * burnTimePerUnit);
             
             Swal.fire({
-                title: '🗑️ Remover Itens da Entrada?',
+                title: '🗑️ Remover Combustível?',
                 html: `<div style="text-align: left;">
-                    <p>Tem certeza que deseja remover os itens da entrada?</p>
-                    ${itemsToReturn > 0 ? `<p>📦 <strong>${itemsToReturn}x ${currentJob.inputItemName}</strong> serão devolvidos ao inventário.</p>` : ''}
-                    ${itemsCompleted > 0 ? `<p>✅ <strong>${itemsCompleted}x ${currentJob.resultName}</strong> já estão prontos e permanecem na fornalha.</p>` : ''}
-                    ${currentCookingItem > 0 ? `<p>⚠️ O item que estava sendo assado será descartado (não pode ser recuperado).</p>` : ''}
+                    <p>Tem certeza que deseja remover o combustível da fornalha?</p>
+                    <p>🔥 Combustível: <strong>${fuelType}</strong></p>
+                    <p>📦 Total colocado: <strong>${totalAdded}x</strong> (${totalSecondsAdded} segundos)</p>
+                    <p>🔥 Já queimado: <strong>${Math.floor(burnedSeconds)} segundos</strong></p>
+                    <p>⏳ Restante na fornalha: <strong>${Math.ceil(remainingSeconds)} segundos</strong></p>
+                    ${unitsToReturn > 0 ? 
+                        `<p>📦 Serão devolvidos: <strong>${unitsToReturn}x ${fuelType}</strong> (completamente intactos)</p>
+                        ${wastedSeconds > 0 ? `<p style="color: #ff8888;">⚠️ ${Math.ceil(wastedSeconds)}s foram parcialmente queimados e serão perdidos.</p>` : ''}` : 
+                        `<p style="color: #ff8888;">⚠️ Não há unidades completas de combustível para devolver. Todo o combustível foi parcialmente queimado.</p>`
+                    }
                 </div>`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Sim, remover e devolver',
+                confirmButtonText: 'Sim, remover',
                 cancelButtonText: 'Cancelar',
                 background: '#1a1a2e',
                 color: '#fff',
@@ -3245,124 +3284,30 @@
                 cancelButtonColor: '#ffd700'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Devolver itens não assados para o inventário
-                    if (itemsToReturn > 0 && currentJob.inputItemId) {
-                        for (let i = 0; i < itemsToReturn; i++) {
-                            addItemToInventory(currentJob.inputItemId, 1);
+                    // Devolver apenas as unidades COMPLETAS e INTACTAS
+                    if (unitsToReturn > 0 && fuelItemId) {
+                        for (let i = 0; i < unitsToReturn; i++) {
+                            addItemToInventory(fuelItemId, 1);
                         }
-                        addLog(`📦 Devolvidos ${itemsToReturn}x ${currentJob.inputItemName} para o inventário.`);
+                        addLog(`📦 Devolvidos ${unitsToReturn}x ${fuelType} completamente intactos.`);
+                        if (wastedSeconds > 0) {
+                            addLog(`⚠️ ${Math.ceil(wastedSeconds)}s de combustível parcialmente queimado foram perdidos.`);
+                        }
+                    } else {
+                        addLog(`⚠️ Nenhum combustível intacto para devolver. Todo o ${fuelType} foi parcialmente queimado.`);
                     }
                     
-                    // Limpar apenas os itens da entrada (não assados)
-                    currentJob.totalItemsToCook = 0;
-                    currentJob.inputItemId = null;
-                    currentJob.inputItemName = null;
-                    currentJob.remainingTime = 0;
-                    currentJob.cookTimePerItem = null;
+                    // Limpar o combustível da fornalha
+                    delete currentJob.fuelRemainingTime;
+                    delete currentJob.fuelItemId;
+                    delete currentJob.fuelType;
+                    delete currentJob.fuelQuantityAdded;
                     
-                    // Manter os itens já prontos para retirada
-                    if (itemsCompleted > 0) {
-                        addLog(`✅ ${itemsCompleted}x ${currentJob.resultName} ainda estão prontos para retirada.`);
-                    }
-                    
-                    // Se não há mais nada, limpar completamente o job
-                    if (itemsCompleted === 0 && !currentJob.fuelRemainingTime) {
-                        const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
-                        delete gameState.furnaceJobs[furnaceId];
-                    }
-                    
+                    addLog('🔥 Combustível removido da fornalha.');
                     updateUI();
                 }
             });
         }
-// Substitua a função clearFurnaceFuel() por esta:
-function clearFurnaceFuel() {
-    if (gameState.isDead) return;
-    
-    const currentJob = getFurnaceJob();
-    if (!currentJob) return;
-    
-    if (!currentJob.fuelRemainingTime || currentJob.fuelRemainingTime <= 0) {
-        addLog('❌ Não há combustível para remover.');
-        return;
-    }
-    
-    if (currentJob.isCooking && !currentJob.isPaused) {
-        addLog('❌ Pare o cozimento primeiro antes de remover o combustível.');
-        return;
-    }
-    
-    // Calcular quanto combustível resta em segundos
-    const remainingSeconds = currentJob.fuelRemainingTime;
-    const fuelItemId = currentJob.fuelItemId;
-    const fuelType = currentJob.fuelType;
-    const burnTimePerUnit = FUEL_ITEMS[fuelItemId]?.burnTime || 0;
-    
-    // Calcular quantas unidades COMPLETAS e INTACTAS de combustível restam
-    // Ex: Se cada madeira queima por 8s e restam 14s -> 14 / 8 = 1.75
-    // Math.floor(1.75) = 1 unidade COMPLETAMENTE intacta
-    // O resto (0.75) foi parcialmente queimado e é perdido
-    let unitsToReturn = 0;
-    if (burnTimePerUnit > 0) {
-        unitsToReturn = Math.floor(remainingSeconds / burnTimePerUnit);
-    }
-    
-    // Limitar para não devolver mais do que o jogador colocou originalmente
-    const totalAdded = currentJob.fuelQuantityAdded || 0;
-    unitsToReturn = Math.min(unitsToReturn, totalAdded);
-    
-    // Calcular quanto tempo foi efetivamente queimado (para exibir no log)
-    const burnedSeconds = (totalAdded * burnTimePerUnit) - remainingSeconds;
-    const wastedSeconds = remainingSeconds - (unitsToReturn * burnTimePerUnit);
-    
-    Swal.fire({
-        title: '🗑️ Remover Combustível?',
-        html: `<div style="text-align: left;">
-            <p>Tem certeza que deseja remover o combustível da fornalha?</p>
-            <p>🔥 Combustível: <strong>${fuelType}</strong></p>
-            <p>⏱️ Tempo total colocado: <strong>${totalAdded * burnTimePerUnit} segundos (${totalAdded}x)</strong></p>
-            <p>🔥 Tempo já queimado: <strong>${Math.floor(burnedSeconds)} segundos</strong></p>
-            <p>⏳ Tempo restante na fornalha: <strong>${Math.ceil(remainingSeconds)} segundos</strong></p>
-            ${unitsToReturn > 0 ? 
-                `<p>📦 Serão devolvidos: <strong>${unitsToReturn}x ${fuelType}</strong> (completamente intactos)</p>
-                 <p style="color: #ff8888;">⚠️ O restante (${Math.ceil(wastedSeconds)}s) foi parcialmente queimado e será perdido.</p>` : 
-                `<p style="color: #ff8888;">⚠️ Não há unidades completas de combustível para devolver. Todo o combustível foi parcialmente queimado.</p>`
-            }
-        </div>`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sim, remover',
-        cancelButtonText: 'Cancelar',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#ff4444',
-        cancelButtonColor: '#ffd700'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Devolver apenas as unidades COMPLETAS e INTACTAS para o inventário
-            if (unitsToReturn > 0 && fuelItemId) {
-                for (let i = 0; i < unitsToReturn; i++) {
-                    addItemToInventory(fuelItemId, 1);
-                }
-                addLog(`📦 Devolvidos ${unitsToReturn}x ${fuelType} completamente intactos para o inventário.`);
-                if (wastedSeconds > 0) {
-                    addLog(`⚠️ ${Math.ceil(wastedSeconds)} segundos de combustível parcialmente queimado foram perdidos.`);
-                }
-            } else {
-                addLog(`⚠️ Nenhum combustível intacto para devolver. Todo o ${fuelType} foi parcialmente queimado.`);
-            }
-            
-            // Limpar o combustível da fornalha
-            delete currentJob.fuelRemainingTime;
-            delete currentJob.fuelItemId;
-            delete currentJob.fuelType;
-            delete currentJob.fuelQuantityAdded;
-            
-            addLog('🔥 Combustível removido da fornalha.');
-            updateUI();
-        }
-    });
-}
         
         // ========== BOOK SYSTEM ==========
         
