@@ -701,7 +701,6 @@
             furnaceJobs: {}, // { locationId_stationId: { inputItem, fuelItem, remainingTime, totalTime, resultItem, inputSlot, fuelSlot } }
         };
         
-        // Race definitions
         const RACES = {
             elf: { 
                 name: 'Elfo', 
@@ -740,85 +739,22 @@
                 mana: 100
             }
         };
-
-        // Items database
-        const ITEMS = {
-            // Weapons
-            sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
-            katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
-            machete: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
-            dagger: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
-            // | 
-            // | Guns like
-            bow: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
-            // | Munition
-            arrow: { name: 'Flecha', type: 'ammo', damage: 50, description: 'Munição para arco. Causa 50 de dano por flecha.', consumable: true },
-            iron_arrow: { name: 'Flecha de Ferro', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
-            // Armors
-            iron_hemlet: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, durability: 80, maxDurability: 80, description: 'Proteção pesada' },
-            iron_chestplate: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, durability: 120, maxDurability: 120, description: 'Armadura pesada' },
-            iron_leggings: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
-            iron_boots: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
-            // |
-            // | Shields
-            wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
-            iron_shield: { name: 'Escudo de Ferro', type: 'shield', slot: 'offhand', attack: 0, defense: 75, durability: 150, maxDurability: 150, description: 'Proteção reforçada' },
-            // Foods
-            apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
-            bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
-            fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
-            cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
-            
-            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação', consumable: true },
-            // |
-            // | Drinks
-            beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
-            wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
-            coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
-            // Magic
-            
-            // Tools
-            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
-            compass: { name: 'Bússola', type: 'tool', consumable: false, description: 'Indica a direção norte.' },
-            lantern: { name: 'Lanterna', type: 'tool', consumable: false, description: 'Ilumina lugares escuros.', durability: 200, maxDurability: 200 },
-    
-            // Station
-            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
-            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', value: 150, description: 'Para reparar e melhorar equipamentos.', consumable: false },
-            alchemy_table: { name: 'Mesa de Alquimia', type: 'station', stationType: 'alchemy', value: 200, description: 'Permite criar poções e elixires.', consumable: false },
-            furnace: { name: 'Fornalha', type: 'station', stationType: 'furnace', consumable: false, description: 'Uma fornalha para assar alimentos e fundir minérios.' },
-            loom: { name: 'Tear', type: 'station', stationType: 'loom', description: 'Para tecer tecidos e roupas.', consumable: false },
-
-            // Materials
-            paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
-            leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
-            book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
-            wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true },
-            wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
-            string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
-            cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
-
-            crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
-            sleeping_bag: { 
-                name: 'Saco de Dormir', 
-                type: 'station', 
-                stationType: 'sleeping_bag',
-                consumable: false, 
-                description: 'Um saco de dormir portátil. Permite descansar ao ar livre.'
-            },
-            
-            shirt: { name: 'Camisa', type: 'armor', slot: 'chest', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Uma camisa para seu corpo' },
-            pants: { name: 'Calças', type: 'armor', slot: 'pants', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calças para suas pernas' },
-            boots: { name: 'Botas', type: 'armor', slot: 'boots', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calçado para seus pés' }
-        };
-        const FUEL_ITEMS = {
-            wood: { name: 'Madeira', burnTime: 8, value: 5 },
-            paper: { name: 'Papel', burnTime: 4, value: 1 },
-            coal: { name: 'Carvão', burnTime: 20, value: 15 }
+        const CREATURES = {
+            wolf: { name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
+            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] }
+            cow: {
+                name: '',
+                life: 0,
+                attack: 0,
+                defense: 0,
+                exp: 0,
+                gold: 0,
+                drops: []
+                
+            }
         };
 
-        // Locations expandidas
+
         const LOCATIONS = {
             // Reino da Aurora
             home: {
@@ -1066,6 +1002,82 @@
                 ]
             }
         };
+        
+        const ITEMS = {
+            // Weapons
+            sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
+            katana: { name: 'Katana', type: 'weapon', slot: 'mainhand', attack: 85, defense: 0, description: 'Uma espada curva de lâmina afiada, técnica oriental letal.' },
+            machete: { name: 'Facão', type: 'weapon', slot: 'mainhand', attack: 40, defense: 0, description: 'Ferramenta pesada e cortante, ideal para abrir caminho.' },
+            dagger: { name: 'Adaga', type: 'weapon', slot: 'offhand', attack: 30, defense: 0, description: 'Pequena e rápida' },
+            // | 
+            // | Guns like
+            bow: { name: 'Arco', type: 'weapon', slot: 'mainhand', attack: 0, defense: 0, description: 'Ataque à distância' },
+            // | Munition
+            arrow: { name: 'Flecha', type: 'ammo', damage: 50, description: 'Munição para arco. Causa 50 de dano por flecha.', consumable: true },
+            iron_arrow: { name: 'Flecha de Ferro', type: 'ammo', damage: 75, description: 'Munição para arco. Causa 75 de dano por flecha.', consumable: true },
+            // Armors
+            iron_hemlet: { name: 'Capacete de Ferro', type: 'armor', slot: 'helmet', attack: 0, defense: 40, durability: 80, maxDurability: 80, description: 'Proteção pesada' },
+            iron_chestplate: { name: 'Peitoral de Ferro', type: 'armor', slot: 'chest', attack: 0, defense: 60, durability: 120, maxDurability: 120, description: 'Armadura pesada' },
+            iron_leggings: { name: 'Calças de Ferro', type: 'armor', slot: 'pants', attack: 0, defense: 30, durability: 60, maxDurability: 60, description: 'Proteção reforçada' },
+            iron_boots: { name: 'Botas de Ferro', type: 'armor', slot: 'boots', attack: 0, defense: 20, durability: 40, maxDurability: 40, description: 'Calçado reforçado' },
+            // |
+            // | Shields
+            wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
+            iron_shield: { name: 'Escudo de Ferro', type: 'shield', slot: 'offhand', attack: 0, defense: 75, durability: 150, maxDurability: 150, description: 'Proteção reforçada' },
+            // Foods
+            apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
+            bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
+            fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
+            cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
+            
+            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
+            raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação', consumable: true },
+            // |
+            // | Drinks
+            beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
+            wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
+            coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
+            // Magic
+            
+            // Tools
+            clock: { name: 'Relógio', type: 'tool', consumable: false, description: 'Mostra o tempo restante do ciclo atual.', useEffect: 'showTimeRemaining' },
+            compass: { name: 'Bússola', type: 'tool', consumable: false, description: 'Indica a direção norte.' },
+            lantern: { name: 'Lanterna', type: 'tool', consumable: false, description: 'Ilumina lugares escuros.', durability: 200, maxDurability: 200 },
+    
+            // Station
+            crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
+            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', value: 150, description: 'Para reparar e melhorar equipamentos.', consumable: false },
+            alchemy_table: { name: 'Mesa de Alquimia', type: 'station', stationType: 'alchemy', value: 200, description: 'Permite criar poções e elixires.', consumable: false },
+            furnace: { name: 'Fornalha', type: 'station', stationType: 'furnace', consumable: false, description: 'Uma fornalha para assar alimentos e fundir minérios.' },
+            loom: { name: 'Tear', type: 'station', stationType: 'loom', description: 'Para tecer tecidos e roupas.', consumable: false },
+
+            // Materials
+            paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
+            leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
+            book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
+            wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true },
+            wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
+            string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
+            cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
+
+            crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
+            sleeping_bag: { 
+                name: 'Saco de Dormir', 
+                type: 'station', 
+                stationType: 'sleeping_bag',
+                consumable: false, 
+                description: 'Um saco de dormir portátil. Permite descansar ao ar livre.'
+            },
+            
+            shirt: { name: 'Camisa', type: 'armor', slot: 'chest', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Uma camisa para seu corpo' },
+            pants: { name: 'Calças', type: 'armor', slot: 'pants', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calças para suas pernas' },
+            boots: { name: 'Botas', type: 'armor', slot: 'boots', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calçado para seus pés' }
+        };
+        const FUEL_ITEMS = {
+            wood: { name: 'Madeira', burnTime: 8, value: 5 },
+            paper: { name: 'Papel', burnTime: 4, value: 1 },
+            coal: { name: 'Carvão', burnTime: 20, value: 15 }
+        };
 
         const CRAFTING_RECIPES = {
             book: {
@@ -1139,18 +1151,12 @@
             raw_meat: {
                 input: 'raw_meat',
                 result: 'meat',
-                cookTime: 10,
+                cookTime: 5,
                 resultName: 'Carne Assada',
                 resultDescription: 'Carne cozida, mais nutritiva e segura para comer.'
             }
         };
 
-        // Monsters
-        const CREATURES = {
-            wolf: { name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
-            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] }
-        };
-    
         // Drag and Drop Variables
         let draggedItemIndex = null;
         let draggedItemSource = 'inventory';
