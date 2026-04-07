@@ -2896,7 +2896,6 @@ function startFurnaceGlobalTimer() {
                 if (job.remainingTime <= 0) {
                     // Um item foi completado
                     job.completedCount++;
-                    job.totalCompleted++;
                     
                     // Verificar se ainda tem itens na fila
                     if (job.totalItemsToCook > 0) {
@@ -2909,7 +2908,7 @@ function startFurnaceGlobalTimer() {
                         job.isCooking = false;
                         job.isPaused = false;
                         
-                        addLog(`✨ Todos os ${job.totalCompleted} itens foram assados!`);
+                        addLog(`✨ Todos os ${job.completedCount} itens foram assados!`);
                     }
                     
                     if (gameState.activeStation && gameState.activeStation.stationType === 'furnace') {
@@ -2957,7 +2956,7 @@ function checkAndConsumeFuel(furnaceId, job) {
             // Mostrar toast de alerta
             Swal.fire({
                 title: '⚠️ Falta de Combustível!',
-                text: `A fornalha parou! Adicione mais ${job.fuelType || 'combustível'} para continuar.`,
+                text: `A fornalha parou! Adicione mais combustível para continuar.`,
                 icon: 'warning',
                 toast: true,
                 position: 'top-end',
@@ -2997,6 +2996,7 @@ function checkAndConsumeFuel(furnaceId, job) {
                     
                     return gameState.furnaceJobs[furnaceId];
                 }
+
 function openFurnaceInputSelector() {
     if (gameState.isDead) return;
     
@@ -3047,38 +3047,28 @@ function openFurnaceInputSelector() {
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div style="flex: 1;">
                         <strong style="color: #ffd700;">${item.name}</strong>
-                        <span style="color: #888;"> (${quantity} disponível)</span>
+                        <span style="color: #888;"> x${quantity}</span>
                         <div style="font-size: 12px; color: #888;">${recipe.resultName} (${recipe.cookTime}s cada)</div>
                     </div>
-                    <div style="display: flex; gap: 5px; align-items: center;">
-                        <input type="number" id="qty_${index}" min="1" max="${quantity}" value="1" style="width: 60px; padding: 5px; background: #333; color: #fff; border: 1px solid #ffd700; border-radius: 5px;">
-                        <button class="action-btn success" onclick="window.selectFurnaceInput(${index}, document.getElementById('qty_${index}').value)" style="padding: 5px 15px;">
-                            📥 Colocar
-                        </button>
-                    </div>
+                    <button class="action-btn success" onclick="window.selectFurnaceInput(${index})" style="padding: 5px 15px;">
+                        📥 Colocar Tudo (${quantity})
+                    </button>
                 </div>
             </div>
         `;
     }
     itemsHtml += '</div>';
     
-    window.selectFurnaceInput = function(index, quantity) {
+    window.selectFurnaceInput = function(index) {
         const item = gameState.inventory[index];
         if (!item) return;
         
-        let qty = parseInt(quantity);
-        if (isNaN(qty) || qty < 1) qty = 1;
-        if (qty > (item.quantity || 1)) qty = item.quantity || 1;
-        
+        const qty = item.quantity || 1;
         const recipe = FURNACE_RECIPES[item.id];
         if (!recipe) return;
         
-        // Remover APENAS a quantidade que o usuário escolheu
-        if (item.quantity > qty) {
-            item.quantity -= qty;
-        } else {
-            gameState.inventory[index] = null;
-        }
+        // Remover TODOS os itens do inventário
+        gameState.inventory[index] = null;
         
         const currentJobLocal = getFurnaceJob();
         if (!currentJobLocal) return;
@@ -3086,7 +3076,6 @@ function openFurnaceInputSelector() {
         // Se já tem o mesmo tipo de item na fila, adicionar mais
         if (currentJobLocal.inputItemId === item.id) {
             currentJobLocal.totalItemsToCook += qty;
-            currentJobLocal.totalItemsAdded += qty;
         } else {
             // Novo item, resetar tudo
             currentJobLocal.inputItemId = item.id;
@@ -3095,9 +3084,7 @@ function openFurnaceInputSelector() {
             currentJobLocal.resultId = recipe.result;
             currentJobLocal.resultName = recipe.resultName;
             currentJobLocal.totalItemsToCook = qty;
-            currentJobLocal.totalItemsAdded = qty;
             currentJobLocal.completedCount = 0;
-            currentJobLocal.totalCompleted = 0;
             currentJobLocal.resultStack = [];
         }
         
@@ -3158,7 +3145,6 @@ function openFurnaceInputSelector() {
                         }
                     });
                 }
-
 function openFurnaceFuelSelector() {
     if (gameState.isDead) return;
     
@@ -3208,37 +3194,27 @@ function openFurnaceFuelSelector() {
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div style="flex: 1;">
                         <strong style="color: #ffa500;">🔥 ${item.name}</strong>
-                        <span style="color: #888;"> (${quantity} disponível)</span>
+                        <span style="color: #888;"> x${quantity}</span>
                         <div style="font-size: 12px; color: #ffa500;">⏱️ Queima por: ${burnTime} segundos cada</div>
                     </div>
-                    <div style="display: flex; gap: 5px; align-items: center;">
-                        <input type="number" id="fuel_qty_${index}" min="1" max="${quantity}" value="1" style="width: 60px; padding: 5px; background: #333; color: #fff; border: 1px solid #ffd700; border-radius: 5px;">
-                        <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index}, document.getElementById('fuel_qty_${index}').value)" style="padding: 5px 15px;">
-                            🔥 Colocar
-                        </button>
-                    </div>
+                    <button class="action-btn warning" onclick="window.selectFurnaceFuel(${index})" style="padding: 5px 15px;">
+                        🔥 Colocar Tudo (${quantity})
+                    </button>
                 </div>
             </div>
         `;
     }
     itemsHtml += '</div>';
     
-    window.selectFurnaceFuel = function(index, quantity) {
+    window.selectFurnaceFuel = function(index) {
         const item = gameState.inventory[index];
         if (!item) return;
         
-        let qty = parseInt(quantity);
-        if (isNaN(qty) || qty < 1) qty = 1;
-        if (qty > (item.quantity || 1)) qty = item.quantity || 1;
-        
+        const qty = item.quantity || 1;
         const burnTime = FUEL_ITEMS[item.id].burnTime;
         
-        // Remover APENAS a quantidade que o usuário escolheu
-        if (item.quantity > qty) {
-            item.quantity -= qty;
-        } else {
-            gameState.inventory[index] = null;
-        }
+        // Remover TODOS os combustíveis do inventário
+        gameState.inventory[index] = null;
         
         const currentJobLocal = getFurnaceJob();
         if (!currentJobLocal) return;
@@ -3254,7 +3230,6 @@ function openFurnaceFuelSelector() {
         
         currentJobLocal.fuelItemId = item.id;
         currentJobLocal.fuelType = item.name;
-        currentJobLocal.fuelQuantityAdded = (currentJobLocal.fuelQuantityAdded || 0) + qty;
         
         Swal.close();
         updateUI();
@@ -3424,14 +3399,6 @@ function openFurnaceFuelSelector() {
                         }
                     });
                 }
-
-// Função para verificar e consumir combustível (chamada a cada segundo)
-
-// Timer global atualizado
-
-// Função para selecionar item com a quantidade exata que o usuário escolheu
-
-// Função para selecionar combustível com a quantidade exata
 
         // ========== BOOK SYSTEM ==========
         
