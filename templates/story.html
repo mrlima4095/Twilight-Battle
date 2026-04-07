@@ -845,13 +845,15 @@
             wooden_shield: { name: 'Escudo de Madeira', type: 'shield', slot: 'offhand', attack: 0, defense: 50, durability: 100, maxDurability: 100, description: 'Proteção básica' },
             iron_shield: { name: 'Escudo de Ferro', type: 'shield', slot: 'offhand', attack: 0, defense: 75, durability: 150, maxDurability: 150, description: 'Proteção reforçada' },
             // Foods
-            apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida', consumable: true },
-            bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida', consumable: true },
-            fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida', consumable: true },
-            cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida', consumable: true },
+            apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida.', consumable: true },
+            bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida.', consumable: true },
+            fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida.', consumable: true },
+            cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida.', consumable: true },
             
-            meat: { name: 'Carne Assada', type: 'food', heal: 150, description: 'Recupera 150 de vida', consumable: true },
-            raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação', consumable: true },
+            meat: { name: 'Carne Assada', type: 'food', heal: 100, description: 'Recupera 100 de vida.', consumable: true },
+            raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação.', consumable: true },
+            chicken: { name: 'Frango', type: 'food', heal: 30, description: 'Recupera 30 de vida, asse para evitar contaminação.', consumable: true },
+            cooked_chicken: { name: 'Frango Assado', type: 'food', heal: 75, description: 'Recupera 75 de vida.' },
             // |
             // | Drinks
             beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
@@ -974,6 +976,13 @@
                 cookTime: 5,
                 resultName: 'Carne Assada',
                 resultDescription: 'Carne cozida, mais nutritiva e segura para comer.'
+            },
+            chicken: {
+                input: 'chicken',
+                result: 'cooked_chicken',
+                cookTime: 4,
+                resultName: 'Frango Assado',
+                resultDescription: 'Frango cozido, nutritivo, gostoso e seguro para comer.'
             }
         };
 
@@ -2578,7 +2587,7 @@
                         
                         <div style="display: flex; gap: 10px; justify-content: center; margin: 20px 0;">
                             ${isCooking ? 
-                                `<button class="action-btn danger" onclick="stopFurnaceCooking()" style="padding: 12px 30px;">⏹️ PARAR</button>` :
+                                `<button class="action-btn danger" onclick="stopFurnaceCooking()" style="padding: 12px 30px;">⏹️ Apagar fogo (Parar)</button>` :
                                 `<button class="furnace-start-btn" onclick="startFurnaceCooking()" ${!hasItems || !hasFuel ? 'disabled' : ''}>
                                     🔥 Acender Fogo (Iniciar)
                                 </button>`
@@ -3215,6 +3224,75 @@
                         const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
                         delete gameState.furnaceJobs[furnaceId];
                         addLog(`🔥 Fornalha vazia.`);
+                    }
+                    
+                    updateUI();
+                }
+            });
+        }
+        
+        function clearFurnaceInput() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getFurnaceJob();
+            if (!currentJob) return;
+            
+            if (!currentJob.inputItemId && (!currentJob.totalItemsToCook || currentJob.totalItemsToCook <= 0) && (!currentJob.completedCount || currentJob.completedCount <= 0)) {
+                addLog('❌ Não há itens para remover.');
+                return;
+            }
+            
+            if (currentJob.isCooking && !currentJob.isPaused) {
+                addLog('❌ Pare o cozimento primeiro antes de remover os itens.');
+                return;
+            }
+            
+            const itemsToReturn = currentJob.totalItemsToCook || 0; // Itens não assados
+            const itemsCompleted = currentJob.completedCount || 0; // Itens já prontos
+            const currentCookingItem = (currentJob.remainingTime > 0 && currentJob.remainingTime < currentJob.cookTimePerItem) ? 1 : 0; // Item sendo assado
+            
+            Swal.fire({
+                title: '🗑️ Remover Itens da Entrada?',
+                html: `<div style="text-align: left;">
+                    <p>Tem certeza que deseja remover os itens da entrada?</p>
+                    ${itemsToReturn > 0 ? `<p>📦 <strong>${itemsToReturn}x ${currentJob.inputItemName}</strong> serão devolvidos ao inventário.</p>` : ''}
+                    ${itemsCompleted > 0 ? `<p>✅ <strong>${itemsCompleted}x ${currentJob.resultName}</strong> já estão prontos e permanecem na fornalha.</p>` : ''}
+                    ${currentCookingItem > 0 ? `<p>⚠️ O item que estava sendo assado será descartado (não pode ser recuperado).</p>` : ''}
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, remover e devolver',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#ffd700'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Devolver itens não assados para o inventário
+                    if (itemsToReturn > 0 && currentJob.inputItemId) {
+                        for (let i = 0; i < itemsToReturn; i++) {
+                            addItemToInventory(currentJob.inputItemId, 1);
+                        }
+                        addLog(`📦 Devolvidos ${itemsToReturn}x ${currentJob.inputItemName} para o inventário.`);
+                    }
+                    
+                    // Limpar apenas os itens da entrada (não assados)
+                    currentJob.totalItemsToCook = 0;
+                    currentJob.inputItemId = null;
+                    currentJob.inputItemName = null;
+                    currentJob.remainingTime = 0;
+                    currentJob.cookTimePerItem = null;
+                    
+                    // Manter os itens já prontos para retirada
+                    if (itemsCompleted > 0) {
+                        addLog(`✅ ${itemsCompleted}x ${currentJob.resultName} ainda estão prontos para retirada.`);
+                    }
+                    
+                    // Se não há mais nada, limpar completamente o job
+                    if (itemsCompleted === 0 && !currentJob.fuelRemainingTime) {
+                        const furnaceId = `${gameState.activeStation.location}_${gameState.activeStation.id}`;
+                        delete gameState.furnaceJobs[furnaceId];
                     }
                     
                     updateUI();
