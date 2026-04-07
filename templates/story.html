@@ -2580,7 +2580,7 @@
                             ${isCooking ? 
                                 `<button class="action-btn danger" onclick="stopFurnaceCooking()" style="padding: 12px 30px;">⏹️ PARAR</button>` :
                                 `<button class="furnace-start-btn" onclick="startFurnaceCooking()" ${!hasItems || !hasFuel ? 'disabled' : ''}>
-                                    🔥 INICIAR COZIMENTO
+                                    🔥 Acender Fogo (Iniciar)
                                 </button>`
                             }
                         </div>
@@ -3275,84 +3275,95 @@
                 }
             });
         }
-        function clearFurnaceFuel() {
-            if (gameState.isDead) return;
-            
-            const currentJob = getFurnaceJob();
-            if (!currentJob) return;
-            
-            if (!currentJob.fuelRemainingTime || currentJob.fuelRemainingTime <= 0) {
-                addLog('❌ Não há combustível para remover.');
-                return;
+// Substitua a função clearFurnaceFuel() por esta:
+function clearFurnaceFuel() {
+    if (gameState.isDead) return;
+    
+    const currentJob = getFurnaceJob();
+    if (!currentJob) return;
+    
+    if (!currentJob.fuelRemainingTime || currentJob.fuelRemainingTime <= 0) {
+        addLog('❌ Não há combustível para remover.');
+        return;
+    }
+    
+    if (currentJob.isCooking && !currentJob.isPaused) {
+        addLog('❌ Pare o cozimento primeiro antes de remover o combustível.');
+        return;
+    }
+    
+    // Calcular quanto combustível resta em segundos
+    const remainingSeconds = currentJob.fuelRemainingTime;
+    const fuelItemId = currentJob.fuelItemId;
+    const fuelType = currentJob.fuelType;
+    const burnTimePerUnit = FUEL_ITEMS[fuelItemId]?.burnTime || 0;
+    
+    // Calcular quantas unidades COMPLETAS e INTACTAS de combustível restam
+    // Ex: Se cada madeira queima por 8s e restam 14s -> 14 / 8 = 1.75
+    // Math.floor(1.75) = 1 unidade COMPLETAMENTE intacta
+    // O resto (0.75) foi parcialmente queimado e é perdido
+    let unitsToReturn = 0;
+    if (burnTimePerUnit > 0) {
+        unitsToReturn = Math.floor(remainingSeconds / burnTimePerUnit);
+    }
+    
+    // Limitar para não devolver mais do que o jogador colocou originalmente
+    const totalAdded = currentJob.fuelQuantityAdded || 0;
+    unitsToReturn = Math.min(unitsToReturn, totalAdded);
+    
+    // Calcular quanto tempo foi efetivamente queimado (para exibir no log)
+    const burnedSeconds = (totalAdded * burnTimePerUnit) - remainingSeconds;
+    const wastedSeconds = remainingSeconds - (unitsToReturn * burnTimePerUnit);
+    
+    Swal.fire({
+        title: '🗑️ Remover Combustível?',
+        html: `<div style="text-align: left;">
+            <p>Tem certeza que deseja remover o combustível da fornalha?</p>
+            <p>🔥 Combustível: <strong>${fuelType}</strong></p>
+            <p>⏱️ Tempo total colocado: <strong>${totalAdded * burnTimePerUnit} segundos (${totalAdded}x)</strong></p>
+            <p>🔥 Tempo já queimado: <strong>${Math.floor(burnedSeconds)} segundos</strong></p>
+            <p>⏳ Tempo restante na fornalha: <strong>${Math.ceil(remainingSeconds)} segundos</strong></p>
+            ${unitsToReturn > 0 ? 
+                `<p>📦 Serão devolvidos: <strong>${unitsToReturn}x ${fuelType}</strong> (completamente intactos)</p>
+                 <p style="color: #ff8888;">⚠️ O restante (${Math.ceil(wastedSeconds)}s) foi parcialmente queimado e será perdido.</p>` : 
+                `<p style="color: #ff8888;">⚠️ Não há unidades completas de combustível para devolver. Todo o combustível foi parcialmente queimado.</p>`
             }
-            
-            if (currentJob.isCooking && !currentJob.isPaused) {
-                addLog('❌ Pare o cozimento primeiro antes de remover o combustível.');
-                return;
-            }
-            
-            // Calcular quanto combustível resta em segundos
-            const remainingSeconds = currentJob.fuelRemainingTime;
-            const fuelItemId = currentJob.fuelItemId;
-            const fuelType = currentJob.fuelType;
-            const burnTimePerUnit = FUEL_ITEMS[fuelItemId]?.burnTime || 0;
-            
-            // Calcular quantas unidades inteiras de combustível restam
-            let unitsToReturn = 0;
-            if (burnTimePerUnit > 0) {
-                unitsToReturn = Math.floor(remainingSeconds / burnTimePerUnit);
-                // Se tiver pelo menos 50% de uma unidade, devolve uma unidade inteira (justo)
-                if (remainingSeconds % burnTimePerUnit >= burnTimePerUnit * 0.5) {
-                    unitsToReturn++;
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sim, remover',
+        cancelButtonText: 'Cancelar',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonColor: '#ff4444',
+        cancelButtonColor: '#ffd700'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Devolver apenas as unidades COMPLETAS e INTACTAS para o inventário
+            if (unitsToReturn > 0 && fuelItemId) {
+                for (let i = 0; i < unitsToReturn; i++) {
+                    addItemToInventory(fuelItemId, 1);
+                }
+                addLog(`📦 Devolvidos ${unitsToReturn}x ${fuelType} completamente intactos para o inventário.`);
+                if (wastedSeconds > 0) {
+                    addLog(`⚠️ ${Math.ceil(wastedSeconds)} segundos de combustível parcialmente queimado foram perdidos.`);
                 }
             } else {
-                // Fallback: se não conseguir calcular, devolve 1 unidade como cortesia
-                unitsToReturn = 1;
+                addLog(`⚠️ Nenhum combustível intacto para devolver. Todo o ${fuelType} foi parcialmente queimado.`);
             }
             
-            // Limitar para não devolver mais do que o jogador colocou originalmente
-            const totalAdded = currentJob.fuelQuantityAdded || 0;
-            unitsToReturn = Math.min(unitsToReturn, totalAdded);
+            // Limpar o combustível da fornalha
+            delete currentJob.fuelRemainingTime;
+            delete currentJob.fuelItemId;
+            delete currentJob.fuelType;
+            delete currentJob.fuelQuantityAdded;
             
-            Swal.fire({
-                title: '🗑️ Remover Combustível?',
-                html: `<div style="text-align: left;">
-                    <p>Tem certeza que deseja remover o combustível da fornalha?</p>
-                    <p>🔥 Combustível atual: <strong>${fuelType}</strong></p>
-                    <p>⏱️ Tempo restante: <strong>${Math.ceil(remainingSeconds)} segundos</strong></p>
-                    ${unitsToReturn > 0 ? `<p>📦 Serão devolvidos: <strong>${unitsToReturn}x ${fuelType}</strong> para seu inventário.</p>` : '<p>⚠️ Tempo insuficiente para devolver qualquer unidade completa.</p>'}
-                    <p style="color: #ffa500; margin-top: 10px;">⚠️ Apenas unidades completas de combustível serão devolvidas.</p>
-                </div>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sim, remover e devolver',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ff4444',
-                cancelButtonColor: '#ffd700'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Devolver as unidades inteiras de combustível para o inventário
-                    if (unitsToReturn > 0 && fuelItemId) {
-                        for (let i = 0; i < unitsToReturn; i++) {
-                            addItemToInventory(fuelItemId, 1);
-                        }
-                        addLog(`📦 Devolvidos ${unitsToReturn}x ${fuelType} para o inventário.`);
-                    }
-                    
-                    // Limpar o combustível da fornalha
-                    delete currentJob.fuelRemainingTime;
-                    delete currentJob.fuelItemId;
-                    delete currentJob.fuelType;
-                    delete currentJob.fuelQuantityAdded;
-                    
-                    addLog('🔥 Combustível removido da fornalha.');
-                    updateUI();
-                }
-            });
+            addLog('🔥 Combustível removido da fornalha.');
+            updateUI();
         }
-
+    });
+}
+        
         // ========== BOOK SYSTEM ==========
         
         let activeBook = null;
