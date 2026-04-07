@@ -797,7 +797,7 @@
             wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true },
             wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
             string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
-            cloth: { name: 'Tecido', type: 'material', description: 'Tecido fino para confecção', consumable: false },
+            cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção', consumable: false },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
             sleeping_bag: { 
@@ -1083,7 +1083,7 @@
                 name: '🧵 Linha',
                 description: 'Linha para cozer.',
                 materials: [
-                    { id: 'wool', quantity: 1 },
+                    { id: 'wool', quantity: 1 }
                 ],
                 result: 'string',
                 quantity: 2,
@@ -1105,6 +1105,7 @@
                 materials: [
                     { id: 'cloth', quantity: 2 },
                     { id: 'string', quantity: 6 },
+                    
                 ],
                 result: 'shirt',
                 quantity: 1,
@@ -1114,7 +1115,7 @@
                 name: '👖 Calças',
                 description: 'Calças para suas pernas',
                 materials: [
-                    { id: 'cloth', quantity: 4 }
+                    { id: 'cloth', quantity: 4 },
                     { id: 'string', quantity: 8 },
                 ],
                 result: 'pants',
@@ -1127,7 +1128,7 @@
                 materials: [
                     { id: 'leather', quantity: 4 },
                     { id: 'cloth', quantity: 2 },
-                    { id: 'string', quantity: 6 },
+                    { id: 'string', quantity: 6 }
                 ],
                 result: 'boots',
                 quantity: 1,
