@@ -6041,6 +6041,101 @@ function initNPCSystem() {
     updateNPCs();
 }
 
+
+let npcUpdateInterval = null;
+
+function startNPCUpdateTimer() {
+    if (npcUpdateInterval) {
+        clearInterval(npcUpdateInterval);
+    }
+    
+    // Atualizar NPCs a cada 30 segundos
+    npcUpdateInterval = setInterval(() => {
+        if (!gameState.isDead && gameState.character) {
+            updateNPCs();
+            // Atualizar UI se necessário
+            if (gameState.activeStation === null && !gameState.currentEnemy) {
+                updateGameContent();
+            }
+        }
+    }, 30000);
+}
+
+async function interactWithNPC(npcId) {
+    if (gameState.isDead) return;
+    
+    const npc = getNPC(npcId);
+    if (!npc) {
+        addLog('❌ NPC não encontrado!');
+        return;
+    }
+    
+    const config = NPC_CONFIGS[npcId];
+    if (!config) return;
+    
+    // Verificar se está dormindo
+    if (npc.isSleeping) {
+        const sleepMessage = config.dialog.sleeping || "Zzz... Zzz...";
+        await Swal.fire({
+            title: `${config.emoji} ${npc.name}`,
+            html: `<div style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 10px;">😴💤</div>
+                <p style="font-style: italic;">"${sleepMessage}"</p>
+                <p style="color: #888; margin-top: 10px;">${npc.name} está dormindo. Volte durante o dia!</p>
+            </div>`,
+            icon: 'info',
+            confirmButtonText: 'Voltar depois',
+            background: '#1a1a2e',
+            color: '#fff',
+            confirmButtonColor: '#ffd700'
+        });
+        addLog(`😴 ${npc.name} está dormindo.`);
+        return;
+    }
+    
+    // Pegar mensagem baseada na atividade
+    let message = config.dialog.default;
+    if (config.dialog[npc.currentActivity]) {
+        message = config.dialog[npc.currentActivity];
+    }
+    
+    // Personalizar mensagem baseada no humor
+    if (npc.mood === 'pensativo') {
+        message = `"${message.substring(0, message.length - 1)}... Estou com a cabeça cheia hoje."`;
+    } else if (npc.mood === 'alegre') {
+        message = `"${message} Ah, estou tão feliz hoje! O dia está maravilhoso!"`;
+    } else if (npc.mood === 'ocupado') {
+        message = `"${message} Desculpe, estou muito ocupado agora. Volte mais tarde?"`;
+    }
+    
+    // Mostrar diálogo
+    await Swal.fire({
+        title: `${config.emoji} ${npc.name}`,
+        html: `<div style="text-align: left;">
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                <div style="font-size: 48px;">${config.emoji}</div>
+                <div>
+                    <div style="font-weight: bold; font-size: 18px; color: #ffd700;">${npc.name}</div>
+                    <div style="font-size: 12px; color: #888;">${getActivityText(npc.currentActivity)}</div>
+                </div>
+            </div>
+            <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${message}</p>
+        </div>`,
+        icon: 'info',
+        confirmButtonText: 'Continuar',
+        background: '#1a1a2e',
+        color: '#fff',
+        confirmButtonColor: '#ffd700'
+    });
+    
+    addLog(`💬 Você conversou com ${npc.name}.`);
+    
+    // Pequena chance de aumentar relação
+    if (Math.random() < 0.2) {
+        npc.relationship = Math.min(100, npc.relationship + 1);
+    }
+}
+
         
         // ========== DIALOG SYSTEM ==========
 
