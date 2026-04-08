@@ -6149,6 +6149,7 @@
             
             checkForContinueButton();
             startFurnaceGlobalTimer();
+            startNPCUpdateTimer();
             
             setInterval(() => {
                 if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
