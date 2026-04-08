@@ -961,6 +961,170 @@
                 resultDescription: 'Frango cozido, nutritivo, gostoso e seguro para comer.'
             }
         };
+        
+        const NPC_CONFIGS = {
+            carlos: {
+                name: 'Carlos',
+                emoji: '🔨',
+                role: 'marceneiro',
+                homeLocation: 'north_village',
+                dayLocation: 'north_village',
+                dayActivity: 'trabalhando',
+                nightLocation: 'north_village',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'north_village', chance: 0.6, activity: 'trabalhando' },
+                    { location: 'main_avenue', chance: 0.2, activity: 'comprando suprimentos' },
+                    { location: 'tavern', chance: 0.15, activity: 'descansando' },
+                    { location: 'main_square', chance: 0.05, activity: 'conversando' }
+                ],
+                dialog: {
+                    working: "Estou ocupado esculpindo esta madeira. Precisa de algo?",
+                    resting: "Ah, que bom descansar um pouco. O trabalho foi pesado hoje.",
+                    sleeping: "Zzz... Madeira... Zzz...",
+                    shopping: "Comprando alguns suprimentos para a oficina.",
+                    default: "Olá! Como posso ajudá-lo hoje?"
+                }
+            },
+            mateus: {
+                name: 'Mateus',
+                emoji: '🎨',
+                role: 'artesão',
+                homeLocation: 'north_village',
+                dayLocation: 'north_village',
+                dayActivity: 'criando',
+                nightLocation: 'north_village',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'north_village', chance: 0.5, activity: 'criando' },
+                    { location: 'main_square', chance: 0.25, activity: 'expondo obras' },
+                    { location: 'west_bridge', chance: 0.15, activity: 'buscando inspiração' },
+                    { location: 'tavern', chance: 0.1, activity: 'socializando' }
+                ],
+                dialog: {
+                    creating: "A inspiração está fluindo hoje! Estou criando algo especial.",
+                    exposing: "Venha ver minhas novas obras! Esta pintura é sobre a lenda do lago sagrado.",
+                    inspiring: "A natureza me inspira profundamente. Que cores maravilhosas!",
+                    sleeping: "Zzz... Arte... Zzz...",
+                    default: "Arte é a alma do reino. O que você acha?"
+                }
+            },
+            isadora: {
+                name: 'Isadora',
+                emoji: '🧵',
+                role: 'tecelã',
+                homeLocation: 'south_village',
+                dayLocation: 'south_village',
+                dayActivity: 'tecendo',
+                nightLocation: 'south_village',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'south_village', chance: 0.55, activity: 'tecendo' },
+                    { location: 'main_avenue', chance: 0.2, activity: 'entregando tecidos' },
+                    { location: 'farmlands', chance: 0.15, activity: 'colhendo plantas' },
+                    { location: 'market', chance: 0.1, activity: 'comprando linhas' }
+                ],
+                dialog: {
+                    weaving: "Este tecido está ficando lindo! As cores são das plantas que cultivo.",
+                    delivering: "Preciso entregar esses tecidos na avenida. São para a corte real!",
+                    harvesting: "Coletando plantas para tingir. Cada cor tem sua própria receita secreta.",
+                    sleeping: "Zzz... Fios... Zzz...",
+                    default: "Os tecidos mais finos do reino são feitos aqui!"
+                }
+            },
+            miguel: {
+                name: 'Miguel',
+                emoji: '👨‍🌾',
+                role: 'fazendeiro',
+                homeLocation: 'farmlands',
+                dayLocation: 'farmlands',
+                dayActivity: 'cultivando',
+                nightLocation: 'farmlands',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'farmlands', chance: 0.7, activity: 'cultivando' },
+                    { location: 'west_bridge', chance: 0.15, activity: 'indo ao moinho' },
+                    { location: 'market', chance: 0.1, activity: 'vendendo produtos' },
+                    { location: 'tavern', chance: 0.05, activity: 'descansando' }
+                ],
+                dialog: {
+                    farming: "O sol está forte hoje, mas a colheita está boa!",
+                    milling: "Indo ao moinho moer o trigo. Pão fresco em breve!",
+                    selling: "Verduras fresquinhas! Direto da minha horta.",
+                    sleeping: "Zzz... Trigo... Zzz...",
+                    default: "Bem-vindo às minhas terras, aventureiro!"
+                }
+            },
+            ana: {
+                name: 'Ana',
+                emoji: '👩‍🌾',
+                role: 'padeira',
+                homeLocation: 'farmlands',
+                dayLocation: 'farmlands',
+                dayActivity: 'assando',
+                nightLocation: 'farmlands',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'farmlands', chance: 0.5, activity: 'assando' },
+                    { location: 'mill', chance: 0.25, activity: 'moendo farinha' },
+                    { location: 'market', chance: 0.2, activity: 'vendendo pães' },
+                    { location: 'home', chance: 0.05, activity: 'descansando' }
+                ],
+                dialog: {
+                    baking: "O cheiro do pão fresco é a melhor coisa do mundo!",
+                    milling: "A farinha de hoje está especial. O pão vai ficar delicioso!",
+                    selling: "Pão quentinho! Compra um, aventureiro?",
+                    sleeping: "Zzz... Forno... Pão... Zzz...",
+                    default: "Quer experimentar meu pão recém-assado?"
+                }
+            },
+            capitain: {
+                name: 'Capitão Aldric',
+                emoji: '🗡️',
+                role: 'capitão',
+                homeLocation: 'castle_gate',
+                dayLocation: 'great_hall',
+                dayActivity: 'treinando',
+                nightLocation: 'castle_gate',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'great_hall', chance: 0.4, activity: 'treinando' },
+                    { location: 'main_gate', chance: 0.3, activity: 'inspecionando' },
+                    { location: 'castle_gate', chance: 0.2, activity: 'patrulhando' },
+                    { location: 'tavern', chance: 0.1, activity: 'descansando' }
+                ],
+                dialog: {
+                    training: "Os soldados precisam estar sempre prontos! Treino é fundamental.",
+                    inspecting: "As muralhas estão seguras. Nenhum monstro passará.",
+                    patrolling: "Patrulha noturna. Tudo está sob controle.",
+                    sleeping: "Zzz... Guarda... Zzz...",
+                    default: "Mantenha-se alerta, aventureiro. O perigo pode estar próximo."
+                }
+            },
+            king: {
+                name: 'Rei Alaric',
+                emoji: '👑',
+                role: 'rei',
+                homeLocation: 'castle_gate',
+                dayLocation: 'throne_room',
+                dayActivity: 'governando',
+                nightLocation: 'castle_gate',
+                nightActivity: 'dormindo',
+                possibleDayLocations: [
+                    { location: 'throne_room', chance: 0.6, activity: 'governando' },
+                    { location: 'great_hall', chance: 0.2, activity: 'em conselho' },
+                    { location: 'castle_gate', chance: 0.15, activity: 'passeando' },
+                    { location: 'main_square', chance: 0.05, activity: 'visitando o povo' }
+                ],
+                dialog: {
+                    governing: "O reino precisa de decisões sábias. Estou atendendo aos pleitos do povo.",
+                    counseling: "Reunido com meus conselheiros. Questões importantes estão sendo discutidas.",
+                    strolling: "É bom ver o rosto do meu povo. O reino prospera!",
+                    sleeping: "Zzz... Reino... Zzz...",
+                    default: "Bem-vindo ao meu reino, herói. Que a aurora te guie."
+                }
+            }
+        };
 
         // Drag and Drop Variables
         let draggedItemIndex = null;
