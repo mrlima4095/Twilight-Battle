@@ -4459,7 +4459,7 @@
                 // NOITE: Pode estar dormindo ou acordado
                 // Primeiro decide se está em casa
                 const homeRandom = Math.random();
-                currentState.isHome = homeRandom < behavior.homeChance;
+                currentState.isHome = true; //homeRandom < behavior.homeChance;
                 
                 if (currentState.isHome) {
                     // Se está em casa, decide se está dormindo
