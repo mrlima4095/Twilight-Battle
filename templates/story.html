@@ -962,166 +962,150 @@
             }
         };
         
-        const NPC_CONFIGS = {
-            carlos: {
+        const NPC_DEFINITIONS = {
+            // Vilarejo Norte
+            carpenter: {
+                id: 'carpenter',
                 name: 'Carlos',
+                title: 'Marceneiro',
                 emoji: '🔨',
-                role: 'marceneiro',
-                homeLocation: 'north_village',
-                dayLocation: 'north_village',
-                dayActivity: 'trabalhando',
-                nightLocation: 'north_village',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'north_village', chance: 0.6, activity: 'trabalhando' },
-                    { location: 'main_avenue', chance: 0.2, activity: 'comprando suprimentos' },
-                    { location: 'tavern', chance: 0.15, activity: 'descansando' },
-                    { location: 'main_square', chance: 0.05, activity: 'conversando' }
-                ],
-                dialog: {
-                    working: "Estou ocupado esculpindo esta madeira. Precisa de algo?",
-                    resting: "Ah, que bom descansar um pouco. O trabalho foi pesado hoje.",
-                    sleeping: "Zzz... Madeira... Zzz...",
-                    shopping: "Comprando alguns suprimentos para a oficina.",
-                    default: "Olá! Como posso ajudá-lo hoje?"
+                location: 'north_village',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                // Horários: dia sempre acordado, noite pode dormir
+                dayBehavior: {
+                    homeChance: 0.7,      // 70% de chance de estar em casa durante o dia
+                    alwaysAwake: true      // Durante o dia sempre acordado
+                },
+                nightBehavior: {
+                    homeChance: 0.9,      // 90% de chance de estar em casa à noite
+                    sleepChance: 0.8      // 80% de chance de estar dormindo se estiver em casa
                 }
             },
-            mateus: {
+            artisan: {
+                id: 'artisan',
                 name: 'Mateus',
+                title: 'Artesão',
                 emoji: '🎨',
-                role: 'artesão',
-                homeLocation: 'north_village',
-                dayLocation: 'north_village',
-                dayActivity: 'criando',
-                nightLocation: 'north_village',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'north_village', chance: 0.5, activity: 'criando' },
-                    { location: 'main_square', chance: 0.25, activity: 'expondo obras' },
-                    { location: 'west_bridge', chance: 0.15, activity: 'buscando inspiração' },
-                    { location: 'tavern', chance: 0.1, activity: 'socializando' }
-                ],
-                dialog: {
-                    creating: "A inspiração está fluindo hoje! Estou criando algo especial.",
-                    exposing: "Venha ver minhas novas obras! Esta pintura é sobre a lenda do lago sagrado.",
-                    inspiring: "A natureza me inspira profundamente. Que cores maravilhosas!",
-                    sleeping: "Zzz... Arte... Zzz...",
-                    default: "Arte é a alma do reino. O que você acha?"
+                location: 'north_village',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.6,
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 0.85,
+                    sleepChance: 0.75
                 }
             },
-            isadora: {
+            // Vilarejo Sul
+            weaver: {
+                id: 'weaver',
                 name: 'Isadora',
+                title: 'Tecelã',
                 emoji: '🧵',
-                role: 'tecelã',
-                homeLocation: 'south_village',
-                dayLocation: 'south_village',
-                dayActivity: 'tecendo',
-                nightLocation: 'south_village',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'south_village', chance: 0.55, activity: 'tecendo' },
-                    { location: 'main_avenue', chance: 0.2, activity: 'entregando tecidos' },
-                    { location: 'farmlands', chance: 0.15, activity: 'colhendo plantas' },
-                    { location: 'market', chance: 0.1, activity: 'comprando linhas' }
-                ],
-                dialog: {
-                    weaving: "Este tecido está ficando lindo! As cores são das plantas que cultivo.",
-                    delivering: "Preciso entregar esses tecidos na avenida. São para a corte real!",
-                    harvesting: "Coletando plantas para tingir. Cada cor tem sua própria receita secreta.",
-                    sleeping: "Zzz... Fios... Zzz...",
-                    default: "Os tecidos mais finos do reino são feitos aqui!"
+                location: 'south_village',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.65,
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 0.9,
+                    sleepChance: 0.8
                 }
             },
-            miguel: {
+            // Campos
+            farmerMiguel: {
+                id: 'farmerMiguel',
                 name: 'Miguel',
+                title: 'Fazendeiro',
                 emoji: '👨‍🌾',
-                role: 'fazendeiro',
-                homeLocation: 'farmlands',
-                dayLocation: 'farmlands',
-                dayActivity: 'cultivando',
-                nightLocation: 'farmlands',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'farmlands', chance: 0.7, activity: 'cultivando' },
-                    { location: 'west_bridge', chance: 0.15, activity: 'indo ao moinho' },
-                    { location: 'market', chance: 0.1, activity: 'vendendo produtos' },
-                    { location: 'tavern', chance: 0.05, activity: 'descansando' }
-                ],
-                dialog: {
-                    farming: "O sol está forte hoje, mas a colheita está boa!",
-                    milling: "Indo ao moinho moer o trigo. Pão fresco em breve!",
-                    selling: "Verduras fresquinhas! Direto da minha horta.",
-                    sleeping: "Zzz... Trigo... Zzz...",
-                    default: "Bem-vindo às minhas terras, aventureiro!"
+                location: 'farmlands',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.5,      // 50% - trabalha nos campos
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 0.95,
+                    sleepChance: 0.9
                 }
             },
-            ana: {
+            farmerAna: {
+                id: 'farmerAna',
                 name: 'Ana',
+                title: 'Padeira',
                 emoji: '👩‍🌾',
-                role: 'padeira',
-                homeLocation: 'farmlands',
-                dayLocation: 'farmlands',
-                dayActivity: 'assando',
-                nightLocation: 'farmlands',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'farmlands', chance: 0.5, activity: 'assando' },
-                    { location: 'mill', chance: 0.25, activity: 'moendo farinha' },
-                    { location: 'market', chance: 0.2, activity: 'vendendo pães' },
-                    { location: 'home', chance: 0.05, activity: 'descansando' }
-                ],
-                dialog: {
-                    baking: "O cheiro do pão fresco é a melhor coisa do mundo!",
-                    milling: "A farinha de hoje está especial. O pão vai ficar delicioso!",
-                    selling: "Pão quentinho! Compra um, aventureiro?",
-                    sleeping: "Zzz... Forno... Pão... Zzz...",
-                    default: "Quer experimentar meu pão recém-assado?"
+                location: 'farmlands',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.55,     // Padaria fica na casa
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 0.95,
+                    sleepChance: 0.9
                 }
             },
-            capitain: {
-                name: 'Capitão Aldric',
+            // Castelo
+            captain: {
+                id: 'captain',
+                name: 'Aldric',
+                title: 'Capitão da Guarda',
                 emoji: '🗡️',
-                role: 'capitão',
-                homeLocation: 'castle_gate',
-                dayLocation: 'great_hall',
-                dayActivity: 'treinando',
-                nightLocation: 'castle_gate',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'great_hall', chance: 0.4, activity: 'treinando' },
-                    { location: 'main_gate', chance: 0.3, activity: 'inspecionando' },
-                    { location: 'castle_gate', chance: 0.2, activity: 'patrulhando' },
-                    { location: 'tavern', chance: 0.1, activity: 'descansando' }
-                ],
-                dialog: {
-                    training: "Os soldados precisam estar sempre prontos! Treino é fundamental.",
-                    inspecting: "As muralhas estão seguras. Nenhum monstro passará.",
-                    patrolling: "Patrulha noturna. Tudo está sob controle.",
-                    sleeping: "Zzz... Guarda... Zzz...",
-                    default: "Mantenha-se alerta, aventureiro. O perigo pode estar próximo."
+                location: 'great_hall',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.8,      // Capitão geralmente no quartel
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 0.7,      // Pode estar em patrulha
+                    sleepChance: 0.6
                 }
             },
             king: {
-                name: 'Rei Alaric',
+                id: 'king',
+                name: 'Alaric',
+                title: 'Rei Mago',
                 emoji: '👑',
-                role: 'rei',
-                homeLocation: 'castle_gate',
-                dayLocation: 'throne_room',
-                dayActivity: 'governando',
-                nightLocation: 'castle_gate',
-                nightActivity: 'dormindo',
-                possibleDayLocations: [
-                    { location: 'throne_room', chance: 0.6, activity: 'governando' },
-                    { location: 'great_hall', chance: 0.2, activity: 'em conselho' },
-                    { location: 'castle_gate', chance: 0.15, activity: 'passeando' },
-                    { location: 'main_square', chance: 0.05, activity: 'visitando o povo' }
-                ],
-                dialog: {
-                    governing: "O reino precisa de decisões sábias. Estou atendendo aos pleitos do povo.",
-                    counseling: "Reunido com meus conselheiros. Questões importantes estão sendo discutidas.",
-                    strolling: "É bom ver o rosto do meu povo. O reino prospera!",
-                    sleeping: "Zzz... Reino... Zzz...",
-                    default: "Bem-vindo ao meu reino, herói. Que a aurora te guie."
+                location: 'throne_room',
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                dayBehavior: {
+                    homeChance: 0.9,      // Rei quase sempre no castelo
+                    alwaysAwake: true
+                },
+                nightBehavior: {
+                    homeChance: 1.0,      // Rei sempre dorme no castelo à noite
+                    sleepChance: 1.0
                 }
             }
         };
@@ -2839,7 +2823,7 @@
             `;
         }
 
-        // ========== FORNALHA (FURNACE) FUNÇÕES ATUALIZADAS ==========
+        // ========== FURNACE SYSTEM ==========
         
         let furnaceGlobalInterval = null;
         
@@ -3744,7 +3728,6 @@
             });
         }
         
-        // Função auxiliar para escapar HTML
         function escapeHtml(text) {
             if (!text) return '';
             const div = document.createElement('div');
@@ -4185,186 +4168,8 @@
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
             addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
-            updateNPCs();
+            updateAllNPCs();
             updateUI();
-        }
-
-        // ========== FUNÇÕES DO CASTELO ==========
-
-        async function talkToCaptain() {
-            if (gameState.isDead) return;
-            
-            await showHouseDialog({
-                name: 'Capitão Aldric',
-                emoji: '🗡️',
-                sleepyEmoji: '😴🗡️',
-                location: 'quartel da guarda',
-                sleepyMessages: [
-                    "*Ronco militar* Zzz... Guarda... Zzz...",
-                    "*Acordando de repente* Quem está aí? O quartel já fechou!",
-                    "Plantão noturno... Preciso descansar para a guarda de amanhã.",
-                    "*Espreguiçando* Volte durante o dia, soldado!"
-                ],
-                sleepingMessage: 'O Capitão está descansando após o treinamento. Volte durante o dia!',
-                greeting: `Aventureiro ${gameState.character.name}, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.`,
-                farewell: "Que os deuses te protejam em suas missões, soldado!",
-                sleepChance: 0.7,
-                absentChance: 0.2,
-                absentMessage: 'O Capitão está em patrulha nas muralhas. Volte mais tarde!',
-                
-                // Loja do capitão (itens militares)
-                shopItems: [
-                    { id: 'sword', price: 30 },  // Preço com desconto para aventureiros
-                    { id: 'wooden_shield', price: 25 },
-                    { id: 'arrow', price: 1 }     // Flechas mais baratas para recrutas
-                ],
-                buyPriceMultiplier: 0.85, // 15% de desconto para aventureiros aliados
-                canSellToNPC: true,
-                sellPriceMultiplier: 0.4, // Compra equipamentos usados por 40% do valor
-                shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
-                
-                // Assuntos para conversar
-                topics: [
-                    { 
-                        name: '⚔️ Treinamento', 
-                        message: '"Se quiser treinar, o campo de batalha fica atrás do quartel. Posso te dar algumas lições quando tiver tempo."' 
-                    },
-                    { 
-                        name: '👥 A Guarda Real', 
-                        message: '"Tenho 50 soldados sob meu comando. Homens e mulheres corajosos que juram proteger o reino com suas vidas."' 
-                    },
-                    { 
-                        name: '🐉 Ameaças Recentes', 
-                        message: '"Relatos de monstros maiores estão chegando. Um dragão foi avistado nas montanhas ao norte. Tome cuidado se for para lá."' 
-                    },
-                    { 
-                        name: '📜 Missões Disponíveis', 
-                        message: '"Precisamos de alguém para patrulhar a estrada leste. Os comerciantes estão sendo atacados. Interessado?"',
-                        action: () => {
-                            addLog('📜 Capitão Aldric: "Pense na missão e volte se estiver interessado!"');
-                        }
-                    },
-                    { 
-                        name: '💬 Como estão as coisas?', 
-                        message: `"Cansado, mas firme. O reino precisa de guardas vigilantes. E você, ${gameState.character.name}, como está sua jornada?"` 
-                    }
-                ],
-                
-                // Callbacks
-                onSleep: () => addLog('😴 O Capitão está descansando. Até amanhã, soldados!'),
-                onAbsent: () => addLog('🗡️ O Capitão está inspecionando as muralhas.'),
-                onGreet: () => {
-                    addLog('🗡️ Capitão Aldric acena respeitosamente.');
-                },
-                onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
-            });
-        }
-        async function talkToKing() {
-            if (gameState.isDead) return;
-            
-            // Verificar missão real ativa para mostrar progresso
-            const questProgress = gameState.royalQuest && !gameState.royalQuest.rewarded 
-                ? `<p style="color: #ffd700; margin-top: 10px;">📜 Progresso da Missão: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros</p>`
-                : '';
-            
-            await showHouseDialog({
-                name: 'Rei Mago',
-                emoji: '👑',
-                sleepyEmoji: '😴👑',
-                location: 'sala do trono',
-                sleepyMessages: [
-                    "*Respiração profunda* Zzz... Reino... Zzz...",
-                    "*Acordando* Quem ousa perturbar o descanso real?",
-                    "O rei já se recolheu. Volte amanhã durante a audiência.",
-                    "*Bocejando* A coroa é pesada... Preciso descansar."
-                ],
-                sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
-                greeting: `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questProgress}`,
-                farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
-                sleepChance: 0.8, // Rei dorme mais cedo
-                absentChance: 0.3,
-                absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
-                
-                // Assuntos para conversar com o rei
-                topics: [
-                    { 
-                        name: '👑 Sobre o Reino', 
-                        message: '"O Reino da Aurora foi fundado por meu bisavô há trezentos anos. Desde então, temos prosperado sob a proteção dos deuses."' 
-                    },
-                    { 
-                        name: '⚔️ Ameaça nas Fronteiras', 
-                        message: '"As criaturas das trevas estão se multiplicando. Suspeito que algo está despertando nas profundezas das montanhas proibidas."' 
-                    },
-                    { 
-                        name: '📜 Histórias Antigas', 
-                        message: '"Diz a lenda que há um artefato escondido nas ruínas antigas, capaz de banir as trevas para sempre. Será que você é o herói destinado a encontrá-lo?"' 
-                    },
-                    { 
-                        name: '🏆 Recompensas', 
-                        message: '"Para aqueles que servem o reino com bravura, as recompensas são generosas. Terras, títulos e tesouros aguardam os mais corajosos."' 
-                    },
-                    { 
-                        name: '💬 Tudo bem, Majestade?', 
-                        message: `"O peso da coroa é constante, mas ver aventureiros como você dedicados ao reino renova minhas esperanças. Continue assim, ${gameState.character.name}."` 
-                    },
-                    { 
-                        name: '✨ Bênção Real', 
-                        message: '"Que os deuses te abençoem em sua jornada. Leve esta bênção como proteção."',
-                        action: () => {
-                            // Bênção especial - só pode receber uma vez por dia
-                            const lastBlessing = localStorage.getItem('last_royal_blessing');
-                            const now = Date.now();
-                            const oneDay = 24 * 60 * 60 * 1000;
-                            
-                            if (!lastBlessing || (now - parseInt(lastBlessing)) > oneDay) {
-                                const healAmount = Math.floor(gameState.character.maxLife * 0.3);
-                                const manaAmount = Math.floor(gameState.character.maxMana * 0.2);
-                                gameState.character.life = Math.min(gameState.character.life + healAmount, gameState.character.maxLife);
-                                gameState.character.mana = Math.min(gameState.character.mana + manaAmount, gameState.character.maxMana);
-                                localStorage.setItem('last_royal_blessing', now.toString());
-                                
-                                addLog(`👑 O Rei te abençoou! Você recuperou ${healAmount} de vida e ${manaAmount} de mana.`);
-                                Swal.fire({
-                                    title: '✨ Bênção Real Recebida!',
-                                    text: `Você foi abençoado pelo Rei! +${healAmount}❤️ +${manaAmount}🔮`,
-                                    icon: 'success',
-                                    confirmButtonText: 'Agradecer',
-                                    background: '#1a1a2e',
-                                    color: '#fff',
-                                    confirmButtonColor: '#ffd700'
-                                });
-                                updateUI();
-                            } else {
-                                addLog('👑 O Rei já te abençoou hoje. Volte amanhã para outra bênção.');
-                                Swal.fire({
-                                    title: '⏰ Ainda não...',
-                                    text: 'O Rei já te abençoou hoje. Volte amanhã para receber outra bênção.',
-                                    icon: 'info',
-                                    confirmButtonText: 'Entendi',
-                                    background: '#1a1a2e',
-                                    color: '#fff',
-                                    confirmButtonColor: '#ffd700'
-                                });
-                            }
-                        }
-                    }
-                ],
-                
-                // Callbacks especiais
-                onSleep: () => addLog('😴 O Rei descansa em seus aposentos. Até amanhã.'),
-                onAbsent: () => addLog('👑 O Rei está em conselho com os nobres do reino.'),
-                onGreet: () => {
-                    addLog('👑 Você se curva respeitosamente diante do Rei Alaric.');
-                    // Rei pode dar ouro ocasionalmente
-                    if (Math.random() < 0.15) {
-                        const goldAmount = 50 + Math.floor(Math.random() * 100);
-                        gameState.character.gold += goldAmount;
-                        addLog(`👑 Sua Majestade te concede ${goldAmount} moedas de ouro pela sua lealdade!`);
-                        updateUI();
-                    }
-                },
-                onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
-            });
         }
 
         // ========== FUNÇÕES DA TABERNA ==========
@@ -4695,6 +4500,182 @@
                 onSleep: () => addLog('😴 Ana foi descansar depois de um dia inteiro assando pães.'),
                 onAbsent: () => addLog('🍞 Ana saiu para comprar mais farinha no moinho. Volte mais tarde!'),
                 onGreet: () => addLog('👩‍🌾 Ana sorri e oferece um pedaço de pão enquanto conversa.')
+            });
+        }
+
+        async function talkToCaptain() {
+            if (gameState.isDead) return;
+            
+            await showHouseDialog({
+                name: 'Capitão Aldric',
+                emoji: '🗡️',
+                sleepyEmoji: '😴🗡️',
+                location: 'quartel da guarda',
+                sleepyMessages: [
+                    "*Ronco militar* Zzz... Guarda... Zzz...",
+                    "*Acordando de repente* Quem está aí? O quartel já fechou!",
+                    "Plantão noturno... Preciso descansar para a guarda de amanhã.",
+                    "*Espreguiçando* Volte durante o dia, soldado!"
+                ],
+                sleepingMessage: 'O Capitão está descansando após o treinamento. Volte durante o dia!',
+                greeting: `Aventureiro ${gameState.character.name}, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.`,
+                farewell: "Que os deuses te protejam em suas missões, soldado!",
+                sleepChance: 0.7,
+                absentChance: 0.2,
+                absentMessage: 'O Capitão está em patrulha nas muralhas. Volte mais tarde!',
+                
+                // Loja do capitão (itens militares)
+                shopItems: [
+                    { id: 'sword', price: 30 },  // Preço com desconto para aventureiros
+                    { id: 'wooden_shield', price: 25 },
+                    { id: 'arrow', price: 1 }     // Flechas mais baratas para recrutas
+                ],
+                buyPriceMultiplier: 0.85, // 15% de desconto para aventureiros aliados
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4, // Compra equipamentos usados por 40% do valor
+                shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
+                
+                // Assuntos para conversar
+                topics: [
+                    { 
+                        name: '⚔️ Treinamento', 
+                        message: '"Se quiser treinar, o campo de batalha fica atrás do quartel. Posso te dar algumas lições quando tiver tempo."' 
+                    },
+                    { 
+                        name: '👥 A Guarda Real', 
+                        message: '"Tenho 50 soldados sob meu comando. Homens e mulheres corajosos que juram proteger o reino com suas vidas."' 
+                    },
+                    { 
+                        name: '🐉 Ameaças Recentes', 
+                        message: '"Relatos de monstros maiores estão chegando. Um dragão foi avistado nas montanhas ao norte. Tome cuidado se for para lá."' 
+                    },
+                    { 
+                        name: '📜 Missões Disponíveis', 
+                        message: '"Precisamos de alguém para patrulhar a estrada leste. Os comerciantes estão sendo atacados. Interessado?"',
+                        action: () => {
+                            addLog('📜 Capitão Aldric: "Pense na missão e volte se estiver interessado!"');
+                        }
+                    },
+                    { 
+                        name: '💬 Como estão as coisas?', 
+                        message: `"Cansado, mas firme. O reino precisa de guardas vigilantes. E você, ${gameState.character.name}, como está sua jornada?"` 
+                    }
+                ],
+                
+                // Callbacks
+                onSleep: () => addLog('😴 O Capitão está descansando. Até amanhã, soldados!'),
+                onAbsent: () => addLog('🗡️ O Capitão está inspecionando as muralhas.'),
+                onGreet: () => {
+                    addLog('🗡️ Capitão Aldric acena respeitosamente.');
+                },
+                onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
+            });
+        }
+        async function talkToKing() {
+            if (gameState.isDead) return;
+            
+            // Verificar missão real ativa para mostrar progresso
+            const questProgress = gameState.royalQuest && !gameState.royalQuest.rewarded 
+                ? `<p style="color: #ffd700; margin-top: 10px;">📜 Progresso da Missão: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros</p>`
+                : '';
+            
+            await showHouseDialog({
+                name: 'Rei Mago',
+                emoji: '👑',
+                sleepyEmoji: '😴👑',
+                location: 'sala do trono',
+                sleepyMessages: [
+                    "*Respiração profunda* Zzz... Reino... Zzz...",
+                    "*Acordando* Quem ousa perturbar o descanso real?",
+                    "O rei já se recolheu. Volte amanhã durante a audiência.",
+                    "*Bocejando* A coroa é pesada... Preciso descansar."
+                ],
+                sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
+                greeting: `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questProgress}`,
+                farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
+                sleepChance: 0.8, // Rei dorme mais cedo
+                absentChance: 0.3,
+                absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
+                
+                // Assuntos para conversar com o rei
+                topics: [
+                    { 
+                        name: '👑 Sobre o Reino', 
+                        message: '"O Reino da Aurora foi fundado por meu bisavô há trezentos anos. Desde então, temos prosperado sob a proteção dos deuses."' 
+                    },
+                    { 
+                        name: '⚔️ Ameaça nas Fronteiras', 
+                        message: '"As criaturas das trevas estão se multiplicando. Suspeito que algo está despertando nas profundezas das montanhas proibidas."' 
+                    },
+                    { 
+                        name: '📜 Histórias Antigas', 
+                        message: '"Diz a lenda que há um artefato escondido nas ruínas antigas, capaz de banir as trevas para sempre. Será que você é o herói destinado a encontrá-lo?"' 
+                    },
+                    { 
+                        name: '🏆 Recompensas', 
+                        message: '"Para aqueles que servem o reino com bravura, as recompensas são generosas. Terras, títulos e tesouros aguardam os mais corajosos."' 
+                    },
+                    { 
+                        name: '💬 Tudo bem, Majestade?', 
+                        message: `"O peso da coroa é constante, mas ver aventureiros como você dedicados ao reino renova minhas esperanças. Continue assim, ${gameState.character.name}."` 
+                    },
+                    { 
+                        name: '✨ Bênção Real', 
+                        message: '"Que os deuses te abençoem em sua jornada. Leve esta bênção como proteção."',
+                        action: () => {
+                            // Bênção especial - só pode receber uma vez por dia
+                            const lastBlessing = localStorage.getItem('last_royal_blessing');
+                            const now = Date.now();
+                            const oneDay = 24 * 60 * 60 * 1000;
+                            
+                            if (!lastBlessing || (now - parseInt(lastBlessing)) > oneDay) {
+                                const healAmount = Math.floor(gameState.character.maxLife * 0.3);
+                                const manaAmount = Math.floor(gameState.character.maxMana * 0.2);
+                                gameState.character.life = Math.min(gameState.character.life + healAmount, gameState.character.maxLife);
+                                gameState.character.mana = Math.min(gameState.character.mana + manaAmount, gameState.character.maxMana);
+                                localStorage.setItem('last_royal_blessing', now.toString());
+                                
+                                addLog(`👑 O Rei te abençoou! Você recuperou ${healAmount} de vida e ${manaAmount} de mana.`);
+                                Swal.fire({
+                                    title: '✨ Bênção Real Recebida!',
+                                    text: `Você foi abençoado pelo Rei! +${healAmount}❤️ +${manaAmount}🔮`,
+                                    icon: 'success',
+                                    confirmButtonText: 'Agradecer',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                                updateUI();
+                            } else {
+                                addLog('👑 O Rei já te abençoou hoje. Volte amanhã para outra bênção.');
+                                Swal.fire({
+                                    title: '⏰ Ainda não...',
+                                    text: 'O Rei já te abençoou hoje. Volte amanhã para receber outra bênção.',
+                                    icon: 'info',
+                                    confirmButtonText: 'Entendi',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                            }
+                        }
+                    }
+                ],
+                
+                // Callbacks especiais
+                onSleep: () => addLog('😴 O Rei descansa em seus aposentos. Até amanhã.'),
+                onAbsent: () => addLog('👑 O Rei está em conselho com os nobres do reino.'),
+                onGreet: () => {
+                    addLog('👑 Você se curva respeitosamente diante do Rei Alaric.');
+                    // Rei pode dar ouro ocasionalmente
+                    if (Math.random() < 0.15) {
+                        const goldAmount = 50 + Math.floor(Math.random() * 100);
+                        gameState.character.gold += goldAmount;
+                        addLog(`👑 Sua Majestade te concede ${goldAmount} moedas de ouro pela sua lealdade!`);
+                        updateUI();
+                    }
+                },
+                onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
             });
         }
 
@@ -5279,6 +5260,179 @@
             if (onGreet) onGreet();
         }
 
+
+        function initNPCStates() {
+            if (!gameState.bots) {
+                gameState.bots = {};
+            }
+            
+            for (const [id, npc] of Object.entries(NPC_DEFINITIONS)) {
+                if (!gameState.bots[id]) {
+                    gameState.bots[id] = {
+                        ...npc.baseState,
+                        lastUpdate: Date.now()
+                    };
+                }
+            }
+        }
+        function refreshNPC(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            if (!npc) return;
+            
+            const currentState = gameState.bots[npcId];
+            if (!currentState) {
+                gameState.bots[npcId] = { ...npc.baseState, lastUpdate: Date.now() };
+                return;
+            }
+            
+            const isDay = gameState.timeOfDay === 'day';
+            const behavior = isDay ? npc.dayBehavior : npc.nightBehavior;
+            
+            if (isDay) {
+                // DIA: Sempre acordado
+                currentState.isSleeping = false;
+                
+                // Decide se está em casa baseado na chance
+                const random = Math.random();
+                currentState.isHome = random < behavior.homeChance;
+            } else {
+                // NOITE: Pode estar dormindo ou acordado
+                // Primeiro decide se está em casa
+                const homeRandom = Math.random();
+                currentState.isHome = homeRandom < behavior.homeChance;
+                
+                if (currentState.isHome) {
+                    // Se está em casa, decide se está dormindo
+                    const sleepRandom = Math.random();
+                    currentState.isSleeping = sleepRandom < (behavior.sleepChance || 0.7);
+                } else {
+                    // Não está em casa = não está dormindo
+                    currentState.isSleeping = false;
+                }
+            }
+            
+            currentState.lastUpdate = Date.now();
+        }
+        function updateAllNPCs() {
+            if (!gameState.bots) {
+                initNPCStates();
+            }
+            
+            for (const npcId of Object.keys(NPC_DEFINITIONS)) {
+                refreshNPC(npcId);
+            }
+            
+        }
+        function getNPCStatusSummary() {
+            const summary = {};
+            for (const [id, npc] of Object.entries(NPC_DEFINITIONS)) {
+                const state = gameState.bots[id];
+                if (state) {
+                    summary[id] = {
+                        name: npc.name,
+                        isHome: state.isHome,
+                        isSleeping: state.isSleeping,
+                        location: npc.location
+                    };
+                }
+            }
+            return summary;
+        }
+        function isNPCAvailable(npcId) {
+            const state = gameState.bots[npcId];
+            if (!state) return false;
+            
+            const isDay = gameState.timeOfDay === 'day';
+            
+            // Durante o dia: disponível se estiver em casa
+            if (isDay) {
+                return state.isHome;
+            }
+            
+            // Durante a noite: disponível apenas se estiver em casa E acordado
+            return state.isHome && !state.isSleeping;
+        }
+        function getNPCStatusMessage(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            const state = gameState.bots[npcId];
+            
+            if (!npc || !state) return null;
+            
+            const isDay = gameState.timeOfDay === 'day';
+            
+            if (isDay) {
+                if (state.isHome) {
+                    return `${npc.emoji} ${npc.name} está em casa trabalhando.`;
+                } else {
+                    return `${npc.emoji} ${npc.name} não está em casa. ${getNPCAbsentMessage(npcId)}`;
+                }
+            } else {
+                // Noite
+                if (!state.isHome) {
+                    return `${npc.emoji} ${npc.name} não está em casa. ${getNPCAbsentMessage(npcId)}`;
+                } else if (state.isSleeping) {
+                    return `${npc.emoji} ${npc.name} está dormindo. Volte durante o dia!`;
+                } else {
+                    return `${npc.emoji} ${npc.name} está em casa mas acordado... algo parece estranho esta noite.`;
+                }
+            }
+        }
+        function getNPCAbsentMessage(npcId) {
+            const messages = {
+                carpenter: '🔨 Deve estar na oficina ou buscando madeira.',
+                artisan: '🎨 Saiu para buscar inspiração na natureza.',
+                weaver: '🧵 Foi ao mercado comprar novos tecidos.',
+                farmerMiguel: '🌾 Está trabalhando nos campos.',
+                farmerAna: '🍞 Foi ao moinho buscar farinha.',
+                captain: '🗡️ Deve estar em patrulha nas muralhas.',
+                king: '👑 Está em conselho com os nobres.'
+            };
+            return messages[npcId] || 'Volte mais tarde!';
+        }
+
+        let npcUpdateInterval = null;
+
+        function startNPCUpdateTimer() {
+            if (npcUpdateInterval) {
+                clearInterval(npcUpdateInterval);
+            }
+            
+            // Atualizar a cada 60 segundos (1 minuto)
+            npcUpdateInterval = setInterval(() => {
+                if (gameState && gameState.character && !gameState.isDead) {
+                    updateAllNPCs();
+                    addLog('🕐 Os moradores do reino mudaram de posição...');
+                    
+                    // Se o jogador estiver no menu de algum NPC, atualizar a interface
+                    if (gameState.currentNPCInteraction) {
+                        // Opcional: atualizar UI do NPC atual
+                    }
+                }
+            }, 60000); // 60 segundos
+            
+        }
+
+        // Integrar com a troca de dia/noite
+        const originalToggleTimeOfDay = toggleTimeOfDay;
+        toggleTimeOfDay = function() {
+            originalToggleTimeOfDay();
+            updateAllNPCs();
+            addLog(`🕐 Com o ${gameState.timeOfDay === 'day' ? 'amanhecer' : 'anoitecer'}, os NPCs se reposicionaram.`);
+        };
+
+        // Função para obter o estado de um NPC para uso nos diálogos
+        function getNPCStateForDialog(npcId) {
+            const state = gameState.bots[npcId];
+            if (!state) return null;
+            
+            return {
+                isHome: state.isHome,
+                isSleeping: state.isSleeping,
+                isDay: gameState.timeOfDay === 'day',
+                isAvailable: isNPCAvailable(npcId)
+            };
+        }
+
         // ========== SHOP FUNCTIONS ==========
         
         function buyItem(itemId, cost) {
@@ -5821,9 +5975,6 @@
             };
             input.click();
         }
-        
-        // ========== NPC BOTS SYSTEM ==========
-
         
         // ========== INITIALIZE ==========
         
