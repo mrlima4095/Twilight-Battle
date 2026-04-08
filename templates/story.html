@@ -969,147 +969,307 @@
                 name: 'Carlos',
                 title: 'Marceneiro',
                 emoji: '🔨',
+                sleepyEmoji: '😴🔨',
                 location: 'north_village',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
+                locationName: 'oficina do marceneiro',
+                greeting: function() {
+                    return `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}! Olhe esses móveis que fiz. Madeira de primeira qualidade! Precisando de algo, é só me chamar.`;
                 },
-                // Horários: dia sempre acordado, noite pode dormir
+                farewell: "Volte sempre! Se precisar de móveis ou reparos, estou aqui!",
+                sleepyMessages: [
+                    "*Ronco suave* Zzz... Madeira... Zzz...",
+                    "*Acordando* Quem está aí? A oficina já fechou, amigo.",
+                    "Mãos calejadas... Preciso descansar para o trabalho de amanhã.",
+                    "*Espreguiçando* Já é tarde. Volte amanhã que faço um móvel sob medida!"
+                ],
+                sleepingMessage: "Carlos está dormindo. Volte durante o dia!",
+                absentMessage: "Carlos saiu para buscar madeira na floresta. Volte mais tarde!",
+                topics: [
+                    { name: '🪵 Sobre a madeira', message: 'Uso madeira de carvalho das florestas do norte. É a mais resistente que existe!' },
+                    { name: '🔨 Trabalhos recentes', message: 'Terminei uma bela mesa de jantar para a taverna. O dono ficou muito satisfeito!' },
+                    { name: '📜 Histórias do ofício', message: 'Aprendi marcenaria com meu avô. Ele dizia que a madeira tem alma e cada peça conta uma história.' },
+                    { name: '💬 Como vai o trabalho?', message: 'Estou cheio de encomendas! O reino está crescendo e todos precisam de móveis.' }
+                ],
+                shopItems: null, // Não vende nada
+                canSellToNPC: false,
+                // Comportamento
                 dayBehavior: {
-                    homeChance: 0.7,      // 70% de chance de estar em casa durante o dia
-                    alwaysAwake: true      // Durante o dia sempre acordado
-                },
-                nightBehavior: {
-                    homeChance: 0.9,      // 90% de chance de estar em casa à noite
-                    sleepChance: 0.8      // 80% de chance de estar dormindo se estiver em casa
-                }
-            },
-            artisan: {
-                id: 'artisan',
-                name: 'Mateus',
-                title: 'Artesão',
-                emoji: '🎨',
-                location: 'north_village',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
-                },
-                dayBehavior: {
-                    homeChance: 0.6,
-                    alwaysAwake: true
-                },
-                nightBehavior: {
-                    homeChance: 0.85,
-                    sleepChance: 0.75
-                }
-            },
-            // Vilarejo Sul
-            weaver: {
-                id: 'weaver',
-                name: 'Isadora',
-                title: 'Tecelã',
-                emoji: '🧵',
-                location: 'south_village',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
-                },
-                dayBehavior: {
-                    homeChance: 0.65,
+                    homeChance: 0.7,
                     alwaysAwake: true
                 },
                 nightBehavior: {
                     homeChance: 0.9,
                     sleepChance: 0.8
-                }
+                },
+                baseState: {
+                    isHome: true,
+                    isSleeping: false,
+                    lastUpdate: null
+                },
+                onSleep: () => addLog('🔨 Carlos está descansando após um longo dia de trabalho.'),
+                onAbsent: () => addLog('🌲 Carlos foi para a floresta buscar madeira de qualidade.'),
+                onGreet: () => addLog('🔨 Carlos acena com a mão enquanto lixa uma peça de madeira.')
             },
-            // Campos
+            
+            artisan: {
+                id: 'artisan',
+                name: 'Mateus',
+                title: 'Artesão',
+                emoji: '🎨',
+                sleepyEmoji: '😴🎨',
+                location: 'north_village',
+                locationName: 'ateliê do artesão',
+                greeting: function() {
+                    return `"Ah, ${gameState.character.name}! A arte é a alma do reino. Entre e admire minhas criações!"`;
+                },
+                farewell: "Que a inspiração te acompanhe! Volte sempre!",
+                sleepyMessages: [
+                    "*Pincéis caem no chão* Zzz... Arte... Zzz...",
+                    "*Acordando com tinta no rosto* Ah! O ateliê já fechou por hoje.",
+                    "Preciso descansar minha criatividade... Volte amanhã."
+                ],
+                sleepingMessage: 'Mateus está dormindo no ateliê. Volte durante o dia!',
+                absentMessage: 'Mateus foi buscar inspiração na natureza. Volte mais tarde!',
+                topics: [
+                    { name: '🎭 Sobre suas obras', message: 'Esta escultura que vê aqui levou duas semanas para ficar pronta. É a minha favorita.' },
+                    { name: '🎨 Inspiração', message: 'A natureza é minha maior musa. As cores do pôr do sol me inspiram profundamente.' },
+                    { name: '💬 Como está a criatividade?', message: 'Hoje estou muito inspirado! Terminei uma pintura que representa a lenda do herói das montanhas.' },
+                    { name: '👋 Apenas admirar', message: 'Fique à vontade para olhar as obras. Cada uma tem sua própria história.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.6, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.85, sleepChance: 0.75 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('🎨 Mateus dorme sonhando com novas criações.'),
+                onAbsent: () => addLog('🌅 Mateus foi pintar o pôr do sol em algum lugar especial.'),
+                onGreet: () => addLog('🎨 Mateus acena animado enquanto mostra uma nova escultura.')
+            },
+            
+            weaver: {
+                id: 'weaver',
+                name: 'Isadora',
+                title: 'Tecelã',
+                emoji: '🧵',
+                sleepyEmoji: '😴🧵',
+                location: 'south_village',
+                locationName: 'oficina da tecelã',
+                greeting: function() {
+                    return `Bem-vindo à minha oficina de tecelagem! Tenho os tecidos mais finos de todo o reino. As cores vêm de plantas que cultivo no meu próprio jardim.`;
+                },
+                farewell: "Que os fios da sorte te acompanhem! Volte sempre!",
+                sleepyMessages: [
+                    "*Ronco suave* Tecendo... sonhos... Zzz...",
+                    "*Acordando* Quem está aí? A oficina já fechou por hoje.",
+                    "Mãos cansadas... Preciso descansar para tecer amanhã.",
+                    "*Espreguiçando* Já é tarde. Volte amanhã que terei tecidos novos!"
+                ],
+                sleepingMessage: 'Isadora está dormindo na oficina. Volte durante o dia!',
+                absentMessage: 'Isadora saiu para colher plantas para tingir tecidos. Volte mais tarde!',
+                topics: [
+                    { name: '🎨 Sobre os tecidos', message: '"Cada cor vem de uma planta diferente. O azul vem das flores do lago sagrado, o vermelho das bagas da floresta..."' },
+                    { name: '🌿 Jardim de plantas', message: '"Tenho um jardim secreto atrás da oficina. Lá cultivo todas as plantas que uso para tingir."' },
+                    { name: '📜 Histórias do reino', message: '"Dizem que há um tear mágico escondido nas ruínas antigas. Quem o encontrar pode tecer a própria realidade..."' },
+                    { name: '💬 Tudo bem?', message: function() { return `"Estou bem, sim! E você, ${gameState.character.name}? A aventura tem sido boa?"`; } }
+                ],
+                shopItems: [
+                    { id: 'cloth', price: 25, quantity: -1 },
+                    { id: 'string', price: 8, quantity: -1 }
+                ],
+                buyPriceMultiplier: 1.0,
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4,
+                shopkeeperName: 'Tecelã Isadora',
+                dayBehavior: { homeChance: 0.65, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.8 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('😴 Isadora está descansando após um longo dia de trabalho.'),
+                onAbsent: () => addLog('🌿 Isadora saiu para buscar mais plantas para tingimento.'),
+                onGreet: () => addLog('🧵 Isadora sorri e acena enquanto continua tecendo.')
+            },
+            
             farmerMiguel: {
                 id: 'farmerMiguel',
                 name: 'Miguel',
                 title: 'Fazendeiro',
                 emoji: '👨‍🌾',
+                sleepyEmoji: '😴👨‍🌾',
                 location: 'farmlands',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
+                locationName: 'casa do Miguel',
+                greeting: function() {
+                    return `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}, ${gameState.character.name}! A colheita está farta este ano, graças aos deuses. Sente-se, descanse um pouco.`;
                 },
-                dayBehavior: {
-                    homeChance: 0.5,      // 50% - trabalha nos campos
-                    alwaysAwake: true
-                },
-                nightBehavior: {
-                    homeChance: 0.95,
-                    sleepChance: 0.9
-                }
+                farewell: "Que os deuses abençoem sua jornada! Volte sempre que precisar descansar.",
+                sleepyMessages: [
+                    "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
+                    "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
+                    "Ah... já está escuro. Preciso descansar para a colheita de amanhã.",
+                    "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
+                    "Desculpe, mas já me recolhi. A fazenda precisa de mim cedo."
+                ],
+                sleepingMessage: 'Miguel está dormindo! Volte quando amanhecer...',
+                absentMessage: 'Miguel não está em casa, volte mais tarde!',
+                topics: [
+                    { name: '🌾 Sobre a colheita', message: '"Este ano tivemos uma colheita farta! O trigo cresceu alto e as frutas estão doces como mel."' },
+                    { name: '🚜 Dicas de fazenda', message: '"O segredo é acordar antes do sol nascer. A terra agradece quando cuidamos dela com dedicação."' },
+                    { name: '🐔 Animais', message: '"Minhas galinhas estão botando ovos todos os dias. Quer alguns? Infelizmente não posso vender agora..."' },
+                    { name: '💬 Tudo bem?', message: function() { return `"Tudo bem sim, ${gameState.character.name}! E você, como está sua aventura? Cuidado com os monstros na floresta!"`; } }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.5, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.9 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('😴 Miguel está descansando após um longo dia no campo.'),
+                onAbsent: () => addLog('🌾 Miguel foi cuidar da plantação. Volte mais tarde!'),
+                onGreet: () => addLog('👨‍🌾 Miguel acena com um sorriso largo enquanto seca o suor da testa.')
             },
+            
             farmerAna: {
                 id: 'farmerAna',
                 name: 'Ana',
                 title: 'Padeira',
                 emoji: '👩‍🌾',
+                sleepyEmoji: '😴👩‍🌾',
                 location: 'farmlands',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
-                },
-                dayBehavior: {
-                    homeChance: 0.55,     // Padaria fica na casa
-                    alwaysAwake: true
-                },
-                nightBehavior: {
-                    homeChance: 0.95,
-                    sleepChance: 0.9
-                }
+                locationName: 'casa da Ana',
+                greeting: 'Que bom ver você por aqui! O cheiro do pão fresco está no ar hoje.',
+                farewell: "Volte sempre que quiser um pão quentinho! Que a jornada seja leve.",
+                sleepyMessages: [
+                    "*Cochilando* Quem bate? Ah... Já fechei a padaria por hoje...",
+                    "Desculpe, mas já apaguei o forno. Volte amanhã para o pão quentinho!",
+                    "*Voz sonolenta* Já está tarde... Preciso acordar cedo para fazer o pão...",
+                    "O galo já dormiu, eu também deveria. Até amanhã!",
+                    "*Espreguiçando* Que horas são? Já está escuro... Volte quando clarear."
+                ],
+                sleepingMessage: 'Ana está dormindo! Volte quando amanhecer...',
+                absentMessage: 'Ana não está em casa, volte mais tarde!',
+                topics: [
+                    { name: '🍞 Pão fresco', message: '"Meu pão é feito com farinha do moinho do vale. Receita da minha avó, segredo de família!"' },
+                    { name: '📜 Receitas especiais', message: '"Um dia ainda vou te ensinar minha receita de pão com ervas. Fica uma delícia com café quente!"' },
+                    { name: '🏘️ Família', message: '"Meu marido trabalha nos campos, e meus filhos ajudam na padaria. Somos uma família unida, graças a Deus."' },
+                    { name: '💬 Tudo bem?', message: function() { return `"Estou bem sim, ${gameState.character.name}! O movimento hoje está bom. E você, precisa de algo?"`; } }
+                ],
+                shopItems: [
+                    { id: 'apple', price: 2, quantity: -1 },
+                    { id: 'bread', price: 3, quantity: -1 },
+                    { id: 'meat', price: 8, quantity: 10 }
+                ],
+                buyPriceMultiplier: 0.9,
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.35,
+                shopkeeperName: 'Dona Ana',
+                dayBehavior: { homeChance: 0.55, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.9 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('😴 Ana foi descansar depois de um dia inteiro assando pães.'),
+                onAbsent: () => addLog('🍞 Ana saiu para comprar mais farinha no moinho. Volte mais tarde!'),
+                onGreet: () => addLog('👩‍🌾 Ana sorri e oferece um pedaço de pão enquanto conversa.')
             },
-            // Castelo
+            
             captain: {
                 id: 'captain',
                 name: 'Aldric',
                 title: 'Capitão da Guarda',
                 emoji: '🗡️',
+                sleepyEmoji: '😴🗡️',
                 location: 'great_hall',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
+                locationName: 'quartel da guarda',
+                greeting: function() {
+                    return `Aventureiro ${gameState.character.name}, vejo determinação em seus olhos! Os monstros estão se aproximando das muralhas todas as noites. Precisamos de heróis corajosos como você para proteger o reino.`;
                 },
-                dayBehavior: {
-                    homeChance: 0.8,      // Capitão geralmente no quartel
-                    alwaysAwake: true
-                },
-                nightBehavior: {
-                    homeChance: 0.7,      // Pode estar em patrulha
-                    sleepChance: 0.6
-                }
+                farewell: "Que os deuses te protejam em suas missões, soldado!",
+                sleepyMessages: [
+                    "*Ronco militar* Zzz... Guarda... Zzz...",
+                    "*Acordando de repente* Quem está aí? O quartel já fechou!",
+                    "Plantão noturno... Preciso descansar para a guarda de amanhã.",
+                    "*Espreguiçando* Volte durante o dia, soldado!"
+                ],
+                sleepingMessage: 'O Capitão está descansando após o treinamento. Volte durante o dia!',
+                absentMessage: 'O Capitão está em patrulha nas muralhas. Volte mais tarde!',
+                topics: [
+                    { name: '⚔️ Treinamento', message: '"Se quiser treinar, o campo de batalha fica atrás do quartel. Posso te dar algumas lições quando tiver tempo."' },
+                    { name: '👥 A Guarda Real', message: '"Tenho 50 soldados sob meu comando. Homens e mulheres corajosos que juram proteger o reino com suas vidas."' },
+                    { name: '🐉 Ameaças Recentes', message: '"Relatos de monstros maiores estão chegando. Um dragão foi avistado nas montanhas ao norte. Tome cuidado se for para lá."' },
+                    { name: '📜 Missões Disponíveis', message: '"Precisamos de alguém para patrulhar a estrada leste. Os comerciantes estão sendo atacados. Interessado?"', action: () => addLog('📜 Capitão Aldric: "Pense na missão e volte se estiver interessado!"') },
+                    { name: '💬 Como estão as coisas?', message: function() { return `"Cansado, mas firme. O reino precisa de guardas vigilantes. E você, ${gameState.character.name}, como está sua jornada?"`; } }
+                ],
+                shopItems: [
+                    { id: 'sword', price: 30 },
+                    { id: 'wooden_shield', price: 25 },
+                    { id: 'arrow', price: 1 },
+                    { id: 'iron_arrow', price: 3 }
+                ],
+                buyPriceMultiplier: 0.85,
+                canSellToNPC: true,
+                sellPriceMultiplier: 0.4,
+                shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
+                dayBehavior: { homeChance: 0.8, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.7, sleepChance: 0.6 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('😴 O Capitão está descansando. Até amanhã, soldados!'),
+                onAbsent: () => addLog('🗡️ O Capitão está inspecionando as muralhas.'),
+                onGreet: () => addLog('🗡️ Capitão Aldric acena respeitosamente.'),
+                onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
             },
+            
             king: {
                 id: 'king',
                 name: 'Alaric',
                 title: 'Rei Mago',
                 emoji: '👑',
+                sleepyEmoji: '😴👑',
                 location: 'throne_room',
-                baseState: {
-                    isHome: true,
-                    isSleeping: false,
-                    lastUpdate: null
+                locationName: 'sala do trono',
+                greeting: function() {
+                    let questText = '';
+                    if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
+                        questText = `<p style="color: #ffd700; margin-top: 10px;">📜 Progresso da Missão: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros</p>`;
+                    }
+                    return `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questText}`;
                 },
-                dayBehavior: {
-                    homeChance: 0.9,      // Rei quase sempre no castelo
-                    alwaysAwake: true
+                farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
+                sleepyMessages: [
+                    "*Respiração profunda* Zzz... Reino... Zzz...",
+                    "*Acordando* Quem ousa perturbar o descanso real?",
+                    "O rei já se recolheu. Volte amanhã durante a audiência.",
+                    "*Bocejando* A coroa é pesada... Preciso descansar."
+                ],
+                sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
+                absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
+                topics: [
+                    { name: '👑 Sobre o Reino', message: '"O Reino da Aurora foi fundado por meu bisavô há trezentos anos. Desde então, temos prosperado sob a proteção dos deuses."' },
+                    { name: '⚔️ Ameaça nas Fronteiras', message: '"As criaturas das trevas estão se multiplicando. Suspeito que algo está despertando nas profundezas das montanhas proibidas."' },
+                    { name: '📜 Histórias Antigas', message: '"Diz a lenda que há um artefato escondido nas ruínas antigas, capaz de banir as trevas para sempre. Será que você é o herói destinado a encontrá-lo?"' },
+                    { name: '🏆 Recompensas', message: '"Para aqueles que servem o reino com bravura, as recompensas são generosas. Terras, títulos e tesouros aguardam os mais corajosos."' },
+                    { name: '💬 Tudo bem, Majestade?', message: function() { return `"O peso da coroa é constante, mas ver aventureiros como você dedicados ao reino renova minhas esperanças. Continue assim, ${gameState.character.name}."`; } },
+                    { 
+                        name: '✨ Bênção Real', 
+                        message: '"Que os deuses te abençoem em sua jornada. Leve esta bênção como proteção."',
+                        action: () => blessPlayer()
+                    }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 1.0, sleepChance: 1.0 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('😴 O Rei descansa em seus aposentos. Até amanhã.'),
+                onAbsent: () => addLog('👑 O Rei está em conselho com os nobres do reino.'),
+                onGreet: () => {
+                    addLog('👑 Você se curva respeitosamente diante do Rei Alaric.');
+                    // Rei pode dar ouro ocasionalmente
+                    if (Math.random() < 0.15) {
+                        const goldAmount = 50 + Math.floor(Math.random() * 100);
+                        gameState.character.gold += goldAmount;
+                        addLog(`👑 Sua Majestade te concede ${goldAmount} moedas de ouro pela sua lealdade!`);
+                        updateUI();
+                    }
                 },
-                nightBehavior: {
-                    homeChance: 1.0,      // Rei sempre dorme no castelo à noite
-                    sleepChance: 1.0
-                }
+                onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
             }
         };
-
+        
         // Drag and Drop Variables
         let draggedItemIndex = null;
         let draggedItemSource = 'inventory';
@@ -4679,588 +4839,6 @@
             });
         }
 
-        async function showHouseDialog(config) {
-            if (gameState.isDead) return { success: false, reason: 'dead' };
-            
-            const isDay = gameState.timeOfDay === 'day';
-            
-            // Configurações padrão
-            const defaults = {
-                sleepChance: 0.7,
-                canBeAbsent: true,
-                absentChance: 0.4,
-                sleepyMessages: [
-                    "*Bocejos* Quem está aí a esta hora? Já estou indo dormir, volta amanhã...",
-                    "*Olhos vermelhos* Já é tarde! Amanhã cedo a gente conversa...",
-                    "Ah... já está escuro. Preciso descansar para amanhã.",
-                    "*Porta entreaberta* Hora de dormir, meu amigo. Volte quando o sol nascer.",
-                    "Desculpe, mas já me recolhi. Volte amanhã."
-                ],
-                sleepingMessage: "🌙 Dormindo",
-                absentMessage: "🏠 Ausente",
-                shopItems: null,
-                buyPriceMultiplier: 1.0,
-                sellPriceMultiplier: 0.5,
-                canSellToNPC: false,
-                topics: null,
-                greeting: null,
-                farewell: "Volte sempre!",
-                shopkeeperName: null,
-                onSleep: null,
-                onAbsent: null,
-                onGreet: null,
-                onFarewell: null
-            };
-            
-            // Mesclar configurações
-            const finalConfig = { ...defaults, ...config };
-            const { 
-                name, emoji, sleepyEmoji, sleepyMessages, sleepingMessage, 
-                canBeAbsent, absentChance, absentMessage, location, 
-                shopItems, buyPriceMultiplier, sellPriceMultiplier, canSellToNPC,
-                topics, greeting, farewell, shopkeeperName,
-                onSleep, onAbsent, onGreet, onFarewell 
-            } = finalConfig;
-            
-            // Determinar se está em casa
-            const isHome = Math.random() < (1 - finalConfig.sleepChance);
-            
-            // CASO 1: Noite e NPC está dormindo
-            if (!isDay && !isHome) {
-                await Swal.fire({
-                    title: '🌙 Dormindo',
-                    text: sleepingMessage,
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog(`🏠 Você foi na ${location} - ${name} estava dormindo`);
-                if (onSleep) onSleep();
-                updateUI();
-                return { success: false, reason: 'sleeping' };
-            }
-            
-            // CASO 2: Noite e NPC está acordado (raro)
-            if (!isDay && isHome) {
-                const randomLine = sleepyMessages[Math.floor(Math.random() * sleepyMessages.length)];
-                
-                await Swal.fire({
-                    title: `${sleepyEmoji || emoji} ${name}`,
-                    html: `<div style="text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">${sleepyEmoji || emoji}</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">${name}</div>
-                        </div>
-                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
-                    </div>`,
-                    icon: 'info',
-                    confirmButtonText: 'Voltar depois',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                
-                addLog(`🏠 Você foi na ${location} - ${name} não pode conversar, volte durante o dia!`);
-                updateUI();
-                return { success: false, reason: 'sleepy' };
-            }
-            
-            // CASO 3: Dia - NPC pode estar ausente
-            if (isDay && canBeAbsent && Math.random() < absentChance) {
-                await Swal.fire({
-                    title: absentMessage,
-                    text: `${name} não está em casa, volte mais tarde!`,
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog(`🏠 Você foi na ${location} - ${name} não estava em casa`);
-                if (onAbsent) onAbsent();
-                updateUI();
-                return { success: false, reason: 'absent' };
-            }
-            
-            // CASO 4: Dia - NPC está em casa (interação principal)
-            const greetingText = greeting || `Olá, aventureiro! Como posso ajudá-lo hoje?`;
-            
-            // Construir botões de ação baseados nas opções disponíveis
-            const actionButtons = [];
-            
-            // Botão de Loja (se tiver itens)
-            if (shopItems && shopItems.length > 0) {
-                actionButtons.push({
-                    text: '🛒 Comprar',
-                    value: 'shop',
-                    color: '#4CAF50'
-                });
-            }
-            
-            // Botão de Vender (se o NPC compra itens)
-            if (canSellToNPC) {
-                actionButtons.push({
-                    text: '💰 Vender',
-                    value: 'sell',
-                    color: '#ffa500'
-                });
-            }
-            
-            // Botão de Conversar/Assuntos (se tiver tópicos)
-            if (topics && topics.length > 0) {
-                actionButtons.push({
-                    text: '💬 Conversar',
-                    value: 'talk',
-                    color: '#9370db'
-                });
-            }
-            
-            // Botão de Saudação (sempre disponível)
-            actionButtons.push({
-                text: '👋 Apenas cumprimentar',
-                value: 'greet',
-                color: '#4a90e2'
-            });
-            
-            // Se não houver nenhum botão, mostrar apenas uma mensagem
-            if (actionButtons.length === 0) {
-                await Swal.fire({
-                    title: `${emoji} ${name}`,
-                    text: greetingText,
-                    icon: 'info',
-                    confirmButtonText: 'Voltar',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                updateUI();
-                return { success: true, action: 'none' };
-            }
-            
-            // Menu principal de interação (SEM botão Sair)
-            let result;
-            
-            if (actionButtons.length === 1) {
-                // Apenas um botão
-                result = await Swal.fire({
-                    title: `${emoji} ${name}`,
-                    html: `<div style="text-align: left;">
-                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: true,
-                    showCancelButton: false,
-                    confirmButtonText: actionButtons[0].text,
-                    confirmButtonColor: actionButtons[0].color,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                if (result.isConfirmed) {
-                    await processAction(actionButtons[0].value, finalConfig);
-                }
-            } 
-            else if (actionButtons.length === 2) {
-                // Dois botões: Confirm e Deny
-                result = await Swal.fire({
-                    title: `${emoji} ${name}`,
-                    html: `<div style="text-align: left;">
-                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: true,
-                    showDenyButton: true,
-                    confirmButtonText: actionButtons[0].text,
-                    denyButtonText: actionButtons[1].text,
-                    confirmButtonColor: actionButtons[0].color,
-                    denyButtonColor: actionButtons[1].color,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                if (result.isConfirmed) {
-                    await processAction(actionButtons[0].value, finalConfig);
-                } else if (result.isDenied) {
-                    await processAction(actionButtons[1].value, finalConfig);
-                }
-            }
-            else {
-                // Três ou mais botões - usar menu com opções numeradas
-                const optionsHtml = actionButtons.map((btn, idx) => 
-                    `<button class="action-btn" onclick="window.selectAction(${idx})" style="margin: 8px; width: calc(50% - 16px); background: ${btn.color};">${btn.text}</button>`
-                ).join('');
-                
-                // Criar elemento para mostrar opções
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = optionsHtml;
-                
-                result = await Swal.fire({
-                    title: `${emoji} ${name}`,
-                    html: `<div style="text-align: left;">
-                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
-                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
-                            ${optionsHtml}
-                        </div>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: false,
-                    //showCancelButton: true,
-                    //cancelButtonText: '❌ Fechar',
-                    //cancelButtonColor: '#ff4444',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    didOpen: () => {
-                        window.selectAction = async (idx) => {
-                            Swal.close();
-                            await processAction(actionButtons[idx].value, finalConfig);
-                            delete window.selectAction;
-                        };
-                    },
-                    willClose: () => {
-                        if (window.selectAction) delete window.selectAction;
-                        if (onFarewell) onFarewell();
-                        addLog(`🏠 Você se despediu de ${name}. ${farewell}`);
-                    }
-                });
-            }
-            
-            updateUI();
-            return { success: true };
-        }
-        async function processAction(action, config) {
-            switch (action) {
-                case 'shop':
-                    await handleShopInteraction(config);
-                    break;
-                case 'sell':
-                    await handleSellInteraction(config);
-                    break;
-                case 'talk':
-                    await handleTalkInteraction(config);
-                    break;
-                case 'greet':
-                    await handleGreetInteraction(config);
-                    break;
-            }
-        }
-        async function handleShopInteraction(config) {
-            const { name, emoji, shopItems, buyPriceMultiplier = 1.0, shopkeeperName } = config;
-            
-            if (!shopItems || shopItems.length === 0) {
-                addLog(`❌ ${name} não tem nada para vender no momento.`);
-                return;
-            }
-            
-            // Construir lista de itens
-            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            for (let i = 0; i < shopItems.length; i++) {
-                const item = shopItems[i];
-                const itemData = ITEMS[item.id];
-                if (!itemData) continue;
-                
-                const price = Math.floor(item.price * buyPriceMultiplier);
-                itemsHtml += `
-                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="flex: 1;">
-                            <strong style="color: #ffd700;">${itemData.name}</strong>
-                            <div style="font-size: 12px; color: #888;">${itemData.description || ''}</div>
-                            <div style="font-size: 14px; color: #4CAF50;">💰 ${price} moedas</div>
-                        </div>
-                        <button class="action-btn success" onclick="window.buyShopItem(${i}, ${price}, '${item.id}')" style="padding: 5px 15px; font-size: 14px;">
-                            🛒 Comprar
-                        </button>
-                    </div>
-                `;
-            }
-            itemsHtml += '</div>';
-            
-            window.currentShopConfig = { config, items: shopItems };
-            
-            window.buyShopItem = (index, price, itemId) => {
-                if (gameState.character.gold >= price) {
-                    gameState.character.gold -= price;
-                    addItemToInventory(itemId);
-                    addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${name}.`);
-                    updateUI();
-                    
-                    Swal.fire({
-                        title: '✅ Compra Realizada!',
-                        text: `Você adquiriu ${ITEMS[itemId].name}.`,
-                        icon: 'success',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                } else {
-                    Swal.fire({
-                        title: '❌ Moedas Insuficientes!',
-                        text: `Você precisa de ${price} moedas para comprar ${ITEMS[itemId].name}.`,
-                        icon: 'error',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                }
-            };
-            
-            await Swal.fire({
-                title: `🛒 Loja de ${shopkeeperName || name}`,
-                html: itemsHtml,
-                icon: 'info',
-                confirmButtonText: '🔙 Voltar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                willClose: () => {
-                    delete window.buyShopItem;
-                    delete window.currentShopConfig;
-                }
-            });
-        }
-        async function handleSellInteraction(config) {
-            const { name, emoji, sellPriceMultiplier = 0.5 } = config;
-            
-            // Coletar itens vendáveis do inventário
-            const sellableItems = [];
-            for (let i = 0; i < gameState.inventory.length; i++) {
-                const item = gameState.inventory[i];
-                if (item && item.consumable !== false) {
-                    const basePrice = item.value || 10;
-                    const sellPrice = Math.floor(basePrice * sellPriceMultiplier);
-                    if (sellPrice > 0) {
-                        sellableItems.push({ index: i, item, sellPrice });
-                    }
-                }
-            }
-            
-            if (sellableItems.length === 0) {
-                await Swal.fire({
-                    title: `${emoji} ${name}`,
-                    text: "Você não tem nada que eu possa comprar no momento...",
-                    icon: 'info',
-                    confirmButtonText: 'Entendi',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            // Construir lista de itens
-            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            for (let i = 0; i < sellableItems.length; i++) {
-                const { item, sellPrice, index } = sellableItems[i];
-                const quantity = item.quantity || 1;
-                itemsHtml += `
-                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="flex: 1;">
-                            <strong style="color: #ffd700;">${item.name}</strong>
-                            ${quantity > 1 ? `<span style="color: #888;"> x${quantity}</span>` : ''}
-                            <div style="font-size: 12px; color: #888;">${item.description || ''}</div>
-                            <div style="font-size: 14px; color: #ffa500;">💰 Vende por: ${sellPrice} moedas</div>
-                        </div>
-                        <button class="action-btn warning" onclick="window.sellItem(${index}, ${sellPrice})" style="padding: 5px 15px; font-size: 14px;">
-                            💰 Vender
-                        </button>
-                    </div>
-                `;
-            }
-            itemsHtml += '</div>';
-            
-            window.sellItem = (index, price) => {
-                const item = gameState.inventory[index];
-                if (item) {
-                    if (item.quantity > 1) {
-                        item.quantity--;
-                    } else {
-                        gameState.inventory[index] = null;
-                    }
-                    gameState.character.gold += price;
-                    addLog(`💰 Você vendeu ${item.name} para ${name} por ${price} moedas.`);
-                    updateUI();
-                    
-                    Swal.fire({
-                        title: '✅ Venda Realizada!',
-                        text: `Você recebeu ${price} moedas por ${item.name}.`,
-                        icon: 'success',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                    
-                    setTimeout(() => handleSellInteraction(config), 500);
-                }
-            };
-            
-            await Swal.fire({
-                title: `💰 Vender para ${name}`,
-                html: itemsHtml,
-                icon: 'info',
-                confirmButtonText: '🔙 Voltar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                willClose: () => {
-                    delete window.sellItem;
-                }
-            });
-        }
-        async function handleTalkInteraction(config) {
-            const { name, emoji, topics = [] } = config;
-            
-            if (topics.length === 0) {
-                const defaultTopics = [
-                    { name: '👋 Cumprimentar', message: `"Olá, ${gameState.character.name}! Prazer em conhecê-lo."` },
-                    { name: '🌤️ Clima', message: '"O clima tem estado agradável ultimamente. As colheitas estão boas!"' },
-                    { name: '📰 Novidades', message: '"Ouvi dizer que o rei está planejando um grande festival em breve."' },
-                    { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
-                ];
-                
-                let selectedTopic = null;
-                
-                const topicHtml = defaultTopics.map((topic, idx) => 
-                    `<button class="action-btn" onclick="window.selectTopic(${idx})" style="margin: 8px; width: calc(50% - 16px);">${topic.name}</button>`
-                ).join('');
-                
-                await Swal.fire({
-                    title: `${emoji} Conversar com ${name}`,
-                    html: `<div style="text-align: left;">
-                        <p>${name} olha para você e pergunta:</p>
-                        <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-                        <div style="display: flex; flex-wrap: wrap; justify-content: center;">
-                            ${topicHtml}
-                        </div>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: false,
-                    showCancelButton: true,
-                    cancelButtonText: '🔙 Voltar',
-                    cancelButtonColor: '#ff4444',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    didOpen: () => {
-                        window.selectTopic = async (idx) => {
-                            selectedTopic = defaultTopics[idx];
-                            Swal.close();
-                            await Swal.fire({
-                                title: `${emoji} ${name}`,
-                                text: selectedTopic.message,
-                                icon: 'info',
-                                confirmButtonText: 'Continuar',
-                                background: '#1a1a2e',
-                                color: '#fff',
-                                confirmButtonColor: '#ffd700'
-                            });
-                            delete window.selectTopic;
-                        };
-                    },
-                    willClose: () => {
-                        if (window.selectTopic) delete window.selectTopic;
-                    }
-                });
-                return;
-            }
-            
-            // Usar tópicos personalizados
-            const topicHtml = topics.map((topic, idx) => 
-                `<button class="action-btn" onclick="window.selectCustomTopic(${idx})" style="margin: 8px; width: calc(50% - 16px); background: #9370db;">${topic.name}</button>`
-            ).join('');
-            
-            await Swal.fire({
-                title: `${emoji} Conversar com ${name}`,
-                html: `<div style="text-align: left;">
-                    <p>${name} olha para você e pergunta:</p>
-                    <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center;">
-                        ${topicHtml}
-                    </div>
-                </div>`,
-                icon: 'info',
-                showConfirmButton: false,
-                showCancelButton: true,
-                cancelButtonText: '🔙 Voltar',
-                cancelButtonColor: '#ff4444',
-                background: '#1a1a2e',
-                color: '#fff',
-                didOpen: () => {
-                    window.selectCustomTopic = async (idx) => {
-                        const topic = topics[idx];
-                        let message = typeof topic.message === 'function' ? topic.message() : topic.message;
-                        
-                        Swal.close();
-                        
-                        if (topic.action) {
-                            await topic.action();
-                        }
-                        
-                        await Swal.fire({
-                            title: `${emoji} ${name}`,
-                            text: message,
-                            icon: 'info',
-                            confirmButtonText: 'Continuar',
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            confirmButtonColor: '#ffd700'
-                        });
-                        delete window.selectCustomTopic;
-                    };
-                },
-                willClose: () => {
-                    if (window.selectCustomTopic) delete window.selectCustomTopic;
-                }
-            });
-        }
-        async function handleGreetInteraction(config) {
-            const { name, emoji, onGreet } = config;
-            
-            const greetings = [
-                `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
-                `"Saudações, aventureiro! Que os deuses te protejam."`,
-                `"Bom dia! Está um belo dia para explorar, não acha?"`,
-                `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
-                `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
-                `"Puxa, como você está forte hoje! Tem treinado muito?"`,
-                `"Que bom ver você! Como posso ajudar hoje?"`,
-                `"Olá, viajante! Tem trazido boas notícias?"`
-            ];
-            
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-            
-            await Swal.fire({
-                title: `${emoji} ${name}`,
-                text: randomGreeting,
-                icon: 'success',
-                confirmButtonText: 'Até logo!',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                timer: 2500
-            });
-            
-            addLog(`👋 Você cumprimentou ${name}.`);
-            if (onGreet) onGreet();
-        }
-
-
         function initNPCStates() {
             if (!gameState.bots) {
                 gameState.bots = {};
@@ -5397,30 +4975,14 @@
                 clearInterval(npcUpdateInterval);
             }
             
-            // Atualizar a cada 60 segundos (1 minuto)
             npcUpdateInterval = setInterval(() => {
                 if (gameState && gameState.character && !gameState.isDead) {
                     updateAllNPCs();
-                    addLog('🕐 Os moradores do reino mudaram de posição...');
-                    
-                    // Se o jogador estiver no menu de algum NPC, atualizar a interface
-                    if (gameState.currentNPCInteraction) {
-                        // Opcional: atualizar UI do NPC atual
-                    }
                 }
-            }, 60000); // 60 segundos
+            }, 60000);
             
         }
 
-        // Integrar com a troca de dia/noite
-        const originalToggleTimeOfDay = toggleTimeOfDay;
-        toggleTimeOfDay = function() {
-            originalToggleTimeOfDay();
-            updateAllNPCs();
-            addLog(`🕐 Com o ${gameState.timeOfDay === 'day' ? 'amanhecer' : 'anoitecer'}, os NPCs se reposicionaram.`);
-        };
-
-        // Função para obter o estado de um NPC para uso nos diálogos
         function getNPCStateForDialog(npcId) {
             const state = gameState.bots[npcId];
             if (!state) return null;
@@ -5431,6 +4993,600 @@
                 isDay: gameState.timeOfDay === 'day',
                 isAvailable: isNPCAvailable(npcId)
             };
+        }
+
+
+        async function talkToNPC(npcId) {
+            if (gameState.isDead) return { success: false, reason: 'dead' };
+            
+            const npc = NPC_DEFINITIONS[npcId];
+            if (!npc) {
+                console.error(`NPC ${npcId} não encontrado!`);
+                return { success: false, reason: 'not_found' };
+            }
+            
+            // Garantir que o estado do NPC existe
+            if (!gameState.bots) gameState.bots = {};
+            if (!gameState.bots[npcId]) {
+                gameState.bots[npcId] = { ...npc.baseState, lastUpdate: Date.now() };
+            }
+            
+            const isDay = gameState.timeOfDay === 'day';
+            const npcState = gameState.bots[npcId];
+            
+            // Atualizar estado baseado no comportamento se necessário
+            if (!npcState.lastUpdate || (Date.now() - npcState.lastUpdate) > 60000) {
+                updateSingleNPCState(npcId);
+            }
+            
+            // ========== VERIFICAÇÕES DE DISPONIBILIDADE ==========
+            
+            // CASO 1: Noite e NPC está dormindo
+            if (!isDay && npcState.isSleeping) {
+                await Swal.fire({
+                    title: `🌙 ${npc.name} - Dormindo`,
+                    text: npc.sleepingMessage,
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} estava dormindo`);
+                if (npc.onSleep) npc.onSleep();
+                updateUI();
+                return { success: false, reason: 'sleeping' };
+            }
+            
+            // CASO 2: Noite e NPC está em casa mas acordado (raro)
+            if (!isDay && npcState.isHome && !npcState.isSleeping) {
+                const randomLine = npc.sleepyMessages[Math.floor(Math.random() * npc.sleepyMessages.length)];
+                
+                await Swal.fire({
+                    title: `${npc.sleepyEmoji || npc.emoji} ${npc.name}`,
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">${npc.sleepyEmoji || npc.emoji}</div>
+                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">${npc.name}</div>
+                        </div>
+                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'Voltar depois',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} não pode conversar, volte durante o dia!`);
+                updateUI();
+                return { success: false, reason: 'sleepy' };
+            }
+            
+            // CASO 3: NPC não está em casa (dia ou noite)
+            if (!npcState.isHome) {
+                await Swal.fire({
+                    title: npc.absentMessage,
+                    text: `${npc.name} não está em casa, volte mais tarde!`,
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} não estava em casa`);
+                if (npc.onAbsent) npc.onAbsent();
+                updateUI();
+                return { success: false, reason: 'absent' };
+            }
+            
+            // ========== NPC DISPONÍVEL - MOSTRAR DIÁLOGO ==========
+            
+            const greetingText = typeof npc.greeting === 'function' ? npc.greeting() : npc.greeting;
+            
+            // Construir botões de ação
+            const actionButtons = [];
+            
+            if (npc.shopItems && npc.shopItems.length > 0) {
+                actionButtons.push({ text: '🛒 Comprar', value: 'shop', color: '#4CAF50' });
+            }
+            if (npc.canSellToNPC) {
+                actionButtons.push({ text: '💰 Vender', value: 'sell', color: '#ffa500' });
+            }
+            if (npc.topics && npc.topics.length > 0) {
+                actionButtons.push({ text: '💬 Conversar', value: 'talk', color: '#9370db' });
+            }
+            actionButtons.push({ text: '👋 Apenas cumprimentar', value: 'greet', color: '#4a90e2' });
+            
+            // Se não houver botões, mostrar apenas mensagem
+            if (actionButtons.length === 1 && actionButtons[0].value === 'greet') {
+                await Swal.fire({
+                    title: `${npc.emoji} ${npc.name}`,
+                    text: greetingText,
+                    icon: 'info',
+                    confirmButtonText: 'Voltar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                updateUI();
+                return { success: true, action: 'none' };
+            }
+            
+            // Mostrar menu de interação
+            let result;
+            
+            if (actionButtons.length === 1) {
+                result = await Swal.fire({
+                    title: `${npc.emoji} ${npc.name}`,
+                    html: `<div style="text-align: left;"><p style="font-size: 16px; line-height: 1.5;">${greetingText}</p></div>`,
+                    icon: 'info',
+                    showConfirmButton: true,
+                    showCancelButton: false,
+                    confirmButtonText: actionButtons[0].text,
+                    confirmButtonColor: actionButtons[0].color,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                if (result.isConfirmed) {
+                    await processNPCAction(npcId, actionButtons[0].value);
+                }
+            } 
+            else if (actionButtons.length === 2) {
+                result = await Swal.fire({
+                    title: `${npc.emoji} ${npc.name}`,
+                    html: `<div style="text-align: left;"><p style="font-size: 16px; line-height: 1.5;">${greetingText}</p></div>`,
+                    icon: 'info',
+                    showConfirmButton: true,
+                    showDenyButton: true,
+                    confirmButtonText: actionButtons[0].text,
+                    denyButtonText: actionButtons[1].text,
+                    confirmButtonColor: actionButtons[0].color,
+                    denyButtonColor: actionButtons[1].color,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                
+                if (result.isConfirmed) {
+                    await processNPCAction(npcId, actionButtons[0].value);
+                } else if (result.isDenied) {
+                    await processNPCAction(npcId, actionButtons[1].value);
+                }
+            }
+            else {
+                const optionsHtml = actionButtons.map((btn, idx) => 
+                    `<button class="action-btn" onclick="window.selectNPCAction(${idx})" style="margin: 8px; width: calc(50% - 16px); background: ${btn.color};">${btn.text}</button>`
+                ).join('');
+                
+                await Swal.fire({
+                    title: `${npc.emoji} ${npc.name}`,
+                    html: `<div style="text-align: left;">
+                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
+                            ${optionsHtml}
+                        </div>
+                    </div>`,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    didOpen: () => {
+                        window.selectNPCAction = async (idx) => {
+                            Swal.close();
+                            await processNPCAction(npcId, actionButtons[idx].value);
+                            delete window.selectNPCAction;
+                        };
+                    },
+                    willClose: () => {
+                        if (window.selectNPCAction) delete window.selectNPCAction;
+                        if (npc.onFarewell) npc.onFarewell();
+                        addLog(`🏠 Você se despediu de ${npc.name}. ${npc.farewell}`);
+                    }
+                });
+            }
+            
+            updateUI();
+            return { success: true };
+        }
+        async function processNPCAction(npcId, action) {
+            const npc = NPC_DEFINITIONS[npcId];
+            if (!npc) return;
+            
+            switch (action) {
+                case 'shop':
+                    await handleNPCShop(npcId);
+                    break;
+                case 'sell':
+                    await handleNPCSell(npcId);
+                    break;
+                case 'talk':
+                    await handleNPCTalk(npcId);
+                    break;
+                case 'greet':
+                    await handleNPCGreet(npcId);
+                    break;
+            }
+        }
+        async function handleNPCShop(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            if (!npc.shopItems || npc.shopItems.length === 0) {
+                addLog(`❌ ${npc.name} não tem nada para vender no momento.`);
+                return;
+            }
+            
+            const multiplier = npc.buyPriceMultiplier || 1.0;
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (let i = 0; i < npc.shopItems.length; i++) {
+                const item = npc.shopItems[i];
+                const itemData = ITEMS[item.id];
+                if (!itemData) continue;
+                
+                const price = Math.floor(item.price * multiplier);
+                itemsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="flex: 1;">
+                            <strong style="color: #ffd700;">${itemData.name}</strong>
+                            <div style="font-size: 12px; color: #888;">${itemData.description || ''}</div>
+                            <div style="font-size: 14px; color: #4CAF50;">💰 ${price} moedas</div>
+                        </div>
+                        <button class="action-btn success" onclick="window.buyFromNPC('${npcId}', '${item.id}', ${price})" style="padding: 5px 15px;">
+                            🛒 Comprar
+                        </button>
+                    </div>
+                `;
+            }
+            itemsHtml += '</div>';
+            
+            window.buyFromNPC = (npcId, itemId, price) => {
+                if (gameState.character.gold >= price) {
+                    gameState.character.gold -= price;
+                    addItemToInventory(itemId);
+                    addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${NPC_DEFINITIONS[npcId].name}.`);
+                    updateUI();
+                    
+                    Swal.fire({
+                        title: '✅ Compra Realizada!',
+                        text: `Você adquiriu ${ITEMS[itemId].name}.`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                } else {
+                    Swal.fire({
+                        title: '❌ Moedas Insuficientes!',
+                        text: `Você precisa de ${price} moedas para comprar ${ITEMS[itemId].name}.`,
+                        icon: 'error',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+            };
+            
+            await Swal.fire({
+                title: `🛒 Loja de ${npc.shopkeeperName || npc.name}`,
+                html: itemsHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: () => {
+                    delete window.buyFromNPC;
+                }
+            });
+        }
+        async function handleNPCSell(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            const multiplier = npc.sellPriceMultiplier || 0.5;
+            
+            const sellableItems = [];
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && item.consumable !== false) {
+                    const basePrice = item.value || 10;
+                    const sellPrice = Math.floor(basePrice * multiplier);
+                    if (sellPrice > 0) {
+                        sellableItems.push({ index: i, item, sellPrice });
+                    }
+                }
+            }
+            
+            if (sellableItems.length === 0) {
+                await Swal.fire({
+                    title: `${npc.emoji} ${npc.name}`,
+                    text: "Você não tem nada que eu possa comprar no momento...",
+                    icon: 'info',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (const { item, sellPrice, index } of sellableItems) {
+                const quantity = item.quantity || 1;
+                itemsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div style="flex: 1;">
+                            <strong style="color: #ffd700;">${item.name}</strong>
+                            ${quantity > 1 ? `<span style="color: #888;"> x${quantity}</span>` : ''}
+                            <div style="font-size: 12px; color: #888;">${item.description || ''}</div>
+                            <div style="font-size: 14px; color: #ffa500;">💰 Vende por: ${sellPrice} moedas</div>
+                        </div>
+                        <button class="action-btn warning" onclick="window.sellToNPC(${index}, ${sellPrice}, '${npcId}')" style="padding: 5px 15px;">
+                            💰 Vender
+                        </button>
+                    </div>
+                `;
+            }
+            itemsHtml += '</div>';
+            
+            window.sellToNPC = (index, price, npcId) => {
+                const item = gameState.inventory[index];
+                if (item) {
+                    if (item.quantity > 1) {
+                        item.quantity--;
+                    } else {
+                        gameState.inventory[index] = null;
+                    }
+                    gameState.character.gold += price;
+                    addLog(`💰 Você vendeu ${item.name} para ${NPC_DEFINITIONS[npcId].name} por ${price} moedas.`);
+                    updateUI();
+                    
+                    Swal.fire({
+                        title: '✅ Venda Realizada!',
+                        text: `Você recebeu ${price} moedas por ${item.name}.`,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 1500,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    setTimeout(() => handleNPCSell(npcId), 500);
+                }
+            };
+            
+            await Swal.fire({
+                title: `💰 Vender para ${npc.name}`,
+                html: itemsHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: () => {
+                    delete window.sellToNPC;
+                }
+            });
+        }
+        async function handleNPCTalk(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            const topics = npc.topics || [];
+            
+            if (topics.length === 0) {
+                const defaultTopics = [
+                    { name: '👋 Cumprimentar', message: `"Olá, ${gameState.character.name}! Prazer em conhecê-lo."` },
+                    { name: '🌤️ Clima', message: '"O clima tem estado agradável ultimamente. As colheitas estão boas!"' },
+                    { name: '📰 Novidades', message: '"Ouvi dizer que o rei está planejando um grande festival em breve."' },
+                    { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
+                ];
+                
+                const topicHtml = defaultTopics.map((topic, idx) => 
+                    `<button class="action-btn" onclick="window.selectTopic(${idx})" style="margin: 8px; width: calc(50% - 16px);">${topic.name}</button>`
+                ).join('');
+                
+                await Swal.fire({
+                    title: `${npc.emoji} Conversar com ${npc.name}`,
+                    html: `<div style="text-align: left;">
+                        <p>${npc.name} olha para você e pergunta:</p>
+                        <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: center;">${topicHtml}</div>
+                    </div>`,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    showCancelButton: true,
+                    cancelButtonText: '🔙 Voltar',
+                    cancelButtonColor: '#ff4444',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    didOpen: () => {
+                        window.selectTopic = async (idx) => {
+                            Swal.close();
+                            await Swal.fire({
+                                title: `${npc.emoji} ${npc.name}`,
+                                text: defaultTopics[idx].message,
+                                icon: 'info',
+                                confirmButtonText: 'Continuar',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                            delete window.selectTopic;
+                        };
+                    },
+                    willClose: () => {
+                        if (window.selectTopic) delete window.selectTopic;
+                    }
+                });
+                return;
+            }
+            
+            const topicHtml = topics.map((topic, idx) => 
+                `<button class="action-btn" onclick="window.selectCustomTopic(${idx})" style="margin: 8px; width: calc(50% - 16px); background: #9370db;">${topic.name}</button>`
+            ).join('');
+            
+            await Swal.fire({
+                title: `${npc.emoji} Conversar com ${npc.name}`,
+                html: `<div style="text-align: left;">
+                    <p>${npc.name} olha para você e pergunta:</p>
+                    <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: center;">${topicHtml}</div>
+                </div>`,
+                icon: 'info',
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: '🔙 Voltar',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                didOpen: () => {
+                    window.selectCustomTopic = async (idx) => {
+                        const topic = topics[idx];
+                        let message = typeof topic.message === 'function' ? topic.message() : topic.message;
+                        
+                        Swal.close();
+                        
+                        if (topic.action) {
+                            await topic.action();
+                        }
+                        
+                        await Swal.fire({
+                            title: `${npc.emoji} ${npc.name}`,
+                            text: message,
+                            icon: 'info',
+                            confirmButtonText: 'Continuar',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        delete window.selectCustomTopic;
+                    };
+                },
+                willClose: () => {
+                    if (window.selectCustomTopic) delete window.selectCustomTopic;
+                }
+            });
+        }
+        async function handleNPCGreet(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            
+            const greetings = [
+                `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
+                `"Saudações, aventureiro! Que os deuses te protejam."`,
+                `"Bom dia! Está um belo dia para explorar, não acha?"`,
+                `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
+                `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
+                `"Puxa, como você está forte hoje! Tem treinado muito?"`,
+                `"Que bom ver você! Como posso ajudar hoje?"`,
+                `"Olá, viajante! Tem trazido boas notícias?"`
+            ];
+            
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            
+            await Swal.fire({
+                title: `${npc.emoji} ${npc.name}`,
+                text: randomGreeting,
+                icon: 'success',
+                confirmButtonText: 'Até logo!',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 2500
+            });
+            
+            addLog(`👋 Você cumprimentou ${npc.name}.`);
+            if (npc.onGreet) npc.onGreet();
+        }
+        function updateSingleNPCState(npcId) {
+            const npc = NPC_DEFINITIONS[npcId];
+            if (!npc) return;
+            
+            if (!gameState.bots) gameState.bots = {};
+            if (!gameState.bots[npcId]) {
+                gameState.bots[npcId] = { ...npc.baseState, lastUpdate: Date.now() };
+            }
+            
+            const currentState = gameState.bots[npcId];
+            const isDay = gameState.timeOfDay === 'day';
+            const behavior = isDay ? npc.dayBehavior : npc.nightBehavior;
+            
+            if (isDay) {
+                currentState.isSleeping = false;
+                const random = Math.random();
+                currentState.isHome = random < behavior.homeChance;
+            } else {
+                const homeRandom = Math.random();
+                currentState.isHome = homeRandom < behavior.homeChance;
+                
+                if (currentState.isHome) {
+                    const sleepRandom = Math.random();
+                    currentState.isSleeping = sleepRandom < (behavior.sleepChance || 0.7);
+                } else {
+                    currentState.isSleeping = false;
+                }
+            }
+            
+            currentState.lastUpdate = Date.now();
+        }
+
+        // Funções de atalho para cada NPC (mantendo compatibilidade com código existente)
+        async function visitCarpenter() { return talkToNPC('carpenter'); }
+        async function visitArtisan() { return talkToNPC('artisan'); }
+        async function visitWeaver() { return talkToNPC('weaver'); }
+        async function visitFarmerHouse1() { return talkToNPC('farmerMiguel'); }
+        async function visitFarmerHouse2() { return talkToNPC('farmerAna'); }
+        async function talkToCaptain() { return talkToNPC('captain'); }
+        async function talkToKing() { return talkToNPC('king'); }
+
+
+        function blessPlayer() {
+            const lastBlessing = localStorage.getItem('last_royal_blessing');
+            const now = Date.now();
+            const oneDay = 24 * 60 * 60 * 1000;
+            
+            if (!lastBlessing || (now - parseInt(lastBlessing)) > oneDay) {
+                const healAmount = Math.floor(gameState.character.maxLife * 0.3);
+                const manaAmount = Math.floor(gameState.character.maxMana * 0.2);
+                gameState.character.life = Math.min(gameState.character.life + healAmount, gameState.character.maxLife);
+                gameState.character.mana = Math.min(gameState.character.mana + manaAmount, gameState.character.maxMana);
+                localStorage.setItem('last_royal_blessing', now.toString());
+                
+                addLog(`👑 O Rei te abençoou! Você recuperou ${healAmount} de vida e ${manaAmount} de mana.`);
+                Swal.fire({
+                    title: '✨ Bênção Real Recebida!',
+                    text: `Você foi abençoado pelo Rei! +${healAmount}❤️ +${manaAmount}🔮`,
+                    icon: 'success',
+                    confirmButtonText: 'Agradecer',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                updateUI();
+            } else {
+                addLog('👑 O Rei já te abençoou hoje. Volte amanhã para outra bênção.');
+                Swal.fire({
+                    title: '⏰ Ainda não...',
+                    text: 'O Rei já te abençoou hoje. Volte amanhã para receber outra bênção.',
+                    icon: 'info',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+            }
         }
 
         // ========== SHOP FUNCTIONS ==========
