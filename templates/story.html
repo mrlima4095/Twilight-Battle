@@ -4185,6 +4185,7 @@
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
             addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
+            updateNPCs();
             updateUI();
         }
 
@@ -5820,6 +5821,226 @@
             };
             input.click();
         }
+        
+        // ========== NPC BOTS SYSTEM ==========
+function initNPCs() {
+    if (!gameState.npcs) {
+        gameState.npcs = {};
+        
+        for (const [id, config] of Object.entries(NPC_CONFIGS)) {
+            gameState.npcs[id] = {
+                id: id,
+                name: config.name,
+                emoji: config.emoji,
+                role: config.role,
+                currentLocation: config.dayLocation,
+                currentActivity: config.dayActivity,
+                isSleeping: false,
+                lastUpdate: Date.now(),
+                mood: 'normal',
+                relationship: 0
+            };
+        }
+    }
+    
+    // Garantir que todos os NPCs existam
+    for (const [id, config] of Object.entries(NPC_CONFIGS)) {
+        if (!gameState.npcs[id]) {
+            gameState.npcs[id] = {
+                id: id,
+                name: config.name,
+                emoji: config.emoji,
+                role: config.role,
+                currentLocation: config.dayLocation,
+                currentActivity: config.dayActivity,
+                isSleeping: false,
+                lastUpdate: Date.now(),
+                mood: 'normal',
+                relationship: 0
+            };
+        }
+    }
+}
+function updateNPCs() {
+    if (!gameState.npcs) {
+        initNPCs();
+        return;
+    }
+    
+    const now = Date.now();
+    const isNight = gameState.timeOfDay === 'night';
+    
+    for (const [id, npc] of Object.entries(gameState.npcs)) {
+        const config = NPC_CONFIGS[id];
+        if (!config) continue;
+        
+        const lastUpdateSeconds = (now - npc.lastUpdate) / 1000;
+        
+        // Atualizar a cada 30 segundos no mínimo
+        if (lastUpdateSeconds < 30) continue;
+        
+        npc.lastUpdate = now;
+        
+        if (isNight) {
+            // NOITE: NPCs vão para casa dormir
+            if (!npc.isSleeping) {
+                npc.isSleeping = true;
+                npc.currentLocation = config.homeLocation;
+                npc.currentActivity = config.nightActivity;
+            }
+        } else {
+            // DIA: NPCs acordam e se movem
+            if (npc.isSleeping) {
+                npc.isSleeping = false;
+            }
+            
+            // 40% de chance de desviar do local padrão (mais dinâmico)
+            if (Math.random() < 0.4) {
+                const possibleLocs = config.possibleDayLocations;
+                const randomLoc = possibleLocs[Math.floor(Math.random() * possibleLocs.length)];
+                npc.currentLocation = randomLoc.location;
+                npc.currentActivity = randomLoc.activity;
+            } else {
+                // Ficar no local padrão do dia
+                npc.currentLocation = config.dayLocation;
+                npc.currentActivity = config.dayActivity;
+            }
+        }
+        
+        // Pequena chance de evento especial (apenas durante o dia)
+        if (Math.random() < 0.05 && !isNight) {
+            const events = [
+                { mood: 'pensativo', message: `${npc.name} parece estar pensativo hoje...` },
+                { mood: 'alegre', message: `${npc.name} está radiante hoje! Algo de bom aconteceu.` },
+                { mood: 'ocupado', message: `${npc.name} está muito ocupado, mal notou sua presença.` }
+            ];
+            const event = events[Math.floor(Math.random() * events.length)];
+            npc.mood = event.mood;
+            if (gameState.location === npc.currentLocation) {
+                addLog(`👥 ${event.message}`);
+            }
+        } else {
+            npc.mood = 'normal';
+        }
+    }
+}
+function getNPCsAtLocation(locationId) {
+    if (!gameState.npcs) return [];
+    
+    const npcs = [];
+    for (const npc of Object.values(gameState.npcs)) {
+        if (npc.currentLocation === locationId) {
+            npcs.push(npc);
+        }
+    }
+    return npcs;
+}
+function getNPC(npcId) {
+    if (!gameState.npcs) return null;
+    return gameState.npcs[npcId] || null;
+}
+function renderNPCsInLocation() {
+    const currentLocation = gameState.location;
+    const npcsHere = getNPCsAtLocation(currentLocation);
+    
+    if (npcsHere.length === 0) return '';
+    
+    let html = `
+        <div style="margin-top: 20px; border-top: 1px solid rgba(255,215,0,0.3); padding-top: 15px;">
+            <h4 style="color: #ffd700; margin-bottom: 15px;">👥 Pessoas por aqui</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    `;
+    
+    for (const npc of npcsHere) {
+        const config = NPC_CONFIGS[npc.id];
+        const isSleeping = npc.isSleeping;
+        const activityIcon = getActivityIcon(npc.currentActivity);
+        
+        html += `
+            <div class="npc-card" style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; text-align: center; min-width: 100px; cursor: pointer; transition: all 0.3s; border: 1px solid ${isSleeping ? '#444' : '#ffd700'};" onclick="interactWithNPC('${npc.id}')">
+                <div style="font-size: 36px; filter: ${isSleeping ? 'grayscale(0.5)' : 'none'};">${config.emoji}</div>
+                <div style="font-weight: bold; color: #ffd700; font-size: 14px;">${npc.name}</div>
+                <div style="font-size: 11px; color: ${isSleeping ? '#888' : '#4CAF50'};">${activityIcon} ${getActivityText(npc.currentActivity)}</div>
+                ${npc.mood !== 'normal' ? `<div style="font-size: 10px; color: #ffa500; margin-top: 3px;">✨ ${getMoodText(npc.mood)}</div>` : ''}
+            </div>
+        `;
+    }
+    
+    html += `</div></div>`;
+    return html;
+}
+function getMoodText(mood) {
+    const moods = {
+        'pensativo': 'Pensativo',
+        'alegre': 'Alegre',
+        'ocupado': 'Ocupado'
+    };
+    return moods[mood] || mood;
+}
+function getActivityIcon(activity) {
+    const icons = {
+        'trabalhando': '🔨',
+        'criando': '🎨',
+        'tecendo': '🧵',
+        'cultivando': '🌾',
+        'assando': '🍞',
+        'dormindo': '😴',
+        'descansando': '😌',
+        'socializando': '💬',
+        'patrulhando': '🗡️',
+        'inspecionando': '👁️',
+        'treinando': '⚔️',
+        'governando': '👑',
+        'em conselho': '📜',
+        'expondo obras': '🖼️',
+        'entregando tecidos': '📦',
+        'colhendo plantas': '🌿',
+        'comprando suprimentos': '🛒',
+        'buscando inspiração': '✨',
+        'indo ao moinho': '🌾',
+        'vendendo produtos': '💰',
+        'visitando o povo': '👥',
+        'passeando': '🚶'
+    };
+    return icons[activity] || '📍';
+}
+function getActivityText(activity) {
+    const texts = {
+        'trabalhando': 'Trabalhando',
+        'criando': 'Criando arte',
+        'tecendo': 'Tecendo',
+        'cultivando': 'Cultivando',
+        'assando': 'Assando pão',
+        'dormindo': 'Dormindo',
+        'descansando': 'Descansando',
+        'socializando': 'Socializando',
+        'patrulhando': 'Patrulhando',
+        'inspecionando': 'Inspecionando',
+        'treinando': 'Treinando',
+        'governando': 'Governando',
+        'em conselho': 'Em conselho',
+        'expondo obras': 'Expondo obras',
+        'entregando tecidos': 'Entregando tecidos',
+        'colhendo plantas': 'Colhendo plantas',
+        'comprando suprimentos': 'Comprando',
+        'buscando inspiração': 'Em busca de inspiração',
+        'indo ao moinho': 'Indo ao moinho',
+        'vendendo produtos': 'Vendendo produtos',
+        'visitando o povo': 'Visitando o povo',
+        'passeando': 'Passeando'
+    };
+    return texts[activity] || activity;
+}
+function refreshNPCsAtLocation() {
+    updateNPCs();
+    updateGameContent();
+}
+function initNPCSystem() {
+    initNPCs();
+    startNPCUpdateTimer();
+    updateNPCs();
+}
+
         
         // ========== DIALOG SYSTEM ==========
 
