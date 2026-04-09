@@ -494,7 +494,9 @@
             remainingCycleTime: null, // Para quando dormir
             placedStations: {},  // NOVO: { locationId: { stationId: stationData } }
             activeStation: null,  // NOVO: estação atualmente aberte
-            furnaceJobs: {}, // { locationId_stationId: { inputItem, fuelItem, remainingTime, totalTime, resultItem, inputSlot, fuelSlot } }
+            furnaceJobs: {}, // { locationId_stationId: { inputItem, fuelItem, remainingTime, totalTime, resultItem, inputSlot, fuelSlot } },
+            inMillInterface: false,
+            millJobs: {}
         };
         
         const RACES = {
@@ -650,7 +652,7 @@
                 name: 'Moinho de Vento',
                 description: 'Um antigo moinho de vento construido no inicio da Era da Aurora que ainda funciona, muito usado pelos fazendeiros.',
                 actions: [
-                    { name: '🌾 Moer Grãos (Serviço gratuito)', action: 'millGrains' },
+                    { name: '🌾 Moer Grãos', action: 'openMillInterface' },
                     { name: '🔙 Voltar para os Campos', action: 'goFarmlands' }
                 ]
             },
@@ -738,8 +740,8 @@
                 description: 'As lápides estão cobertas de musgo e algumas estão quebradas. Uma névoa cinzenta paira no ar, e um calafrio percorre sua espinha.',
                 allowsStations: true,
                 actions: [
-                    { name: '', action: '' },
-                    { name: '', action: '' },
+                    { name: '⚰️ Mausoléu do Clã', action: '' },
+                    { name: '🛣️ Seguir para as covas', action: '' },
                     { name: '🔙 Sair do Cemitério', action: 'exitAbandonedCemetery' },
                 ]
             },
@@ -791,7 +793,7 @@
                 ]
             }
         };
-        
+
         const ITEMS = {
             // Weapons
             sword: { name: 'Espada', type: 'weapon', slot: 'mainhand', attack: 50, defense: 0, description: 'Uma espada básica' },
@@ -822,6 +824,8 @@
             wheat: { name: 'Trigo', type: 'material', description: 'Trigo', consumable: true },
             wheat_flour: { name: 'Farinha de Trigo', type: 'food', heal: 0, description: 'Use para criar alimentos', consumable: true },
             wheat_seed: { name: 'Sementes de Trigo', type: 'material', description: 'Use para plantar o Trigo', consumable: true },
+
+            corn_flour: { name: 'Fubá', type: 'material', description: 'Farinha de milho para receitas.', consumable: true },
             
             meat: { name: 'Carne Assada', type: 'food', heal: 100, description: 'Recupera 100 de vida.', consumable: true },
             raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação.', consumable: true },
@@ -940,7 +944,26 @@
                 result: 'boots',
                 quantity: 1,
                 station: 'loom'
-            }
+            },
+        
+            mill_wheat: {
+                name: '🌾 Moer Trigo',
+                description: 'Transforma trigo em farinha de trigo.',
+                materials: [ { id: 'wheat', quantity: 1 } ],
+                result: 'wheat_flour',
+                quantity: 1,
+                station: 'mill',
+                millTime: 3
+            },
+            mill_corn: {
+                name: '🌽 Moer Milho',
+                description: 'Transforma milho em fubá.',
+                materials: [ { id: 'corn', quantity: 1 } ],
+                result: 'corn_flour',
+                quantity: 1,
+                station: 'mill',
+                millTime: 4
+            },
         };
         const FURNACE_RECIPES = {
             raw_meat: {
@@ -1827,13 +1850,87 @@
         }
         function updateGameContent() {
             const content = document.getElementById('game-content');
+            
+            // Verificar se está na interface do moinho
+            if (gameState.inMillInterface && gameState.location === 'mill') {
+                const currentJob = getMillJob();
+                const hasItems = currentJob && (currentJob.inputItemId || currentJob.remainingQuantity > 0);
+                const isMilling = currentJob && currentJob.isMilling;
+                const hasResult = currentJob && currentJob.completedCount > 0;
+                
+                content.innerHTML = `
+                    <div style="background: rgba(0,0,0,0.8); border-radius: 20px; padding: 25px; border: 2px solid #ffd700;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="color: #ffd700; margin: 0;">🌾 Moinho de Vento</h2>
+                            <button class="action-btn" onclick="exitMillInterface()" style="padding: 8px 15px;">❌ Fechar</button>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; margin: 30px 0;">
+                            <!-- Slot de Entrada -->
+                            <div style="background: rgba(0,0,0,0.5); border: 2px solid #ffa500; border-radius: 15px; padding: 15px; text-align: center;">
+                                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">📥 ENTRADA</div>
+                                <div style="min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer;" onclick="openMillInputSelector()">
+                                    ${hasItems ? 
+                                        `<div style="font-size: 48px;">🌾</div>
+                                        <div style="color: #ffd700; font-weight: bold;">${currentJob.inputItemName}</div>
+                                        <div style="color: #888;">${currentJob.remainingQuantity} restante(s)</div>
+                                        ${currentJob.completedCount > 0 ? `<div style="color: #4CAF50;">✅ ${currentJob.completedCount} pronto(s)</div>` : ''}` :
+                                        `<div style="font-size: 48px; opacity: 0.5;">⬜</div>
+                                        <div style="color: #666;">Clique para adicionar</div>`
+                                    }
+                                </div>
+                                ${hasItems && !isMilling ? 
+                                    `<button class="furnace-remove-btn" onclick="clearMillInput()" style="margin-top: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 5px; color: white; cursor: pointer;">🗑️ Remover Tudo</button>` : ''
+                                }
+                            </div>
+                            
+                            <div style="font-size: 40px; color: #ffa500;">➡️</div>
+                            
+                            <!-- Slot de Resultado -->
+                            <div style="background: rgba(0,0,0,0.5); border: 2px solid #4CAF50; border-radius: 15px; padding: 15px; text-align: center;">
+                                <div style="color: #888; font-size: 12px; margin-bottom: 10px;">✨ RESULTADO</div>
+                                <div style="min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                    ${isMilling ? 
+                                        `<div style="font-size: 48px;">🔄⏳</div>
+                                        <div style="color: #ffa500;">Moendo...</div>
+                                        <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 8px; margin-top: 10px;">
+                                            <div style="width: ${((currentJob.millTimePerItem - currentJob.remainingTime) / currentJob.millTimePerItem) * 100}%; background: #ffa500; height: 100%; transition: width 0.3s;"></div>
+                                        </div>
+                                        <div style="font-size: 10px; margin-top: 5px;">${currentJob.completedCount}/${currentJob.completedCount + currentJob.remainingQuantity} completo(s)</div>` :
+                                        (hasResult ? 
+                                            `<div style="font-size: 48px;">✅</div>
+                                            <div style="color: #4CAF50; font-weight: bold;">${currentJob.resultName}</div>
+                                            <div style="font-size: 24px;">x${currentJob.completedCount}</div>
+                                            <button class="action-btn success" onclick="claimMillResult()" style="margin-top: 10px; padding: 8px 20px;">📦 Pegar Tudo</button>` :
+                                            `<div style="font-size: 48px; opacity: 0.5;">⬜</div>
+                                            <div style="color: #666;">Aguardando</div>`
+                                        )
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                            ${isMilling ? 
+                                `<button class="action-btn danger" onclick="stopMilling()" style="padding: 12px 30px;">⏹️ Parar Moagem</button>` :
+                                `<button class="action-btn success" onclick="startMilling()" ${!hasItems ? 'disabled' : ''} style="padding: 12px 30px;">
+                                    🌾 Iniciar Moagem
+                                </button>`
+                            }
+                        </div>
+                    </div>
+                `;
+
+                return;
+            }
+            
             if (gameState.activeStation && !gameState.currentEnemy) {
                 content.innerHTML = renderStationUI();
                 return;
             }
             
             const location = LOCATIONS[gameState.location];
-        
+            
             // Se estiver em batalha, mostra apenas a interface de combate
             if (gameState.currentEnemy && !gameState.isDead) {
                 const enemy = gameState.currentEnemy;
@@ -1890,18 +1987,18 @@
                 content.innerHTML = html;
                 return;
             }
-        
+            
             // Se não estiver em batalha, mostra a localização normal
             if (!location) {
                 content.innerHTML = `<h2 class="location-title">Erro</h2><div class="location-description">Localização não encontrada.</div>`;
                 return;
             }
-        
+            
             let html = `
                 <h2 class="location-title">${location.name}</h2>
                 <div class="location-description">${location.description}</div>
             `;
-        
+            
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
                     <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
@@ -1953,8 +2050,8 @@
                             const touchMoveHandler = (e) => handleTouchMove(e);
                             const touchEndHandler = (e) => handleTouchEnd(e, idx, 'chest');
                             
-                            slot.addEventListener('touchstart', touchStartHandler);
-                            slot.addEventListener('touchmove', touchMoveHandler);
+                            slot.addEventListener('touchstart', touchStartHandler, { passive: false });
+                            slot.addEventListener('touchmove', touchMoveHandler, { passive: false });
                             slot.addEventListener('touchend', touchEndHandler);
                             
                             slot._touchStart = touchStartHandler;
@@ -1969,7 +2066,7 @@
                     html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
                 });
                 html += `</div>`;
-                // Dentro do else que mostra os action-buttons, adicionar:
+                
                 if (location.allowsStations && gameState.placedStations[gameState.location] && Object.keys(gameState.placedStations[gameState.location]).length > 0) {
                     html += `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
                         <h4 style="color: #ffd700; margin-bottom: 10px;">🔧 Estações Montadas:</h4>
@@ -1982,10 +2079,10 @@
                     html += `</div></div>`;
                 }
             }
-        
+            
             content.innerHTML = html;
         }
-
+        
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 200) gameState.combatLog.pop();
@@ -2988,11 +3085,35 @@
             if (furnaceGlobalInterval) return;
             
             furnaceGlobalInterval = setInterval(() => {
-                if (!gameState.furnaceJobs) {
-                    gameState.furnaceJobs = {};
-                    return;
-                }
+                if (!gameState.furnaceJobs) { gameState.furnaceJobs = {}; return; }
+                if (!gameState.millJobs) { gameState.millJobs = {}; }
                 
+                if (gameState.millJobs && gameState.millJobs.mill) {
+                    const job = gameState.millJobs.mill;
+                    if (job.isMilling && !job.isPaused) {
+                        job.remainingTime--;
+                        
+                        if (job.remainingTime <= 0) {
+                            job.completedCount++;
+                            job.remainingQuantity--;
+                            
+                            if (job.remainingQuantity > 0) {
+                                job.remainingTime = job.millTimePerItem;
+                                addLog(`🌾 ${job.completedCount}/${job.completedCount + job.remainingQuantity} moído! +${job.resultName}`);
+                            } else {
+                                job.isMilling = false;
+                                addLog(`✨ Todos os ${job.completedCount} itens foram moídos!`);
+                            }
+                            
+                            if (gameState.location === 'mill') {
+                                updateUI();
+                            }
+                        } else if (gameState.location === 'mill') {
+                            updateUI();
+                        }
+                    }
+                }
+
                 for (const furnaceId in gameState.furnaceJobs) {
                     const job = gameState.furnaceJobs[furnaceId];
                     if (job && job.isCooking && !job.isPaused) {
@@ -3668,6 +3789,313 @@
             });
         }
         
+        // ========== MILL SYSTEM ==========
+
+        function openMillInterface() { if (gameState.isDead) return; gameState.inMillInterface = true; updateUI(); }
+        function exitMillInterface() { gameState.inMillInterface = false; updateUI(); }
+
+        function getMillJob() {
+            if (!gameState.millJobs) gameState.millJobs = {};
+            if (!gameState.millJobs.mill) {
+                gameState.millJobs.mill = null;
+            }
+            return gameState.millJobs.mill;
+        }
+        function getMillRecipes() {
+            const recipes = {};
+            for (const [id, recipe] of Object.entries(CRAFTING_RECIPES)) {
+                if (recipe.station === 'mill') {
+                    recipes[recipe.materials[0].id] = {
+                        result: recipe.result,
+                        resultName: recipe.name.split(' ').slice(1).join(' '),
+                        millTime: recipe.millTime,
+                        inputId: recipe.materials[0].id
+                    };
+                }
+            }
+            return recipes;
+        }
+
+        function openMillInputSelector() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getMillJob();
+            
+            if (currentJob && currentJob.isMilling) {
+                addLog('❌ O moinho está funcionando! Espere terminar primeiro.');
+                return;
+            }
+            
+            // Coletar itens que podem ser moídos
+            const millableItems = [];
+            const recipes = getMillRecipes();
+            
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && recipes[item.id]) {
+                    millableItems.push({ 
+                        index: i, 
+                        item: item, 
+                        quantity: item.quantity || 1,
+                        recipe: recipes[item.id]
+                    });
+                }
+            }
+            
+            if (millableItems.length === 0) {
+                Swal.fire({
+                    title: '❌ Nenhum Item para Moer',
+                    text: 'Você não tem trigo ou milho para moer!',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (let i = 0; i < millableItems.length; i++) {
+                const { item, index, quantity, recipe } = millableItems[i];
+                
+                itemsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffd700;">${item.name}</strong>
+                                <span style="color: #888;"> x${quantity}</span>
+                                <div style="font-size: 12px; color: #888;">${recipe.resultName} (${recipe.millTime}s cada)</div>
+                            </div>
+                            <button class="action-btn success" onclick="window.selectMillInput(${index}, ${quantity})" style="padding: 5px 15px;">
+                                🌾 Moer
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            itemsHtml += '</div>';
+            
+            window.selectMillInput = function(index, maxQty) {
+                const item = gameState.inventory[index];
+                if (!item) return;
+                
+                Swal.fire({
+                    title: '🌾 Quantidade para Moer',
+                    html: `
+                        <div style="text-align: center;">
+                            <p>Item: <strong>${item.name}</strong></p>
+                            <p>Disponível: <strong>${maxQty}</strong></p>
+                            <input type="number" id="mill-qty" class="swal2-input" min="1" max="${maxQty}" value="${Math.min(5, maxQty)}" style="margin: 10px auto;">
+                        </div>
+                    `,
+                    confirmButtonText: 'Moer',
+                    cancelButtonText: 'Cancelar',
+                    showCancelButton: true,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    cancelButtonColor: '#ff4444',
+                    preConfirm: () => {
+                        const qty = parseInt(document.getElementById('mill-qty').value);
+                        if (isNaN(qty) || qty < 1 || qty > maxQty) {
+                            Swal.showValidationMessage('Quantidade inválida!');
+                            return false;
+                        }
+                        return qty;
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value) {
+                        const qtyToMill = result.value;
+                        const recipe = getMillRecipes()[item.id];
+                        
+                        if (!recipe) return;
+                        
+                        // Remover os itens do inventário
+                        if (item.quantity > qtyToMill) {
+                            item.quantity -= qtyToMill;
+                        } else {
+                            gameState.inventory[index] = null;
+                        }
+                        
+                        const currentJobLocal = getMillJob();
+                        
+                        // Configurar o job do moinho
+                        gameState.millJobs.mill = {
+                            inputItemId: item.id,
+                            inputItemName: item.name,
+                            inputQuantity: qtyToMill,
+                            remainingQuantity: qtyToMill,
+                            millTimePerItem: recipe.millTime,
+                            resultId: recipe.result,
+                            resultName: recipe.resultName,
+                            completedCount: 0,
+                            isMilling: false,
+                            remainingTime: recipe.millTime
+                        };
+                        
+                        Swal.close();
+                        updateUI();
+                        addLog(`🌾 Você colocou ${qtyToMill}x ${item.name} no moinho para moer.`);
+                    }
+                });
+            };
+            
+            Swal.fire({
+                title: '🌾 Moinho - Selecionar Item',
+                html: itemsHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: function() {
+                    delete window.selectMillInput;
+                }
+            });
+        }
+
+        function startMilling() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getMillJob();
+            if (!currentJob || !currentJob.inputItemId || currentJob.remainingQuantity <= 0) { addLog('❌ Coloque um item para moer primeiro!'); return; }
+            if (currentJob.isMilling) { addLog('❌ O moinho já está funcionando!'); return; }
+            
+            currentJob.isMilling = true;
+            currentJob.remainingTime = currentJob.millTimePerItem;
+            
+            addLog(`🌾 Moinho iniciado! Moendo ${currentJob.remainingQuantity}x ${currentJob.inputItemName}...`);
+            updateUI();
+        }
+        function stopMilling() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getMillJob();
+            if (!currentJob || !currentJob.isMilling) {
+                addLog('❌ O moinho não está funcionando!');
+                return;
+            }
+            
+            Swal.fire({
+                title: '⏹️ Parar Moagem?',
+                html: `<div style="text-align: left;">
+                    <p>Tem certeza que deseja parar a moagem?</p>
+                    <p>📦 Itens restantes: <strong>${currentJob.remainingQuantity}x ${currentJob.inputItemName}</strong></p>
+                    <p>✅ Já moídos: <strong>${currentJob.completedCount}x ${currentJob.resultName}</strong></p>
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, parar',
+                cancelButtonText: 'Continuar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#4CAF50'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    currentJob.isMilling = false;
+                    addLog(`⏹️ Moagem interrompida.`);
+                    updateUI();
+                }
+            });
+        }
+
+        function claimMillResult() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getMillJob();
+            if (!currentJob || !currentJob.completedCount || currentJob.completedCount === 0) {
+                addLog('❌ Não há nenhum item pronto para retirar!');
+                return;
+            }
+            
+            const totalReady = currentJob.completedCount;
+            const resultId = currentJob.resultId;
+            const resultName = currentJob.resultName;
+            
+            // Verificar espaço no inventário
+            let spaceNeeded = totalReady;
+            let emptySlots = 0;
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                if (!gameState.inventory[i]) emptySlots++;
+                else if (gameState.inventory[i].id === resultId && gameState.inventory[i].consumable) {
+                    spaceNeeded = Math.max(0, spaceNeeded - (99 - (gameState.inventory[i].quantity || 1)));
+                }
+            }
+            
+            if (emptySlots < spaceNeeded && spaceNeeded > 0) {
+                Swal.fire({
+                    title: '❌ Inventário Cheio!',
+                    text: `Você precisa de ${spaceNeeded} espaços livres para retirar ${totalReady}x ${resultName}.`,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Adicionar ao inventário
+            for (let i = 0; i < totalReady; i++) { addItemToInventory(resultId, 1); }
+            
+            addLog(`📦 Você retirou ${totalReady}x ${resultName} do moinho!`);
+            
+            // Resetar apenas os itens prontos
+            currentJob.completedCount = 0;
+            
+            // Se não há mais nada, limpar completamente o job
+            if (!currentJob.isMilling && currentJob.remainingQuantity <= 0 && currentJob.completedCount === 0) {
+                gameState.millJobs.mill = null;
+                addLog(`🌾 Moinho vazio.`);
+            }
+            
+            updateUI();
+        }
+        function clearMillInput() {
+            if (gameState.isDead) return;
+            
+            const currentJob = getMillJob();
+            if (!currentJob || (!currentJob.inputItemId && currentJob.remainingQuantity <= 0 && currentJob.completedCount === 0)) { addLog('❌ Não há itens para remover.'); return; }
+            if (currentJob.isMilling) { addLog('❌ Pare a moagem primeiro antes de remover os itens.'); return; }
+            
+            const itemsToReturn = currentJob.remainingQuantity || 0;
+            const itemsCompleted = currentJob.completedCount || 0;
+            
+            Swal.fire({
+                title: '🗑️ Remover Itens do Moinho?',
+                html: `<div style="text-align: left;">
+                    <p>Tem certeza que deseja remover os itens do moinho?</p>
+                    ${itemsToReturn > 0 ? `<p>📦 <strong>${itemsToReturn}x ${currentJob.inputItemName}</strong> serão devolvidos ao inventário.</p>` : ''}
+                    ${itemsCompleted > 0 ? `<p>✅ <strong>${itemsCompleted}x ${currentJob.resultName}</strong> já estão prontos e permanecem no moinho.</p>` : ''}
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, remover e devolver',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#ffd700'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if (itemsToReturn > 0 && currentJob.inputItemId) {
+                        for (let i = 0; i < itemsToReturn; i++) {
+                            addItemToInventory(currentJob.inputItemId, 1);
+                        }
+                        addLog(`📦 Devolvidos ${itemsToReturn}x ${currentJob.inputItemName} para o inventário.`);
+                    }
+                    
+                    // Limpar o job
+                    gameState.millJobs.mill = null;
+                    updateUI();
+                }
+            });
+        }
+
         // ========== BOOK SYSTEM ==========
         
         let activeBook = null;
@@ -4407,15 +4835,6 @@
             }
         }
 
-        // ========== FUNÇÕES DOS CAMPOS E MOINHO ==========
-
-        function millGrains() {
-            if (gameState.isDead) return;
-            addLog('🌾 O moleiro mói seus grãos gratuitamente.');
-            addLog('🍞 Você pode comprar pão fresco agora.');
-            updateUI();
-        }
-    
         // ========== NPCs ==========
         
         function initNPCStates() {
