@@ -4929,7 +4929,24 @@
             addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
             if (gameState.timeOfDay == 'day') {
                 gameState.dayCount++;
+                const daysInMonth = 28;
                 
+                if (gameState.dayCount > daysInMonth) {
+                    gameState.dayCount = 1;
+                    gameState.monthCount++;
+                    
+                    if (gameState.monthCount > 12) {
+                        gameState.monthCount = 1;
+                        gameState.yearCount++;
+                        addLog(`🎉 Ano Novo! Bem-vindo ao Ano ${gameState.yearCount}!`);
+                    }
+                }
+                
+                // Efeitos sazonais ao mudar de estação
+                if (gameState.dayCount === 1 && (gameState.monthCount === 3 || gameState.monthCount === 6 || gameState.monthCount === 9 || gameState.monthCount === 12)) {
+                    const season = getSeason();
+                    addLog(`${season} começou! Os ventos trazem novas energias.`);
+                }
             }
             updateAllNPCs();
             updateUI();
