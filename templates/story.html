@@ -5667,7 +5667,6 @@
             currentState.lastUpdate = Date.now();
         }
 
-        // Funções de atalho para cada NPC (mantendo compatibilidade com código existente)
         async function visitCarpenter() { return talkToNPC('carpenter'); }
         async function visitArtisan() { return talkToNPC('artisan'); }
         async function visitWeaver() { return talkToNPC('weaver'); }
@@ -6257,7 +6256,9 @@
         }
         
         // ========== INITIALIZE ==========
-        
+
+        function give(item, amount) { addItemToInventory(item, amount); }
+
         function openCrystalBall() {
             if (gameState.isDead) {
                 addLog('💀 A bola de cristal está escura... você está morto.');
