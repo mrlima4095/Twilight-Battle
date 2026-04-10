@@ -1724,6 +1724,15 @@
             if (bonuses.attackBonus > 0 || bonuses.defenseBonus > 0) {
                 bonusDiv.style.display = 'block';
                 bonusText.innerHTML = `
+                // No profile-stats, substitua a data:
+<div class="profile-stat">
+    <div class="profile-stat-value" id="profile-date">${gameState.dayCount}º dia</div>
+    <div class="profile-stat-label">📅 Estação</div>
+</div>
+<div class="profile-stat">
+    <div class="profile-stat-value" id="profile-season">${getFullSeasonName()}</div>
+    <div class="profile-stat-label">🌸 ${gameState.yearCount}</div>
+</div>
                     ⚔️ Ataque Base: ${race.baseAttack}<br>
                     🛡️ Defesa Base: ${race.baseDefense}<br>
                     ➕ Bônus de Equipamentos:<br>
