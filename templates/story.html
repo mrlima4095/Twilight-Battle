@@ -4927,7 +4927,10 @@
             gameState.timeOfDay = gameState.timeOfDay === 'day' ? 'night' : 'day';
             
             addLog(gameState.timeOfDay === 'day' ? '☀️ Amanheceu!' : '🌙 Anoiteceu!');
-            if (gameState.timeOfDay == 'day') { gameState.dayCount++; }
+            if (gameState.timeOfDay == 'day') {
+                gameState.dayCount++;
+                
+            }
             updateAllNPCs();
             updateUI();
         }
