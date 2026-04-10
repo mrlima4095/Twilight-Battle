@@ -4950,38 +4950,38 @@
         }
 
 
-function getSeasonName(season) {
-    const seasons = {
-        1: 'Primavera',
-        2: 'Verão',
-        3: 'Outono',
-        4: 'Inverno'
-    };
-    return seasons[season];
-}
-function getSeasonEmoji(season) {
-    const emojis = {
-        1: '🌸',
-        2: '☀️',
-        3: '🍂',
-        4: '❄️'
-    };
-    return emojis[season];
-}
-
-function getFullSeasonName() { return `${getSeasonEmoji(gameState.seasonCount)} ${getSeasonName(gameState.seasonCount)}`; }
-function getFormattedDate() { return `${gameState.dayCount}º dia da ${getSeasonName(gameState.seasonCount)} de ${gameState.yearCount}`; }
-function getShortDate() { return `${gameState.dayCount}ª ${getSeasonName(gameState.seasonCount).substring(0,3)} ${gameState.yearCount}`; }
-
-function getSeasonEffect() {
-    switch(gameState.seasonCount) {
-        case 1: return '🌸 Flores desabrocham, cura +10%';
-        case 2: return '☀️ Dias quentes, mana regenera mais rápido';
-        case 3: return '🍂 Ventos fortes, monstros mais ativos';
-        case 4: return '❄️ Frio intenso, consumíveis duram mais';
-        default: return '';
+    function getSeasonName(season) {
+        const seasons = {
+            1: 'Primavera',
+            2: 'Verão',
+            3: 'Outono',
+            4: 'Inverno'
+        };
+        return seasons[season];
     }
-}
+    function getSeasonEmoji(season) {
+        const emojis = {
+            1: '🌸',
+            2: '☀️',
+            3: '🍂',
+            4: '❄️'
+        };
+        return emojis[season];
+    }
+    
+    function getFullSeasonName() { return `${getSeasonEmoji(gameState.seasonCount)} ${getSeasonName(gameState.seasonCount)}`; }
+    function getFormattedDate() { return `${gameState.dayCount}º dia da ${getSeasonName(gameState.seasonCount)} de ${gameState.yearCount}`; }
+    function getShortDate() { return `${gameState.dayCount}ª ${getSeasonName(gameState.seasonCount).substring(0,3)} ${gameState.yearCount}`; }
+    
+    function getSeasonEffect() {
+        switch(gameState.seasonCount) {
+            case 1: return '🌸 Flores desabrocham, cura +10%';
+            case 2: return '☀️ Dias quentes, mana regenera mais rápido';
+            case 3: return '🍂 Ventos fortes, monstros mais ativos';
+            case 4: return '❄️ Frio intenso, consumíveis duram mais';
+            default: return '';
+        }
+    }
 
         // ========== FUNÇÕES DA TABERNA ==========
     
