@@ -4752,102 +4752,121 @@
                 return;
             }
             
-            // Criar container HTML
+            // Calcular progresso do ciclo dia/noite atual
+            const now = Date.now();
+            const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
+            const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+            const cycleMinutes = Math.floor(remaining / 60);
+            const cycleSeconds = remaining % 60;
+            const cyclePercent = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+            
+            // Calcular progresso da estação
+            const seasonProgress = (gameState.dayCount / 60) * 100;
+            const daysLeftInSeason = 60 - gameState.dayCount;
+            const nextSeason = gameState.seasonCount === 4 ? 1 : gameState.seasonCount + 1;
+            
+            // Função para atualizar o timer em tempo real
+            let updateInterval;
+            
             const createTimerHTML = () => {
-                const now = Date.now();
-                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                const remaining = Math.max(0, gameState.remainingCycleTime - elapsed);
+                const now2 = Date.now();
+                const elapsed2 = Math.floor((now2 - gameState.cycleStartTime) / 1000);
+                let remaining2 = gameState.remainingCycleTime - elapsed2;
                 
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
+                if (remaining2 <= 0) remaining2 = 0;
                 
-                const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
-                const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
-                
-                // Calcular porcentagem do ciclo
-                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
+                const mins = Math.floor(remaining2 / 60);
+                const secs = remaining2 % 60;
+                const currentCyclePercent = ((gameState.cycleDuration - remaining2) / gameState.cycleDuration) * 100;
                 
                 return `
                     <div style="text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px; animation: pulse 1s ease-in-out infinite;">
-                            ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
+                        <!-- Cabeçalho com data -->
+                        <div style="background: linear-gradient(135deg, #ffd70020, #ffa50020); border-radius: 15px; padding: 15px; margin-bottom: 20px;">
+                            <div style="font-size: 48px; margin-bottom: 5px;">${getSeasonEmoji(gameState.seasonCount)}</div>
+                            <div style="font-size: 20px; font-weight: bold; color: #ffd700;">${getFormattedDate()}</div>
+                            <div style="font-size: 14px; color: #aaa;">${getFullSeasonName()} · Ano ${gameState.yearCount}</div>
                         </div>
-                        <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 15px; font-family: monospace;" id="live-timer">
-                            ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
+                        
+                        <!-- Progresso da Estação -->
+                        <div style="margin-bottom: 25px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span style="font-size: 12px; color: #aaa;">📅 Progresso da Estação</span>
+                                <span style="font-size: 12px; color: #ffd700;">${gameState.dayCount}/60 dias (${Math.floor(seasonProgress)}%)</span>
+                            </div>
+                            <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 12px;">
+                                <div style="width: ${seasonProgress}%; background: linear-gradient(90deg, #4CAF50, #ffd700); height: 100%; transition: width 0.3s;" id="season-progress-bar"></div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 11px; color: #888;">
+                                ⏳ Faltam ${daysLeftInSeason} dias para ${getSeasonName(nextSeason)}
+                            </div>
                         </div>
-                        <div style="color: #888; margin-bottom: 15px; font-size: 16px;">
-                            Restante para ${nextPhase}
+                        
+                        <hr style="border-color: #ffd70040; margin: 15px 0;">
+                        
+                        <!-- Ciclo Dia/Noite -->
+                        <div style="margin-bottom: 15px;">
+                            <div style="font-size: 14px; color: #aaa; margin-bottom: 8px;">🔄 Ciclo Atual</div>
+                            <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px;">
+                                <div style="font-size: 32px;">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</div>
+                                <div>
+                                    <div style="font-size: 24px; font-weight: bold; color: #ffd700; font-family: monospace;" id="live-timer">
+                                        ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}
+                                    </div>
+                                    <div style="font-size: 11px; color: #888;">${gameState.timeOfDay === 'day' ? 'Até o anoitecer' : 'Até o amanhecer'}</div>
+                                </div>
+                            </div>
+                            <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 8px;">
+                                <div style="width: ${currentCyclePercent}%; background: linear-gradient(90deg, #ffd700, #ffa500); height: 100%; transition: width 0.3s;" id="cycle-progress-bar"></div>
+                            </div>
                         </div>
-                        <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
-                            <div style="width: ${percentage}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%; transition: width 0.3s;" id="timer-progress"></div>
+                        
+                        <hr style="border-color: #ffd70040; margin: 15px 0;">
+                        
+                        <!-- Efeitos Sazonais -->
+                        <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; margin-top: 10px;">
+                            <div style="font-size: 12px; color: #aaa;">✨ Efeito da Estação</div>
+                            <div style="font-size: 13px; color: #ffd700;">${getSeasonEffect()}</div>
                         </div>
-                        <div style="color: #aaa; font-size: 12px; margin-top: 10px;">
-                            📅 Cada ciclo dura ${Math.floor(gameState.cycleDuration / 60)} minutos de jogo
+                        
+                        <div style="font-size: 10px; color: #666; margin-top: 15px;">
+                            💡 Clique no relógio para ver esta tela
                         </div>
                     </div>
                 `;
             };
             
-            // Função para atualizar o timer
-            let updateInterval;
-            
             const updateTimer = () => {
-                const now = Date.now();
-                const elapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                let remaining = gameState.remainingCycleTime - elapsed;
+                const now2 = Date.now();
+                const elapsed2 = Math.floor((now2 - gameState.cycleStartTime) / 1000);
+                let remaining2 = gameState.remainingCycleTime - elapsed2;
                 
-                // Se o tempo acabou durante a visualização
-                if (remaining <= 0) {
-                    // Recuperar o estado atualizado
-                    const newElapsed = Math.floor((now - gameState.cycleStartTime) / 1000);
-                    remaining = Math.max(0, gameState.remainingCycleTime - newElapsed);
+                if (remaining2 <= 0) {
+                    // Se o ciclo terminou durante a visualização
+                    const timerElement = document.getElementById('live-timer');
+                    if (timerElement) timerElement.textContent = '00:00';
+                    const progressBar = document.getElementById('cycle-progress-bar');
+                    if (progressBar) progressBar.style.width = '100%';
+                    return;
                 }
                 
-                const minutes = Math.floor(remaining / 60);
-                const seconds = remaining % 60;
+                const mins = Math.floor(remaining2 / 60);
+                const secs = remaining2 % 60;
+                const currentCyclePercent = ((gameState.cycleDuration - remaining2) / gameState.cycleDuration) * 100;
                 
-                // Atualizar timer
                 const timerElement = document.getElementById('live-timer');
                 if (timerElement) {
-                    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                    timerElement.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                 }
                 
-                // Atualizar barra de progresso
-                const percentage = ((gameState.cycleDuration - remaining) / gameState.cycleDuration) * 100;
-                const progressBar = document.getElementById('timer-progress');
+                const progressBar = document.getElementById('cycle-progress-bar');
                 if (progressBar) {
-                    progressBar.style.width = `${percentage}%`;
-                }
-                
-                // Verificar se o ciclo terminou e atualizar fase
-                if (remaining <= 0) {
-                    const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
-                    if (currentPhaseElement) {
-                        const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
-                        const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
-                        currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
-                    }
-                    
-                    // Atualizar ícone
-                    const iconElement = document.querySelector('.swal2-html-container div div:first-child');
-                    if (iconElement) {
-                        iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
-                    }
+                    progressBar.style.width = `${currentCyclePercent}%`;
                 }
             };
             
-            // Estilo CSS para animação
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.1); opacity: 0.8; }
-                }
-            `;
-            document.head.appendChild(style);
-            
             Swal.fire({
-                title: '⏰ Relógio',
+                title: '📅 Calendário do Reino',
                 html: createTimerHTML(),
                 icon: 'info',
                 confirmButtonText: 'Fechar',
@@ -4856,26 +4875,30 @@
                 confirmButtonColor: '#ffd700',
                 allowOutsideClick: false,
                 didOpen: () => {
-                    // Iniciar atualização a cada segundo
                     updateInterval = setInterval(() => {
-                        // Verificar se o Swal ainda está aberto
                         const swalContent = document.querySelector('.swal2-html-container');
                         if (swalContent) {
                             updateTimer();
+                            
+                            // Atualizar também a barra de progresso da estação se necessário
+                            const newNow = Date.now();
+                            const newElapsed = Math.floor((newNow - gameState.cycleStartTime) / 1000);
+                            let newRemaining = gameState.remainingCycleTime - newElapsed;
+                            
+                            // Se um novo dia começou durante a visualização
+                            if (newRemaining <= 0 && document.getElementById('season-progress-bar')) {
+                                // Recarregar o modal com dados atualizados
+                                clearInterval(updateInterval);
+                                Swal.close();
+                                setTimeout(() => showTimeRemaining(), 100);
+                            }
                         } else {
                             clearInterval(updateInterval);
                         }
                     }, 1000);
                 },
                 willClose: () => {
-                    // Limpar intervalo quando fechar
-                    if (updateInterval) {
-                        clearInterval(updateInterval);
-                    }
-                    // Remover o estilo adicionado
-                    if (style.parentNode) {
-                        style.parentNode.removeChild(style);
-                    }
+                    if (updateInterval) clearInterval(updateInterval);
                 }
             });
         }
