@@ -614,9 +614,9 @@
             selectedGender: null,
             chestOpen: false,
             royalQuest: null,
-            dayCount: 1,
-            monthCount: 1,
-            yearCount: 1540,
+            dayCount: 1,      // Dia da estação atual (1-60)
+            seasonCount: 1,   // 1=Primavera, 2=Verão, 3=Outono, 4=Inverno
+            yearCount: 1540,  // Ano atual
             timeOfDay: 'day', // 'day' ou 'night'
             isSleeping: false,
             sleepTimeout: null,
@@ -4951,6 +4951,7 @@
             updateAllNPCs();
             updateUI();
         }
+
 
         // ========== FUNÇÕES DA TABERNA ==========
     
