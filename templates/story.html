@@ -4992,40 +4992,6 @@ function getSeasonEffect() {
     }
 }
 
-function showFullDate() {
-    const progressPercent = (gameState.dayCount / 60) * 100;
-    const daysLeft = 60 - gameState.dayCount;
-    
-    Swal.fire({
-        title: `${getSeasonEmoji(gameState.seasonCount)} ${getFormattedDate()}`,
-        html: `<div style="text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 15px;">${getSeasonEmoji(gameState.seasonCount)}</div>
-            <p><strong>${getFullSeasonName()}</strong></p>
-            <p>📅 ${gameState.dayCount}º dia da estação</p>
-            <p>⏳ Faltam ${daysLeft} dias para ${getSeasonName(gameState.seasonCount === 4 ? 1 : gameState.seasonCount + 1)}</p>
-            
-            <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 15px; margin: 15px 0;">
-                <div style="width: ${progressPercent}%; background: linear-gradient(90deg, #ffd700, #ffaa00); height: 100%;"></div>
-            </div>
-            
-            <p style="font-size: 12px; color: #888;">📊 Progresso da estação: ${Math.floor(progressPercent)}%</p>
-            <hr style="margin: 15px 0; border-color: #ffd700;">
-            <p style="font-size: 12px;">✨ Efeito atual: ${getSeasonEffect()}</p>
-            <p style="font-size: 12px;">📆 Ano ${gameState.yearCount} do Reino da Aurora</p>
-        </div>`,
-        icon: 'info',
-        confirmButtonText: 'Fechar',
-        background: '#1a1a2e',
-        color: '#fff',
-        confirmButtonColor: '#ffd700'
-    });
-}
-
-// Atualizar o relógio (item clock) para mostrar data completa
-function showTimeRemaining() {
-    showFullDate();
-}
-
 function showSeasonProgress() {
     const daysLeft = 60 - gameState.dayCount;
     console.log(`🌸 Estação: ${getFullSeasonName()}`);
