@@ -684,6 +684,7 @@
                 actions: [
                     { name: '😴 Dormir', action: 'rest' },
                     { name: '📦 Abrir Baú', action: 'toggleChest' },
+                    { name: '⛲ Poço', action: 'fillBottle' },
                     { name: '🚪 Sair para a Rua', action: 'goNorthVillage' }
                 ]
             },
@@ -773,6 +774,7 @@
                     { name: '🏚️ Visitar Moinho', action: 'goMill' },
                     { name: '🏠 Casa do Fazendeiro Miguel', action: 'visitFarmerHouse1' },
                     { name: '🏠 Casa da Fazendeira Ana', action: 'visitFarmerHouse2' },
+                    { name: '⛲ Poço', action: 'fillBottle' },
                     { name: '🚪 Portão Secundário (Sair do Reino)', action: 'goBackOutside' },
                     { name: '🌉 Voltar para a Ponte', action: 'goWestBridge' }
                 ]
@@ -846,6 +848,7 @@
                 allowsStations: true,
                 actions: [
                     { name: '💧 Mergulhar no Lago Sagrado', action: 'enterSacredLake' },
+                    { name: '💧 Pegar água', action: 'fillBottle' },
                     { name: '🔙 Voltar pela Trilha', action: 'goBackForestTrailSouth' }
                 ]
             },
@@ -853,6 +856,7 @@
                 name: 'Dentro do Lago Sagrado',
                 description: 'Você mergulha nas águas cristalinas do lago sagrado. Uma luz azulada envolve seu corpo, e você sente uma energia ancestral fluindo através de você. Bolhas de luz dançam ao redor, purificando sua alma.',
                 actions: [
+                    { name: '💧 Pegar água', action: 'fillBottle' },
                     { name: '🏊 Sair do Lago', action: 'exitSacredLake' }
                 ]
             },
@@ -991,7 +995,7 @@
             string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
 
-            bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5, useEffect: 'fillBottle' },
+            bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5 },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, value: 8, givesEmptyBottle: true },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
@@ -1106,7 +1110,8 @@
                 materials: [ { id: 'wheat_flour', quantity: 3 }, { id: 'water_bottle', quantity: 1 } ],
                 result: 'dough',
                 quantity: 1,
-                station: 'crafting_table'
+                station: 'crafting_table',
+                returnsBottle: true
             }
         };
         const FURNACE_RECIPES = {
@@ -1124,6 +1129,13 @@
                 resultName: 'Frango Assado',
                 resultDescription: 'Frango cozido, nutritivo, gostoso e seguro para comer.'
             },
+            dough: {
+                input: 'dough',
+                result: 'bread',
+                cookTime: 3,
+                resultName: 'Pão',
+                resultDescription: 'Pãozinho gostoso.'
+            }
         };
         
         const NPC_DEFINITIONS = {
@@ -2954,10 +2966,7 @@
 
         function craftItem(recipeId) {
             if (gameState.isDead) return;
-            if (!gameState.activeStation) {
-                addLog(`❌ Nenhuma estação ativa.`);
-                return;
-            }
+            if (!gameState.activeStation) { addLog(`❌ Nenhuma estação ativa.`); return; }
             
             const recipe = CRAFTING_RECIPES[recipeId];
             if (!recipe) return;
@@ -2988,12 +2997,20 @@
                 return;
             }
             
-            // Consumir materiais
+            // Contar quantas garrafas serão devolvidas
+            let bottlesToReturn = 0;
+            
+            // Consumir materiais e contar garrafas
             for (const material of recipe.materials) {
                 let remaining = material.quantity;
                 for (let i = 0; i < gameState.inventory.length && remaining > 0; i++) {
                     const item = gameState.inventory[i];
                     if (item && item.id === material.id) {
+                        // Se for garrafa d'água e a receita devolve garrafa, contar
+                        if (material.id === 'water_bottle' && recipe.returnsBottle) {
+                            bottlesToReturn += Math.min(remaining, item.quantity || 1);
+                        }
+                        
                         if (item.quantity >= remaining) {
                             item.quantity -= remaining;
                             if (item.quantity === 0) gameState.inventory[i] = null;
@@ -3005,6 +3022,9 @@
                     }
                 }
             }
+            
+            // Devolver garrafas vazias
+            if (bottlesToReturn > 0) { addItemToInventory('bottle', bottlesToReturn); }
             
             // Adicionar resultado
             for (let i = 0; i < recipe.quantity; i++) {
@@ -3046,7 +3066,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                             <h2 style="color: #ffa500; margin: 0;">🔥 ${station.name}</h2>
                             <div style="display: flex; gap: 10px;">
-                                <button class="action-btn warning" onclick="collectStation('${station.id}')" style="padding: 8px 15px;">📦 Recolher</button>
+                                <button class="action-btn warning" onclick="collectStation('${station.id}')" style="padding: 8px 15px;">📦 Recolher Estação</button>
                                 <button class="action-btn" onclick="closeStation()" style="padding: 8px 15px;">❌ Fechar</button>
                             </div>
                         </div>
@@ -5779,14 +5799,38 @@
                 }
             }
             
-            if (bottleIndex === -1) { addLog('❌ Você não tem uma garrafa vazia para encher!'); return; }
+            if (bottleIndex === -1) {
+                Swal.fire({
+                    title: '❌ Garrafa Vazia?',
+                    text: 'Você não tem uma garrafa vazia ou balde para encher!',
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
             
-            // Verificar onde você está (só pode encher em locais com água)
-            const waterLocations = ['sacred_lake', 'sacred_lake_interior', 'home'];
+            const waterLocations = ['sacred_lake', 'sacred_lake_interior', 'home', 'farmlands'];
             const canFill = waterLocations.includes(gameState.location);
             
             if (!canFill) {
-                addLog('💧 Não há fonte de água potável aqui para encher a garrafa!');
+                Swal.fire({
+                    title: '💧 Sem Fonte de Água',
+                    text: 'Não há fonte de água potável aqui para encher a garrafa! Tente em sua casa, no Lago Sagrado ou nos campos.',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
                 return;
             }
             
@@ -5800,21 +5844,34 @@
             // Adicionar garrafa d'água
             addItemToInventory('water_bottle', 1);
             
-            let locationName = '';
+            // Toast de sucesso com localização
+            let toastConfig = {
+                title: '💧 Garrafa Enchida!',
+                icon: 'success',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true,
+                background: '#1a1a2e',
+                color: '#fff'
+            };
+            
             if (gameState.location === 'sacred_lake' || gameState.location === 'sacred_lake_interior') {
-                locationName = 'Lago Sagrado';
-                addLog('💧 Você encheu a garrafa com as águas cristalinas do Lago Sagrado! ✨');
+                toastConfig.text = 'Você encheu a garrafa com as águas cristalinas do Lago Sagrado! ✨';
             } else if (gameState.location === 'home') {
-                locationName = 'sua casa';
-                addLog('💧 Você encheu a garrafa no poço de sua casa.');
+                toastConfig.text = 'Você encheu a garrafa no poço de sua casa. 💧';
+            } else if (gameState.location === 'farmlands') {
+                toastConfig.text = 'Você encheu a garrafa na fonte dos campos. 🚰';
             } else {
-                locationName = 'a fonte';
-                addLog('💧 Você encheu a garrafa em uma fonte de água potável.');
+                toastConfig.text = 'Você encheu a garrafa com água potável!';
             }
+            
+            Swal.fire(toastConfig);
             
             updateUI();
         }
-
+        
         // ========== EXPLORATION ==========
 
         function exploreDarkForest() {
