@@ -5017,6 +5017,21 @@ function showTimeRemaining() {
     showFullDate();
 }
 
+function showSeasonProgress() {
+    const daysLeft = 60 - gameState.dayCount;
+    console.log(`🌸 Estação: ${getFullSeasonName()}`);
+    console.log(`📅 Dia ${gameState.dayCount}/60`);
+    console.log(`⏳ Faltam ${daysLeft} dias para próxima estação`);
+    console.log(`📆 Ano ${gameState.yearCount}`);
+}
+
+function skipToNextSeason() {
+    gameState.dayCount = 60;
+    incrementDate(); // Isso vai forçar a mudança de estação
+    updateUI();
+    addLog(`⏩ Você avançou para ${getFullSeasonName()}!`);
+}
+
         // ========== FUNÇÕES DA TABERNA ==========
     
         function buyBeer() { buyDrink('beer', 5); }
