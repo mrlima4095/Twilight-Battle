@@ -959,7 +959,7 @@
             wheat_flour: { name: 'Farinha de Trigo', type: 'food', heal: 0, description: 'Use para criar alimentos', consumable: true },
             wheat_seed: { name: 'Sementes de Trigo', type: 'material', description: 'Use para plantar o Trigo', consumable: true },
 
-            dough: { name: 'Massa de Pão', type: 'food', heal: 2, description: 'Massa pronta para assar.', consumable: true },
+            bread_dough: { name: 'Massa de Pão', type: 'food', heal: 2, description: 'Massa pronta para assar.', consumable: true },
 
             corn_flour: { name: 'Fubá', type: 'material', description: 'Farinha de milho para receitas.', consumable: true },
             
@@ -1108,7 +1108,7 @@
                 name: '🍞 Massa de Pão',
                 description: 'Misture farinha com água para fazer a massa.',
                 materials: [ { id: 'wheat_flour', quantity: 3 }, { id: 'water_bottle', quantity: 1 } ],
-                result: 'dough',
+                result: 'bread_dough',
                 quantity: 1,
                 station: 'crafting_table',
                 returnsBottle: true
@@ -1129,8 +1129,8 @@
                 resultName: 'Frango Assado',
                 resultDescription: 'Frango cozido, nutritivo, gostoso e seguro para comer.'
             },
-            dough: {
-                input: 'dough',
+            bread_dough: {
+                input: 'bread_dough',
                 result: 'bread',
                 cookTime: 3,
                 resultName: 'Pão',
