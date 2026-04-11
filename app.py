@@ -639,7 +639,7 @@ class RitualManager:
         
         return available_rituals
 class Game:
-    def __init__(self, game_id):
+    def __init__(self, game_id, creator):
         self.game_id = game_id
         self.creator = creator
         self.players = []  # Lista de usernames
