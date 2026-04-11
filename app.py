@@ -1992,14 +1992,55 @@ def create_game():
 
 @app.route('/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):
-    if game_id in games:
-        game = games[game_id]
-        if len(game.players) >= 2:  # Mínimo 2 jogadores
-            game.started = True
-            # Notificar todos os jogadores
-            socketio.emit('game_started', {'game_id': game_id}, room=game_id)
-            return jsonify({'success': True})
-    return jsonify({'success': False, 'message': 'Não foi possível iniciar o jogo'})
+    username = get_current_user()
+    
+    if not username:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado'}), 401
+    
+    if game_id not in games:
+        return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
+    
+    game = games[game_id]
+    
+    # Verificar se o usuário é o criador
+    if game.creator != username:
+        return jsonify({'success': False, 'message': 'Apenas o criador da sala pode iniciar o jogo'}), 401
+    
+    if len(game.players) >= 2:  # Mínimo 2 jogadores
+        game.started = True
+        # Notificar todos os jogadores
+        socketio.emit('game_started', {'game_id': game_id}, room=game_id)
+        return jsonify({'success': True})
+    
+    return jsonify({'success': False, 'message': 'Mínimo de 2 jogadores para começar'}), 400
+
+@app.route('/api/check-start-permission/<game_id>')
+def check_start_permission(game_id):
+    username = get_current_user()
+    
+    if not username:
+        return jsonify({'can_start': False, 'message': 'Usuário não autenticado'}), 401
+    
+    if game_id not in games:
+        return jsonify({'can_start': False, 'message': 'Jogo não encontrado'}), 404
+    
+    game = games[game_id]
+    can_start = (game.creator == username and len(game.players) >= 2)
+    
+    if not can_start:
+        return jsonify({
+            'can_start': False,
+            'is_creator': game.creator == username,
+            'players_count': len(game.players),
+            'message': 'Apenas o criador da sala pode iniciar o jogo (mínimo 2 jogadores)'
+        }), 401
+    
+    return jsonify({
+        'can_start': True,
+        'is_creator': True,
+        'players_count': len(game.players),
+        'message': 'Você pode iniciar o jogo'
+    })
 
 @app.route('/api/cleanup-games', methods=['POST'])
 def cleanup_games(): return jsonify({'success': True})
@@ -2490,18 +2531,6 @@ def handle_ping_game(data):
             emit('pong_game', {'status': 'ok'})
         else:
             emit('pong_game', {'status': 'player_not_found'})
-
-@socketio.on('check_is_creator')
-def handle_check_is_creator(data):
-    game_id = data['game_id']
-    username = get_current_user()
-    
-    if not username or game_id not in games:
-        emit('creator_check_result', {'is_creator': False})
-        return
-    
-    game = games[game_id]
-    emit('creator_check_result', {'is_creator': game.creator == username})
 
 @socketio.on('player_action')
 def handle_player_action(data):

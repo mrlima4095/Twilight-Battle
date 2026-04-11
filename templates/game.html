@@ -781,7 +781,42 @@
         }
         function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
 
-        function checkIfCreator() { socket.emit('check_is_creator', { game_id: gameId }); }
+        function checkIfCanStart() {
+            fetch(`/api/check-start-permission/${gameId}`, { method: 'GET' })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Não tem permissão - ocultar botão
+                        const startBtn = document.getElementById('start-game-btn');
+                        if (startBtn) {
+                            startBtn.style.display = 'none';
+                        }
+                        return response.json().catch(() => ({}));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const startBtn = document.getElementById('start-game-btn');
+                    if (!startBtn) return;
+                    
+                    if (data.can_start === true) {
+                        // Tem permissão - mostrar e habilitar botão
+                        startBtn.style.display = 'inline-block';
+                        startBtn.disabled = false;
+                        startBtn.style.opacity = '1';
+                        startBtn.style.cursor = 'pointer';
+                    } else {
+                        // Não tem permissão - ocultar botão completamente
+                        startBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar permissão:', error);
+                    const startBtn = document.getElementById('start-game-btn');
+                    if (startBtn) {
+                        startBtn.style.display = 'none';
+                    }
+                });
+        }
 
         function attemptReconnection() {
             if (reconnectAttempts < 5) {
@@ -899,6 +934,7 @@
             }
             
             updatePlayersList(data.players);
+            checkIfCanStart();
         });
         socket.on('player_left', function(data) {
             if (data.username !== currentUsername) {
@@ -1224,17 +1260,6 @@
             requestGameState();
         });
 
-        socket.on('creator_check_result', function(data) {
-            if (data.is_creator) {
-                const gameTitle = document.querySelector('.game-title');
-                if (gameTitle) {
-                    const creatorBadge = document.createElement('span');
-                    creatorBadge.style.cssText = 'background: #ffd700; color: #1a1a2e; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-left: 10px;';
-                    creatorBadge.textContent = '👑 Criador';
-                    gameTitle.appendChild(creatorBadge);
-                }
-            }
-        });
         socket.on('room_closed', function(data) {
             Swal.fire({
                 icon: 'warning',
@@ -2927,22 +2952,45 @@
         });
 
         document.getElementById('start-game-btn').addEventListener('click', function() {
+            // Desabilitar botão durante a requisição
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Iniciando...';
+            
             fetch(`/start-game/${gameId}`, { method: 'POST' })
-                .then(response => response.json())
+                .then(response => {
+                    if (response.status === 401) {
+                        throw new Error('Apenas o criador da sala pode iniciar o jogo');
+                    }
+                    if (response.status === 404) {
+                        throw new Error('Jogo não encontrado');
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (!data.success) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Erro',
-                            text: data.message,
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            confirmButtonColor: '#ffd700'
-                        });
+                        throw new Error(data.message || 'Erro ao iniciar o jogo');
                     }
+                    // Sucesso - o jogo vai começar
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: error.message,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    // Reabilitar botão em caso de erro
+                    btn.disabled = false;
+                    btn.textContent = 'Começar jogo';
+                    
+                    // Verificar permissão novamente
+                    checkIfCanStart();
                 });
         });
-
+        
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar se acabou de criar uma sala
             const urlParams = new URLSearchParams(window.location.search);
