@@ -1142,7 +1142,6 @@
         };
         
         const NPC_DEFINITIONS = {
-            // Vilarejo Norte
             carpenter: {
                 id: 'carpenter',
                 name: 'Carlos',
@@ -1463,20 +1462,58 @@
         const TOUCH_DELAY_MS = 1000;
     
         // ========== UI FUNCTIONS ==========
-        
-        function returnToTitle() {
-            if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
-                localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
+        // Menu Screen
+        function continueGame() {
+            const autosave = localStorage.getItem('twilight_autosave');
+            const toast = { title: '✅ Sucesso!', text: 'Jogo continuado do autosave!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#1a1a2e', color: '#4CAF50' };
+
+            if (autosave) {
+                try {
+                    const saved = JSON.parse(autosave);
+                    if (!saved.isDead && saved.character && saved.character.life > 0) {
+                        const savedRemainingTime = saved.remainingCycleTime;
+                        const savedTimeOfDay = saved.timeOfDay;
+                        
+                        gameState = saved;
+                        
+                        if (gameState.dayCycleTimer) { clearInterval(gameState.dayCycleTimer); gameState.dayCycleTimer = null; }
+                        if (savedRemainingTime !== undefined && savedRemainingTime !== null) { gameState.remainingCycleTime = savedRemainingTime; gameState.cycleStartTime = Date.now(); }
+                        else { gameState.remainingCycleTime = gameState.cycleDuration || 600; gameState.cycleStartTime = Date.now(); }
+                        
+                        if (savedTimeOfDay) { gameState.timeOfDay = savedTimeOfDay; }
+                        
+                        gameState.isSleeping = false;
+                        if (gameState.sleepTimeout) { clearInterval(gameState.sleepTimeout); gameState.sleepTimeout = null;}
+                        
+                        document.getElementById('title-screen').style.display = 'none';
+                        document.getElementById('game-ui').style.display = 'block';
+                        updateUI();
+                        startCycleTimer();
+                        
+                        Swal.fire(toast);
+
+                        const log = document.getElementById('combat-log');
+                        log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
+                    } else {
+                        toast.title = '❌ Erro';
+                        toast.text = 'Autosave inválido!'
+                        toast.icon = 'error';
+
+                        Swal.fire(toast);
+                        checkForContinueButton();
+                    }
+                } catch (err) {
+                    toast.title = '❌ Erro';
+                    toast.text = 'Erro ao carregar autosave!'
+                    toast.icon = 'error';
+
+                    Swal.fire(toast);
+                    checkForContinueButton();
+                }
             }
-            
-            document.getElementById('title-screen').style.display = 'flex';
-            document.getElementById('game-ui').style.display = 'none';
-            document.getElementById('character-creation-modal').classList.remove('active');
-            document.getElementById('death-overlay').classList.remove('active');
-            
-            checkForContinueButton();
         }
-    
+        function startNewGame() { document.getElementById('title-screen').style.display = 'none'; document.getElementById('character-creation-modal').classList.add('active'); }
+        function loadGameFromTitle() { document.getElementById('title-screen').style.display = 'none'; loadGame(); }
         function checkForContinueButton() {
             const autosave = localStorage.getItem('twilight_autosave');
             const continueBtn = document.getElementById('continue-btn');
@@ -1496,318 +1533,15 @@
                 continueBtn.style.display = 'none';
             }
         }
-    
-        function continueGame() {
-            const autosave = localStorage.getItem('twilight_autosave');
-            if (autosave) {
-                try {
-                    const saved = JSON.parse(autosave);
-                    if (!saved.isDead && saved.character && saved.character.life > 0) {
-                        
-                        // Salvar o remainingCycleTime antes de carregar
-                        const savedRemainingTime = saved.remainingCycleTime;
-                        const savedTimeOfDay = saved.timeOfDay;
-                        
-                        gameState = saved;
-                        
-                        // Parar ciclo atual se existir
-                        if (gameState.dayCycleTimer) {
-                            clearInterval(gameState.dayCycleTimer);
-                            gameState.dayCycleTimer = null;
-                        }
-                        
-                        // Restaurar o remainingCycleTime
-                        if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
-                            gameState.remainingCycleTime = savedRemainingTime;
-                            gameState.cycleStartTime = Date.now();
-                        } else {
-                            gameState.remainingCycleTime = gameState.cycleDuration || 600;
-                            gameState.cycleStartTime = Date.now();
-                        }
-                        
-                        // Restaurar timeOfDay
-                        if (savedTimeOfDay) {
-                            gameState.timeOfDay = savedTimeOfDay;
-                        }
-                        
-                        // Resetar estados de sono
-                        gameState.isSleeping = false;
-                        if (gameState.sleepTimeout) {
-                            clearInterval(gameState.sleepTimeout);
-                            gameState.sleepTimeout = null;
-                        }
-                        
-                        document.getElementById('title-screen').style.display = 'none';
-                        document.getElementById('game-ui').style.display = 'block';
-                        updateUI();startCycleTimer();
-                        
-                        addLog('📂 Jogo continuado do autosave!');
-                    } else {
-                        alert('❌ Autosave inválido!');
-                        checkForContinueButton();
-                    }
-                } catch (err) {
-                    alert('Erro ao carregar autosave!');
-                    checkForContinueButton();
-                }
-            }
-        }
-        function startNewGame() { document.getElementById('title-screen').style.display = 'none'; document.getElementById('character-creation-modal').classList.add('active'); }
-        function loadGameFromTitle() { document.getElementById('title-screen').style.display = 'none'; loadGame(); }
-        function cancelCharacterCreation() { document.getElementById('character-creation-modal').classList.remove('active'); document.getElementById('title-screen').style.display = 'flex'; }
-    
-        function selectRace(race) {
-            if (gameState.isDead) return;
-            
-            document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
-            document.querySelector(`[data-race="${race}"]`).classList.add('selected');
-            gameState.selectedRace = race;
-            
-            // Travar gênero para Ninfa
-            if (race === 'nymph') {
-                const wasMale = (gameState.selectedGender === 'masculino');
-                
-                gameState.selectedGender = 'feminino';
-                
-                // Atualizar UI dos gêneros
-                document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
-                document.querySelector(`[data-gender="feminino"]`).classList.add('selected');
-                
-                // Desabilitar opção masculina visualmente
-                const maleOption = document.querySelector(`[data-gender="masculino"]`);
-                maleOption.style.opacity = '0.5';
-                maleOption.style.cursor = 'not-allowed';
-                maleOption.style.pointerEvents = 'none';
-                maleOption.title = 'Ninfas são exclusivamente femininas';
-                
-                // Restaurar opção feminina
-                const femaleOption = document.querySelector(`[data-gender="feminino"]`);
-                femaleOption.style.opacity = '1';
-                femaleOption.style.cursor = 'pointer';
-                femaleOption.style.pointerEvents = 'auto';
-                
-                // Só avisar se o gênero anterior era masculino
-                if (wasMale) {
-                    Swal.fire({
-                        title: '🌸 Ninfa',
-                        text: 'Ninfas são entidades femininas. O gênero foi alterado para Feminino.',
-                        icon: 'info',
-                        confirmButtonText: 'Entendi',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                }
-            } else {
-                // Restaurar opções para outras raças
-                document.querySelectorAll('.gender-option').forEach(g => {
-                    g.style.opacity = '1';
-                    g.style.cursor = 'pointer';
-                    g.style.pointerEvents = 'auto';
-                    g.title = '';
-                });
-            }
-        }
-        function selectGender(gender) {
-            if (gameState.isDead) return;
-            
-            document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
-            document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
-            gameState.selectedGender = gender;
-        }
-    
-        function createCharacter() {
-            const name = document.getElementById('character-name').value.trim();
-            const age = document.getElementById('character-age').value;
-            const bio = document.getElementById('character-bio').value.trim();
-            
-            if (!name) { Swal.fire({ title: 'Erro', text: 'Digite um nome para seu personagem!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!gameState.selectedRace) { Swal.fire({ title: 'Erro', text: 'Selecione uma raça!', icon: 'error', confirmButtonText: 'OK',background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!gameState.selectedGender) { Swal.fire({ title: 'Erro', text: 'Selecione um gênero!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!age || age < 1) { Swal.fire({ title: 'Erro', text: 'Digite uma idade válida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            
-            const race = RACES[gameState.selectedRace];
-            
-            gameState.inventory = Array(18).fill(null);
-            gameState.chest = Array(18).fill(null);
-            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null };
-            gameState.character = {
-                name: name,
-                race: gameState.selectedRace,
-                raceData: race,
-                gender: gameState.selectedGender,
-                age: parseInt(age),
-                bio: bio || `${gameState.selectedGender === 'masculino' ? 'Um aventureiro' : 'Uma aventureira'} em busca de glória.`,
-                life: race.baseLife,
-                maxLife: race.baseLife,
-                mana: race.mana,
-                maxMana: race.mana,
-                gold: 10,
-                exp: 0,
-                level: 1
-            };
-            gameState.combatLog = [];
-            gameState.isDead = false;
-            gameState.royalQuest = null;
-            gameState.timeOfDay = 'day';
-            gameState.isSleeping = false;
-            gameState.sleepTimeout = null;
-            gameState.location = 'home';
-            gameState.placedStations = {};
-
-            document.getElementById('character-creation-modal').classList.remove('active');
-            document.getElementById('death-overlay').classList.remove('active');
-            document.getElementById('game-ui').style.display = 'block';
-            
-            addItemToInventory('apple', 3);
-            addItemToInventory('bread', 2);
-            addItemToChest('clock', 1);
-            
-            updateUI();
-            startCycleTimer();
-            
-            Swal.fire({
-                title: `✨ Olá, <strong>${name}</strong>`,
-                html: `<div style="text-align: center;">
-                    <p>Seja ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao <strong style="color: #ffd700;">Reino da Aurora</strong>!</p>
-                    <p style="margin-top: 10px;">📜 Sua jornada começa agora.</p>
-                    <p style="margin-top: 5px; color: #888;">❤️ ${race.baseLife} Vida | 🔮 ${race.mana} Mana | ⚔️ ${race.baseAttack} Ataque</p>
-                </div>`,
-                icon: 'success',
-                confirmButtonText: 'Iniciar Jornada 🚀',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#4CAF50'
-            });
-            
-            addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
-        }
-    
-        function showProfile() {
-            if (!gameState.character || gameState.isDead) return;
-            
-            const race = RACES[gameState.character.race];
-            document.getElementById('profile-avatar').textContent = race.icon;
-            document.getElementById('profile-name').textContent = gameState.character.name;
-            document.getElementById('profile-race').textContent = race.name;
-            document.getElementById('profile-age').textContent = gameState.character.age;
-            document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
-            document.getElementById('profile-bio-text').textContent = gameState.character.bio;
-            
-            // NOVOS CAMPOS DE NÍVEL E EXPERIÊNCIA
-            const level = gameState.character.level || 1;
-            const exp = gameState.character.exp || 0;
-            const expForNextLevel = calculateExpForNextLevel(level);
-            const expProgress = Math.min(100, (exp / expForNextLevel) * 100);
-            
-            document.getElementById('profile-level').textContent = level;
-            document.getElementById('profile-exp').textContent = exp;
-            document.getElementById('exp-level-display').textContent = level;
-            document.getElementById('exp-current').textContent = exp;
-            document.getElementById('exp-next').textContent = expForNextLevel;
-            document.getElementById('exp-progress-bar').style.width = `${expProgress}%`;
-            
-            // Atualizar cor da barra baseado na porcentagem
-            const progressBar = document.getElementById('exp-progress-bar');
-            if (expProgress >= 100) {
-                progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #45a049)';
-            } else if (expProgress >= 75) {
-                progressBar.style.background = 'linear-gradient(90deg, #ffa500, #ff8c00)';
-            } else {
-                progressBar.style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)';
-            }
-            
-            const bonuses = calculateEquipmentBonuses();
-            const bonusText = document.getElementById('equipment-bonus-text');
-            const bonusDiv = document.getElementById('profile-equipment-stats');
-            
-            if (bonuses.attackBonus > 0 || bonuses.defenseBonus > 0) {
-                bonusDiv.style.display = 'block';
-                bonusText.innerHTML = `
-                    ⚔️ Ataque Base: ${race.baseAttack}<br>
-                    🛡️ Defesa Base: ${race.baseDefense}<br>
-                    ➕ Bônus de Equipamentos:<br>
-                    &nbsp;&nbsp;⚔️ +${bonuses.attackBonus} Ataque<br>
-                    &nbsp;&nbsp;🛡️ +${bonuses.defenseBonus} Defesa<br>
-                    <strong>Total: ⚔️ ${race.baseAttack + bonuses.attackBonus} | 🛡️ ${race.baseDefense + bonuses.defenseBonus}</strong>
-                `;
-            } else {
-                bonusDiv.style.display = 'none';
-            }
-
-            document.getElementById('profile-modal').classList.add('active');
-        }
-        function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
-    
-        function showEditProfile() {
-            closeProfile();
-            document.getElementById('edit-name').value = gameState.character.name;
-            document.getElementById('edit-age').value = gameState.character.age;
-            document.getElementById('edit-bio').value = gameState.character.bio;
-            document.getElementById('edit-profile-modal').classList.add('active');
-        }
-        function closeEditProfile() { document.getElementById('edit-profile-modal').classList.remove('active'); }
-        function saveProfileEdit() {
-            const newName = document.getElementById('edit-name').value.trim();
-            const newAge = document.getElementById('edit-age').value;
-            const newBio = document.getElementById('edit-bio').value.trim();
-    
-            if (!newName) { Swal.fire({ title: 'Erro', text: 'Nome não pode estar vazio!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-            if (!newAge || newAge < 1) { Swal.fire({ title: 'Erro', text: 'Idade inválida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
-    
-            gameState.character.name = newName;
-            gameState.character.age = parseInt(newAge);
-            gameState.character.bio = newBio || gameState.character.bio;
-    
-            closeEditProfile();
-            showProfile();
-            addLog('📝 Perfil atualizado!');
-            updateUI();
-        }
-    
-        function calculateEquipmentBonuses() {
-            let attackBonus = 0;
-            let defenseBonus = 0;
-            const brokenItems = [];
-        
-            for (let slot in gameState.equipment) {
-                const item = gameState.equipment[slot];
-                if (item) {
-                    if ((item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
-                        brokenItems.push(item.name);
-                    } else {
-                        attackBonus += item.attack || 0;
-                        defenseBonus += item.defense || 0;
-                    }
-                }
-            }
-            
-            if (brokenItems.length > 0) {
-                addLog(`⚠️ ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} quebrada${brokenItems.length > 1 ? 's' : ''} e não oferecem proteção!`);
-            }
-        
-            return { attackBonus, defenseBonus };
-        }
-        function calculateExpForNextLevel(level) { return 100 * level; }
-
+        // Game Screen
         function updateUI() {
             if (!gameState.character) return;
 
-            if (gameState.isDead) {
-                document.getElementById('death-overlay').classList.add('active');
-                document.getElementById('save-btn').disabled = true;
-                document.getElementById('load-btn').disabled = true;
-            } else {
-                document.getElementById('death-overlay').classList.remove('active');
-                document.getElementById('save-btn').disabled = false;
-                document.getElementById('load-btn').disabled = false;
-            }
+            if (gameState.isDead) { document.getElementById('death-overlay').classList.add('active'); document.getElementById('save-btn').disabled = true; document.getElementById('load-btn').disabled = true; }
+            else { document.getElementById('death-overlay').classList.remove('active'); document.getElementById('save-btn').disabled = false; document.getElementById('load-btn').disabled = false; }
 
-            const race = RACES[gameState.character.race];
-            const bonuses = calculateEquipmentBonuses();
-            
-            const totalAttack = race.baseAttack + bonuses.attackBonus;
-            const totalDefense = race.baseDefense + bonuses.defenseBonus;
+            const race = RACES[gameState.character.race], bonuses = calculateEquipmentBonuses();
+            const totalAttack = race.baseAttack + bonuses.attackBonus, totalDefense = race.baseDefense + bonuses.defenseBonus;
 
             document.getElementById('player-life').textContent = `${gameState.character.life}/${gameState.character.maxLife}`;
             document.getElementById('player-mana').textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
@@ -1822,11 +1556,9 @@
             
             const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
             
-            // CORREÇÃO: Encontrar ou criar o container de localização e horário
             const playerInfoDiv = document.getElementById('player-info');
             let locationTimeContainer = document.getElementById('location-time-container');
-            
-            // Se o container não existir, criar
+
             if (!locationTimeContainer) {
                 locationTimeContainer = document.createElement('div');
                 locationTimeContainer.id = 'location-time-container';
@@ -1850,23 +1582,12 @@
                 // Inserir no início do playerInfoDiv
                 playerInfoDiv.insertBefore(locationTimeContainer, playerInfoDiv.firstChild);
             }
+
+            const locationBadge = document.getElementById('current-location'), timeIndicator = document.getElementById('time-indicator');
             
-            // Atualizar os elementos existentes
-            const locationBadge = document.getElementById('current-location');
-            const timeIndicator = document.getElementById('time-indicator');
+            if (locationBadge) { locationBadge.textContent = locationName; }
+            if (timeIndicator) { timeIndicator.innerHTML = `<span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span><span class="time-text">${gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'}</span>`; }
             
-            if (locationBadge) {
-                locationBadge.textContent = locationName;
-            }
-            
-            if (timeIndicator) {
-                const timeIcon = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
-                const timeText = gameState.timeOfDay === 'day' ? 'Dia' : 'Noite';
-                timeIndicator.innerHTML = `<span class="time-icon">${timeIcon}</span>
-                                        <span class="time-text">${timeText}</span>`;
-            }
-            
-            // Verificar e adicionar classe de warning se mana baixa e for dia
             const manaStat = document.querySelector('.stat:nth-child(2)');
             if (gameState.timeOfDay === 'day') {
                 const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
@@ -1884,138 +1605,12 @@
             updateGameContent();
             updateFoodGrid();
         }
-
-        function updateInventoryGrid() {
-            const grid = document.getElementById('inventory-grid');
-            grid.innerHTML = '';
-
-            for (let i = 0; i < 18; i++) {
-                const item = gameState.inventory[i];
-                const slot = document.createElement('div');
-                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-                slot.setAttribute('data-index', i);
-                slot.setAttribute('data-source', 'inventory');
-                
-                if (item) {
-                    slot.innerHTML = `
-                        <span class="item-name">${item.name}</span>
-                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                    `;
-                } else {
-                    slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`;
-                }
-
-                if (!gameState.isDead) {
-                    slot.setAttribute('draggable', !!item);
-                    slot.setAttribute('ondragstart', 'dragItem(event)');
-                    slot.setAttribute('ondragover', 'handleDragOver(event)');
-                    slot.setAttribute('ondrop', 'handleDrop(event)');
-                    
-                    // Adicionar evento de clique para usar itens (PC)
-                    slot.onclick = (function(index) {
-                        return function(e) {
-                            e.stopPropagation();
-                            const item = gameState.inventory[index];
-                            if (item) {
-                                if (item.type === 'station') {
-                                    useStationItem(item.id);
-                                } else {
-                                    useItem(index);
-                                }
-                            }
-                        };
-                    })(i);
-                    
-                    // Verificar se é dispositivo touch antes de adicionar eventos touch
-                    if ('ontouchstart' in window) {
-                        const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
-                        const touchMoveHandler = (e) => handleTouchMove(e);
-                        const touchEndHandler = (e) => handleTouchEnd(e, i, 'inventory');
-                        
-                        slot.addEventListener('touchstart', touchStartHandler, { passive: false });
-                        slot.addEventListener('touchmove', touchMoveHandler, { passive: false });
-                        slot.addEventListener('touchend', touchEndHandler);
-                        
-                        slot._touchStart = touchStartHandler;
-                        slot._touchMove = touchMoveHandler;
-                        slot._touchEnd = touchEndHandler;
-                    }
-                }
-                
-                grid.appendChild(slot);
-            }
-
-            const trashBin = document.getElementById('trash-bin');
-            if (gameState.isDead) {
-                trashBin.classList.add('disabled');
-            } else {
-                trashBin.classList.remove('disabled');
-                if ('ontouchstart' in window && !trashBin._hasTouchEvents) {
-                    trashBin.addEventListener('touchmove', handleTrashTouchMove, { passive: false });
-                    trashBin.addEventListener('touchend', handleTrashTouchEnd);
-                    trashBin._hasTouchEvents = true;
-                }
-            }
-        }
-        function updateFoodGrid() {
-            const grid = document.getElementById('food-grid');
-            grid.innerHTML = '';
-    
-            gameState.inventory.forEach((item, index) => {
-                if (item && item.type === 'food') {
-                    const slot = document.createElement('div');
-                    slot.className = `inventory-slot has-item food-item ${gameState.isDead ? 'disabled' : ''}`;
-                    slot.innerHTML = `
-                        <span class="item-name">${item.name}</span>
-                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
-                    `;
-                    if (!gameState.isDead) {
-                        slot.setAttribute('onclick', `useFood(${index})`);
-                    }
-                    grid.appendChild(slot);
-                }
-            });
-        }
-        function updateEquipmentDisplay() {
-            for (let slot in gameState.equipment) {
-                const item = gameState.equipment[slot];
-                const displayElement = document.getElementById(`${slot}-item`);
-                
-                if (item) {
-                    if (item.durability !== undefined) {
-                        const durabilityPercent = (item.durability / item.maxDurability) * 100;
-                        let durabilityColor = '#4CAF50';
-                        if (durabilityPercent < 25) durabilityColor = '#ff4444';
-                        else if (durabilityPercent < 50) durabilityColor = '#ffa500';
-                        
-                        displayElement.innerHTML = `${item.name}<br><span style="font-size: 8px; color: ${durabilityColor}">🔧 ${item.durability}/${item.maxDurability}</span>`;
-                    } else {
-                        displayElement.textContent = item.name;
-                    }
-                } else {
-                    displayElement.textContent = 'Vazio';
-                }
-                
-                const element = document.getElementById(`slot-${slot}`);
-                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
-                
-                // Adicionar tooltip com informações de durabilidade
-                if (item && item.durability !== undefined) {
-                    element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`;
-                } else if (item) {
-                    element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`;
-                }
-            }
-        }
         function updateGameContent() {
             const content = document.getElementById('game-content');
             
             // Verificar se está na interface do moinho
             if (gameState.inMillInterface && gameState.location === 'mill') {
-                const currentJob = getMillJob();
-                const hasItems = currentJob && (currentJob.inputItemId || currentJob.remainingQuantity > 0);
-                const isMilling = currentJob && currentJob.isMilling;
-                const hasResult = currentJob && currentJob.completedCount > 0;
+                const currentJob = getMillJob(), hasItems = currentJob && (currentJob.inputItemId || currentJob.remainingQuantity > 0), isMilling = currentJob && currentJob.isMilling, hasResult = currentJob && currentJob.completedCount > 0;
                 
                 content.innerHTML = `
                     <div class="mill-container" style="background: rgba(0,0,0,0.8); border-radius: 20px; padding: 20px; border: 2px solid #ffd700; max-width: 100%; overflow-x: hidden;">
@@ -2240,7 +1835,142 @@
             
             content.innerHTML = html;
         }
+        function updateInventoryGrid() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 18; i++) {
+                const item = gameState.inventory[i], slot = document.createElement('div');
+                slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                slot.setAttribute('data-index', i);
+                slot.setAttribute('data-source', 'inventory');
+                
+                if (item) { slot.innerHTML = `<span class="item-name">${item.name}</span>${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}`; }
+                else { slot.innerHTML = `<span style="color: #444; font-size: 20px;">⬜</span>`; }
+
+                if (!gameState.isDead) {
+                    slot.setAttribute('draggable', !!item);
+                    slot.setAttribute('ondragstart', 'dragItem(event)');
+                    slot.setAttribute('ondragover', 'handleDragOver(event)');
+                    slot.setAttribute('ondrop', 'handleDrop(event)');
+                    
+                    // Adicionar evento de clique para usar itens (PC)
+                    slot.onclick = (function(index) {
+                        return function(e) {
+                            e.stopPropagation();
+                            const item = gameState.inventory[index];
+                            if (item) {
+                                if (item.type === 'station') {
+                                    useStationItem(item.id);
+                                } else {
+                                    useItem(index);
+                                }
+                            }
+                        };
+                    })(i);
+                    
+                    // Verificar se é dispositivo touch antes de adicionar eventos touch
+                    if ('ontouchstart' in window) {
+                        const touchStartHandler = (e) => handleTouchStart(e, i, 'inventory');
+                        const touchMoveHandler = (e) => handleTouchMove(e);
+                        const touchEndHandler = (e) => handleTouchEnd(e, i, 'inventory');
+                        
+                        slot.addEventListener('touchstart', touchStartHandler, { passive: false });
+                        slot.addEventListener('touchmove', touchMoveHandler, { passive: false });
+                        slot.addEventListener('touchend', touchEndHandler);
+                        
+                        slot._touchStart = touchStartHandler;
+                        slot._touchMove = touchMoveHandler;
+                        slot._touchEnd = touchEndHandler;
+                    }
+                }
+                
+                grid.appendChild(slot);
+            }
+
+            const trashBin = document.getElementById('trash-bin');
+            if (gameState.isDead) {
+                trashBin.classList.add('disabled');
+            } else {
+                trashBin.classList.remove('disabled');
+                if ('ontouchstart' in window && !trashBin._hasTouchEvents) {
+                    trashBin.addEventListener('touchmove', handleTrashTouchMove, { passive: false });
+                    trashBin.addEventListener('touchend', handleTrashTouchEnd);
+                    trashBin._hasTouchEvents = true;
+                }
+            }
+        }
+        function updateFoodGrid() {
+            const grid = document.getElementById('food-grid');
+            grid.innerHTML = '';
+    
+            gameState.inventory.forEach((item, index) => {
+                if (item && item.type === 'food') {
+                    const slot = document.createElement('div');
+                    slot.className = `inventory-slot has-item food-item ${gameState.isDead ? 'disabled' : ''}`;
+                    slot.innerHTML = `
+                        <span class="item-name">${item.name}</span>
+                        ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
+                    `;
+                    if (!gameState.isDead) { slot.setAttribute('onclick', `useFood(${index})`); }
+                    grid.appendChild(slot);
+                }
+            });
+        }
+        function updateEquipmentDisplay() {
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                const displayElement = document.getElementById(`${slot}-item`);
+                
+                if (item) {
+                    if (item.durability !== undefined) {
+                        const durabilityPercent = (item.durability / item.maxDurability) * 100;
+                        let durabilityColor = '#4CAF50';
+                        if (durabilityPercent < 25) durabilityColor = '#ff4444';
+                        else if (durabilityPercent < 50) durabilityColor = '#ffa500';
+                        
+                        displayElement.innerHTML = `${item.name}<br><span style="font-size: 8px; color: ${durabilityColor}">🔧 ${item.durability}/${item.maxDurability}</span>`;
+                    } else {
+                        displayElement.textContent = item.name;
+                    }
+                } else {
+                    displayElement.textContent = 'Vazio';
+                }
+                
+                const element = document.getElementById(`slot-${slot}`);
+                element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
+                
+                // Adicionar tooltip com informações de durabilidade
+                if (item && item.durability !== undefined) { element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`; } 
+                else if (item) { element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`; }
+            }
+        }
+        // ** Calculate Bonuses
+        function calculateEquipmentBonuses() {
+            let attackBonus = 0;
+            let defenseBonus = 0;
+            const brokenItems = [];
         
+            for (let slot in gameState.equipment) {
+                const item = gameState.equipment[slot];
+                if (item) {
+                    if ((item.type === 'armor' || item.type === 'shield') && item.durability === 0) {
+                        brokenItems.push(item.name);
+                    } else {
+                        attackBonus += item.attack || 0;
+                        defenseBonus += item.defense || 0;
+                    }
+                }
+            }
+            
+            if (brokenItems.length > 0) {
+                addLog(`⚠️ ${brokenItems.join(', ')} ${brokenItems.length > 1 ? 'estão' : 'está'} quebrada${brokenItems.length > 1 ? 's' : ''} e não oferecem proteção!`);
+            }
+        
+            return { attackBonus, defenseBonus };
+        }
+        function calculateExpForNextLevel(level) { return 100 * level; }
+        // ** Add Actions Logs
         function addLog(message) {
             gameState.combatLog.unshift(message);
             if (gameState.combatLog.length > 200) gameState.combatLog.pop();
@@ -2248,9 +1978,204 @@
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
         }
+        // Create Character Screen
+        function createCharacter() {
+            const name = document.getElementById('character-name').value.trim(), age = document.getElementById('character-age').value, bio = document.getElementById('character-bio').value.trim();
+            
+            if (!name) { Swal.fire({ title: 'Erro', text: 'Digite um nome para seu personagem!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedRace) { Swal.fire({ title: 'Erro', text: 'Selecione uma raça!', icon: 'error', confirmButtonText: 'OK',background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!gameState.selectedGender) { Swal.fire({ title: 'Erro', text: 'Selecione um gênero!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!age || age < 1) { Swal.fire({ title: 'Erro', text: 'Digite uma idade válida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            
+            const race = RACES[gameState.selectedRace];
+            
+            gameState.inventory = Array(18).fill(null);
+            gameState.chest = Array(18).fill(null);
+            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null };
+            gameState.character = {
+                name: name,
+                race: gameState.selectedRace,
+                raceData: race,
+                gender: gameState.selectedGender,
+                age: parseInt(age),
+                bio: bio || `${gameState.selectedGender === 'masculino' ? 'Um aventureiro' : 'Uma aventureira'} em busca de glória.`,
+                life: race.baseLife,
+                maxLife: race.baseLife,
+                mana: race.mana,
+                maxMana: race.mana,
+                gold: 10,
+                exp: 0,
+                level: 1
+            };
+            gameState.combatLog = [];
+            gameState.isDead = false;
+            gameState.royalQuest = null;
+            gameState.timeOfDay = 'day';
+            gameState.isSleeping = false;
+            gameState.sleepTimeout = null;
+            gameState.location = 'home';
+            gameState.placedStations = {};
 
+            document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('death-overlay').classList.remove('active');
+            document.getElementById('game-ui').style.display = 'block';
+            
+            addItemToInventory('apple', 3); addItemToInventory('bread', 2);
+            addItemToChest('clock', 1);
+            
+            updateUI();
+            startCycleTimer();
+            
+            Swal.fire({
+                title: `✨ Olá, <strong>${name}</strong>`,
+                html: `<div style="text-align: center;">
+                    <p>Seja ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao <strong style="color: #ffd700;">Reino da Aurora</strong>!</p>
+                    <p style="margin-top: 10px;">📜 Sua jornada começa agora.</p>
+                    <p style="margin-top: 5px; color: #888;">❤️ ${race.baseLife} Vida | 🔮 ${race.mana} Mana | ⚔️ ${race.baseAttack} Ataque</p>
+                </div>`,
+                icon: 'success',
+                confirmButtonText: 'Iniciar Jornada 🚀',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#4CAF50'
+            });
+            
+            addLog('✨ Personagem criado! Bem-vindo ao Reino da Aurora!');
+        }
+        // ** Select Gender and Race
+        function selectRace(race) {
+            if (gameState.isDead) return;
+            
+            document.querySelectorAll('.race-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`[data-race="${race}"]`).classList.add('selected');
+            gameState.selectedRace = race;
+            
+            // Travar gênero para Ninfa
+            if (race === 'nymph') {
+                const wasMale = (gameState.selectedGender === 'masculino');
+                
+                gameState.selectedGender = 'feminino';
+                
+                // Atualizar UI dos gêneros
+                document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
+                document.querySelector(`[data-gender="feminino"]`).classList.add('selected');
+                
+                // Desabilitar opção masculina visualmente
+                const maleOption = document.querySelector(`[data-gender="masculino"]`);
+                maleOption.style.opacity = '0.5';
+                maleOption.style.cursor = 'not-allowed';
+                maleOption.style.pointerEvents = 'none';
+                maleOption.title = 'Ninfas são exclusivamente femininas';
+                
+                // Restaurar opção feminina
+                const femaleOption = document.querySelector(`[data-gender="feminino"]`);
+                femaleOption.style.opacity = '1';
+                femaleOption.style.cursor = 'pointer';
+                femaleOption.style.pointerEvents = 'auto';
+                
+                // Só avisar se o gênero anterior era masculino
+                if (wasMale) {
+                    Swal.fire({
+                        title: '🌸 Ninfa',
+                        text: 'Ninfas são entidades femininas. O gênero foi alterado para Feminino.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendi',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            } else {
+                // Restaurar opções para outras raças
+                document.querySelectorAll('.gender-option').forEach(g => {
+                    g.style.opacity = '1';
+                    g.style.cursor = 'pointer';
+                    g.style.pointerEvents = 'auto';
+                    g.title = '';
+                });
+            }
+        }
+        function selectGender(gender) {
+            if (gameState.isDead) return;
+            
+            document.querySelectorAll('.gender-option').forEach(g => g.classList.remove('selected'));
+            document.querySelector(`[data-gender="${gender}"]`).classList.add('selected');
+            gameState.selectedGender = gender;
+        }
+        // ** Close Modal
+        function cancelCharacterCreation() { document.getElementById('character-creation-modal').classList.remove('active'); document.getElementById('title-screen').style.display = 'flex'; }
+        // Profile Screen
+        function showProfile() {
+            if (!gameState.character || gameState.isDead) return;
+
+            const race = RACES[gameState.character.race];
+            document.getElementById('profile-avatar').textContent = race.icon;
+            document.getElementById('profile-name').textContent = gameState.character.name;
+            document.getElementById('profile-race').textContent = race.name;
+            document.getElementById('profile-age').textContent = gameState.character.age;
+            document.getElementById('profile-gender').textContent = gameState.character.gender === 'masculino' ? '♂️ Masculino' : '♀️ Feminino';
+            document.getElementById('profile-bio-text').textContent = gameState.character.bio;
+
+            const level = gameState.character.level || 1, exp = gameState.character.exp || 0, expForNextLevel = calculateExpForNextLevel(level), expProgress = Math.min(100, (exp / expForNextLevel) * 100);
+
+            document.getElementById('profile-level').textContent = level;
+            document.getElementById('profile-exp').textContent = exp;
+            document.getElementById('exp-level-display').textContent = level;
+            document.getElementById('exp-current').textContent = exp;
+            document.getElementById('exp-next').textContent = expForNextLevel;
+            document.getElementById('exp-progress-bar').style.width = `${expProgress}%`;
+
+            const progressBar = document.getElementById('exp-progress-bar');
+            if (expProgress >= 100) { progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #45a049)'; }
+            else if (expProgress >= 75) { progressBar.style.background = 'linear-gradient(90deg, #ffa500, #ff8c00)'; }
+            else { progressBar.style.background = 'linear-gradient(90deg, #ffd700, #ffaa00)'; }
+            
+            const bonuses = calculateEquipmentBonuses(), bonusText = document.getElementById('equipment-bonus-text'), bonusDiv = document.getElementById('profile-equipment-stats');
+            
+            if (bonuses.attackBonus > 0 || bonuses.defenseBonus > 0) {
+                bonusDiv.style.display = 'block';
+                bonusText.innerHTML = `
+                    ⚔️ Ataque Base: ${race.baseAttack}<br>
+                    🛡️ Defesa Base: ${race.baseDefense}<br>
+                    ➕ Bônus de Equipamentos:<br>
+                    &nbsp;&nbsp;⚔️ +${bonuses.attackBonus} Ataque<br>
+                    &nbsp;&nbsp;🛡️ +${bonuses.defenseBonus} Defesa<br>
+                    <strong>Total: ⚔️ ${race.baseAttack + bonuses.attackBonus} | 🛡️ ${race.baseDefense + bonuses.defenseBonus}</strong>
+                `;
+            }
+            else { bonusDiv.style.display = 'none'; }
+
+            document.getElementById('profile-modal').classList.add('active');
+        }
+        function closeProfile() { document.getElementById('profile-modal').classList.remove('active'); }
+        // ** Edit Profile
+        function showEditProfile() {
+            closeProfile();
+            document.getElementById('edit-name').value = gameState.character.name;
+            document.getElementById('edit-age').value = gameState.character.age;
+            document.getElementById('edit-bio').value = gameState.character.bio;
+            document.getElementById('edit-profile-modal').classList.add('active');
+        }
+        function closeEditProfile() { document.getElementById('edit-profile-modal').classList.remove('active'); }
+        function saveProfileEdit() {
+            const newName = document.getElementById('edit-name').value.trim();
+            const newAge = document.getElementById('edit-age').value;
+            const newBio = document.getElementById('edit-bio').value.trim();
+    
+            if (!newName) { Swal.fire({ title: 'Erro', text: 'Nome não pode estar vazio!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+            if (!newAge || newAge < 1) { Swal.fire({ title: 'Erro', text: 'Idade inválida!', icon: 'error', confirmButtonText: 'OK', background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700' }); return; }
+    
+            gameState.character.name = newName;
+            gameState.character.age = parseInt(newAge);
+            gameState.character.bio = newBio || gameState.character.bio;
+    
+            closeEditProfile(); showProfile();
+            addLog('📝 Perfil atualizado!');
+            Swal.fire({ title: '✅ Sucesso!', text: 'Os seus dados foram atualizados!', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#1a1a2e', color: '#4CAF50' });
+
+            updateUI();
+        }
         // ========== TOUCH DRAG AND DROP ==========
-        
         function handleTouchStart(e, index, source) {
             if (gameState.isDead) return;
             
@@ -2476,9 +2401,7 @@
             isDragging = false;
             hasMoved = false;
         }
-    
         // ========== MOUSE DRAG AND DROP ==========
-        
         function dragItem(event) {
             if (gameState.isDead) {
                 event.preventDefault();
@@ -2602,21 +2525,14 @@
         }
     
         // ========== CHEST FUNCTIONS ==========
-        
         function toggleChest() {
             if (gameState.isDead) return;
-            
-            if (!gameState.chest) {
-                gameState.chest = Array(18).fill(null);
-            }
+            if (!gameState.chest) gameState.chest = Array(18).fill(null);
             
             gameState.chestOpen = !gameState.chestOpen;
             
-            if (gameState.chestOpen) {
-                addLog('📦 Você abriu o baú da sua casa.');
-            } else {
-                addLog('📦 Você fechou o baú.');
-            }
+            if (gameState.chestOpen) { addLog('📦 Você abriu o baú da sua casa.'); }
+            else { addLog('📦 Você fechou o baú.'); }
             
             updateUI();
         }
@@ -2645,22 +2561,18 @@
         }
         function organizeChest() {
             if (gameState.isDead) return;
-            
             if (!gameState.chest) gameState.chest = Array(18).fill(null);
             
             const items = gameState.chest.filter(item => item !== null);
             gameState.chest = Array(18).fill(null);
             
-            for (let i = 0; i < items.length; i++) {
-                gameState.chest[i] = items[i];
-            }
+            for (let i = 0; i < items.length; i++) { gameState.chest[i] = items[i]; }
             
             updateUI();
             addLog('📦 Baú organizado!');
         }
     
         // ========== INVENTORY FUNCTIONS ==========
-        
         function addItemToInventory(itemId, quantity = 1) {
             if (gameState.isDead) return;
             
@@ -2747,31 +2659,19 @@
             }
         }
     
+        // ========== ITEMS FUNCTIONS ==========
         function useItem(index) {
             if (gameState.isDead) return;
             
             const item = gameState.inventory[index];
             if (!item) return;
             
-            if (item.useEffect && typeof window[item.useEffect] === 'function') {
-                window[item.useEffect]();
-                return;
-            }
-            if (item.type === 'station') {
-                useStationItem(item.id);
-            }
-            else if (item.type === 'food' || item.type === 'drink') { 
-                useFood(index); 
-            }
-            else if (item.id === 'clock') { 
-                showTimeRemaining(); 
-            }
-            else if (item.type === 'book') {
-                openBookEditor(index);
-            }
-            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { 
-                equipItemFromInventory(index); 
-            }
+            if (item.useEffect && typeof window[item.useEffect] === 'function') { window[item.useEffect](); return; }
+            if (item.type === 'station') { useStationItem(item.id); }
+            else if (item.type === 'food' || item.type === 'drink') { useFood(index); }
+            else if (item.id === 'clock') { showTimeRemaining(); }
+            else if (item.type === 'book') { openBookEditor(index); }
+            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
         }
         function useFood(index) {
             if (gameState.isDead) return;
@@ -2784,8 +2684,7 @@
             gameState.character.life = newLife;
             
             if (item.mana) {
-                const newMana = Math.min(gameState.character.mana + item.mana, gameState.character.maxMana);
-                const manaRestored = newMana - gameState.character.mana;
+                const newMana = Math.min(gameState.character.mana + item.mana, gameState.character.maxMana), manaRestored = newMana - gameState.character.mana;
                 gameState.character.mana = newMana;
                 addLog(`🍺 Você consumiu ${item.name} e recuperou ${healed} de vida e ${manaRestored} de mana.`);
             } else {
@@ -2844,7 +2743,6 @@
         }
     
         // ========== STATION SYSTEM ==========
-        
         function useStationItem(itemId) {
             if (gameState.isDead) return;
             
@@ -3252,7 +3150,6 @@
         }
 
         // ========== FURNACE SYSTEM ==========
-        
         let furnaceGlobalInterval = null;
         
         function startFurnaceGlobalTimer() {
@@ -3964,7 +3861,6 @@
         }
         
         // ========== MILL SYSTEM ==========
-
         function openMillInterface() { if (gameState.isDead) return; gameState.inMillInterface = true; updateUI(); }
         function exitMillInterface() { gameState.inMillInterface = false; updateUI(); }
 
@@ -4271,9 +4167,9 @@
         }
 
         // ========== BOOK SYSTEM ==========
-        
         let activeBook = null;
         let activeBookIndex = null;
+
         function openBookEditor(bookIndex) {
             if (gameState.isDead) return;
             
@@ -4327,7 +4223,6 @@
             const gameContent = document.getElementById('game-content');
             gameContent.innerHTML = editorHTML;
         }
-        
         function closeBookEditor() {
             // Salvar alterações atuais
             const titleInput = document.getElementById('book-title');
@@ -4461,7 +4356,6 @@
                 gameState.currentEnemy = null;
             }
         }
-        
         function closeBookReader() {
             activeBook = null;
             activeBookIndex = null;
@@ -4495,7 +4389,6 @@
         }
 
         // ========== LOCATION ACTIONS ==========
-
         function go(location, message) {
             if (gameState.isDead) { return; }
             gameState.last_location = location;
@@ -4553,11 +4446,9 @@
             if (gameState.isDead || gameState.isSleeping) return false;
             
             if (gameState.timeOfDay === 'day') {
-                // Dia: precisa ter mana abaixo de 50%
                 const manaPercent = (gameState.character.mana / gameState.character.maxMana) * 100;
                 return manaPercent < 50;
             } else {
-                // Noite: sempre pode dormir
                 return true;
             }
         }
@@ -4886,7 +4777,6 @@
         }
 
         // ========== CYCLE MANAGEMENT ==========
-
         function startCycleTimer() {
             // Limpar timer existente se houver
             if (gameState.dayCycleTimer) {
@@ -4964,30 +4854,30 @@
         }
 
 
-    function getSeasonName(season) {
-        const seasons = {
-            1: 'Primavera',
-            2: 'Verão',
-            3: 'Outono',
-            4: 'Inverno'
-        };
-        return seasons[season];
-    }
-    function getSeasonEmoji(season) {
-        const emojis = {
-            1: '🌸',
-            2: '☀️',
-            3: '🍂',
-            4: '❄️'
-        };
-        return emojis[season];
-    }
-    
-    function getFullSeasonName() { return `${getSeasonEmoji(gameState.seasonCount)} ${getSeasonName(gameState.seasonCount)}`; }
-    function getFormattedDate() { return `${gameState.dayCount}º dia da ${getSeasonName(gameState.seasonCount)} de ${gameState.yearCount}`; }
-    function getShortDate() { return `${gameState.dayCount}ª ${getSeasonName(gameState.seasonCount).substring(0,3)} ${gameState.yearCount}`; }
-    
-    function getSeasonEffect() {
+        function getSeasonName(season) {
+            const seasons = {
+                1: 'Primavera',
+                2: 'Verão',
+                3: 'Outono',
+                4: 'Inverno'
+            };
+            return seasons[season];
+        }
+        function getSeasonEmoji(season) {
+            const emojis = {
+                1: '🌸',
+                2: '☀️',
+                3: '🍂',
+                4: '❄️'
+            };
+            return emojis[season];
+        }
+        
+        function getFullSeasonName() { return `${getSeasonEmoji(gameState.seasonCount)} ${getSeasonName(gameState.seasonCount)}`; }
+        function getFormattedDate() { return `${gameState.dayCount}º dia da ${getSeasonName(gameState.seasonCount)} de ${gameState.yearCount}`; }
+        function getShortDate() { return `${gameState.dayCount}ª ${getSeasonName(gameState.seasonCount).substring(0,3)} ${gameState.yearCount}`; }
+        
+        function getSeasonEffect() {
         switch(gameState.seasonCount) {
             case 1: return '🌸 Flores desabrocham, cura +10%';
             case 2: return '☀️ Dias quentes, mana regenera mais rápido';
@@ -4998,7 +4888,6 @@
     }
 
         // ========== FUNÇÕES DA TABERNA ==========
-    
         function buyBeer() { buyDrink('beer', 5); }
         function buyWine() { buyDrink('wine', 15); }
         function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
@@ -5076,7 +4965,6 @@
         }
 
         // ========== NPCs ==========
-        
         function initNPCStates() {
             if (!gameState.bots) {
                 gameState.bots = {};
@@ -5825,7 +5713,6 @@
         }
 
         // ========== SHOP FUNCTIONS ==========
-        
         function buyItem(itemId, cost) {
             if (gameState.isDead) return;
             if (gameState.character.gold >= cost) {
@@ -5942,7 +5829,6 @@
         }
         
         // ========== EXPLORATION ==========
-
         function exploreDarkForest() {
             if (gameState.isDead) return;
             
@@ -5965,7 +5851,6 @@
         }
 
         // ========== COMBAT ==========
-        
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
         
@@ -6250,7 +6135,6 @@
         }
     
         // ========== LEVEL SYSTEM ==========
-
         function checkAndApplyLevelUp() {
             if (!gameState.character || gameState.isDead) return false;
             
@@ -6356,7 +6240,6 @@
         }
 
         // ========== SAVE/LOAD ==========
-        
         function saveGame() {
             if (gameState.isDead) {
                 alert('❌ Personagens mortos não podem ser salvos!');
@@ -6454,7 +6337,6 @@
         }
         
         // ========== INITIALIZE ==========
-
         function give(item, amount) { addItemToInventory(item, amount); }
         function openCrystalBall() {
             if (gameState.isDead) {
