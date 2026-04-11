@@ -4577,6 +4577,20 @@
             if (!canSleep()) {
                 if (gameState.timeOfDay === 'day') {
                     addLog('⚠️ Você não está cansado o suficiente para dormir durante o dia! Sua mana está acima de 50%.');
+
+                    Swal.fire({
+                        title: '😴 Não Pode Dormir',
+                        text: 'Você não está cansado o suficiente para dormir durante o dia!',
+                        icon: 'warning',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        iconColor: '#ffd700'
+                    });
                 }
                 return;
             }
