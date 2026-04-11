@@ -614,7 +614,6 @@
                 </div>
             </div>
             
-            <!-- BOTÃO DE SAIR - ADICIONAR AQUI -->
             <div class="header-actions" style="display: flex; gap: 10px; margin-left: auto;">
                 <button class="action-btn" id="leave-game-btn" style="background: linear-gradient(45deg, #ff4444, #cc0000); color: white; padding: 10px 20px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 5px;">
                     🚪 Sair do jogo
@@ -3781,14 +3780,7 @@
 
         setInterval(requestGameState, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
-        setInterval(function() {
-            if (socket.connected && currentPlayerId) {
-                socket.emit('ping_game', {
-                    game_id: gameId,
-                    player_id: currentPlayerId
-                });
-            }
-        }, 30000);
+        setInterval(function() { if (socket.connected && currentPlayerId) { socket.emit('ping_game', { game_id: gameId, player_id: currentPlayerId }); } }, 30000);
     </script>
 </body>
 </html>
