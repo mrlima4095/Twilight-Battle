@@ -641,6 +641,7 @@ class RitualManager:
 class Game:
     def __init__(self, game_id):
         self.game_id = game_id
+        self.creator = creator
         self.players = []  # Lista de usernames
         self.player_data = {}  # Dict com username como chave
         self.socket_to_username = {}  # Mapeamento socket.id -> username
@@ -746,10 +747,12 @@ class Game:
         
         return True, "Espectador adicionado com sucesso"
     def remove_player(self, username):
-        """Remove um jogador do jogo usando username"""
+        """Remove um jogador do jogo. Retorna (success, was_creator, winner)"""
         if username not in self.players or username not in self.player_data:
-            return False
-    
+            return False, False, None
+        
+        was_creator = (username == self.creator)
+        
         # Processar morte do jogador
         self.process_player_death(username)
         
@@ -768,12 +771,12 @@ class Game:
         
         # Se não há mais jogadores, marcar para limpeza
         if len(self.players) == 0:
-            return True
+            return True, was_creator, None
         
         # Verificar se há um vencedor
         alive_players = [p for p in self.players if not self.player_data[p].get('dead', False)]
         if len(alive_players) == 1:
-            return alive_players[0]  # Retorna o username do vencedor
+            return True, was_creator, alive_players[0]
         
         # Se era o turno do jogador que saiu, passar para o próximo
         if username in self.players:
@@ -781,8 +784,8 @@ class Game:
             if current_index >= 0 and self.current_turn == current_index:
                 self.next_turn()
         
-        return True
-    
+        return True, was_creator, None
+
     def reconnect_player(self, socket_id, username):
         """Reconecta um jogador ou espectador existente ao jogo"""        
         if username in self.player_data:
@@ -2185,7 +2188,7 @@ def handle_leave_game(data):
         return
     
     # Remover jogador
-    result = game.remove_player(username)
+    success, was_creator, winner = game.remove_player(username)
     
     # Limpar jogo atual da conta do usuário
     accounts = load_accounts()
@@ -2193,15 +2196,29 @@ def handle_leave_game(data):
         accounts[username]['current_game'] = None
         save_accounts(accounts)
     
-    # Notificar todos os jogadores
-    emit('player_left', {
-        'username': username,
-        'message': f'{username} saiu do jogo'
-    }, room=game_id)
+    if was_creator:
+        # Criador saiu - fechar a sala e notificar todos
+        emit('room_closed', {
+            'message': f'O criador da sala saiu. A sala {game_id} foi fechada.'
+        }, room=game_id)
+        
+        # Remover o jogo
+        del games[game_id]
+        
+        # Notificar todos para voltar ao menu
+        emit('force_redirect', {
+            'url': '/',
+            'message': 'A sala foi fechada porque o criador saiu.'
+        }, room=game_id)
+    else:
+        # Apenas notificar que um jogador saiu
+        emit('player_left', {
+            'username': username,
+            'message': f'{username} saiu do jogo'
+        }, room=game_id)
     
     # Se result for um username, é o vencedor
-    if isinstance(result, str):
-        winner = result
+    if winner and not was_creator:
         winner_name = game.player_data[winner]['name']
         emit('game_over', {
             'winner': winner,
@@ -2469,6 +2486,18 @@ def handle_ping_game(data):
             emit('pong_game', {'status': 'ok'})
         else:
             emit('pong_game', {'status': 'player_not_found'})
+
+@socketio.on('check_is_creator')
+def handle_check_is_creator(data):
+    game_id = data['game_id']
+    username = get_current_user()
+    
+    if not username or game_id not in games:
+        emit('creator_check_result', {'is_creator': False})
+        return
+    
+    game = games[game_id]
+    emit('creator_check_result', {'is_creator': game.creator == username})
 
 @socketio.on('player_action')
 def handle_player_action(data):

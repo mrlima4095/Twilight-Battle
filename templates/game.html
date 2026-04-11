@@ -753,9 +753,7 @@
                     try {
                         const session = JSON.parse(savedSession);
                         if (session.username === currentUsername) {
-                            console.log('Sessão recuperada para', currentUsername);
                             socket.emit('reconnect_game', { game_id: gameId });
-
                         } else {
                             localStorage.removeItem(SESSION_KEY);
                             socket.emit('join_game', { game_id: gameId });
@@ -767,9 +765,7 @@
                     socket.emit('join_game', { game_id: gameId });
                 }
             })
-            .catch(() => {
-                window.location.href = '/';
-            });
+            .catch(() => { window.location.href = '/'; });
 
         // Função saveSession atualizada
         function saveSession() {
@@ -784,6 +780,8 @@
             }
         }
         function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
+
+        function checkIfCreator() { socket.emit('check_is_creator', { game_id: gameId }); }
 
         function attemptReconnection() {
             if (reconnectAttempts < 5) {
@@ -828,7 +826,6 @@
                     try {
                         const session = JSON.parse(savedSession);
                         if (session.username === currentUsername) {
-                            console.log('Tentando reconectar com sessão existente');
                             socket.emit('reconnect_game', { game_id: gameId });
                         } else {
                             socket.emit('join_game', { game_id: gameId });
@@ -839,6 +836,9 @@
                 } else {
                     socket.emit('join_game', { game_id: gameId });
                 }
+                
+                // Verificar se é criador após entrar
+                setTimeout(checkIfCreator, 1000);
             }
             
             // Solicitar estado após conectar
@@ -1224,6 +1224,46 @@
             requestGameState();
         });
 
+        socket.on('creator_check_result', function(data) {
+            if (data.is_creator) {
+                const gameTitle = document.querySelector('.game-title');
+                if (gameTitle) {
+                    const creatorBadge = document.createElement('span');
+                    creatorBadge.style.cssText = 'background: #ffd700; color: #1a1a2e; font-size: 12px; padding: 3px 10px; border-radius: 20px; margin-left: 10px;';
+                    creatorBadge.textContent = '👑 Criador';
+                    gameTitle.appendChild(creatorBadge);
+                }
+            }
+        });
+        socket.on('room_closed', function(data) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sala Fechada',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false
+            }).then(() => {
+                window.location.href = '/';
+            });
+        });
+        socket.on('force_redirect', function(data) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sala Fechada',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'Voltar ao Menu',
+                allowOutsideClick: false
+            }).then(() => {
+                window.location.href = data.url || '/';
+            });
+        });
+
         socket.on('game_over', function(data) {
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
@@ -1232,12 +1272,14 @@
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
-                confirmButtonText: 'Voltar ao início'
+                confirmButtonText: 'Voltar ao início',
+                allowOutsideClick: false
             }).then(() => {
+                clearSession();
                 window.location.href = '/';
             });
         });
-
+        
         function showAttackResult(result) {
             let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
             
@@ -2595,11 +2637,11 @@
                 color: '#fff'
             });
         });
-        
+
         document.getElementById('leave-game-btn').addEventListener('click', function() {
             Swal.fire({
                 title: 'Sair do jogo?',
-                html: '<p style="color: #fff;">Se você sair, suas cartas serão descartadas e você será considerado morto.</p><p style="color: #ff4444; margin-top: 10px;">Tem certeza?</p>',
+                html: '<p style="color: #fff;">Tem certeza que deseja sair?</p>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ff4444',
