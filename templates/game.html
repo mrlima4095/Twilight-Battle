@@ -708,6 +708,17 @@
         const gameId = '{{ game_id }}';
         const SESSION_KEY = `twilight_session_${gameId}`;
 
+        let savedSession = localStorage.getItem(SESSION_KEY);
+        if (savedSession) {
+            try {
+                savedSession = JSON.parse(savedSession);
+                console.log('Sessão recuperada:', savedSession);
+            } catch (e) {
+                console.log('Erro ao recuperar sessão:', e);
+                savedSession = null;
+            }
+        }
+
         const socket = io({
             reconnection: true,
             reconnectionAttempts: 5,
@@ -735,8 +746,40 @@
                 }
                 currentUsername = data.username;
                 document.getElementById('player-name').textContent = currentUsername;
+                
+                // Verificar se temos uma sessão salva
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            socket.emit('reconnect_game', { game_id: gameId });
+                        } else {
+                            localStorage.removeItem(SESSION_KEY);
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
             })
             .catch(() => { window.location.href = '/'; });
+
+        // Função saveSession atualizada
+        function saveSession() {
+            if (currentUsername) {
+                const session = {
+                    username: currentUsername,
+                    gameId: gameId,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                console.log('Sessão salva para', currentUsername);
+            }
+        }
+        function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
 
         function checkIfCanStart() {
             fetch(`/api/check-start-permission/${gameId}`, { method: 'GET' })
@@ -813,6 +856,21 @@
             
             // Se temos username, tentar reconectar ou entrar
             if (currentUsername) {
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            socket.emit('reconnect_game', { game_id: gameId });
+                        } else {
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
                 
                 // Verificar se é criador após entrar
                 setTimeout(checkIfCreator, 1000);
