@@ -5875,7 +5875,7 @@
             let attackType = "⚔️ Ataque corpo a corpo";
             
             // Verificar se está usando arco na mão principal
-            const mainhand = gameState.equipment.mainhand;
+            const mainhand = gameState.equipment.mainhand, offhand = gameState.equipment.offhand;
             const isUsingBow = mainhand && mainhand.id === 'bow';
             
             if (isUsingBow) {
