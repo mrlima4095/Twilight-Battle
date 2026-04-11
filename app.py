@@ -1982,8 +1982,12 @@ def get_games():
 
 @app.route('/api/create-game', methods=['POST'])
 def create_game():
+    username = get_current_user()
+    if not username:
+        return render_template('auth.html')
+
     game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    games[game_id] = Game(game_id)
+    games[game_id] = Game(game_id, username)
     return jsonify({'game_id': game_id})
 
 @app.route('/start-game/<game_id>', methods=['POST'])
