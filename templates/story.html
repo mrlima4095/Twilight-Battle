@@ -599,14 +599,7 @@
             location: 'home',
             inventory: Array(18).fill(null),
             chest: Array(18).fill(null),
-            equipment: {
-                helmet: null,
-                chest: null,
-                pants: null,
-                boots: null,
-                mainhand: null,
-                offhand: null
-            },
+            equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null },
             combatLog: [],
             currentEnemy: null,
             isDead: false,
@@ -614,21 +607,23 @@
             selectedGender: null,
             chestOpen: false,
             royalQuest: null,
-            dayCount: 1,      // Dia da estação atual (1-60)
-            seasonCount: 1,   // 1=Primavera, 2=Verão, 3=Outono, 4=Inverno
-            yearCount: 1540,  // Ano atual
-            timeOfDay: 'day', // 'day' ou 'night'
+            dayCount: 1,
+            seasonCount: 1,
+            yearCount: 1540,
+            timeOfDay: 'day',
             isSleeping: false,
             sleepTimeout: null,
             dayCycleTimer: null,
             cycleStartTime: null,
-            cycleDuration: 600, // 20 minutos em segundos (20 * 60)
-            remainingCycleTime: null, // Para quando dormir
-            placedStations: {},  // NOVO: { locationId: { stationId: stationData } }
-            activeStation: null,  // NOVO: estação atualmente aberte
-            furnaceJobs: {}, // { locationId_stationId: { inputItem, fuelItem, remainingTime, totalTime, resultItem, inputSlot, fuelSlot } },
+            cycleDuration: 600,
+            remainingCycleTime: null,
+            placedStations: {},
+            activeStation: null,
+            furnaceJobs: {},
             inMillInterface: false,
-            millJobs: {}
+            millJobs: {},
+            activeQuest: null,
+            completedQuests: []
         };
         
         const RACES = {
