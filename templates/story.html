@@ -5738,11 +5738,6 @@
         function buyDagger() { buyItem('dagger', 25); }
         function buyKatana() { buyItem('katana', 120); }
         function buyFacao() { buyItem('machete', 65); }
-        function buyWoodenShield() { buyItem('wooden_shield', 30); }
-        function buyLeatherHelmet() { buyItem('capacete_couro', 30); }
-        function buyLeatherChest() { buyItem('peitoral_couro', 50); }
-        function buyLeatherPants() { buyItem('calcas_couro', 40); }
-        function buyLeatherBoots() { buyItem('botas_couro', 20); }
         function buyApple() { buyItem('apple', 2); }
         function buyBread() { buyItem('bread', 2); }
         function buyMeat() { buyItem('meat', 5); }
@@ -6141,6 +6136,170 @@
             return brokenItems;
         }
     
+        // ========== QUESTS API ==========
+        function trigger(event) {
+            if (!gameState.activeQuest) return;
+            if (QUESTS[gameState.activeQuest.id]?.completed) return;
+
+            const quest = QUESTS[gameState.activeQuest.id];
+            if (!quest) return;
+
+            let progressed = false;
+
+            switch (quest.type) {
+                case 'visit_location':
+                    if (event.type === 'location_change' && event.location === quest.target) {
+                        quest.progress = Math.min(quest.required, quest.progress + 1);
+                        progressed = true;
+                        addLog(`📍 Missão "${quest.name}": ${quest.progress}/${quest.required} local visitado.`);
+                    }
+                    break;
+
+                case 'deliver_item':
+                    if (event.type === 'npc_talk' && event.npcId === quest.target && event.itemId === quest.itemId) {
+                        let playerQty = 0;
+                        for (let item of gameState.inventory) {
+                            if (item && item.id === quest.itemId) {
+                                playerQty += item.quantity || 1;
+                            }
+                        }
+                        if (playerQty >= quest.quantityNeeded) {
+                            quest.progress = quest.required;
+                            progressed = true;
+                            addLog(`📦 Missão "${quest.name}": itens entregues!`);
+                        } else {
+                            addLog(`⚠️ Você não tem ${quest.quantityNeeded}x ${ITEMS[quest.itemId]?.name} para entregar.`);
+                        }
+                    }
+                    break;
+
+                case 'buy_item':
+                    if (event.type === 'buy' && event.itemId === quest.itemId && event.npcId === quest.targetNpc) {
+                        let playerQty = 0;
+                        for (let item of gameState.inventory) {
+                            if (item && item.id === quest.itemId) {
+                                playerQty += item.quantity || 1;
+                            }
+                        }
+                        if (playerQty >= quest.quantityNeeded) {
+                            quest.progress = quest.required;
+                            progressed = true;
+                            addLog(`🛒 Missão "${quest.name}": item comprado!`);
+                        }
+                    }
+                    break;
+
+                case 'collect_item':
+                    if (event.type === 'item_acquired' && event.itemId === quest.itemId) {
+                        let playerQty = 0;
+                        for (let item of gameState.inventory) {
+                            if (item && item.id === quest.itemId) {
+                                playerQty += item.quantity || 1;
+                            }
+                        }
+                        quest.progress = Math.min(quest.required, playerQty);
+                        progressed = true;
+                        addLog(`📦 Missão "${quest.name}": ${quest.progress}/${quest.required} ${ITEMS[quest.itemId]?.name}.`);
+                    }
+                    break;
+
+                case 'kill_creature':
+                    if (event.type === 'kill' && event.creatureId === quest.creatureId) {
+                        quest.progress = Math.min(quest.required, quest.progress + 1);
+                        progressed = true;
+                        addLog(`⚔️ Missão "${quest.name}": ${quest.progress}/${quest.required} mortes.`);
+                    }
+                    break;
+            }
+
+            if (progressed && quest.progress >= quest.required) {
+                completeQuest(gameState.activeQuest.id);
+            }
+        }
+
+        function completeQuest(questId) {
+            const quest = QUESTS[questId];
+            if (!quest || quest.completed) return;
+
+            quest.completed = true;
+            
+            if (!gameState.completedQuests.includes(questId)) {
+                gameState.completedQuests.push(questId);
+            }
+            
+            gameState.character.gold += quest.reward.gold || 0;
+            addExperience(quest.reward.exp || 0);
+            if (quest.reward.item) {
+                addItemToInventory(quest.reward.item, quest.reward.itemQty || 1);
+            }
+
+            addLog(`✨ Missão completa: ${quest.name}!`);
+            addLog(`💰 Recompensa: ${quest.reward.gold || 0} ouro, ${quest.reward.exp || 0} EXP.`);
+            if (quest.reward.item) {
+                addLog(`🎁 Item recebido: ${quest.reward.itemQty || 1}x ${ITEMS[quest.reward.item]?.name}`);
+            }
+
+            gameState.activeQuest = null;
+            updateUI();
+        }
+
+        function acceptQuest(questId) {
+            if (gameState.activeQuest) { addLog(`❌ Você já tem uma missão ativa: ${QUESTS[gameState.activeQuest.id]?.name}`); return; }
+            if (gameState.completedQuests.includes(questId) && !QUESTS[questId].repeatable) { addLog(`❌ Essa missão já foi completada e não é repetível.`); return; }
+            if (QUESTS[questId].completed && !QUESTS[questId].repeatable) { addLog(`❌ Essa missão já foi completada.`); return; }
+
+            // Resetar progresso se for repetível e já foi completada antes
+            if (QUESTS[questId].repeatable && gameState.completedQuests.includes(questId)) {
+                QUESTS[questId].progress = 0;
+                QUESTS[questId].completed = false;
+                // Remover do array de completadas para poder fazer de novo
+                const index = gameState.completedQuests.indexOf(questId);
+                if (index > -1) gameState.completedQuests.splice(index, 1);
+            }
+
+            gameState.activeQuest = { id: questId, startedAt: Date.now() };
+            addLog(`📜 Missão aceita: ${QUESTS[questId].name}`);
+            addLog(`📖 ${QUESTS[questId].description}`);
+            updateUI();
+        }
+
+        function isQuestActive(questId) { return gameState.activeQuest && gameState.activeQuest.id === questId; }
+        function isQuestCompleted(questId) { return gameState.completedQuests.includes(questId); }
+        function abandonCurrentQuest() { 
+            if (!gameState.activeQuest) {
+                addLog(`❌ Você não tem nenhuma missão ativa para abandonar.`);
+                return;
+            }
+            
+            const questName = QUESTS[gameState.activeQuest.id]?.name || 'Missão';
+            gameState.activeQuest = null;
+            addLog(`⚠️ Você abandonou a missão: ${questName}`);
+            updateUI();
+        }
+        function showQuestProgress() {
+            if (!gameState.activeQuest) {
+                addLog(`📜 Você não tem nenhuma missão ativa no momento.`);
+                return;
+            }
+            
+            const quest = QUESTS[gameState.activeQuest.id];
+            if (!quest) return;
+            
+            addLog(`📜 Missão Ativa: ${quest.name}`);
+            addLog(`📖 ${quest.description}`);
+            addLog(`📊 Progresso: ${quest.progress}/${quest.required}`);
+            
+            if (quest.type === 'collect_item') {
+                let playerQty = 0;
+                for (let item of gameState.inventory) {
+                    if (item && item.id === quest.itemId) {
+                        playerQty += item.quantity || 1;
+                    }
+                }
+                addLog(`📦 Você tem ${playerQty}/${quest.quantityNeeded} ${ITEMS[quest.itemId]?.name}`);
+            }
+        }
+
         // ========== LEVEL SYSTEM ==========
         function checkAndApplyLevelUp() {
             if (!gameState.character || gameState.isDead) return false;
