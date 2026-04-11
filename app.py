@@ -865,6 +865,38 @@ class Game:
             'prophet_curse': 1  # Adicionar limite para a habilidade do Profeta
         }
 
+        def get_player_runes_count(self, username):
+            player = self.player_data.get(username)
+            if not player:
+                return 0
+            
+            runes_count = 0
+            for card in player.get('hand', []):
+                if card and (card.get('type') == 'rune' or card.get('id') == 'runa'):
+                    runes_count += 1
+            return runes_count
+
+    def get_player_talismans_count(self, username):
+        player = self.player_data.get(username)
+        if not player:
+            return 0
+        
+        count = 0
+        for card in player.get('hand', []):
+            if card and card.get('type') == 'talisman':
+                count += 1
+        return count
+    def get_player_runes_count(self, username):
+        player = self.player_data.get(username)
+        if not player:
+            return 0
+        
+        count = 0
+        for card in player.get('hand', []):
+            if card and (card.get('type') == 'rune' or card.get('id') == 'runa'):
+                count += 1
+        return count
+
     def use_action(self, username, action):
         """Registra que uma ação foi usada"""
         if username not in self.turn_actions_used:
@@ -2328,8 +2360,8 @@ def handle_get_game_state(data):
                 'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
                 'attack_bases': game.player_data[uname]['attack_bases'],
                 'defense_bases': game.player_data[uname]['defense_bases'],
-                'talisman_count': len(game.player_data[uname]['talismans']),
-                'runes': game.player_data[uname]['runes'],
+                'talisman_count': game.get_player_talismans_count(uname),  # ← Conta da mão
+                'runes': game.get_player_runes_count(uname),               # ← Conta da mão
                 'dead': game.player_data[uname].get('dead', False),
                 'observer': game.player_data[uname].get('observer', False)
             }
