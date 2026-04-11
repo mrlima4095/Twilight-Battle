@@ -6456,7 +6456,6 @@
         // ========== INITIALIZE ==========
 
         function give(item, amount) { addItemToInventory(item, amount); }
-
         function openCrystalBall() {
             if (gameState.isDead) {
                 addLog('💀 A bola de cristal está escura... você está morto.');
@@ -6466,6 +6465,7 @@
             
             alert(evalResult !== undefined ? JSON.stringify(evalResult, null, 2) : 'undefined')
         }
+
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
             document.getElementById('game-ui').style.display = 'none';
