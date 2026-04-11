@@ -1978,6 +1978,19 @@
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
         }
+        // ** Quit Game
+        function returnToTitle() {
+            if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
+                localStorage.setItem('twilight_autosave', JSON.stringify(gameState));
+            }
+            
+            document.getElementById('title-screen').style.display = 'flex';
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('character-creation-modal').classList.remove('active');
+            document.getElementById('death-overlay').classList.remove('active');
+            
+            checkForContinueButton();
+        }
         // Create Character Screen
         function createCharacter() {
             const name = document.getElementById('character-name').value.trim(), age = document.getElementById('character-age').value, bio = document.getElementById('character-bio').value.trim();
