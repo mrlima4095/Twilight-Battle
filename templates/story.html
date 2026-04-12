@@ -6872,6 +6872,13 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
+function openMap() {
+    Swal.fire({
+        title: 'Mapa',
+        html: '<img src="">'
+    })
+}
+
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
