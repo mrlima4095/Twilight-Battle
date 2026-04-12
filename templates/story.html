@@ -606,7 +606,6 @@
             selectedRace: null,
             selectedGender: null,
             chestOpen: false,
-            royalQuest: null,
             dayCount: 1,
             seasonCount: 1,
             yearCount: 1540,
@@ -665,11 +664,11 @@
             }
         };
         const CREATURES = {
-            wolf: { name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
-            dragon: { name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] },
-            cow: { name: 'Vaca', life: 100, attack: 40, defense: 0, exp: 10, gold: 0, drops: [ 'raw_meat', 'leather' ] },
-            sheep: { name: 'Ovelha', life: 75, attack: 35, defense: 0, exp: 5, gold: 0, drops: [ 'raw_meat', 'wool' ] },
-            chicken: { name: 'Galinha', life: 50, attack: 5, defense: 0, exp: 5, gold: 0, drops: [ 'chicken' ] },
+            wolf: { id: 'wolf', name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
+            dragon: { id: 'dragon', name: 'Dragão', life: 2000, attack: 250, defense: 100, exp: 1000, gold: 0, drops: [] },
+            cow: { id: 'cow', name: 'Vaca', life: 100, attack: 40, defense: 0, exp: 10, gold: 0, drops: [ 'raw_meat', 'leather' ] },
+            sheep: { id: 'cow', name: 'Ovelha', life: 75, attack: 35, defense: 0, exp: 5, gold: 0, drops: [ 'raw_meat', 'wool' ] },
+            chicken: { id: 'chicken', name: 'Galinha', life: 50, attack: 5, defense: 0, exp: 5, gold: 0, drops: [ 'chicken' ] },
             
         };
 
@@ -743,7 +742,7 @@
                 description: 'Um vasto salão decorado com tapeçarias que contam a história do reino. Nobres e cavaleiros circulam por aqui.',
                 actions: [
                     { name: '🗡️ Falar com o Capitão da Guarda', action: 'talkToCaptain' },
-                    { name: '📜 Ver Quadro de Missões', action: 'acceptQuest' },
+                    { name: '📜 Ver Quadro de Missões', action: 'showQuestBoard' },
                     { name: '👑 Ir para a Sala do Trono', action: 'goThroneRoom' },
                     { name: '🚪 Voltar para o Pátio', action: 'goCastleGate' }
                 ]
@@ -1395,11 +1394,7 @@
                 location: 'throne_room',
                 locationName: 'sala do trono',
                 greeting: function() {
-                    let questText = '';
-                    if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
-                        questText = `<p style="color: #ffd700; margin-top: 10px;">📜 Progresso da Missão: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros</p>`;
-                    }
-                    return `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.${questText}`;
+                    return `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.`;
                 },
                 farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
                 sleepyMessages: [
@@ -1443,6 +1438,58 @@
             }
         };
         
+        const QUESTS = {
+            royal_hunt: {
+                id: 'royal_hunt',
+                name: '🌲 A Caçada Real',
+                description: 'O Rei pede sua ajuda para eliminar as ameaças nas florestas do reino.',
+                repeatable: false,
+                currentStage: 0,
+                stages: [
+                    {
+                        name: 'Falar com o Capitão',
+                        description: 'Vá até o Salão Principal e converse com o Capitão da Guarda para obter mais informações sobre a ameaça.',
+                        type: 'talk_to_npc',
+                        target: 'captain',
+                        required: 1,
+                        progress: 0,
+                        hints: '🗡️ O Capitão fica no Salão Principal do castelo.',
+                        onComplete: () => {
+                            addLog('📜 Missão atualizada: O Capitão informou que lobos gigantes estão atacando os campos!');
+                        }
+                    },
+                    {
+                        name: 'Derrotar Lobos',
+                        description: 'Derrote 3 Lobos na Floresta Sombria para reduzir a ameaça.',
+                        type: 'kill_creature',
+                        target: 'wolf',
+                        required: 3,
+                        progress: 0,
+                        hints: '🐺 Lobos podem ser encontrados na Floresta Sombria (saia pelo Portão Principal e vá para o norte).',
+                        onProgress: (current, required) => {
+                            if (current === 1) addLog(`⚔️ Você derrotou seu primeiro lobo! Faltam ${required - current}.`);
+                            else if (current === required) addLog(`✨ Todos os lobos foram derrotados! Volte ao Capitão.`);
+                        }
+                    },
+                    {
+                        name: 'Reportar ao Capitão',
+                        description: 'Retorne ao Capitão da Guarda para receber sua recompensa.',
+                        type: 'talk_to_npc',
+                        target: 'captain',
+                        required: 1,
+                        progress: 0,
+                        hints: '🏰 O Capitão está no Salão Principal aguardando seu retorno.',
+                        onComplete: () => {
+                            addLog('👑 O Capitão ficou impressionado com sua bravura!');
+                        }
+                    }
+                ],
+                rewards: [
+                    { gold: 10, exp: 25, item: 'dagger', itemQty: 1 },
+                ]
+            }
+        }
+
         // Drag and Drop Variables
         let draggedItemIndex = null;
         let draggedItemSource = 'inventory';
@@ -2017,7 +2064,6 @@
             };
             gameState.combatLog = [];
             gameState.isDead = false;
-            gameState.royalQuest = null;
             gameState.timeOfDay = 'day';
             gameState.isSleeping = false;
             gameState.sleepTimeout = null;
@@ -2608,6 +2654,7 @@
             }
             
             updateUI();
+            trigger('item_acquired', { itemId: itemId });
         }
         function addItemToChest(itemId, quantity = 1) {
             if (gameState.isDead) { return; }
@@ -4345,14 +4392,7 @@
                 const container = document.getElementById('book-content-container');
                 const scripts = container.querySelectorAll('script');
                 scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    if (oldScript.src) {
-                        newScript.src = oldScript.src;
-                    } else {
-                        newScript.textContent = oldScript.textContent;
-                    }
-                    document.body.appendChild(newScript);
-                    document.body.removeChild(newScript);
+                    container.removeChild(oldScript);
                 });
                 
                 // Adicionar botões e funcionalidades ao container
@@ -4399,10 +4439,9 @@
         // ========== LOCATION ACTIONS ==========
         function go(location, message) {
             if (gameState.isDead) { return; }
-            gameState.last_location = location;
             gameState.location = location;
-            updateUI();
-            addLog(message);
+            updateUI(); addLog(message);
+            trigger('location_change', { location: location });
         }
 
         function goHome() { gameState.chestOpen = false; go('home', '🏠 Você entrou em sua casa.'); }
@@ -5327,6 +5366,7 @@
             }
             
             updateUI();
+            trigger('npc_talk', { npcId: npcId });
             return { success: true };
         }
         async function processNPCAction(npcId, action) {
@@ -5921,25 +5961,14 @@
                 gameState.character.gold += gameState.currentEnemy.gold;
                 addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
                 
-                if (gameState.royalQuest && !gameState.royalQuest.rewarded) {
-                    gameState.royalQuest.kills++;
-                    addLog(`📜 Progresso da Missão Real: ${gameState.royalQuest.kills}/${gameState.royalQuest.target} monstros derrotados.`);
-                    
-                    if (gameState.royalQuest.kills >= gameState.royalQuest.target && !gameState.royalQuest.rewarded) {
-                        gameState.royalQuest.rewarded = true;
-                        gameState.character.gold += 300;
-                        addLog(`👑 MISSÃO REAL COMPLETA! Você recebeu 300 moedas de recompensa!`);
-                        addLog(`🏆 O Rei o declara um herói do reino!`);
-                    }
-                }
-                
                 if (Math.random() < 0.4) {
                     const drops = gameState.currentEnemy.drops;
                     const drop = drops[Math.floor(Math.random() * drops.length)];
                     addItemToInventory(drop);
-                    addLog(`🎁 O monstro dropou: ${ITEMS[drop].name}!`);
+                    addLog(`🎁 Você pegou ${ITEMS[drop].name} de ${gameState.currentEnemy.name}!`);
                 }
                 
+                trigger('kill', { creatureId: gameState.currentEnemy.id });
                 gameState.currentEnemy = null;
                 checkAndApplyLevelUp(); updateUI();
                 return;
@@ -6137,137 +6166,274 @@
         }
     
         // ========== QUESTS API ==========
-        function trigger(event) {
-            if (!gameState.activeQuest) return;
-            if (QUESTS[gameState.activeQuest.id]?.completed) return;
-
+        function getActiveQuest() {
+            if (!gameState.activeQuest || !gameState.activeQuest.id) return null;
             const quest = QUESTS[gameState.activeQuest.id];
-            if (!quest) return;
+            if (!quest) return null;
+            return { ...quest, currentStage: gameState.activeQuest.currentStage || 0 };
+        }
+        function getCurrentStage() {
+            const quest = getActiveQuest();
+            if (!quest) return null;
+            const stageIndex = gameState.activeQuest?.currentStage || 0;
+            return quest.stages[stageIndex];
+        }
 
+        let lastProcessedEvent = null;
+
+        function trigger(eventType, eventData = {}) {
+            if (gameState.isDead) return false;
+            if (!gameState.activeQuest) return false;
+            
+            const questId = gameState.activeQuest.id;
+            const quest = QUESTS[questId];
+            if (!quest) return false;
+            
+            let currentStageIdx = gameState.activeQuest.currentStage || 0;
+            if (currentStageIdx >= quest.stages.length) return false;
+            
+            const stage = quest.stages[currentStageIdx];
+            
+            const eventKey = `${eventType}_${JSON.stringify(eventData)}_${currentStageIdx}`;
+            const now = Date.now();
+            if (lastProcessedEvent === eventKey && (now - (gameState._lastEventTime || 0)) < 1000) {
+                console.log('⏱️ Evento duplicado ignorado:', eventKey);
+                return false;
+            }
+            lastProcessedEvent = eventKey;
+            gameState._lastEventTime = now;
+            
             let progressed = false;
-
-            switch (quest.type) {
-                case 'visit_location':
-                    if (event.type === 'location_change' && event.location === quest.target) {
-                        quest.progress = Math.min(quest.required, quest.progress + 1);
-                        progressed = true;
-                        addLog(`📍 Missão "${quest.name}": ${quest.progress}/${quest.required} local visitado.`);
-                    }
-                    break;
-
-                case 'deliver_item':
-                    if (event.type === 'npc_talk' && event.npcId === quest.target && event.itemId === quest.itemId) {
-                        let playerQty = 0;
-                        for (let item of gameState.inventory) {
-                            if (item && item.id === quest.itemId) {
-                                playerQty += item.quantity || 1;
-                            }
-                        }
-                        if (playerQty >= quest.quantityNeeded) {
-                            quest.progress = quest.required;
+            let progressAmount = 0;
+            
+            // Inicializar progresso se não existir
+            if (gameState.activeQuest.stageProgress === undefined) {
+                gameState.activeQuest.stageProgress = {};
+            }
+            if (gameState.activeQuest.stageProgress[currentStageIdx] === undefined) {
+                gameState.activeQuest.stageProgress[currentStageIdx] = stage.progress || 0;
+            }
+            
+            let currentProgress = gameState.activeQuest.stageProgress[currentStageIdx];
+            
+            switch (stage.type) {
+                case 'talk_to_npc':
+                    if (eventType === 'npc_talk' && eventData.npcId === stage.target) {
+                        if (currentProgress < stage.required) {
+                            progressAmount = stage.required - currentProgress;
+                            currentProgress = stage.required;
                             progressed = true;
-                            addLog(`📦 Missão "${quest.name}": itens entregues!`);
-                        } else {
-                            addLog(`⚠️ Você não tem ${quest.quantityNeeded}x ${ITEMS[quest.itemId]?.name} para entregar.`);
+                            addLog(`💬 Missão "${quest.name}": Conversou com ${NPC_DEFINITIONS[stage.target]?.name || stage.target}.`);
+                            
+                            // Executar callback do estágio
+                            if (stage.onComplete) stage.onComplete();
                         }
                     }
                     break;
-
-                case 'buy_item':
-                    if (event.type === 'buy' && event.itemId === quest.itemId && event.npcId === quest.targetNpc) {
-                        let playerQty = 0;
-                        for (let item of gameState.inventory) {
-                            if (item && item.id === quest.itemId) {
-                                playerQty += item.quantity || 1;
-                            }
-                        }
-                        if (playerQty >= quest.quantityNeeded) {
-                            quest.progress = quest.required;
-                            progressed = true;
-                            addLog(`🛒 Missão "${quest.name}": item comprado!`);
-                        }
-                    }
-                    break;
-
-                case 'collect_item':
-                    if (event.type === 'item_acquired' && event.itemId === quest.itemId) {
-                        let playerQty = 0;
-                        for (let item of gameState.inventory) {
-                            if (item && item.id === quest.itemId) {
-                                playerQty += item.quantity || 1;
-                            }
-                        }
-                        quest.progress = Math.min(quest.required, playerQty);
-                        progressed = true;
-                        addLog(`📦 Missão "${quest.name}": ${quest.progress}/${quest.required} ${ITEMS[quest.itemId]?.name}.`);
-                    }
-                    break;
-
+                    
                 case 'kill_creature':
-                    if (event.type === 'kill' && event.creatureId === quest.creatureId) {
-                        quest.progress = Math.min(quest.required, quest.progress + 1);
-                        progressed = true;
-                        addLog(`⚔️ Missão "${quest.name}": ${quest.progress}/${quest.required} mortes.`);
+                    if (eventType === 'kill' && eventData.creatureId === stage.target) {
+                        if (currentProgress < stage.required) {
+                            currentProgress = Math.min(stage.required, currentProgress + 1);
+                            progressAmount = 1;
+                            progressed = true;
+                            addLog(`⚔️ Missão "${quest.name}": ${currentProgress}/${stage.required} ${getCreatureName(stage.target)} derrotado(s).`);
+                            
+                            if (stage.onProgress) stage.onProgress(currentProgress, stage.required);
+                        }
+                    }
+                    break;
+                    
+                case 'collect_item':
+                    if (eventType === 'item_acquired' && eventData.itemId === stage.target) {
+                        let playerQty = 0;
+                        for (let item of gameState.inventory) {
+                            if (item && item.id === stage.target) {
+                                playerQty += item.quantity || 1;
+                            }
+                        }
+                        const newProgress = Math.min(stage.required, playerQty);
+                        if (newProgress > currentProgress) {
+                            progressAmount = newProgress - currentProgress;
+                            currentProgress = newProgress;
+                            progressed = true;
+                            addLog(`📦 Missão "${quest.name}": ${currentProgress}/${stage.required} ${ITEMS[stage.target]?.name || stage.target}.`);
+                            
+                            if (stage.onProgress) stage.onProgress(currentProgress, stage.required);
+                        }
+                    }
+                    break;
+                    
+                case 'deliver_item':
+                    if (eventType === 'npc_talk' && eventData.npcId === stage.target && eventData.itemId === stage.itemId) {
+                        let playerQty = 0;
+                        for (let item of gameState.inventory) {
+                            if (item && item.id === stage.itemId) {
+                                playerQty += item.quantity || 1;
+                            }
+                        }
+                        if (playerQty >= stage.required && currentProgress < stage.required) {
+                            // Remover os itens
+                            let toRemove = stage.required;
+                            for (let i = 0; i < gameState.inventory.length && toRemove > 0; i++) {
+                                const item = gameState.inventory[i];
+                                if (item && item.id === stage.itemId) {
+                                    if (item.quantity > toRemove) {
+                                        item.quantity -= toRemove;
+                                        toRemove = 0;
+                                    } else {
+                                        toRemove -= item.quantity;
+                                        gameState.inventory[i] = null;
+                                    }
+                                }
+                            }
+                            currentProgress = stage.required;
+                            progressAmount = stage.required;
+                            progressed = true;
+                            addLog(`📦 Missão "${quest.name}": ${stage.required}x ${ITEMS[stage.itemId]?.name} entregue(s)!`);
+                            
+                            if (stage.onComplete) stage.onComplete();
+                        } else if (playerQty < stage.required) {
+                            addLog(`⚠️ Você tem apenas ${playerQty}/${stage.required} ${ITEMS[stage.itemId]?.name} para entregar.`);
+                        }
+                    }
+                    break;
+                    
+                case 'visit_location':
+                    if (eventType === 'location_change' && eventData.location === stage.target) {
+                        if (currentProgress < stage.required) {
+                            currentProgress = stage.required;
+                            progressAmount = stage.required;
+                            progressed = true;
+                            addLog(`📍 Missão "${quest.name}": Local ${stage.target} visitado!`);
+                            
+                            if (stage.onComplete) stage.onComplete();
+                        }
                     }
                     break;
             }
-
-            if (progressed && quest.progress >= quest.required) {
-                completeQuest(gameState.activeQuest.id);
+            
+            if (progressed) {
+                gameState.activeQuest.stageProgress[currentStageIdx] = currentProgress;
+                
+                // Verificar se o estágio foi completado
+                if (currentProgress >= stage.required) {
+                    // Dar recompensa do estágio se houver
+                    if (quest.stageRewards && quest.stageRewards[currentStageIdx]) {
+                        const reward = quest.stageRewards[currentStageIdx];
+                        if (reward) {
+                            if (reward.gold) gameState.character.gold += reward.gold;
+                            if (reward.exp) addExperience(reward.exp);
+                            if (reward.item) addItemToInventory(reward.item, reward.itemQty || 1);
+                            addLog(`🎁 Recompensa de estágio: ${reward.gold ? reward.gold + ' ouro, ' : ''}${reward.exp ? reward.exp + ' EXP' : ''}`);
+                        }
+                    }
+                    
+                    // Avançar para o próximo estágio
+                    const nextStageIdx = currentStageIdx + 1;
+                    
+                    if (nextStageIdx >= quest.stages.length) {
+                        completeQuest(questId);
+                    } else {
+                        gameState.activeQuest.currentStage = nextStageIdx;
+                        gameState.activeQuest.stageProgress[nextStageIdx] = quest.stages[nextStageIdx].progress || 0;
+                        addLog(`📜 Missão atualizada: "${quest.stages[nextStageIdx].name}"`);
+                        addLog(`📖 ${quest.stages[nextStageIdx].description}`);
+                        if (quest.stages[nextStageIdx].hints) {
+                            addLog(`💡 Dica: ${quest.stages[nextStageIdx].hints}`);
+                        }
+                        updateUI();
+                    }
+                }
+                
+                updateUI();
+                return true;
             }
+            
+            return false;
         }
 
         function completeQuest(questId) {
             const quest = QUESTS[questId];
-            if (!quest || quest.completed) return;
-
-            quest.completed = true;
+            if (!quest) return false;
+            if (gameState.completedQuests && gameState.completedQuests.includes(questId) && !quest.repeatable) return false;
             
+            // Dar recompensas finais
+            if (quest.rewards && quest.rewards.length > 0) {
+                for (const reward of quest.rewards) {
+                    if (reward.gold) gameState.character.gold += reward.gold;
+                    if (reward.exp) addExperience(reward.exp);
+                    if (reward.item) addItemToInventory(reward.item, reward.itemQty || 1);
+                    addLog(`🎁 Recompensa da missão: ${reward.gold ? reward.gold + ' ouro, ' : ''}${reward.exp ? reward.exp + ' EXP, ' : ''}${reward.item ? reward.itemQty + 'x ' + (ITEMS[reward.item]?.name || reward.item) : ''}`);
+                }
+            }
+            
+            // Registrar como completada
+            if (!gameState.completedQuests) gameState.completedQuests = [];
             if (!gameState.completedQuests.includes(questId)) {
                 gameState.completedQuests.push(questId);
             }
             
-            gameState.character.gold += quest.reward.gold || 0;
-            addExperience(quest.reward.exp || 0);
-            if (quest.reward.item) {
-                addItemToInventory(quest.reward.item, quest.reward.itemQty || 1);
-            }
-
-            addLog(`✨ Missão completa: ${quest.name}!`);
-            addLog(`💰 Recompensa: ${quest.reward.gold || 0} ouro, ${quest.reward.exp || 0} EXP.`);
-            if (quest.reward.item) {
-                addLog(`🎁 Item recebido: ${quest.reward.itemQty || 1}x ${ITEMS[quest.reward.item]?.name}`);
-            }
-
+            addLog(`✨ MISSÃO COMPLETA: ${quest.name}! ✨`);
+            
             gameState.activeQuest = null;
+            
             updateUI();
+            return true;
         }
 
         function acceptQuest(questId) {
-            if (gameState.activeQuest) { addLog(`❌ Você já tem uma missão ativa: ${QUESTS[gameState.activeQuest.id]?.name}`); return; }
-            if (gameState.completedQuests.includes(questId) && !QUESTS[questId].repeatable) { addLog(`❌ Essa missão já foi completada e não é repetível.`); return; }
-            if (QUESTS[questId].completed && !QUESTS[questId].repeatable) { addLog(`❌ Essa missão já foi completada.`); return; }
-
-            // Resetar progresso se for repetível e já foi completada antes
-            if (QUESTS[questId].repeatable && gameState.completedQuests.includes(questId)) {
-                QUESTS[questId].progress = 0;
-                QUESTS[questId].completed = false;
-                // Remover do array de completadas para poder fazer de novo
+            if (gameState.isDead) {
+                addLog('❌ Você está morto e não pode aceitar missões.');
+                return false;
+            }
+            
+            const quest = QUESTS[questId];
+            if (!quest) {
+                addLog('❌ Missão não encontrada!');
+                return false;
+            }
+            
+            // Verificar se já tem missão ativa
+            if (gameState.activeQuest && gameState.activeQuest.id) {
+                addLog(`❌ Você já tem uma missão ativa: ${QUESTS[gameState.activeQuest.id]?.name}. Complete ou abandone primeiro.`);
+                return false;
+            }
+            
+            // Verificar se já foi completada e não é repetível
+            if (gameState.completedQuests && gameState.completedQuests.includes(questId) && !quest.repeatable) {
+                addLog(`❌ Você já completou a missão "${quest.name}" e ela não é repetível.`);
+                return false;
+            }
+            
+            // Se for repetível e já completada, resetar
+            if (quest.repeatable && gameState.completedQuests && gameState.completedQuests.includes(questId)) {
                 const index = gameState.completedQuests.indexOf(questId);
                 if (index > -1) gameState.completedQuests.splice(index, 1);
             }
-
-            gameState.activeQuest = { id: questId, startedAt: Date.now() };
-            addLog(`📜 Missão aceita: ${QUESTS[questId].name}`);
-            addLog(`📖 ${QUESTS[questId].description}`);
+            
+            // Inicializar missão
+            gameState.activeQuest = {
+                id: questId,
+                currentStage: 0,
+                stageProgress: { 0: 0 },
+                startedAt: Date.now()
+            };
+            
+            const firstStage = quest.stages[0];
+            addLog(`📜 MISSÃO ACEITA: ${quest.name}`);
+            addLog(`📖 ${quest.description}`);
+            addLog(`📍 Estágio 1: ${firstStage.name}`);
+            addLog(`📋 ${firstStage.description}`);
+            if (firstStage.hints) addLog(`💡 Dica: ${firstStage.hints}`);
+            
             updateUI();
+            return true;
         }
 
-        function isQuestActive(questId) { return gameState.activeQuest && gameState.activeQuest.id === questId; }
-        function isQuestCompleted(questId) { return gameState.completedQuests.includes(questId); }
-        function abandonCurrentQuest() { 
-            if (!gameState.activeQuest) {
-                addLog(`❌ Você não tem nenhuma missão ativa para abandonar.`);
+        function abandonCurrentQuest() {
+            if (!gameState.activeQuest || !gameState.activeQuest.id) {
+                addLog('❌ Você não tem nenhuma missão ativa para abandonar.');
                 return;
             }
             
@@ -6276,28 +6442,106 @@
             addLog(`⚠️ Você abandonou a missão: ${questName}`);
             updateUI();
         }
-        function showQuestProgress() {
-            if (!gameState.activeQuest) {
-                addLog(`📜 Você não tem nenhuma missão ativa no momento.`);
+
+        function showQuestDetails() {
+            if (!gameState.activeQuest || !gameState.activeQuest.id) {
+                addLog('📜 Você não tem nenhuma missão ativa no momento.');
+                addLog('💡 Visite o Salão Principal do castelo e veja o Quadro de Missões para aceitar uma!');
                 return;
             }
             
             const quest = QUESTS[gameState.activeQuest.id];
             if (!quest) return;
             
-            addLog(`📜 Missão Ativa: ${quest.name}`);
-            addLog(`📖 ${quest.description}`);
-            addLog(`📊 Progresso: ${quest.progress}/${quest.required}`);
+            const currentStageIdx = gameState.activeQuest.currentStage || 0;
+            const stage = quest.stages[currentStageIdx];
+            const currentProgress = gameState.activeQuest.stageProgress?.[currentStageIdx] || 0;
             
-            if (quest.type === 'collect_item') {
-                let playerQty = 0;
-                for (let item of gameState.inventory) {
-                    if (item && item.id === quest.itemId) {
-                        playerQty += item.quantity || 1;
-                    }
-                }
-                addLog(`📦 Você tem ${playerQty}/${quest.quantityNeeded} ${ITEMS[quest.itemId]?.name}`);
+            addLog(`📜 ═══════════════════════════`);
+            addLog(`📜 MISSÃO ATIVA: ${quest.name}`);
+            addLog(`📜 ${quest.description}`);
+            addLog(`📜 ═══════════════════════════`);
+            addLog(`📍 ESTÁGIO ${currentStageIdx + 1}/${quest.stages.length}: ${stage.name}`);
+            addLog(`📋 ${stage.description}`);
+            addLog(`📊 Progresso: ${currentProgress}/${stage.required}`);
+            if (stage.hints) addLog(`💡 ${stage.hints}`);
+            addLog(`📜 ═══════════════════════════`);
+            
+            // Mostrar próximos estágios se disponível
+            if (currentStageIdx + 1 < quest.stages.length) {
+                addLog(`⏩ Próximo: ${quest.stages[currentStageIdx + 1].name}`);
             }
+        }
+
+        function showQuestBoard() {
+            let questsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            
+            for (const [id, quest] of Object.entries(QUESTS)) {
+                const isCompleted = gameState.completedQuests?.includes(id);
+                const isActive = gameState.activeQuest?.id === id;
+                
+                let statusText = '';
+                let statusColor = '#888';
+                let canAccept = !isCompleted || quest.repeatable;
+                
+                if (isCompleted && !quest.repeatable) {
+                    statusText = '✅ COMPLETADA';
+                    statusColor = '#4CAF50';
+                    canAccept = false;
+                } else if (isActive) {
+                    statusText = '📌 EM ANDAMENTO';
+                    statusColor = '#ffd700';
+                    canAccept = false;
+                } else {
+                    statusText = '✨ DISPONÍVEL';
+                    statusColor = '#4a90e2';
+                }
+                
+                const currentStage = isActive && gameState.activeQuest ? (gameState.activeQuest.currentStage || 0) + 1 : 0;
+                const totalStages = quest.stages.length;
+                
+                questsHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 15px; margin-bottom: 15px; border-left: 4px solid ${statusColor};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <div style="font-size: 18px; font-weight: bold; color: #ffd700;">${quest.name}</div>
+                                <div style="font-size: 12px; color: ${statusColor};">${statusText}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 5px;">${quest.description.substring(0, 100)}${quest.description.length > 100 ? '...' : ''}</div>
+                                <div style="font-size: 11px; color: #aaa; margin-top: 5px;">📋 ${totalStages} estágio(s) | ${quest.repeatable ? '🔄 Repetível' : '🔒 Única'}</div>
+                                ${isActive ? `<div style="font-size: 11px; color: #ffd700;">📍 Estágio ${currentStage}/${totalStages}</div>` : ''}
+                            </div>
+                            <div>
+                                ${canAccept ? `<button class="action-btn success" onclick="acceptQuest('${id}')" style="padding: 8px 20px;">📜 Aceitar Missão</button>` : 
+                                (isActive ? `<button class="action-btn warning" onclick="showQuestDetails()" style="padding: 8px 20px;">📖 Ver Progresso</button>` :
+                                `<button class="action-btn" disabled style="padding: 8px 20px; opacity:0.5;">✅ Completada</button>`)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            questsHtml += '</div>';
+            
+            Swal.fire({
+                title: '📜 Quadro de Missões',
+                html: questsHtml,
+                icon: 'info',
+                confirmButtonText: 'Fechar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                width: '600px'
+            });
+        }
+
+        function getCreatureName(creatureId) {
+            const creatures = {
+                wolf: '🐺 Lobo',
+                dragon: '🐉 Dragão',
+                goblin: '👺 Goblin',
+                orc: '👹 Orc'
+            };
+            return creatures[creatureId] || creatureId;
         }
 
         // ========== LEVEL SYSTEM ==========
