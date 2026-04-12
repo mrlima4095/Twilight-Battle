@@ -1036,6 +1036,7 @@
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida.', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida.', consumable: true },
             fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida.', consumable: true },
+            cooked_fish: { name: 'Peixe Assado', type: 'food', heal: 85, description: 'Peixe fresco assado no fogo, suculento e saboroso.', consumable: true },
             cenoura: { name: 'Cenoura', type: 'food', heal: 30, description: 'Recupera 30 de vida.', consumable: true },
 
             wheat: { name: 'Trigo', type: 'material', description: 'Trigo', consumable: true },
@@ -1045,7 +1046,12 @@
             bread_dough: { name: 'Massa de Pão', type: 'food', heal: 2, description: 'Massa pronta para assar.', consumable: true },
 
             corn_flour: { name: 'Fubá', type: 'material', description: 'Farinha de milho para receitas.', consumable: true },
-            
+
+            salt: { name: 'Sal', type: 'food', heal: 0, description: 'Tempero essencial para realçar o sabor dos alimentos.', consumable: true },
+            sugar: { name: 'Açúcar', type: 'food', heal: 5, description: 'Doce e energético, usado em receitas.', consumable: true },
+            sugarcane: { name: 'Cana-de-açúcar', type: 'material', description: 'Planta doce que pode ser processada para fazer açúcar.', consumable: true },
+            lemon: { name: 'Limão', type: 'food', heal: 10, description: 'Fruta cítrica e refrescante.', consumable: true },
+
             meat: { name: 'Carne Assada', type: 'food', heal: 100, description: 'Recupera 100 de vida.', consumable: true },
             raw_meat: { name: 'Carne Crua', type: 'food', heal: 50, description: 'Recupera 50 de vida, asse para evitar contaminação.', consumable: true },
             chicken: { name: 'Frango', type: 'food', heal: 30, description: 'Recupera 30 de vida, asse para evitar contaminação.', consumable: true },
@@ -1079,6 +1085,10 @@
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
 
             bone: { name: 'Osso', type: 'material', consumable: true, description: 'Osso antigo, pode ter algum uso.' },
+
+            wooden_scissors: { name: 'Tesoura de Madeira', type: 'tool', slot: 'mainhand', attack: 5, defense: 0, durability: 30, maxDurability: 30, description: 'Tesoura rústica de madeira, útil para cortar tecidos e ervas.' },
+            wooden_spoon: { name: 'Colher de Madeira', type: 'tool', slot: 'mainhand', attack: 3, defense: 0, durability: 40, maxDurability: 40, description: 'Colher de madeira para cozinhar e servir alimentos.' },
+            wooden_fork: { name: 'Garfo de Madeira', type: 'tool', slot: 'mainhand', attack: 4, defense: 0, durability: 35, maxDurability: 35, description: 'Garfo rústico de madeira, ideal para refeições camponesas.' },
 
             bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5 },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, value: 8, givesEmptyBottle: true },
