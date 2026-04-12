@@ -913,76 +913,74 @@
                 ]
             },
 
-        river_bank: {
-            name: 'Caminho da Margem do Rio',
-            description: 'Você segue pela margem do rio, pisando em pedras e grama molhada. A água corre suave ao seu lado. O caminho é sinuoso e sereno, com pequenas flores silvestres crescendo entre as fendas das rochas.',
-            actions: [
-                { name: '💧 Pegar água do rio', action: 'fillBottle' },
-                { name: '🏊‍♂️ Mergulhar no Rio', action: 'swimInRiver' },
-                { name: '🚶 Continuar pela Margem', action: 'goNorthTrailEnd' },
-                { name: '🔙 Voltar para a Margem do Rio', action: 'goNorthTrailMiddle' }
-            ]
-        },
-        swim_in_river: {
-            name: 'Dentro do Rio Cristalino',
-            description: 'Você mergulha nas águas geladas e cristalinas do rio. A sensação de frescor envolve seu corpo. Peixes coloridos nadam ao seu redor, e o fundo é coberto por seixos rolados e pequenas conchas.',
-            actions: [
-                { name: '💧 Pegar água', action: 'fillBottle' },
-                { name: '🏊 Sair do Rio', action: 'exitRiver' }
-            ]
-        },
+            river_bank: {
+                name: 'Caminho da Margem do Rio',
+                description: 'Você segue pela margem do rio, pisando em pedras e grama molhada. A água corre suave ao seu lado. O caminho é sinuoso e sereno, com pequenas flores silvestres crescendo entre as fendas das rochas.',
+                actions: [
+                    { name: '💧 Pegar água do rio', action: 'fillBottle' },
+                    { name: '🏊‍♂️ Mergulhar no Rio', action: 'swimInRiver' },
+                    { name: '🚶 Continuar pela Margem', action: 'goNorthTrailEnd' },
+                    { name: '🔙 Voltar para a Margem do Rio', action: 'goNorthTrailMiddle' }
+                ]
+            },
+            swim_in_river: {
+                name: 'Dentro do Rio Cristalino',
+                description: 'Você mergulha nas águas geladas e cristalinas do rio. A sensação de frescor envolve seu corpo. Peixes coloridos nadam ao seu redor, e o fundo é coberto por seixos rolados e pequenas conchas.',
+                actions: [
+                    { name: '💧 Pegar água', action: 'fillBottle' },
+                    { name: '🏊 Sair do Rio', action: 'exitRiver' }
+                ]
+            },
 
-        across_bridge: {
-            name: 'Além da Ponte',
-            description: 'Você atravessa a antiga ponte de madeira, que range suavemente sob seus pés. Do outro lado, uma vasta planície coberta de ruínas antigas se estende diante de você. Há estruturas de pedra cobertas de musgo e hera, algumas ainda de pé, outras completamente desmoronadas. O vento sopra entre os escombros, criando um som melancólico.',
-            allowsStations: true,
-            actions: [
-                { name: '🏛️ Explorar as Ruínas Antigas', action: 'exploreRuins' },
-                { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
-                { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
-                { name: '🌉 Voltar pela Ponte', action: 'goNorthTrailMiddle' }
-            ]
-        },
-        ancient_ruins: {
-            name: 'Ruínas Antigas',
-            description: 'Entre as ruínas, você vê vestígios do que um dia foi uma pequena vila. Paredes de pedra cobertas de musgo, uma fonte seca e rachada, e o que parece ser a base de uma antiga torre de vigia. Alguns objetos quebrados estão espalhados pelo chão, mas nada parece ter valor. O silêncio é interrompido apenas pelo vento e pelo grasnar distante de corvos.',
-            allowsStations: true,
-            actions: [
-                { name: '🔍 Examinar os escombros', action: 'searchRuins' },
-                { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
-                { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
-                { name: '🌉 Voltar para a Ponte', action: 'goAcrossBridge' }
-            ]
-        },
+            across_bridge: {
+                name: 'Além da Ponte',
+                description: 'Você atravessa a antiga ponte de madeira, que range suavemente sob seus pés. Do outro lado, uma vasta planície coberta de ruínas antigas se estende diante de você. Há estruturas de pedra cobertas de musgo e hera, algumas ainda de pé, outras completamente desmoronadas. O vento sopra entre os escombros, criando um som melancólico.',
+                allowsStations: true,
+                actions: [
+                    { name: '🏛️ Explorar as Ruínas Antigas', action: 'exploreRuins' },
+                    { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
+                    { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
+                    { name: '🌉 Voltar pela Ponte', action: 'goNorthTrailMiddle' }
+                ]
+            },
+            ancient_ruins: {
+                name: 'Ruínas Antigas',
+                description: 'Entre as ruínas, você vê vestígios do que um dia foi uma pequena vila. Paredes de pedra cobertas de musgo, uma fonte seca e rachada, e o que parece ser a base de uma antiga torre de vigia. Alguns objetos quebrados estão espalhados pelo chão, mas nada parece ter valor. O silêncio é interrompido apenas pelo vento e pelo grasnar distante de corvos.',
+                allowsStations: true,
+                actions: [
+                    { name: '🔍 Examinar os escombros', action: 'searchRuins' },
+                    { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
+                    { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
+                    { name: '🌉 Voltar para a Ponte', action: 'goAcrossBridge' }
+                ]
+            },
 
-        north_forest_edge: {
-            name: 'Entrada da Floresta Sombria',
-            description: 'O caminho norte termina em uma densa parede de árvores antigas e retorcidas. A luz do sol mal penetra através da densa copa. Um cheiro de terra úmida e musgo preenche o ar. Uivos distantes ecoam de dentro da floresta. É aqui que o perigo verdadeiro começa.',
-            actions: [
-                { name: '🌲 Entrar na Floresta Sombria', action: 'goDarkForest' },
-                { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
-            ]
-        },
-        dark_forest: {
-            name: 'Floresta Sombria',
-            description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
-            actions: [
-                { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
-                { name: '🔙 Voltar para a Entrada', action: 'goNorthFromRuins' }
-            ]
-        },
+            north_forest_edge: {
+                name: 'Entrada da Floresta Sombria',
+                description: 'O caminho norte termina em uma densa parede de árvores antigas e retorcidas. A luz do sol mal penetra através da densa copa. Um cheiro de terra úmida e musgo preenche o ar. Uivos distantes ecoam de dentro da floresta. É aqui que o perigo verdadeiro começa.',
+                actions: [
+                    { name: '🌲 Entrar na Floresta Sombria', action: 'goDarkForest' },
+                    { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
+                ]
+            },
+            dark_forest: {
+                name: 'Floresta Sombria',
+                description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
+                actions: [
+                    { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
+                    { name: '🔙 Voltar para a Entrada', action: 'goNorthFromRuins' }
+                ]
+            },
 
-east_ruins_path: {
-    name: 'Caminho Leste das Ruínas',
-    description: 'Um caminho pouco definido se estende para o leste a partir das ruínas. A vegetação vai ficando mais densa, mas ainda é possível seguir. Mais adiante, o terreno parece se elevar suavemente.',
-    allowsStations: true,
-    actions: [
-        { name: '🚶 Seguir para o Leste', action: 'continueEastFromRuins' },
-        { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
-    ]
-},
-
-
+            east_ruins_path: {
+                name: 'Caminho Leste das Ruínas',
+                description: 'Um caminho pouco definido se estende para o leste a partir das ruínas. A vegetação vai ficando mais densa, mas ainda é possível seguir. Mais adiante, o terreno parece se elevar suavemente.',
+                allowsStations: true,
+                actions: [
+                    { name: '🚶 Seguir para o Leste', action: 'continueEastFromRuins' },
+                    { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
+                ]
+            },
 
             south_trade_route: {
                 name: ' Estrada Comercial Sul',
