@@ -622,7 +622,12 @@
             inMillInterface: false,
             millJobs: {},
             activeQuest: null,
-            completedQuests: []
+            completedQuests: [],
+            isBookOpen: false,
+            openBookIndex: null,
+            isBookEditor: false,
+            activeBook: null,
+            activeBookIndex: null
         };
         
         const RACES = {
@@ -811,7 +816,7 @@
                     { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
-            
+            // Saída Secundaria - Oeste
             outside_back: {
                 name: 'Trilha dos Fundos',
                 description: 'Você sai pelos fundos do reino, encontrando uma trilha pouco usada. A vegetação cresce solta e o caminho parece levar para uma área mais selvagem da floresta.',
@@ -838,7 +843,7 @@
                     { name: '🔙 Voltar para a Trilha dos Fundos', action: 'goBackOutside' }
                 ]
             },
-
+            // | Lago Sagrado & Cemiterio Abandonado
             sacred_lake: {
                 name: 'Clareira do Lago Sagrado',
                 description: 'Após uma longa caminhada, você encontra um lago de águas azul-turquesa, rodeado por flores que brilham suavemente. A energia do local é palpável. Dizem que este é um local sagrado, escondido do resto do mundo.',
@@ -876,27 +881,109 @@
                     { name: '🔙 Sair do Cemitério', action: 'exitAbandonedCemetery' },
                 ]
             },
-            
+            // Saída Principal - Leste
             outside: {
                 name: 'Planície da Aurora',
                 description: `Uma vasta planície banhada pela luz d${gameState.timeOfDay === 'day' ? 'o amanhecer': 'a lua'}. A grama balança suavemente com o vento. Ao norte, uma floresta densa e escura; ao sul, uma estrada comercial bem cuidada; ao leste, a planície se estende até onde a vista alcança.`,
                 allowsStations: true,
                 actions: [
-                    { name: '🌲 Seguir para a Trilha Norte', action: 'goDarkForest' },
+                    { name: '🌲 Seguir para a Trilha Norte', action: 'goNorthTrailStart' },
                     { name: '🛤️ Seguir para a Estrada Sul', action: 'goSouthTradeRoute' },
                     { name: '➡️ Seguir para a Planície Leste', action: 'goEastPlains' },
                     { name: '🔙 Voltar ao Reino', action: 'returnToMainGate' }
                 ]
             },
-            dark_forest: {
-                name: 'Floresta Sombria',
-                description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
+
+            north_trail_start: {
+                name: 'Início da Trilha Norte',
+                description: 'Uma trilha estreita se adentra pela vegetação rasteira. O caminho é suave e gramado, com algumas árvores esparsas. Ao longe, você pode ouvir o canto dos pássaros e o vento suave balançando as copas das árvores.',
                 actions: [
-                    { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
+                    { name: '🚶 Continuar pela Trilha', action: 'goNorthTrailMiddle' },
                     { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
                 ]
             },
-            
+            north_trail_middle: {
+                name: 'Margem do Rio Cristalino',
+                description: 'A trilha te trouxe as margens do Rio de águas mais cristalinas, você se depara a frente uma ponte velha de madeira que cruza o rio.',
+                allowsStations: true,
+                actions: [
+                    { name: '🏊‍♂️ Caminhar pela Borda do Rio', action: 'goRiverBank' },
+                    { name: '🌉 Atravessar a Ponte de Madeira', action: 'goAcrossBridge' },
+                    { name: '🔙 Voltar para o Início da Trilha', action: 'goNorthTrailStart' }
+                ]
+            },
+
+        river_bank: {
+            name: 'Caminho da Margem do Rio',
+            description: 'Você segue pela margem do rio, pisando em pedras e grama molhada. A água corre suave ao seu lado. O caminho é sinuoso e sereno, com pequenas flores silvestres crescendo entre as fendas das rochas.',
+            actions: [
+                { name: '💧 Pegar água do rio', action: 'fillBottle' },
+                { name: '🏊‍♂️ Mergulhar no Rio', action: 'swimInRiver' },
+                { name: '🚶 Continuar pela Margem', action: 'goNorthTrailEnd' },
+                { name: '🔙 Voltar para a Margem do Rio', action: 'goNorthTrailMiddle' }
+            ]
+        },
+        swim_in_river: {
+            name: 'Dentro do Rio Cristalino',
+            description: 'Você mergulha nas águas geladas e cristalinas do rio. A sensação de frescor envolve seu corpo. Peixes coloridos nadam ao seu redor, e o fundo é coberto por seixos rolados e pequenas conchas.',
+            actions: [
+                { name: '💧 Pegar água', action: 'fillBottle' },
+                { name: '🏊 Sair do Rio', action: 'exitRiver' }
+            ]
+        },
+
+        across_bridge: {
+            name: 'Além da Ponte',
+            description: 'Você atravessa a antiga ponte de madeira, que range suavemente sob seus pés. Do outro lado, uma vasta planície coberta de ruínas antigas se estende diante de você. Há estruturas de pedra cobertas de musgo e hera, algumas ainda de pé, outras completamente desmoronadas. O vento sopra entre os escombros, criando um som melancólico.',
+            allowsStations: true,
+            actions: [
+                { name: '🏛️ Explorar as Ruínas Antigas', action: 'exploreRuins' },
+                { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
+                { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
+                { name: '🌉 Voltar pela Ponte', action: 'goNorthTrailMiddle' }
+            ]
+        },
+        ancient_ruins: {
+            name: 'Ruínas Antigas',
+            description: 'Entre as ruínas, você vê vestígios do que um dia foi uma pequena vila. Paredes de pedra cobertas de musgo, uma fonte seca e rachada, e o que parece ser a base de uma antiga torre de vigia. Alguns objetos quebrados estão espalhados pelo chão, mas nada parece ter valor. O silêncio é interrompido apenas pelo vento e pelo grasnar distante de corvos.',
+            allowsStations: true,
+            actions: [
+                { name: '🔍 Examinar os escombros', action: 'searchRuins' },
+                { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
+                { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
+                { name: '🌉 Voltar para a Ponte', action: 'goAcrossBridge' }
+            ]
+        },
+
+        north_forest_edge: {
+            name: 'Entrada da Floresta Sombria',
+            description: 'O caminho norte termina em uma densa parede de árvores antigas e retorcidas. A luz do sol mal penetra através da densa copa. Um cheiro de terra úmida e musgo preenche o ar. Uivos distantes ecoam de dentro da floresta. É aqui que o perigo verdadeiro começa.',
+            actions: [
+                { name: '🌲 Entrar na Floresta Sombria', action: 'goDarkForest' },
+                { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
+            ]
+        },
+        dark_forest: {
+            name: 'Floresta Sombria',
+            description: 'Árvores antigas e retorcidas bloqueiam a maior parte da luz solar. O ar é úmido e pesado, e você ouve uivos distantes entre as sombras. É um território perigoso onde criatutas selvagens habitam.',
+            actions: [
+                { name: '🐺 Explorar a Floresta', action: 'exploreDarkForest' },
+                { name: '🔙 Voltar para a Entrada', action: 'goNorthFromRuins' }
+            ]
+        },
+
+east_ruins_path: {
+    name: 'Caminho Leste das Ruínas',
+    description: 'Um caminho pouco definido se estende para o leste a partir das ruínas. A vegetação vai ficando mais densa, mas ainda é possível seguir. Mais adiante, o terreno parece se elevar suavemente.',
+    allowsStations: true,
+    actions: [
+        { name: '🚶 Seguir para o Leste', action: 'continueEastFromRuins' },
+        { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
+    ]
+},
+
+
+
             south_trade_route: {
                 name: ' Estrada Comercial Sul',
                 description: 'Uma estrada de terra bem compactada, ladeada por arbustos e árvores esparsas. Você vê carroças de comerciantes passando ocasionalmente. Esta rota leva às prósperas aldeias do sul do reino.',
@@ -922,7 +1009,8 @@
                 actions: [
                     { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' }
                 ]
-            }
+            },
+
         };
 
         const ITEMS = {
@@ -991,6 +1079,8 @@
             wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
             string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
+
+            bone: { name: 'Osso', type: 'material', consumable: true, description: 'Osso antigo, pode ter algum uso.' },
 
             bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5 },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, value: 8, givesEmptyBottle: true },
@@ -1649,8 +1739,18 @@
         }
         function updateGameContent() {
             const content = document.getElementById('game-content');
+
+            if (gameState.isBookOpen && gameState.openBookIndex !== null) {
+                const book = gameState.inventory[gameState.openBookIndex];
+                if (book && book.type === 'book') {
+                    gameState.activeBook = book;
+                    gameState.activeBookIndex = gameState.openBookIndex;
+                    
+                    renderBookUI();
+                    return;
+                } else { closeBookUI(); }
+            }
             
-            // Verificar se está na interface do moinho
             if (gameState.inMillInterface && gameState.location === 'mill') {
                 const currentJob = getMillJob(), hasItems = currentJob && (currentJob.inputItemId || currentJob.remainingQuantity > 0), isMilling = currentJob && currentJob.isMilling, hasResult = currentJob && currentJob.completedCount > 0;
                 
@@ -2725,7 +2825,7 @@
             if (item.type === 'station') { useStationItem(item.id); }
             else if (item.type === 'food' || item.type === 'drink') { useFood(index); }
             else if (item.id === 'clock') { showTimeRemaining(); }
-            else if (item.type === 'book') { openBookEditor(index); }
+            else if (item.type === 'book') { openBook(index); }
             else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
         }
         function useFood(index) {
@@ -4222,16 +4322,12 @@
         }
 
         // ========== BOOK SYSTEM ==========
-        let activeBook = null;
-        let activeBookIndex = null;
-
-        function openBookEditor(bookIndex) {
+        function openBook(bookIndex) {
             if (gameState.isDead) return;
             
             const book = gameState.inventory[bookIndex];
             if (!book || book.type !== 'book') return;
             
-            // Verificar se está em batalha
             if (gameState.currentEnemy && !book.signed) {
                 Swal.fire({
                     title: '⚔️ Em Combate!',
@@ -4245,66 +4341,111 @@
                 return;
             }
             
-            // Se o livro já está assinado, abre como leitor
-            if (book.signed) {
-                openBookReader(bookIndex);
-                return;
-            }
-            activeBook = book;
-            activeBookIndex = bookIndex;
+            gameState.isBookOpen = true;
+            gameState.openBookIndex = bookIndex;
+            gameState.isBookEditor = !book.signed;
+            gameState.activeBook = book;
+            gameState.activeBookIndex = bookIndex;
             
-            const editorHTML = `
-                <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                        <h2 style="color: #ffd700; margin: 0;">📖 Editor do Livro</h2>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="action-btn" onclick="closeBookEditor()" style="background: #666;">❌ Fechar</button>
-                            <button class="action-btn success" onclick="signBook()" style="background: #ffd700; color: #1a1a2e;">✍️ Assinar</button>
+            renderBookUI();
+        }
+        function renderBookUI() {
+            if (!gameState.isBookOpen || gameState.openBookIndex === null) return;
+            
+            const book = gameState.inventory[gameState.openBookIndex];
+            if (!book) { closeBookUI(); return; }
+            
+            gameState.activeBook = book;
+            gameState.activeBookIndex = gameState.openBookIndex;
+            
+            if (gameState.isBookEditor && !book.signed) {
+                const gameContent = document.getElementById('game-content');
+                gameContent.innerHTML = `
+                    <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                            <h2 style="color: #ffd700; margin: 0;">📖 Editor do Livro</h2>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="action-btn" onclick="closeBookUI()" style="background: #666;">❌ Fechar</button>
+                                <button class="action-btn success" onclick="signBook()" style="background: #ffd700; color: #1a1a2e;">✍️ Assinar</button>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="book-title" style="color: #ffd700;">📌 Título do Livro</label>
+                            <input type="text" id="book-title" value="${escapeHtml(book.title || 'Livro sem título')}" style="width: 100%; padding: 12px; font-size: 18px;">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="book-content" style="color: #ffd700;">📝 Conteúdo</label>
+                            <textarea id="book-content" rows="15" style="width: 100%; padding: 12px; font-family: monospace; background: #0a0a1a; color: #fff; border: 1px solid #ffd700; border-radius: 8px;">${escapeHtml(book.content || '')}</textarea>
                         </div>
                     </div>
-                    
-                    <div class="input-group">
-                        <label for="book-title" style="color: #ffd700;">📌 Título do Livro</label>
-                        <input type="text" id="book-title" value="${escapeHtml(book.title || 'Livro sem título')}" style="width: 100%; padding: 12px; font-size: 18px;">
+                `;
+            } else {
+                const gameContent = document.getElementById('game-content');
+                gameContent.innerHTML = `
+                    <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h2 style="color: #ffd700; margin: 0;">📖 ${escapeHtml(book.title || 'Livro')}</h2>
+                                ${book.signed ? `<p style="color: #888; margin: 5px 0 0 0; font-size: 12px;">✍️ Assinado por: ${escapeHtml(book.signer)}</p>` : ''}
+                            </div>
+                            <button class="action-btn" onclick="closeBookUI()" style="background: #666;">❌ Fechar</button>
+                        </div>
+                        
+                        <div id="book-content-container" style="background: #0a0a1a; border-radius: 12px; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; border: 1px solid #333;">
+                            ${book.content || '<p><em>Este livro está em branco...</em></p>'}
+                        </div>
                     </div>
-                    
-                    <div class="input-group">
-                        <label for="book-content" style="color: #ffd700;">📝 Conteúdo</label>
-                        <textarea id="book-content" rows="15" style="width: 100%; padding: 12px; font-family: monospace; background: #0a0a1a; color: #fff; border: 1px solid #ffd700; border-radius: 8px;">${escapeHtml(book.content || '')}</textarea>
-                    </div>
-                </div>
-            `;
-            
-            const gameContent = document.getElementById('game-content');
-            gameContent.innerHTML = editorHTML;
+                `;
+                
+                if (book.root) {
+                    const container = document.getElementById('book-content-container');
+                    attachBookEventListeners(container);
+                }
+                
+                if (gameState.currentEnemy) {
+                    gameState.savedEnemy = { ...gameState.currentEnemy };
+                    gameState.currentEnemy = null;
+                }
+            }
         }
-        function closeBookEditor() {
-            // Salvar alterações atuais
-            const titleInput = document.getElementById('book-title');
-            const contentInput = document.getElementById('book-content');
-            
-            if (titleInput && contentInput && activeBook && activeBookIndex !== null) {
-                activeBook.title = titleInput.value;
-                activeBook.content = contentInput.value;
-                gameState.inventory[activeBookIndex] = activeBook;
-                addLog('📝 Alterações salvas no livro.');
+        function closeBookUI() {
+            if (gameState.isBookEditor && gameState.activeBook && gameState.activeBookIndex !== null) {
+                const titleInput = document.getElementById('book-title');
+                const contentInput = document.getElementById('book-content');
+                
+                if (titleInput && contentInput) {
+                    gameState.activeBook.title = titleInput.value;
+                    gameState.activeBook.content = contentInput.value;
+                    gameState.inventory[gameState.activeBookIndex] = gameState.activeBook;
+                    addLog('📝 Alterações salvas no livro.');
+                }
             }
             
-            activeBook = null;
-            activeBookIndex = null;
+            if (gameState.savedEnemy) {
+                gameState.currentEnemy = gameState.savedEnemy;
+                delete gameState.savedEnemy;
+            }
+            
+            gameState.isBookOpen = false;
+            gameState.openBookIndex = null;
+            gameState.isBookEditor = false;
+            gameState.activeBook = null;
+            gameState.activeBookIndex = null;
             
             updateUI();
         }
-        
+
         async function signBook() {
-            if (!activeBook || activeBook.signed) return;
+            if (!gameState.activeBook || gameState.activeBook.signed) return;
             
             const titleInput = document.getElementById('book-title');
             const contentInput = document.getElementById('book-content');
             
             // Salvar conteúdo atual
-            activeBook.title = titleInput.value;
-            activeBook.content = contentInput.value;
+            gameState.activeBook.title = titleInput.value;
+            gameState.activeBook.content = contentInput.value;
             
             const result = await Swal.fire({
                 title: '✍️ Assinar Livro',
@@ -4332,16 +4473,16 @@
             });
             
             if (result.isConfirmed && result.value) {
-                activeBook.signed = true;
-                activeBook.signer = result.value;
-                activeBook.signedAt = new Date().toLocaleString();
+                gameState.activeBook.signed = true;
+                gameState.activeBook.signer = result.value;
+                gameState.activeBook.signedAt = new Date().toLocaleString();
                 
-                gameState.inventory[activeBookIndex] = activeBook;
+                gameState.inventory[gameState.activeBookIndex] = gameState.activeBook;
                 
                 Swal.fire({
                     title: '📜 Livro Assinado!',
-                    html: `<p>O livro "${activeBook.title}" foi assinado por <strong>${activeBook.signer}</strong>.</p>
-                           <p>Agora ele está永久mente selado e não pode mais ser editado.</p>`,
+                    html: `<p>O livro "${gameState.activeBook.title}" foi assinado por <strong>${gameState.activeBook.signer}</strong>.</p>
+                        <p>Agora ele está permanentemente selado e não pode mais ser editado.</p>`,
                     icon: 'success',
                     confirmButtonText: 'OK',
                     background: '#1a1a2e',
@@ -4349,73 +4490,13 @@
                     confirmButtonColor: '#4CAF50'
                 });
                 
-                addLog(`✍️ ${gameState.character.name} assinou o livro "${activeBook.title}"!`);
+                addLog(`✍️ ${gameState.character.name} assinou o livro "${gameState.activeBook.title}"!`);
                 
-                activeBook = null;
-                activeBookIndex = null;
-                updateUI();
+                // Fechar e reabrir como leitor
+                closeBookUI();
             }
         }
-        
-        function openBookReader(bookIndex) {
-            if (gameState.isDead) return;
-            
-            const book = gameState.inventory[bookIndex];
-            if (!book || book.type !== 'book') return;
-            
-            activeBook = book;
-            activeBookIndex = bookIndex;
-            
-            // Criar sandbox para executar JS se for root
-            const readerHTML = `
-                <div style="background: rgba(0,0,0,0.95); border-radius: 20px; padding: 30px; border: 3px solid #ffd700; max-width: 800px; margin: 0 auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <h2 style="color: #ffd700; margin: 0;">📖 ${escapeHtml(book.title || 'Livro')}</h2>
-                            ${book.signed ? `<p style="color: #888; margin: 5px 0 0 0; font-size: 12px;">✍️ Assinado por: ${escapeHtml(book.signer)}</p>` : ''}
-                        </div>
-                        <button class="action-btn" onclick="closeBookReader()" style="background: #666;">❌ Fechar</button>
-                    </div>
-                    
-                    <div id="book-content-container" style="background: #0a0a1a; border-radius: 12px; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; border: 1px solid #333;">
-                        ${book.content || '<p><em>Este livro está em branco...</em></p>'}
-                    </div>
-                </div>
-            `;
-            
-            const gameContent = document.getElementById('game-content');
-            gameContent.innerHTML = readerHTML;
-            
-            // Se for root book, permitir execução de scripts
-            if (book.root) {
-                // Executar scripts no container
-                const container = document.getElementById('book-content-container');
-                const scripts = container.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    container.removeChild(oldScript);
-                });
-                
-                // Adicionar botões e funcionalidades ao container
-                attachBookEventListeners(container);
-            }
-            
-            if (gameState.currentEnemy) {
-                gameState.savedEnemy = { ...gameState.currentEnemy };
-                gameState.currentEnemy = null;
-            }
-        }
-        function closeBookReader() {
-            activeBook = null;
-            activeBookIndex = null;
-            
-            if (gameState.savedEnemy) {
-                gameState.currentEnemy = gameState.savedEnemy;
-                delete gameState.savedEnemy;
-            }
-            
-            updateUI();
-        }
-        
+
         function attachBookEventListeners(container) {
             // Procurar e adicionar listeners para botões dentro do livro
             const buttons = container.querySelectorAll('button');
@@ -4478,7 +4559,40 @@
         function enterAbandonedCemetery() { go('abandoned_cemetery', '🪦 Você entrou no cemitério abandonado.'); }
         function exitAbandonedCemetery() { go('abandoned_cemetery_gate', '🚪 Você saiu do cemitério abandonado.'); }
 
+        function goNorthTrailStart() { go('north_trail_start', '🚶 Você entra na trilha que leva ao norte.'); }
+        function goNorthTrailMiddle() { go('north_trail_middle', '🌊 Você continua pela trilha e chega à margem de um rio cristalino.'); }
+        function goRiverBank() { go('river_bank', '🏞️ Você decide caminhar pela margem do rio, desviando da ponte.'); }
+        function goAcrossBridge() { go('across_bridge', '🌉 Você atravessa a antiga ponte de madeira e chega a uma planície com ruínas antigas.'); }
+        function swimInRiver() { go('swim_in_river', '💧 Você mergulha nas águas geladas do rio cristalino.'); }
+        function exitRiver() { go('river_bank', '🏊 Você sai do rio, se sentindo revigorado e renovado.'); }
+        function exploreRuins() { go('ancient_ruins', '🏛️ Você se aventura entre as ruínas antigas, observando cada detalhe.'); }
+        function searchRuins() {
+            if (gameState.isDead) return;
+            
+            const random = Math.random();
+            if (random < 0.3) {
+                const finds = ['bone', 'paper', 'bottle'];
+                const find = finds[Math.floor(Math.random() * finds.length)];
+                addItemToInventory(find);
+                addLog(`🔍 Entre os escombros, você encontra ${ITEMS[find].name}!`);
+            } else if (random < 0.5) {
+                const goldFound = 5 + Math.floor(Math.random() * 20);
+                gameState.character.gold += goldFound;
+                addLog(`💰 Você encontra ${goldFound} moedas de ouro espalhadas entre as pedras!`);
+            } else {
+                addLog('🔍 Você revira os escombros, mas não encontra nada de valor.');
+            }
+            updateUI();
+        }
+        function goNorthFromRuins() { go('north_forest_edge', '⬆️ Você segue para o norte e chega à entrada da Floresta Sombria.'); }
+        function goEastFromRuins() { go('east_ruins_path', '➡️ Você segue para o leste a partir das ruínas.'); }
+        function continueEastFromRuins() { 
+            addLog('➡️ O caminho para o leste parece se estender por muito tempo. Por enquanto, você decide voltar para explorar mais as ruínas.');
+            updateUI();
+        }
+
         function goDarkForest() { go('dark_forest', '🌲 Você entra na Floresta Sombria. As árvores bloqueiam a luz do sol e o ar fica mais frio.'); }
+
         function goSouthTradeRoute() { go('south_trade_route', '🛤️ Você chega à Estrada Comercial Sul. O caminho é bem cuidado e seguro.'); }
         function goEastPlains() { go('east_plains', '🌾 Você segue para o leste pela vasta planície.'); }
         function returnToOutside() { go('outside', '🌅 Você retorna à Planície da Aurora, onde o céu se abre novamente.'); }
@@ -4933,7 +5047,7 @@
         }
     }
 
-        // ========== FUNÇÕES DA TABERNA ==========
+        // ========== TAVERN FUNCTIONS ==========
         function buyBeer() { buyDrink('beer', 5); }
         function buyWine() { buyDrink('wine', 15); }
         function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
@@ -5813,7 +5927,7 @@
                 return;
             }
             
-            const waterLocations = ['sacred_lake', 'sacred_lake_interior', 'home', 'farmlands'];
+            const waterLocations = ['sacred_lake', 'sacred_lake_interior', 'home', 'farmlands', 'river_bank', 'swim_in_river'];
             const canFill = waterLocations.includes(gameState.location);
             
             if (!canFill) {
@@ -6748,15 +6862,6 @@
         
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
-        function openCrystalBall() {
-            if (gameState.isDead) {
-                addLog('💀 A bola de cristal está escura... você está morto.');
-                return;
-            }
-            const evalResult = eval(prompt('🔮 Bola de Cristal'));
-            
-            alert(evalResult !== undefined ? JSON.stringify(evalResult, null, 2) : 'undefined')
-        }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
