@@ -1316,6 +1316,103 @@
         });
         // |
         // |
+                socket.on('action_success', function(data) {
+            console.log('Ação bem-sucedida:', data);
+            
+            // Verificar se a primeira rodada terminou
+            /*if (data.result && data.result.first_round_ended) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
+                    html: '<p style="color: #fff;">Todos os jogadores já jogaram!<br><strong style="color: #ffd700;">Agora os ataques estão liberados!</strong></p>',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 3000
+                });
+            }*/
+            
+            // Se a ação foi uma troca de posições, sair do modo de troca
+            if (data.action === 'swap_positions' && data.result && data.result.success) {
+                // Sair do modo de troca
+                if (moveMode) {
+                    cancelMoveMode();
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔄 Posições trocadas!',
+                    text: data.result.message || 'Cartas trocadas com sucesso',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+            else if (data.action === 'revive' && data.result) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔄 Carta Revivida!',
+                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'ritual' && data.result) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '📿 Ritual Realizado!',
+                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#9370db',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'equip_item' && data.result) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Item equipado!',
+                    html: `<p style="color: #fff;">${data.result.message || 'Item equipado com sucesso!'}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 2000
+                });
+            }
+            else if (data.action === 'cast_spell' && data.result && data.result.effect) {
+                if (data.result.effect.type === 'heal') {
+                    createHealAnimation(data.result.effect.amount, data.result.effect.target);
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '✨ Feitiço de Cura!',
+                        html: `<p style="color: #fff;">${data.result.effect.message}</p>`,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#4CAF50',
+                        timer: 2000
+                    });
+                }
+            }
+            else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
+            
+            requestGameState();
+        });
+        socket.on('action_error', function(data) {
+            console.error('Erro na ação:', data);
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+        });
 
 
         function showAttackResult(result) {
