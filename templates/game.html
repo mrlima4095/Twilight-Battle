@@ -1689,17 +1689,6 @@
                     endTurnBtn.style.display = 'none';
                 }
             }
-        
-            if (isMyTurn && isTimerRunning) {
-                turnTimeLeft = 60; 
-                const timerElement = document.getElementById('turn-timer');
-                if (timerElement) {
-                    timerElement.innerHTML = '⏱️ 1:00';
-                    timerElement.style.color = '#ffd700';
-                    timerElement.style.borderColor = '#ffd700';
-                    timerElement.style.animation = 'none';
-                }
-            }
         }
 
         function showSessionIndicator() {
