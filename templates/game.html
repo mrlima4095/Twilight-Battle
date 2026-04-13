@@ -3333,18 +3333,7 @@
             }
         });
         // | Descarregar
-        window.addEventListener('beforeunload', function() {
-            if (currentPlayerId) { saveSession(); }
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
-            isTimerRunning = false;
-            const timerElement = document.getElementById('turn-timer');
-            if (timerElement) {
-                timerElement.remove();
-            }
-        });
+        window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } cleanupTurnTimer(); });
         // |
         // Sistema de Magia
         // | (Feitiços)
@@ -3834,7 +3823,18 @@
                 startTurnTimer();
             }
         }
-
+        function cleanupTurnTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            gameStarted = false;
+            const timerElement = document.getElementById('turn-timer');
+            if (timerElement) {
+                timerElement.remove();
+            }
+        }
         // | Game Engine
         setInterval(requestGameState, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
