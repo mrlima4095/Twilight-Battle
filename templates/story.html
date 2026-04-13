@@ -6872,13 +6872,90 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
-function openMap() {
-    Swal.fire({
-        title: 'Mapa',
-        html: '<img width=500px src="https://git.opentty.xyz/fetuber4095/pagina/raw/branch/gh-pages/map.jpg/1776028540097.png">'
-    })
-}
-
+        function openMap() {
+            if (Swal.isVisible()) Swal.close();
+            
+            const mapContainer = document.createElement('div');
+            mapContainer.style.cssText = `display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 100%; padding: 0; margin: 0;`;
+            
+            const locationName = LOCATIONS[gameState.location]?.name || gameState.location, locationDiv = document.createElement('div');
+            locationDiv.style.cssText = `text-align: center; margin-bottom: 15px; width: 100%; `;
+            locationDiv.innerHTML = `<strong style="color: #ffd700; font-size: clamp(14px, 4vw, 18px);">📍 Você está em:</strong> 
+                                    <span style="color: #fff; font-size: clamp(14px, 4vw, 18px);">${locationName}</span>`;
+            mapContainer.appendChild(locationDiv);
+            
+            const img = document.createElement('img');
+            img.src = "https://git.opentty.xyz/fetuber4095/pagina/raw/branch/gh-pages/map.jpg/1776028540097.png";
+            img.alt = "Mapa do Reino da Aurora";
+            img.style.cssText = `
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+                border-radius: 12px;
+                border: 2px solid #ffd700;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+                object-fit: contain;
+            `;
+            img.onerror = function() {
+                img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23ffd700' font-size='16' dy='.3em'%3E🗺️ Mapa indisponível%3C/text%3E%3C/svg%3E";
+                img.style.border = "2px solid #ff4444";
+            };
+            
+            mapContainer.appendChild(img);
+            
+            const legend = document.createElement('div');
+            legend.style.cssText = `
+                margin-top: 15px;
+                font-size: clamp(10px, 3vw, 12px);
+                color: #aaa;
+                text-align: center;
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 12px;
+            `;
+            legend.innerHTML = `
+                <span>🏠 Casa</span>
+                <span>🏛️ Praça</span>
+                <span>🏰 Castelo</span>
+                <span>🌲 Floresta</span>
+                <span>💧 Lago</span>
+                <span>⚰️ Cemitério</span>
+            `;
+            mapContainer.appendChild(legend);
+            
+            Swal.fire({
+                title: '🗺️ Mapa do Reino da Aurora',
+                html: mapContainer,
+                confirmButtonText: 'Fechar Mapa',
+                confirmButtonColor: '#ffd700',
+                background: '#1a1a2e',
+                color: '#fff',
+                width: 'min(95%, 600px)',
+                padding: '1rem',
+                customClass: {
+                    popup: 'map-swal-popup',
+                    title: 'map-swal-title',
+                    confirmButton: 'map-swal-button'
+                },
+                didOpen: () => {
+                    const popup = document.querySelector('.map-swal-popup');
+                    if (popup) {
+                        popup.style.borderRadius = '20px';
+                        popup.style.border = '2px solid #ffd700';
+                        popup.style.maxHeight = '90vh';
+                        popup.style.overflowY = 'auto';
+                        popup.style.padding = '15px';
+                    }
+                    
+                    const inputs = document.querySelectorAll('.swal2-input');
+                    inputs.forEach(input => {
+                        input.style.fontSize = '16px';
+                    });
+                }
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
