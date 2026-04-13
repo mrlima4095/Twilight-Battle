@@ -757,9 +757,10 @@
         let trapSlots = [null, null];
 
         let turnTimer = null;
-        let turnTimeLeft = 60; // 60 segundos = 1 minuto
+        let turnTimeLeft = 60;
         let timerInterval = null;
         let isTimerRunning = false;
+        let gameStarted = false; 
 
         // Verificar autenticação ao carregar
         fetch('/api/check-auth')
@@ -916,6 +917,7 @@
             console.log('Jogo começou!');
             document.getElementById('waiting-room').style.display = 'none';
             document.getElementById('player-area').style.display = 'block';
+            gameStarted = true;
             requestGameState();
             
             Swal.fire({
@@ -1417,7 +1419,7 @@
                 }
             }
             else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
-            else if (data.action !== 'end_turn' && gameState && gameState.current_turn === currentUsername) {
+            else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
                 turnTimeLeft = 60;
                 const timerElement = document.getElementById('turn-timer');
                 if (timerElement && isTimerRunning) {
@@ -1535,7 +1537,7 @@
                 
                 if (isMyTurn) {
                     turnIndicator.classList.add('my-turn');
-                    if (!isTimerRunning) { startTurnTimer(); }
+                    if (!isTimerRunning && gameStarted) { startTurnTimer(); }
                 } else {
                     turnIndicator.classList.remove('my-turn');
                     if (isTimerRunning) { stopTurnTimer(); }
@@ -3698,9 +3700,15 @@
         // Execuções em background
         // | 
         function startTurnTimer() {
+            // Só iniciar timer se o jogo começou
+            if (!gameStarted) {
+                return;
+            }
+            
             // Limpar timer anterior se existir
             if (timerInterval) {
                 clearInterval(timerInterval);
+                timerInterval = null;
             }
             
             // Resetar tempo
@@ -3722,16 +3730,22 @@
                     color: #ffd700;
                     text-align: center;
                     margin-left: 20px;
+                    display: none;
                 `;
-                const turnIndicator = document.getElementById('turn-indicator');
-                if (turnIndicator && turnIndicator.parentNode) {
-                    turnIndicator.parentNode.insertBefore(timerElement, turnIndicator.nextSibling);
+                const gameInfo = document.getElementById('game-info');
+                if (gameInfo) {
+                    gameInfo.appendChild(timerElement);
                 }
+            }
+            
+            // Mostrar timer apenas se jogo começou
+            if (gameStarted) {
+                timerElement.style.display = 'block';
             }
             
             // Atualizar timer a cada segundo
             timerInterval = setInterval(() => {
-                if (!isTimerRunning) return;
+                if (!isTimerRunning || !gameStarted) return;
                 
                 if (turnTimeLeft <= 0) {
                     // Tempo acabou - finalizar turno automaticamente
@@ -3739,8 +3753,8 @@
                     timerInterval = null;
                     isTimerRunning = false;
                     
-                    // Verificar se ainda é o turno do jogador
-                    if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead) {
+                    // Verificar se ainda é o turno do jogador e jogo está ativo
+                    if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
                         console.log('⏰ Tempo esgotado! Finalizando turno automaticamente...');
                         
                         // Mostrar alerta
@@ -3763,31 +3777,28 @@
                         });
                         
                         // Atualizar UI do timer
+                        const timerElement = document.getElementById('turn-timer');
                         if (timerElement) {
                             timerElement.innerHTML = '⏰ 0s';
                             timerElement.style.color = '#ff4444';
                             timerElement.style.borderColor = '#ff4444';
-                        }
-                    } else {
-                        // Não é mais o turno do jogador, apenas parar timer
-                        if (timerElement) {
-                            timerElement.style.display = 'none';
                         }
                     }
                 } else {
                     turnTimeLeft--;
                     
                     // Atualizar display do timer
-                    if (timerElement) {
+                    const timerElement = document.getElementById('turn-timer');
+                    if (timerElement && gameStarted) {
                         const minutes = Math.floor(turnTimeLeft / 60);
                         const seconds = turnTimeLeft % 60;
-                        timerElement.innerHTML = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}s`;
+                        timerElement.innerHTML = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
                         
                         // Mudar cor quando faltar pouco tempo
                         if (turnTimeLeft <= 10) {
                             timerElement.style.color = '#ff4444';
                             timerElement.style.borderColor = '#ff4444';
-                            timerElement.style.animation = 'pulse 0.5s infinite';
+                            timerElement.style.animation = 'timerPulse 0.5s infinite';
                         } else if (turnTimeLeft <= 30) {
                             timerElement.style.color = '#ffa500';
                             timerElement.style.borderColor = '#ffa500';
@@ -3816,11 +3827,14 @@
         }
 
         function resetTurnTimer() {
+            if (!gameStarted) return;
+            
             stopTurnTimer();
             if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
                 startTurnTimer();
             }
         }
+
         // | Game Engine
         setInterval(requestGameState, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
