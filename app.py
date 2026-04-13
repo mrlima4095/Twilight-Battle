@@ -1620,6 +1620,7 @@ class Game:
         
         # Feitiço volta para o deck (embaixo)
         self.deck.append(spell_card)
+        random.shuffle(self.deck)
         
         self.use_action(username, 'spell')
         
