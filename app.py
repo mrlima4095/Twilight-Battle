@@ -3143,6 +3143,387 @@ class AdminShell(cmd.Cmd):
         
         print(f"   ✅ Jogadores notificados")
 
+    def do_peek_deck(self, arg):
+        """peek_deck [game-id] [quantidade] - Ver as próximas N cartas do deck"""
+        args = shlex.split(arg)
+        if len(args) < 1:
+            print("❌ Uso: peek_deck [game-id] [quantidade=5]")
+            return
+        
+        game_id = args[0]
+        quantidade = int(args[1]) if len(args) > 1 else 5
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        if not game.deck:
+            print("📭 O deck está vazio!")
+            return
+        
+        print(f"\n📚 PRÓXIMAS {min(quantidade, len(game.deck))} CARTAS DO DECK - Jogo {game_id}:")
+        print("=" * 60)
+        
+        for i in range(min(quantidade, len(game.deck))):
+            card = game.deck[i]
+            card_type = card.get('type', 'desconhecido')
+            atk = card.get('attack', '')
+            life = card.get('life', '')
+            stats = f" [{atk}⚔️/{life}❤️]" if atk and life else ""
+            print(f"  {i+1:2d}. {card['name']} ({card_type}){stats}")
+            if card.get('description'):
+                print(f"      📝 {card['description'][:60]}...")
+        
+        print("=" * 60)
+
+    def do_deck_swap(self, arg):
+        """deck_swap [game-id] [pos1] [pos2] - Trocar posições de cartas no deck"""
+        args = shlex.split(arg)
+        if len(args) < 3:
+            print("❌ Uso: deck_swap [game-id] [pos1] [pos2]")
+            return
+        
+        game_id = args[0]
+        pos1 = int(args[1])
+        pos2 = int(args[2])
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        if pos1 < 0 or pos1 >= len(game.deck) or pos2 < 0 or pos2 >= len(game.deck):
+            print(f"❌ Posições inválidas. Deck tem {len(game.deck)} cartas")
+            return
+        
+        # Trocar as cartas
+        card1 = game.deck[pos1]
+        card2 = game.deck[pos2]
+        
+        game.deck[pos1] = card2
+        game.deck[pos2] = card1
+        
+        print(f"✅ Trocadas: pos {pos1} ({card1['name']}) ↔ pos {pos2} ({card2['name']})")
+
+    def do_deck_shuffle(self, arg):
+        """deck_shuffle [game-id] - Embaralhar o deck"""
+        args = shlex.split(arg)
+        if len(args) < 1:
+            print("❌ Uso: deck_shuffle [game-id]")
+            return
+        
+        game_id = args[0]
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        random.shuffle(game.deck)
+        
+        print(f"✅ Deck do jogo {game_id} foi embaralhado")
+
+    def do_hand(self, arg):
+        """hand [jogador] - Ver a mão de um jogador detalhadamente"""
+        username = arg.strip().lower()
+        if not username:
+            print("❌ Uso: hand [jogador]")
+            return
+        
+        game, error = self.get_player_game(username)
+        if error:
+            print(f"❌ {error}")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não está neste jogo")
+            return
+        
+        player = game.player_data[username]
+        
+        print(f"\n📚 MÃO DE {username.upper()} ({len(player['hand'])} cartas):")
+        print("=" * 70)
+        
+        if not player['hand']:
+            print("  (vazia)")
+        else:
+            for i, card in enumerate(player['hand']):
+                card_type = card.get('type', 'desconhecido')
+                atk = card.get('attack', '')
+                life = card.get('life', '')
+                protection = card.get('protection', '')
+                
+                stats = []
+                if atk:
+                    stats.append(f"⚔️{atk}")
+                if life:
+                    stats.append(f"❤️{life}")
+                if protection:
+                    stats.append(f"🛡️{protection}")
+                
+                stats_str = f" [{', '.join(stats)}]" if stats else ""
+                
+                print(f"  [{i:2d}] {card['name']} ({card_type}){stats_str}")
+                if card.get('description'):
+                    desc = card['description'][:50] + "..." if len(card['description']) > 50 else card['description']
+                    print(f"       📝 {desc}")
+        
+        print("=" * 70)
+        
+        # Mostrar talismãs na mão
+        talismans = [c for c in player['hand'] if c.get('type') == 'talisman']
+        if talismans:
+            print(f"\n🔮 TALISMÃS na mão: {', '.join([t['name'] for t in talismans])}")
+        
+        # Mostrar runas na mão
+        runes = [c for c in player['hand'] if c.get('type') == 'rune' or c.get('id') == 'runa']
+        if runes:
+            print(f"🪨 RUNAS na mão: {len(runes)}")
+        
+        # Mostrar feitiços na mão
+        spells = [c for c in player['hand'] if c.get('type') == 'spell']
+        if spells:
+            print(f"✨ FEITIÇOS na mão: {', '.join([s['name'] for s in spells])}")
+
+    def do_field(self, arg):
+        """field [jogador] - Ver o campo completo de um jogador"""
+        username = arg.strip().lower()
+        if not username:
+            print("❌ Uso: field [jogador]")
+            return
+        
+        game, error = self.get_player_game(username)
+        if error:
+            print(f"❌ {error}")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não está neste jogo")
+            return
+        
+        player = game.player_data[username]
+        
+        print(f"\n🏟️ CAMPO DE {username.upper()}")
+        print("=" * 70)
+        print(f"❤️ VIDA: {player['life']} | {'💀 MORTO' if player.get('dead') else '✨ VIVO'}")
+        
+        print("\n⚔️ POSIÇÕES DE ATAQUE (3 slots):")
+        for i, card in enumerate(player['attack_bases']):
+            if card:
+                atk = card.get('attack', 0)
+                life = card.get('life', 0)
+                blocked = " [BLOQUEADO]" if card.get('blocked') else ""
+                print(f"  [{i}] {card['name']} - {atk}⚔️ / {life}❤️{blocked}")
+                if card.get('equipped_items'):
+                    items = [f"{eq['name']}" for eq in card['equipped_items']]
+                    print(f"      🎒 Equipado: {', '.join(items)}")
+            else:
+                print(f"  [{i}] ⬜ Vazio")
+        
+        print("\n🛡️ POSIÇÕES DE DEFESA (6 slots):")
+        for i, card in enumerate(player['defense_bases']):
+            if card:
+                atk = card.get('attack', 0)
+                life = card.get('life', 0)
+                blocked = " [BLOQUEADO]" if card.get('blocked') else ""
+                print(f"  [{i}] {card['name']} - {atk}⚔️ / {life}❤️{blocked}")
+                if card.get('equipped_items'):
+                    items = [f"{eq['name']}" for eq in card['equipped_items']]
+                    print(f"      🎒 Equipado: {', '.join(items)}")
+            else:
+                print(f"  [{i}] ⬜ Vazio")
+        
+        print("\n🎒 EQUIPAMENTOS DO JOGADOR:")
+        eq = player['equipment']
+        print(f"  Arma: {eq['weapon']['name'] if eq['weapon'] else 'Nenhuma'}")
+        print(f"  Capacete: {eq['helmet']['name'] if eq['helmet'] else 'Nenhum'}")
+        print(f"  Armadura: {eq['armor']['name'] if eq['armor'] else 'Nenhuma'}")
+        print(f"  Botas: {eq['boots']['name'] if eq['boots'] else 'Nenhuma'}")
+        print(f"  Montaria: {eq['mount']['name'] if eq['mount'] else 'Nenhuma'}")
+        
+        if player['talismans']:
+            print(f"\n🔮 TALISMÃS: {', '.join([t['name'] for t in player['talismans']])}")
+        
+        if player.get('active_effects'):
+            print(f"\n✨ EFEITOS ATIVOS: {len(player['active_effects'])}")
+            for effect in player['active_effects']:
+                print(f"  • {effect.get('type', 'desconhecido')}: {effect.get('duration', 'permanente')} rodadas")
+        
+        print("=" * 70)
+
+    def do_graveyard_list(self, arg):
+        """graveyard_list [game-id] - Ver todas as cartas no cemitério"""
+        args = shlex.split(arg)
+        if len(args) < 1:
+            print("❌ Uso: graveyard_list [game-id]")
+            return
+        
+        game_id = args[0]
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        print(f"\n💀 CEMITÉRIO - Jogo {game_id} ({len(game.graveyard)} cartas):")
+        print("=" * 70)
+        
+        if not game.graveyard:
+            print("  (vazio)")
+        else:
+            # Agrupar por tipo
+            by_type = {}
+            for card in game.graveyard:
+                card_type = card.get('type', 'outro')
+                if card_type not in by_type:
+                    by_type[card_type] = []
+                by_type[card_type].append(card)
+            
+            for card_type, cards in by_type.items():
+                print(f"\n📁 {card_type.upper()} ({len(cards)}):")
+                for i, card in enumerate(cards):
+                    print(f"  [{i}] {card['name']}")
+                    if card.get('description'):
+                        print(f"      📝 {card['description'][:60]}...")
+        
+        print("=" * 70)
+
+    def do_graveyard_revive(self, arg):
+        """graveyard_revive [game-id] [jogador] [índice] - Reviver carta do cemitério para mão de jogador"""
+        args = shlex.split(arg)
+        if len(args) < 3:
+            print("❌ Uso: graveyard_revive [game-id] [jogador] [índice]")
+            print("   Use 'graveyard_list' para ver os índices")
+            return
+        
+        game_id = args[0]
+        username = args[1].lower()
+        try:
+            idx = int(args[2])
+        except ValueError:
+            print("❌ Índice deve ser um número")
+            return
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        if idx < 0 or idx >= len(game.graveyard):
+            print(f"❌ Índice inválido. Cemitério tem {len(game.graveyard)} cartas")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não encontrado no jogo")
+            return
+        
+        card = game.graveyard.pop(idx)
+        game.player_data[username]['hand'].append(card)
+        
+        print(f"✅ Carta '{card['name']}' foi revivida do cemitério para {username}")
+        
+        socketio.emit('admin_action', {
+            'type': 'graveyard_revive',
+            'target': username,
+            'card': card['name'],
+            'message': f'Admin reviveu "{card["name"]}" do cemitério para sua mão'
+        }, room=game.game_id)
+
+    def do_destroy_card(self, arg):
+        """destroy_card [jogador] [posição] [tipo] - Destruir uma carta em campo do jogador"""
+        args = shlex.split(arg)
+        if len(args) < 3:
+            print("❌ Uso: destroy_card [jogador] [posição] [tipo]")
+            print("   tipo: 'attack' ou 'defense'")
+            print("   posição: índice da posição (0-2 para attack, 0-5 para defense)")
+            return
+        
+        username = args[0].lower()
+        posicao = int(args[1])
+        tipo = args[2].lower()
+        
+        if tipo not in ['attack', 'defense']:
+            print("❌ Tipo deve ser 'attack' ou 'defense'")
+            return
+        
+        game, error = self.get_player_game(username)
+        if error:
+            print(f"❌ {error}")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não está neste jogo")
+            return
+        
+        player = game.player_data[username]
+        
+        if tipo == 'attack':
+            if posicao < 0 or posicao >= len(player['attack_bases']):
+                print(f"❌ Posição inválida para ataque (0-{len(player['attack_bases'])-1})")
+                return
+            card = player['attack_bases'][posicao]
+            if card:
+                player['attack_bases'][posicao] = None
+                game.graveyard.append(card)
+                print(f"💀 Carta '{card['name']}' destruída (posição {posicao} de ataque)")
+            else:
+                print(f"⚠️ Nenhuma carta na posição {posicao} de ataque")
+        
+        else:  # defense
+            if posicao < 0 or posicao >= len(player['defense_bases']):
+                print(f"❌ Posição inválida para defesa (0-{len(player['defense_bases'])-1})")
+                return
+            card = player['defense_bases'][posicao]
+            if card:
+                player['defense_bases'][posicao] = None
+                game.graveyard.append(card)
+                print(f"💀 Carta '{card['name']}' destruída (posição {posicao} de defesa)")
+            else:
+                print(f"⚠️ Nenhuma carta na posição {posicao} de defesa")
+
+    def do_all_hands(self, arg):
+        """all_hands [game-id] - Ver a mão de todos os jogadores do jogo"""
+        args = shlex.split(arg)
+        if len(args) < 1:
+            print("❌ Uso: all_hands [game-id]")
+            return
+        
+        game_id = args[0]
+        
+        if game_id not in games:
+            print(f"❌ Jogo {game_id} não encontrado")
+            return
+        
+        game = games[game_id]
+        
+        print(f"\n📚 MÃOS DE TODOS OS JOGADORES - Jogo {game_id}")
+        print("=" * 70)
+        
+        for username in game.players:
+            player = game.player_data[username]
+            status = "💀 MORTO" if player.get('dead') else "✨ VIVO"
+            print(f"\n👤 {username} [{status}] - {len(player['hand'])} cartas:")
+            
+            if player['hand']:
+                cards_str = []
+                for i, card in enumerate(player['hand']):
+                    cards_str.append(f"[{i}]{card['name']}")
+                print(f"   {', '.join(cards_str)}")
+            else:
+                print("   (vazia)")
+        
+        print("\n👁️ ESPECTADORES:")
+        for username, player in game.player_data.items():
+            if player.get('spectator', False):
+                print(f"   👁️ {username} (espectador)")
+        
+        print("=" * 70)
+
     def do_list(self, arg):
         """list games - Listar jogos | list players - Listar jogadores online"""
         args = shlex.split(arg)

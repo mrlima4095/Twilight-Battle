@@ -1,6 +1,4 @@
-# Capítulo 1 - Piloto (Revisado)
-
----
+# Capítulo 1 - Piloto 
 
 Há incontáveis eras, o deus maligno chamado Gauthiel tomou o controle deste mundo. Ele não o criou, mas tornou-se seu dono. Subjugou as bestas que guardavam os céus — a Fênix —, a terra — Apófis — e os mares — Leviatã.
 
@@ -48,7 +46,7 @@ O golpe final atravessou o peito do deus.
 
 Gauthiel caiu de joelhos. Raios desceram dos céus e consumiram o corpo do tirano. Então, uma luz ainda mais forte envolveu Orion, e ele começou a subir. Anjos desciam ao seu encontro, estendendo as mãos. Uma coroa de luz pousou sobre sua cabeça.
 
-Ele estava sendo coroado rei dos céus.
+Ele estava sendo coroado Rei da Aurora.
 
 ---
 
@@ -70,7 +68,7 @@ Orion puxou um banco e começou a falar. Contou tudo — a espada de luz, a luta
 
 Quando terminou, Heloíse colocou um prato de pão e mel na frente dele e se sentou ao seu lado.
 
-— Ah, filho... — Ela passou a mão pelos cabelos negros dele, com um carinho que só mãe tem. — Sonho é o que a gente quer que aconteça. Se você quer que isso tudo se realize... bom, aí só depende de você.
+— Ah, filho... — Ela passou a mão pelos cabelos dele, com um carinho que só mãe tem. — Sonho é o que a gente quer que aconteça. Se você quer que isso tudo se realize... bom, aí só depende de você.
 
 Orion sentiu o peito aquecer. Mastigou o pão em silêncio, pensativo.
 
@@ -90,9 +88,7 @@ Algo naquele dia estava diferente. Ele não sabia o quê. Mas sentiria falta da 
 
 ---
 
-# Capítulo 2 – A Revolta e a Queda (Revisado)
-
----
+# Capítulo 2 – Golpe Fatal
 
 Theron Fellmore saiu de casa ainda no escuro.
 
@@ -317,5 +313,3 @@ Não era mais um sonho.
 Era uma promessa.
 
 ---
-
-Fim do Capítulo 2
