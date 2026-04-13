@@ -2,6 +2,7 @@
 from flask import Flask, render_template, request, jsonify, make_response, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import cmd, uuid, jwt, json, hashlib, hmac, secrets, random, string, sys, shlex, time, threading
+from random import shuffle
 from datetime import datetime, timedelta
 from collections import defaultdict
 from functools import wraps
@@ -1620,7 +1621,7 @@ class Game:
         
         # Feitiço volta para o deck (embaixo)
         self.deck.append(spell_card)
-        random.shuffle(self.deck)
+        shuffle(self.deck)
         
         self.use_action(username, 'spell')
         
@@ -1709,8 +1710,6 @@ class Game:
                 target_player = self.player_data[target_username]
                 
                 if len(source_player['hand']) > 0 and len(target_player['hand']) > 0:
-                    # Trocar uma carta aleatória
-                    import random
                     source_card = random.choice(source_player['hand'])
                     target_card = random.choice(target_player['hand'])
                     
