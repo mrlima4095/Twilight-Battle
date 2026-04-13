@@ -1105,7 +1105,7 @@ class Game:
         # Talismã Guerreiro
         for talisman in attacker['talismans']:
             if talisman['id'] == 'talisma_guerreiro':
-                attack_power += 1000
+                attack_power += 1024
         
         # Coletar cartas de defesa
         defense_cards = []
