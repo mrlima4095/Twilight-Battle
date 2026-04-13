@@ -627,7 +627,8 @@
             openBookIndex: null,
             isBookEditor: false,
             activeBook: null,
-            activeBookIndex: null
+            activeBookIndex: null,
+            isMapOpen: false
         };
         
         const RACES = {
@@ -1750,7 +1751,204 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         function updateGameContent() {
             const content = document.getElementById('game-content');
 
-            if (gameState.isBookOpen && gameState.openBookIndex !== null) {
+            if (gameState.isMapOpen) {
+                let currentZoom = 1;
+                const minZoom = 0.8, maxZoom = 3;
+                
+                const mapContainer = document.createElement('div');
+                mapContainer.style.cssText = `
+                    background: rgba(0,0,0,0.95);
+                    border-radius: 20px;
+                    padding: 20px;
+                    border: 3px solid #ffd700;
+                    max-width: 100%;
+                    margin: 0 auto;
+                `;
+                
+                // Cabeçalho do mapa
+                const headerDiv = document.createElement('div');
+                headerDiv.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                `;
+                headerDiv.innerHTML = `
+                    <h2 style="color: #ffd700; margin: 0;">🗺️ Mapa do Reino da Aurora</h2>
+                    <button class="action-btn" onclick="closeMap()" style="background: #666; padding: 8px 15px;">❌ Fechar Mapa</button>
+                `;
+                mapContainer.appendChild(headerDiv);
+                
+                // Localização atual
+                const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
+                const locationDiv = document.createElement('div');
+                locationDiv.style.cssText = `text-align: center; margin-bottom: 15px; width: 100%;`;
+                locationDiv.innerHTML = `<strong style="color: #ffd700;">📍 Você está em:</strong> <span style="color: #fff;">${locationName}</span>`;
+                mapContainer.appendChild(locationDiv);
+                
+                // Container da imagem com scroll
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = `
+                    width: 100%;
+                    max-height: 55vh;
+                    overflow: auto;
+                    -webkit-overflow-scrolling: touch;
+                    text-align: center;
+                    border-radius: 12px;
+                    background: rgba(0,0,0,0.3);
+                    border: 2px solid #ffd700;
+                `;
+                
+                const img = document.createElement('img');
+                img.src = "https://git.opentty.xyz/fetuber4095/pagina/raw/branch/gh-pages/map.jpg/1776028540097.png";
+                img.alt = "Mapa da Aurora";
+                img.style.cssText = `
+                    display: block;
+                    margin: 0 auto;
+                    transition: transform 0.2s ease;
+                    transform: scale(${currentZoom});
+                    transform-origin: top left;
+                    max-width: none;
+                    width: auto;
+                    height: auto;
+                `;
+                
+                img.onerror = function() {
+                    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23ffd700' font-size='16' dy='.3em'%3E🗺️ Mapa indisponível%3C/text%3E%3C/svg%3E";
+                    img.style.maxWidth = '100%';
+                    img.style.width = '100%';
+                };
+                
+                imgContainer.appendChild(img);
+                mapContainer.appendChild(imgContainer);
+                
+                // Controles de zoom
+                const zoomControls = document.createElement('div');
+                zoomControls.style.cssText = `
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                    margin: 12px 0;
+                    width: 100%;
+                    flex-wrap: wrap;
+                `;
+                zoomControls.innerHTML = `
+                    <button id="map-zoom-out" style="background: #4a90e2; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">−</button>
+                    <button id="map-zoom-in" style="background: #4a90e2; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">+</button>
+                    <button id="map-reset" style="background: #ffa500; border: none; border-radius: 25px; padding: 0 20px; height: 44px; font-size: 14px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">⟳ Reset Zoom</button>
+                `;
+                mapContainer.appendChild(zoomControls);
+                
+                // Indicador de zoom
+                const zoomIndicator = document.createElement('div');
+                zoomIndicator.style.cssText = `
+                    font-size: 11px;
+                    color: #ffd700;
+                    text-align: center;
+                    margin-bottom: 8px;
+                `;
+                zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
+                mapContainer.appendChild(zoomIndicator);
+                
+                // Legenda
+                const legend = document.createElement('div');
+                legend.style.cssText = `
+                    margin-top: 8px;
+                    font-size: clamp(10px, 3vw, 12px);
+                    color: #aaa;
+                    text-align: center;
+                    width: 100%;
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 10px;
+                `;
+                legend.innerHTML = `<span>🏠 Casa</span><span>🏛️ Praça</span><span>🏰 Castelo</span><span>🌲 Floresta</span><span>💧 Lago</span><span>⚰️ Cemitério</span>`;
+                mapContainer.appendChild(legend);
+                
+                content.innerHTML = '';
+                content.appendChild(mapContainer);
+                
+                // Configurar eventos de zoom após adicionar ao DOM
+                setTimeout(() => {
+                    const zoomInBtn = document.getElementById('map-zoom-in');
+                    const zoomOutBtn = document.getElementById('map-zoom-out');
+                    const resetBtn = document.getElementById('map-reset');
+                    
+                    const updateZoom = () => {
+                        img.style.transform = `scale(${currentZoom})`;
+                        zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
+                    };
+                    
+                    if (zoomInBtn) {
+                        zoomInBtn.onclick = () => {
+                            if (currentZoom < maxZoom) {
+                                currentZoom = Math.min(maxZoom, currentZoom + 0.25);
+                                updateZoom();
+                            }
+                        };
+                    }
+                    
+                    if (zoomOutBtn) {
+                        zoomOutBtn.onclick = () => {
+                            if (currentZoom > minZoom) {
+                                currentZoom = Math.max(minZoom, currentZoom - 0.25);
+                                updateZoom();
+                            }
+                        };
+                    }
+                    
+                    if (resetBtn) {
+                        resetBtn.onclick = () => {
+                            currentZoom = 1;
+                            updateZoom();
+                            imgContainer.scrollTop = 0;
+                            imgContainer.scrollLeft = 0;
+                        };
+                    }
+                    
+                    // Suporte a pinça zoom (touch)
+                    let initialDistance = 0;
+                    let initialZoom = 1;
+                    
+                    const getTouchDistance = (touches) => {
+                        const dx = touches[0].clientX - touches[1].clientX;
+                        const dy = touches[0].clientY - touches[1].clientY;
+                        return Math.hypot(dx, dy);
+                    };
+                    
+                    imgContainer.addEventListener('touchstart', (e) => {
+                        if (e.touches.length === 2) {
+                            e.preventDefault();
+                            initialDistance = getTouchDistance(e.touches);
+                            initialZoom = currentZoom;
+                        }
+                    }, { passive: false });
+                    
+                    imgContainer.addEventListener('touchmove', (e) => {
+                        if (e.touches.length === 2 && initialDistance > 0) {
+                            e.preventDefault();
+                            const newDistance = getTouchDistance(e.touches);
+                            const scale = newDistance / initialDistance;
+                            let newZoom = initialZoom * scale;
+                            newZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
+                            if (Math.abs(newZoom - currentZoom) > 0.02) {
+                                currentZoom = newZoom;
+                                updateZoom();
+                            }
+                        }
+                    }, { passive: false });
+                    
+                    imgContainer.addEventListener('touchend', () => {
+                        initialDistance = 0;
+                    });
+                }, 50);
+                
+                return;
+            }
+            else if (gameState.isBookOpen && gameState.openBookIndex !== null) {
                 const book = gameState.inventory[gameState.openBookIndex];
                 if (book && book.type === 'book') {
                     gameState.activeBook = book;
@@ -1760,8 +1958,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                     return;
                 } else { closeBookUI(); }
             }
-            
-            if (gameState.inMillInterface && gameState.location === 'mill') {
+            else if (gameState.inMillInterface && gameState.location === 'mill') {
                 const currentJob = getMillJob(), hasItems = currentJob && (currentJob.inputItemId || currentJob.remainingQuantity > 0), isMilling = currentJob && currentJob.isMilling, hasResult = currentJob && currentJob.completedCount > 0;
                 
                 content.innerHTML = `
@@ -1828,8 +2025,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
 
                 return;
             }
-            
-            if (gameState.activeStation && !gameState.currentEnemy) {
+            else if (gameState.activeStation && !gameState.currentEnemy) {
                 content.innerHTML = renderStationUI();
                 return;
             }
@@ -2860,10 +3056,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
     
             removeItemFromInventory(index);
             
-            if (givesEmptyBottle) {
-                addItemToInventory('bottle', 1);
-                addLog(`♻️ Você recuperou a garrafa vazia.`);
-            }
+            if (givesEmptyBottle) { addItemToInventory('bottle', 1); }
 
             updateUI();
         }
@@ -6872,327 +7065,28 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
-function openMap() {
-    let currentZoom = 1;
-    const minZoom = 0.8;
-    const maxZoom = 3;
-    
-    const mapContainer = document.createElement('div');
-    mapContainer.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        max-width: 100%;
-        position: relative;
-    `;
-    
-    const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
-    const locationDiv = document.createElement('div');
-    locationDiv.style.cssText = `text-align: center; margin-bottom: 15px; width: 100%;`;
-    locationDiv.innerHTML = `<strong style="color: #ffd700;">📍 Você está em:</strong> <span style="color: #fff;">${locationName}</span>`;
-    mapContainer.appendChild(locationDiv);
-    
-    // Container da imagem com scroll vertical e horizontal
-    const imgContainer = document.createElement('div');
-    imgContainer.style.cssText = `
-        width: 100%;
-        max-height: 55vh;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        text-align: center;
-        border-radius: 12px;
-        background: rgba(0,0,0,0.3);
-        border: 2px solid #ffd700;
-    `;
-    
-    const img = document.createElement('img');
-    img.src = "https://git.opentty.xyz/fetuber4095/pagina/raw/branch/gh-pages/map.jpg/1776028540097.png";
-    img.alt = "Mapa do Reino da Aurora";
-    img.style.cssText = `
-        display: block;
-        margin: 0 auto;
-        transition: transform 0.2s ease;
-        transform: scale(${currentZoom});
-        transform-origin: top left;
-        max-width: none;
-        width: auto;
-        height: auto;
-    `;
-    
-    img.onerror = function() {
-        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23ffd700' font-size='16' dy='.3em'%3E🗺️ Mapa indisponível%3C/text%3E%3C/svg%3E";
-        img.style.maxWidth = '100%';
-        img.style.width = '100%';
-    };
-    
-    imgContainer.appendChild(img);
-    mapContainer.appendChild(imgContainer);
-    
-    // Controles de zoom
-    const zoomControls = document.createElement('div');
-    zoomControls.style.cssText = `
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-        margin: 12px 0;
-        width: 100%;
-        flex-wrap: wrap;
-    `;
-    zoomControls.innerHTML = `
-        <button id="map-zoom-out" style="background: #4a90e2; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">−</button>
-        <button id="map-zoom-in" style="background: #4a90e2; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 24px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">+</button>
-        <button id="map-reset" style="background: #ffa500; border: none; border-radius: 25px; padding: 0 20px; height: 44px; font-size: 14px; color: white; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.3); -webkit-tap-highlight-color: transparent;">⟳ Reset Zoom</button>
-    `;
-    mapContainer.appendChild(zoomControls);
-    
-    // Indicador de zoom
-    const zoomIndicator = document.createElement('div');
-    zoomIndicator.style.cssText = `
-        font-size: 11px;
-        color: #ffd700;
-        text-align: center;
-        margin-bottom: 8px;
-    `;
-    zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
-    mapContainer.appendChild(zoomIndicator);
-    
-    // Legenda
-    const legend = document.createElement('div');
-    legend.style.cssText = `
-        margin-top: 8px;
-        font-size: clamp(10px, 3vw, 12px);
-        color: #aaa;
-        text-align: center;
-        width: 100%;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    `;
-    legend.innerHTML = `<span>🏠 Casa</span><span>🏛️ Praça</span><span>🏰 Castelo</span><span>🌲 Floresta</span><span>💧 Lago</span><span>⚰️ Cemitério</span>`;
-    mapContainer.appendChild(legend);
-    
-    Swal.fire({
-        title: '🗺️ Mapa do Reino da Aurora',
-        html: mapContainer,
-        confirmButtonText: 'Fechar Mapa',
-        confirmButtonColor: '#ffd700',
-        background: '#1a1a2e',
-        color: '#fff',
-        width: 'min(95%, 650px)',
-        showCloseButton: true,
-        closeButtonHtml: '✕',
-        customClass: { popup: 'map-swal-popup' },
-        didOpen: () => {
-            const popup = document.querySelector('.map-swal-popup');
-            if (popup) {
-                popup.style.borderRadius = '24px';
-                popup.style.border = '2px solid #ffd700';
-                popup.style.maxHeight = '90vh';
-                popup.style.overflowY = 'auto';
-                popup.style.padding = '15px';
-            }
-            
-            const zoomInBtn = document.getElementById('map-zoom-in');
-            const zoomOutBtn = document.getElementById('map-zoom-out');
-            const resetBtn = document.getElementById('map-reset');
-            
-            const updateZoom = () => {
-                img.style.transform = `scale(${currentZoom})`;
-                zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
-                
-                // Ajustar largura/altura do container baseado no zoom
-                if (currentZoom > 1) {
-                    imgContainer.style.overflow = 'auto';
-                } else {
-                    imgContainer.style.overflow = 'auto';
-                }
-            };
-            
-            if (zoomInBtn) {
-                zoomInBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (currentZoom < maxZoom) {
-                        currentZoom = Math.min(maxZoom, currentZoom + 0.25);
-                        updateZoom();
-                    }
+        
+        function openMap() {
+            if (gameState.isDead) { addLog('❌ Você está morto e não pode abrir o mapa.'); return; }
+            if (gameState.currentEnemy) {
+                Swal.fire({
+                    title: '⚔️ Em Combate!',
+                    text: 'Não é possível abrir o mapa durante uma batalha.',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    background: '#1a1a2e',
+                    color: '#fff'
                 });
+                return;
             }
-            
-            if (zoomOutBtn) {
-                zoomOutBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (currentZoom > minZoom) {
-                        currentZoom = Math.max(minZoom, currentZoom - 0.25);
-                        updateZoom();
-                    }
-                });
-            }
-            
-            if (resetBtn) {
-                resetBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    currentZoom = 1;
-                    updateZoom();
-                    // Resetar scroll
-                    imgContainer.scrollTop = 0;
-                    imgContainer.scrollLeft = 0;
-                });
-            }
-            
-            // ========== SUPORTE A TOUCH (PINÇA ZOOM) ==========
-            let initialDistance = 0;
-            let initialZoom = 1;
-            
-            const getTouchDistance = (touches) => {
-                const dx = touches[0].clientX - touches[1].clientX;
-                const dy = touches[0].clientY - touches[1].clientY;
-                return Math.hypot(dx, dy);
-            };
-            
-            imgContainer.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    initialDistance = getTouchDistance(e.touches);
-                    initialZoom = currentZoom;
-                }
-            }, { passive: false });
-            
-            imgContainer.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 2 && initialDistance > 0) {
-                    e.preventDefault();
-                    const newDistance = getTouchDistance(e.touches);
-                    const scale = newDistance / initialDistance;
-                    let newZoom = initialZoom * scale;
-                    newZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
-                    if (Math.abs(newZoom - currentZoom) > 0.02) {
-                        currentZoom = newZoom;
-                        updateZoom();
-                    }
-                }
-            }, { passive: false });
-            
-            imgContainer.addEventListener('touchend', () => {
-                initialDistance = 0;
-            });
-            
-            // ========== SCROLL VERTICAL/HORIZONTAL ==========
-            // Garantir que o scroll funcione mesmo com a imagem ampliada
-            // O scroll já é nativo do container com overflow:auto
-            
-            // Ajustar tamanho mínimo da imagem para permitir scroll
-            const adjustImageSize = () => {
-                if (currentZoom > 1) {
-                    const naturalWidth = img.naturalWidth || 800;
-                    const naturalHeight = img.naturalHeight || 600;
-                    img.style.width = `${naturalWidth * currentZoom}px`;
-                    img.style.height = `${naturalHeight * currentZoom}px`;
-                } else {
-                    img.style.width = 'auto';
-                    img.style.height = 'auto';
-                    img.style.maxWidth = '100%';
-                }
-            };
-            
-            // Sobrescrever updateZoom para incluir ajuste de tamanho
-            const originalUpdate = updateZoom;
-            const newUpdateZoom = () => {
-                if (currentZoom > 1) {
-                    const naturalWidth = img.naturalWidth || 800;
-                    const naturalHeight = img.naturalHeight || 600;
-                    img.style.width = `${naturalWidth * currentZoom}px`;
-                    img.style.height = `${naturalHeight * currentZoom}px`;
-                    img.style.maxWidth = 'none';
-                } else {
-                    img.style.width = 'auto';
-                    img.style.height = 'auto';
-                    img.style.maxWidth = '100%';
-                }
-                img.style.transform = 'none'; // Não usar transform, usar width/height para scroll funcionar melhor
-                zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
-            };
-            
-            // Substituir a função de update
-            window.mapUpdateZoom = () => {
-                if (currentZoom > 1) {
-                    const naturalWidth = img.naturalWidth || 800;
-                    const naturalHeight = img.naturalHeight || 600;
-                    img.style.width = `${naturalWidth * currentZoom}px`;
-                    img.style.height = `${naturalHeight * currentZoom}px`;
-                    img.style.maxWidth = 'none';
-                } else {
-                    img.style.width = 'auto';
-                    img.style.height = 'auto';
-                    img.style.maxWidth = '100%';
-                }
-                img.style.transform = 'none';
-                zoomIndicator.textContent = `🔍 Zoom: ${Math.round(currentZoom * 100)}% | Arraste para mover`;
-            };
-            
-            // Reatribuir botões
-            if (zoomInBtn) {
-                zoomInBtn.onclick = () => {
-                    if (currentZoom < maxZoom) {
-                        currentZoom = Math.min(maxZoom, currentZoom + 0.25);
-                        window.mapUpdateZoom();
-                    }
-                };
-            }
-            if (zoomOutBtn) {
-                zoomOutBtn.onclick = () => {
-                    if (currentZoom > minZoom) {
-                        currentZoom = Math.max(minZoom, currentZoom - 0.25);
-                        window.mapUpdateZoom();
-                    }
-                };
-            }
-            if (resetBtn) {
-                resetBtn.onclick = () => {
-                    currentZoom = 1;
-                    window.mapUpdateZoom();
-                    imgContainer.scrollTop = 0;
-                    imgContainer.scrollLeft = 0;
-                };
-            }
-            
-            // Atualizar pinça
-            imgContainer.ontouchstart = (e) => {
-                if (e.touches.length === 2) {
-                    e.preventDefault();
-                    initialDistance = getTouchDistance(e.touches);
-                    initialZoom = currentZoom;
-                }
-            };
-            imgContainer.ontouchmove = (e) => {
-                if (e.touches.length === 2 && initialDistance > 0) {
-                    e.preventDefault();
-                    const newDistance = getTouchDistance(e.touches);
-                    const scale = newDistance / initialDistance;
-                    let newZoom = initialZoom * scale;
-                    newZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
-                    if (Math.abs(newZoom - currentZoom) > 0.02) {
-                        currentZoom = newZoom;
-                        window.mapUpdateZoom();
-                        initialZoom = currentZoom;
-                        initialDistance = newDistance;
-                    }
-                }
-            };
-            
-            // Aplicar estado inicial
-            window.mapUpdateZoom();
-            
-            // Dica visual para o usuário
-            setTimeout(() => {
-                if (zoomIndicator) {
-                    zoomIndicator.style.opacity = '1';
-                }
-            }, 100);
+
+            gameState.isMapOpen = !gameState.isMapOpen;
+            updateUI();
         }
-    });
-}
+        function closeMap() { gameState.isMapOpen = false; updateUI(); }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('title-screen').style.display = 'flex';
