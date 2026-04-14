@@ -1012,6 +1012,14 @@
                     cancelMoveMode();
                 }
             }
+            if (data.started && data.current_turn === currentUsername && !data.current_player_dead) {
+                if (!isTimerRunning) {
+                    startTurnTimer();
+                }
+                gameStarted = true;
+            } else if (data.started) {
+                gameStarted = true;
+            }
             
             // Verificar se o jogador ainda está no jogo
             if (currentUsername && !gameState.players[currentUsername]) {
