@@ -594,6 +594,20 @@
             </div>
         </div>
 
+        <!--Menu antes do Jogo começar-->
+        <div class="waiting-room" id="waiting-room">
+            <h2>Aguardando jogadores...</h2>
+            <p>Código da sala: <strong>{{ game_id }}</strong></p>
+            <div class="players-list" id="players-list">
+                <p>Jogadores na sala:</p>
+                <ul id="player-names"></ul>
+            </div>
+            <p>Mínimo de 2 jogadores para começar</p>
+
+            <!--Mostrar apenas para o dono da sala-->
+            <button class="start-btn" id="start-game-btn" style="display: none;">Começar jogo</button>
+        </div>
+
         <!--Visualização dos Oponentes-->
         <div id="opponents-area" class="opponents-area"></div>
         
@@ -656,20 +670,6 @@
                 🔄 Modo Troca ativo - Clique em duas posições para trocar as cartas
                 <button onclick="cancelMoveMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
-        </div>
-        
-        <!--Menu antes do Jogo começar-->
-        <div class="waiting-room" id="waiting-room">
-            <h2>Aguardando jogadores...</h2>
-            <p>Código da sala: <strong>{{ game_id }}</strong></p>
-            <div class="players-list" id="players-list">
-                <p>Jogadores na sala:</p>
-                <ul id="player-names"></ul>
-            </div>
-            <p>Mínimo de 2 jogadores para começar</p>
-
-            <!--Mostrar apenas para o dono da sala-->
-            <button class="start-btn" id="start-game-btn" style="display: none;">Começar jogo</button>
         </div>
     </div>
     
@@ -1461,7 +1461,6 @@
             console.log('Meu username:', currentUsername);
             console.log('É meu turno?', gameState.current_turn === currentUsername);
             
-            
             const timeIndicator = document.getElementById('time-indicator');
             timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
             timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
@@ -1495,20 +1494,6 @@
             // SÓ atualizar a área de oponentes se o jogo já começou
             if (gameState.started) {
                 updateOpponentsArea();
-            } else {
-                const opponentsArea = document.getElementById('opponents-area');
-                opponentsArea.innerHTML = '';
-                const waitingMsg = document.createElement('div');
-                waitingMsg.className = 'opponent-card';
-                waitingMsg.style.textAlign = 'center';
-                waitingMsg.style.padding = '30px';
-                waitingMsg.innerHTML = `
-                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
-                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
-                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
-                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
-                `;
-                opponentsArea.appendChild(waitingMsg);
             }
             
             // Verificar se o jogador atual está morto
@@ -1532,14 +1517,11 @@
                     document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
                 }
                 spectatorMsg.style.display = 'block';
-            } else if (gameState.players[currentUsername]) {
-                // Jogador está vivo, mostrar área normal e atualizar
+            } else if (gameState.players[currentUsername] && gameStarted) {
                 document.getElementById('player-area').style.display = 'block';
                 
                 const spectatorMsg = document.getElementById('spectator-message');
-                if (spectatorMsg) {
-                    spectatorMsg.style.display = 'none';
-                }
+                if (spectatorMsg) { spectatorMsg.style.display = 'none'; }
                 
                 // IMPORTANTE: Chamar updatePlayerArea para renderizar as bases e mão
                 updatePlayerArea();
