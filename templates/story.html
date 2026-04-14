@@ -5876,21 +5876,6 @@
             }
             
         }
-        function getNPCStatusSummary() {
-            const summary = {};
-            for (const [id, npc] of Object.entries(NPC_DEFINITIONS)) {
-                const state = gameState.bots[id];
-                if (state) {
-                    summary[id] = {
-                        name: npc.name,
-                        isHome: state.isHome,
-                        isSleeping: state.isSleeping,
-                        location: npc.location
-                    };
-                }
-            }
-            return summary;
-        }
         function isNPCAvailable(npcId) {
             const state = gameState.bots[npcId];
             if (!state) return false;
@@ -5904,31 +5889,6 @@
             
             // Durante a noite: disponível apenas se estiver em casa E acordado
             return state.isHome && !state.isSleeping;
-        }
-        function getNPCStatusMessage(npcId) {
-            const npc = NPC_DEFINITIONS[npcId];
-            const state = gameState.bots[npcId];
-            
-            if (!npc || !state) return null;
-            
-            const isDay = gameState.timeOfDay === 'day';
-            
-            if (isDay) {
-                if (state.isHome) {
-                    return `${npc.emoji} ${npc.name} está em casa trabalhando.`;
-                } else {
-                    return `${npc.emoji} ${npc.name} não está em casa. ${getNPCAbsentMessage(npcId)}`;
-                }
-            } else {
-                // Noite
-                if (!state.isHome) {
-                    return `${npc.emoji} ${npc.name} não está em casa. ${getNPCAbsentMessage(npcId)}`;
-                } else if (state.isSleeping) {
-                    return `${npc.emoji} ${npc.name} está dormindo. Volte durante o dia!`;
-                } else {
-                    return `${npc.emoji} ${npc.name} está em casa mas acordado... algo parece estranho esta noite.`;
-                }
-            }
         }
         function getNPCAbsentMessage(npcId) {
             const messages = {
@@ -7185,7 +7145,6 @@
             updateUI();
             return true;
         }
-
         function acceptQuest(questId) {
             if (gameState.isDead) {
                 addLog('❌ Você está morto e não pode aceitar missões.');
@@ -7276,7 +7235,6 @@
                 addLog(`⏩ Próximo: ${quest.stages[currentStageIdx + 1].name}`);
             }
         }
-
         function showQuestBoard() {
             let questsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
             
