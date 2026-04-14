@@ -567,60 +567,39 @@
             animation: timerPulse 0.5s infinite;
         }
 
-/* Chat Styles - Fixo na parte inferior */
+/* Chat integrado como logs - igual ao modo história */
 .chat-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    border-top: 2px solid #ffd700;
-    backdrop-filter: blur(10px);
-    display: flex;
-    flex-direction: column;
-    z-index: 1000;
-    transition: all 0.3s ease;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
-}
-
-/* Quando minimizado, fica apenas a barra superior */
-.chat-container.minimized {
-    height: 45px;
+    margin-top: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
     overflow: hidden;
-}
-
-/* Adicionar padding no bottom do body para não cobrir conteúdo */
-body {
-    padding-bottom: 320px; /* Altura do chat expandido */
-}
-
-body.chat-minimized {
-    padding-bottom: 45px; /* Altura do chat minimizado */
+    backdrop-filter: blur(5px);
 }
 
 .chat-header {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #ffd700, #ffa500);
-    cursor: pointer;
+    padding: 8px 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #1a1a2e;
-    font-weight: bold;
+    cursor: pointer;
 }
 
 .chat-header span {
+    color: #ffd700;
+    font-size: 14px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
 }
 
 .chat-header .chat-count {
-    background: rgba(0,0,0,0.3);
-    border-radius: 10px;
+    background: rgba(255, 215, 0, 0.2);
     padding: 2px 8px;
-    font-size: 12px;
+    border-radius: 10px;
+    font-size: 11px;
 }
 
 .chat-header .chat-count.new-message {
@@ -629,54 +608,55 @@ body.chat-minimized {
     animation: pulse 1s infinite;
 }
 
+.chat-minimize-btn {
+    background: none;
+    border: none;
+    color: #ffd700;
+    font-size: 18px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.chat-minimize-btn:hover {
+    background: rgba(255, 215, 0, 0.2);
+}
+
 .chat-messages {
-    flex: 1;
+    max-height: 150px;
     overflow-y: auto;
-    padding: 15px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    max-height: 250px;
-    min-height: 200px;
+    gap: 5px;
 }
 
 .chat-message {
-    padding: 8px 12px;
-    border-radius: 10px;
-    word-wrap: break-word;
+    padding: 5px 10px;
+    border-radius: 8px;
     font-size: 13px;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    word-wrap: break-word;
+    animation: fadeIn 0.2s ease;
 }
 
 .chat-message.system {
-    background: rgba(255, 215, 0, 0.15);
+    background: rgba(255, 215, 0, 0.1);
     border-left: 3px solid #ffd700;
+    color: #ffd700;
     font-style: italic;
 }
 
-.chat-message.system .message {
-    color: #ffd700;
-}
-
 .chat-message.user {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    border-left: 3px solid #4a90e2;
 }
 
 .chat-message.user .username {
     font-weight: bold;
-    color: #ffd700;
+    color: #4a90e2;
     margin-right: 8px;
-}
-
-.chat-message.user .timestamp {
-    font-size: 10px;
-    color: #888;
-    margin-left: 8px;
 }
 
 .chat-message.user .message {
@@ -687,24 +667,26 @@ body.chat-minimized {
     font-size: 10px;
     color: #888;
     margin-left: 8px;
+    float: right;
 }
 
 .chat-input-area {
-    padding: 12px;
-    border-top: 1px solid rgba(255, 215, 0, 0.3);
+    padding: 10px;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
     display: flex;
     gap: 10px;
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .chat-input {
     flex: 1;
-    padding: 10px 15px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid #ffd700;
-    border-radius: 25px;
+    border-radius: 20px;
     color: #fff;
     outline: none;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .chat-input:focus {
@@ -713,18 +695,20 @@ body.chat-minimized {
 }
 
 .chat-input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
 }
 
 .chat-send-btn {
-    padding: 10px 25px;
+    padding: 8px 18px;
     background: linear-gradient(45deg, #ffd700, #ffa500);
     border: none;
-    border-radius: 25px;
+    border-radius: 20px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
     color: #1a1a2e;
+    font-size: 12px;
 }
 
 .chat-send-btn:hover {
@@ -732,109 +716,14 @@ body.chat-minimized {
     box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
 }
 
-.chat-minimize-btn {
-    background: none;
-    border: none;
-    color: #1a1a2e;
-    font-size: 20px;
-    cursor: pointer;
-    font-weight: bold;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    transition: all 0.3s;
-}
-
-.chat-minimize-btn:hover {
-    background: rgba(0, 0, 0, 0.2);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-}
-
-/* Notificação toast para nova mensagem */
-.chat-toast {
-    position: fixed;
-    bottom: 320px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.9);
-    border: 2px solid #ffd700;
-    border-radius: 20px;
-    padding: 10px 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 1001;
-    animation: slideIn 0.3s ease;
-    cursor: pointer;
-}
-
-body.chat-minimized .chat-toast {
-    bottom: 60px;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-.chat-toast .icon {
-    font-size: 20px;
-}
-
-.chat-toast .text {
-    color: white;
-    font-size: 13px;
-}
-
-.chat-toast .username {
-    color: #ffd700;
-    font-weight: bold;
-}
-
-/* Ajuste para o conteúdo principal não ficar atrás do chat */
-.game-container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    padding-bottom: 20px;
-}
-
-/* Responsivo */
-@media (max-width: 768px) {
-    body {
-        padding-bottom: 280px;
-    }
-    
-    body.chat-minimized {
-        padding-bottom: 45px;
-    }
-    
-    .chat-messages {
-        max-height: 180px;
-        min-height: 150px;
-    }
-    
-    .chat-input {
-        font-size: 12px;
-    }
-    
-    .chat-send-btn {
-        padding: 8px 15px;
-    }
-    
-    .chat-toast {
-        bottom: 280px;
-        right: 10px;
-        left: 10px;
-        width: auto;
-    }
-    
-    body.chat-minimized .chat-toast {
-        bottom: 60px;
-    }
+    50% { opacity: 0.6; }
 }
     </style>
 </head>
@@ -942,7 +831,7 @@ body.chat-minimized .chat-toast {
             </div>
         </div>
 
-        <!-- Chat Container -->
+        <!-- Chat -->
         <div class="chat-container" id="chat-container">
             <div class="chat-header" id="chat-header">
                 <span>
@@ -952,7 +841,7 @@ body.chat-minimized .chat-toast {
                 <button class="chat-minimize-btn" id="chat-minimize-btn">−</button>
             </div>
             <div class="chat-messages" id="chat-messages"></div>
-            <div class="chat-input-area">
+            <div class="chat-input-area" id="chat-input-area">
                 <input type="text" class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." maxlength="500">
                 <button class="chat-send-btn" id="chat-send-btn">Enviar</button>
             </div>
@@ -995,7 +884,6 @@ body.chat-minimized .chat-toast {
         let chatSendBtn = null;
         let isChatMinimized = false;
         let unreadCount = 0;
-        let chatToast = null;
 
         let turnTimer = null;
         let turnTimeLeft = 60;
@@ -1241,27 +1129,29 @@ body.chat-minimized .chat-toast {
         // |
         // | Game Chat
         socket.on('chat_message', function(data) { addChatMessage(data.username, data.message, data.timestamp, data.is_system); });
-        // |
         socket.on('chat_history', function(data) {
             if (data.messages && chatMessagesContainer) {
                 chatMessagesContainer.innerHTML = '';
                 data.messages.forEach(msg => {
                     addChatMessage(msg.username, msg.message, msg.timestamp, msg.is_system);
                 });
+                scrollChatToBottom();
             }
         });
         socket.on('chat_error', function(data) {
             console.error('Chat error:', data.message);
-            // Mostrar erro no chat como mensagem temporária
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'chat-message system';
-            errorDiv.style.background = 'rgba(255, 68, 68, 0.2)';
-            errorDiv.style.borderLeftColor = '#ff4444';
-            errorDiv.innerHTML = `
-                <span class="message">⚠️ ${escapeHtml(data.message)}</span>
-            `;
-            chatMessagesContainer.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 3000);
+            // Mostrar erro como mensagem temporária no chat
+            if (chatMessagesContainer) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'chat-message system';
+                errorDiv.style.background = 'rgba(255, 68, 68, 0.2)';
+                errorDiv.style.borderLeftColor = '#ff4444';
+                errorDiv.innerHTML = `
+                    <span class="message">⚠️ ${escapeHtml(data.message)}</span>
+                `;
+                chatMessagesContainer.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 3000);
+            }
         });
         // |
         // | Game API
@@ -3158,7 +3048,7 @@ body.chat-minimized .chat-toast {
             const chatMinimizeBtn = document.getElementById('chat-minimize-btn');
             
             chatHeader.addEventListener('click', function(e) {
-                if (e.target !== chatMinimizeBtn && e.target !== chatMinimizeBtn.querySelector('*')) {
+                if (e.target !== chatMinimizeBtn) {
                     toggleChatMinimize();
                 }
             });
@@ -3174,27 +3064,24 @@ body.chat-minimized .chat-toast {
                 toggleChatMinimize();
             }
         }
+
         function toggleChatMinimize() {
             const chatContainer = document.getElementById('chat-container');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInputArea = document.getElementById('chat-input-area');
             const minimizeBtn = document.getElementById('chat-minimize-btn');
-            const body = document.body;
             
             isChatMinimized = !isChatMinimized;
             
             if (isChatMinimized) {
-                chatContainer.classList.add('minimized');
+                chatMessages.style.display = 'none';
+                chatInputArea.style.display = 'none';
                 minimizeBtn.textContent = '+';
-                body.classList.add('chat-minimized');
                 localStorage.setItem(`chat_minimized_${gameId}`, 'true');
-                // Se tinha toast, remover
-                if (chatToast) {
-                    chatToast.remove();
-                    chatToast = null;
-                }
             } else {
-                chatContainer.classList.remove('minimized');
+                chatMessages.style.display = 'flex';
+                chatInputArea.style.display = 'flex';
                 minimizeBtn.textContent = '−';
-                body.classList.remove('chat-minimized');
                 localStorage.setItem(`chat_minimized_${gameId}`, 'false');
                 // Resetar contador de não lidas
                 unreadCount = 0;
@@ -3217,6 +3104,7 @@ body.chat-minimized .chat-toast {
             chatInput.value = '';
             chatInput.focus();
         }
+
         function addChatMessage(username, message, timestamp, isSystem = false) {
             if (!chatMessagesContainer) return;
             
@@ -3244,8 +3132,14 @@ body.chat-minimized .chat-toast {
                 unreadCount++;
                 updateChatCount();
                 
-                // Mostrar toast de notificação
-                showChatToast(username, message);
+                // Mostrar notificação visual rápida (apenas mudar cor do header)
+                const chatHeader = document.getElementById('chat-header');
+                if (chatHeader) {
+                    chatHeader.style.background = 'linear-gradient(135deg, #ff4444, #cc0000)';
+                    setTimeout(() => {
+                        if (chatHeader) chatHeader.style.background = 'linear-gradient(135deg, #ffd700, #ffa500)';
+                    }, 2000);
+                }
             }
             
             // Scroll automático apenas se não estiver minimizado
@@ -3255,17 +3149,19 @@ body.chat-minimized .chat-toast {
             
             updateChatCount();
         }
+
         function scrollChatToBottom() {
             if (chatMessagesContainer) {
                 chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
             }
         }
+
         function updateChatCount() {
             const count = chatMessagesContainer ? chatMessagesContainer.children.length : 0;
             const chatCount = document.getElementById('chat-count');
             if (chatCount) {
                 if (unreadCount > 0) {
-                    chatCount.textContent = `${count} (+${unreadCount})`;
+                    chatCount.textContent = `${count} (${unreadCount})`;
                     chatCount.classList.add('new-message');
                 } else {
                     chatCount.textContent = count;
@@ -3273,46 +3169,7 @@ body.chat-minimized .chat-toast {
                 }
             }
         }
-
-        function showChatToast(username, message) {
-            // Não mostrar toast se o chat estiver expandido
-            if (!isChatMinimized) return;
-            
-            // Remover toast anterior se existir
-            if (chatToast) {
-                chatToast.remove();
-            }
-            
-            chatToast = document.createElement('div');
-            chatToast.className = 'chat-toast';
-            chatToast.innerHTML = `
-                <span class="icon">💬</span>
-                <div class="text">
-                    <strong class="username">${escapeHtml(username)}</strong>
-                    <span style="color: #ccc;">: ${escapeHtml(message.substring(0, 50))}${message.length > 50 ? '...' : ''}</span>
-                </div>
-            `;
-            
-            chatToast.addEventListener('click', function() {
-                if (isChatMinimized) {
-                    toggleChatMinimize();
-                }
-                if (chatToast) {
-                    chatToast.remove();
-                    chatToast = null;
-                }
-            });
-            
-            document.body.appendChild(chatToast);
-            
-            // Auto-remover após 5 segundos
-            setTimeout(() => {
-                if (chatToast) {
-                    chatToast.remove();
-                    chatToast = null;
-                }
-            }, 5000);
-        }
+                
         function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
         // UI Event Listeners
@@ -3701,7 +3558,8 @@ body.chat-minimized .chat-toast {
         // |
         // | DOM do Jogo
         document.addEventListener('DOMContentLoaded', function() {
-            // Verificar se acabou de criar uma sala
+            initChat();
+            
             const urlParams = new 'URLSearchParams'(window.location.search);
             if (urlParams.get('created') === 'true') {
                 const playerName = localStorage.getItem('playerName') || 'Jogador';
@@ -3717,8 +3575,6 @@ body.chat-minimized .chat-toast {
                     });
                 }, 500);
             }
-
-            initChat();
         });
         // | Descarregar
         window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } cleanupTurnTimer(); });
