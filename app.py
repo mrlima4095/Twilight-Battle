@@ -98,7 +98,7 @@ CARDS = {
         "type": "creature",
         "life": 512, 
         "attack": 512,
-        "count": 40, 
+        "count": 50, 
         "description": "Não ataca outros elfos. Use para realizar oraculos."
     },
     "zumbi": {
@@ -107,7 +107,7 @@ CARDS = {
         "type": "creature",
         "life": 100, 
         "attack": 100,
-        "count": 40, 
+        "count": 50, 
         "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
         "dies_daylight": True
     },
@@ -117,7 +117,7 @@ CARDS = {
         "type": "creature", 
         "life": 512, 
         "attack": 150, 
-        "count": 40, 
+        "count": 50, 
         "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
     },
     
@@ -127,7 +127,7 @@ CARDS = {
         "type": "creature", 
         "life": 800, 
         "attack": 250, 
-        "count": 40, 
+        "count": 50, 
         "description": "Use-o para invocar feitiços."
     },
     
@@ -311,6 +311,7 @@ CARDS = {
         "name": "Talismã - Imortalidade", 
         "type": "talisman", 
         "count": 1, 
+        "uses_left": 2,
         "description": "Se o jogador for morto com este item em mãos ele terá seus pontos de vida restaurados."
     },
     "talisma_verdade": {
@@ -408,7 +409,7 @@ CARDS = {
         "name": "Oráculo", 
         "type": "oracle", 
         "count": 1, 
-        "description": "Mate o oponente com o talismã da imortalidade três vezes para que ele seja derrotado permanentemente, seja rápido antes que ele junte todos os talismãs."
+        "description": "Quando você finaliza o oponente, o talismã da imortalidade não pode ser usado."
     },
     
     # Rituais (requerem condições específicas)
@@ -1103,7 +1104,7 @@ class Game:
                 attack_power += weapon_attack
         
         # Talismã Guerreiro
-        for talisman in attacker['talismans']:
+        for talisman in attacker['hand']:
             if talisman['id'] == 'talisma_guerreiro':
                 attack_power += 1024
         
@@ -1155,23 +1156,36 @@ class Game:
             damage_to_player = remaining_damage
             
             has_immortality = False
-            for talisman in defender['hand']:
+            immortality_index = -1
+            
+            # Verificar se tem talismã na mão
+            for i, talisman in enumerate(defender['hand']):
                 if talisman['id'] == 'talisma_imortalidade':
                     has_immortality = True
+                    immortality_index = i
                     break
             
             if has_immortality:
-                defender['life'] = 5000
-                damage_log.append("✨ Talismã da Imortalidade salvou o jogador!")
-                damage_to_player = 0
-            else:
-                defender['life'] -= remaining_damage
-                damage_log.append(f"⚔️ Jogador recebeu {remaining_damage} de dano direto")
+                talisman = defender['hand'][immortality_index]                
+                talisman['uses_left'] -= 1
+                uses_left = talisman['uses_left']
                 
-                if defender['life'] <= 0:
-                    player_killed = True
-                    self.process_player_death(target_username)
-                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
+                old_life = defender['life']
+                defender['life'] = 5000
+                
+                damage_log.append(f"✨ Talismã da Imortalidade salvou {defender['name']}! ({uses_left} uso(s) restante(s))")
+                damage_log.append(f"   Vida restaurada: {old_life} → 5000")
+                damage_to_player = 0
+                
+                if uses_left <= 0:
+                    used_talisman = defender['hand'].pop(immortality_index)
+                    used_talisman['uses_left'] = 2
+                    
+                    self.deck.append(used_talisman)
+                    shuffle(self.deck)
+                    
+                    damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
+                    
         
         self.use_action(username, 'attack')
         
