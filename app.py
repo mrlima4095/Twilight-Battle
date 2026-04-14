@@ -1177,7 +1177,7 @@ class Game:
                     self.process_player_death(target_username)
                     damage_log.append(f"💀 {defender['name']} foi derrotado! O Oráculo cumpriu seu propósito!")
 
-                    used_oracle = defender['hand'].pop(oracle_index)
+                    used_oracle = attacker['hand'].pop(oracle_index)
                     self.deck.append(used_oracle)
                     shuffle(self.deck)
 
