@@ -3702,10 +3702,10 @@ if __name__ == '__main__':
         socketio.run(app, debug=False, port=5000)
         
     if len(sys.argv) > 1 and sys.argv[1] == "-x":
+        print("Running...")
+        run()
+    else:
         thread = threading.Thread(target=run, daemon=True)
         thread.start()
     
         AdminShell().cmdloop()
-    else:
-        print("Running...")
-        run()
