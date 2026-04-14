@@ -1294,7 +1294,7 @@ class Game:
 
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
-        broadcast_system_message(self.game_id, f'💀 {player_name} foi derrotado!')
+        broadcast_system_message(self.game_id, f'💀 {username} foi derrotado!')
         
         player = self.player_data[username]
         
