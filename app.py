@@ -1151,22 +1151,45 @@ class Game:
         # Dano restante vai para o jogador
         damage_to_player = 0
         player_killed = False
-        
+
         if remaining_damage > 0:
             damage_to_player = remaining_damage
             
-            has_immortality = False
+            oracle_index = -1
+            for i, card in enumerate(attacker['hand']):
+                if card['id'] == 'oraculo_imortalidade':
+                    oracle_index = i
+                    break
+            
             immortality_index = -1
             
-            # Verificar se tem talismã na mão
             for i, talisman in enumerate(defender['hand']):
                 if talisman['id'] == 'talisma_imortalidade':
-                    has_immortality = True
                     immortality_index = i
                     break
             
-            if has_immortality:
-                talisman = defender['hand'][immortality_index]                
+            # Se o atacante tem o Oráculo, o Talismã é ANULADO
+            if oracle_index != -1 and immortality_index != -1:
+                defender['life'] -= remaining_damage
+                damage_log.append(f"⚔️ {defender['name']} recebeu {remaining_damage} de dano direto")
+                
+                if defender['life'] <= 0:
+                    player_killed = True
+                    self.process_player_death(target_username)
+                    damage_log.append(f"💀 {defender['name']} foi derrotado! O Oráculo cumpriu seu propósito!")
+
+                    socketio.emit('oracle_activated', {
+                        'attacker': attacker['name'],
+                        'defender': defender['name'],
+                        'message': f'📜 {attacker["name"]} usou o Oráculo da Imortalidade para anular o Talismã de {defender["name"]}!'
+                    }, room=self.game_id)
+            elif immortality_index != -1:
+                # Talismã funciona normalmente
+                talisman = defender['hand'][immortality_index]
+                
+                if 'uses_left' not in talisman:
+                    talisman['uses_left'] = 2
+                
                 talisman['uses_left'] -= 1
                 uses_left = talisman['uses_left']
                 
@@ -1180,13 +1203,18 @@ class Game:
                 if uses_left <= 0:
                     used_talisman = defender['hand'].pop(immortality_index)
                     used_talisman['uses_left'] = 2
-                    
                     self.deck.append(used_talisman)
                     shuffle(self.deck)
-                    
                     damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
-                    
-        
+            else:
+                defender['life'] -= remaining_damage
+                damage_log.append(f"⚔️ {defender['name']} recebeu {remaining_damage} de dano direto")
+                
+                if defender['life'] <= 0:
+                    player_killed = True
+                    self.process_player_death(target_username)
+                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
+            
         self.use_action(username, 'attack')
         
         result = {
