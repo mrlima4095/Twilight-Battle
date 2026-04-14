@@ -409,7 +409,7 @@ CARDS = {
         "name": "Oráculo", 
         "type": "oracle", 
         "count": 1, 
-        "description": "Quando você finaliza o oponente, o talismã da imortalidade não pode ser usado."
+        "description": "Se você atacar um jogador que possui o Talismã da Imortalidade, o talismã é anulado e o jogador morre como qualquer outro. O Oráculo é consumido após o uso."
     },
     
     # Rituais (requerem condições específicas)
@@ -1177,6 +1177,10 @@ class Game:
                     player_killed = True
                     self.process_player_death(target_username)
                     damage_log.append(f"💀 {defender['name']} foi derrotado! O Oráculo cumpriu seu propósito!")
+
+                    used_oracle = defender['hand'].pop(oracle_index)
+                    self.deck.append(used_oracle)
+                    shuffle(self.deck)
 
                     socketio.emit('oracle_activated', {
                         'attacker': attacker['name'],
