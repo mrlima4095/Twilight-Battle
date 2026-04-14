@@ -88,6 +88,60 @@ games = {}
 players = {}
 waiting_players = []
 
+# Adicione no início, junto com outras estruturas de dados
+chat_messages = {}  # game_id -> list of messages
+MAX_CHAT_MESSAGES = 200
+
+# Lista de palavras censuradas (mini censura)
+PROFANITY_LIST = [
+    'porra', 'caralho', 'krl', 'krlh', 'puta', 'merda', 'foda', 
+    'bosta', 'cacete', 'desgraça', 'pqp', 'fdp', 'vsf', 'vtnc',
+    'arrombado', 'cu', 'buceta', 'viado', 'corno'
+]
+
+def censor_text(text):
+    censored = text
+    for word in PROFANITY_LIST:
+        if word in censored.lower():
+            # Substitui preservando case original aproximadamente
+            pattern = re.compile(re.escape(word), re.IGNORECASE)
+            censored = pattern.sub('***', censored)
+    return censored
+
+def add_chat_message(game_id, username, message, is_system=False):
+    if game_id not in chat_messages:
+        chat_messages[game_id] = []
+    
+    # Censurar apenas mensagens de usuário (não sistema)
+    final_message = message
+    if not is_system:
+        final_message = censor_text(message)
+    
+    chat_messages[game_id].append({
+        'username': username,
+        'message': final_message,
+        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'is_system': is_system
+    })
+    
+    # Manter apenas as últimas MAX_CHAT_MESSAGES mensagens
+    if len(chat_messages[game_id]) > MAX_CHAT_MESSAGES:
+        chat_messages[game_id] = chat_messages[game_id][-MAX_CHAT_MESSAGES:]
+    
+    return final_message
+def broadcast_system_message(game_id, message):
+    if game_id not in games:
+        return
+    
+    add_chat_message(game_id, 'Sistema', message, is_system=True)
+    
+    socketio.emit('chat_message', {
+        'username': 'Sistema',
+        'message': message,
+        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'is_system': True
+    }, room=game_id)
+
 # Definição das cartas
 CARDS = {
     # Criaturas
@@ -1240,6 +1294,7 @@ class Game:
 
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
+        broadcast_system_message(game_id, f'💀 {player_name} foi derrotado!')
         
         player = self.player_data[username]
         
@@ -2085,7 +2140,7 @@ def start_game(game_id):
     
     if len(game.players) >= 2:  # Mínimo 2 jogadores
         game.started = True
-        # Notificar todos os jogadores
+        broadcast_system_message(game_id, f'🎮 O jogo começou! Que comece a batalha! ⚔️')
         socketio.emit('game_started', {'game_id': game_id}, room=game_id)
         return jsonify({'success': True})
     
@@ -2280,7 +2335,9 @@ def handle_join_game(data):
         
         # Lista de jogadores (usernames)
         players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
-        
+
+        broadcast_system_message(game_id, f'{username} entrou na sala')
+
         emit('player_joined', {
             'username': username,
             'players': players_list
@@ -2311,6 +2368,7 @@ def handle_leave_game(data):
     
     # Remover jogador
     success, was_creator, winner = game.remove_player(username)
+    broadcast_system_message(game_id, f'{username} saiu da sala')
     
     # Limpar jogo atual da conta do usuário
     accounts = load_accounts()
@@ -2342,7 +2400,8 @@ def handle_leave_game(data):
     # Se result for um username, é o vencedor
     if winner and not was_creator:
         winner_name = game.player_data[winner]['name']
-        emit('game_over', {
+        broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
+        emit('game_over', { 
             'winner': winner,
             'winner_name': winner_name,
             'message': f'🏆 {winner_name} VENCEU O JOGO!'
@@ -2608,6 +2667,61 @@ def handle_ping_game(data):
             emit('pong_game', {'status': 'ok'})
         else:
             emit('pong_game', {'status': 'player_not_found'})
+
+@socketio.on('send_chat_message')
+def handle_send_chat_message(data):
+    """Envia mensagem de chat para a sala"""
+    game_id = data.get('game_id')
+    message = data.get('message', '').strip()
+    
+    if not game_id or not message:
+        emit('chat_error', {'message': 'Mensagem vazia'})
+        return
+    
+    # Obter username
+    username = get_current_user()
+    if not username:
+        # Tentar obter do socket mapping
+        for gid, game in games.items():
+            if gid == game_id:
+                username = game.get_player_by_socket(request.sid)
+                break
+    
+    if not username:
+        emit('chat_error', {'message': 'Usuário não identificado'})
+        return
+    
+    if game_id not in games:
+        emit('chat_error', {'message': 'Sala não encontrada'})
+        return
+    
+    # Limitar tamanho da mensagem
+    if len(message) > 500:
+        emit('chat_error', {'message': 'Mensagem muito longa (máx. 500 caracteres)'})
+        return
+    
+    # Adicionar mensagem ao histórico
+    censored_message = add_chat_message(game_id, username, message, is_system=False)
+    
+    # Emitir para toda a sala
+    emit('chat_message', {
+        'username': username,
+        'message': censored_message,
+        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'is_system': False
+    }, room=game_id)
+
+@socketio.on('get_chat_history')
+def handle_get_chat_history(data):
+    """Retorna o histórico de mensagens do chat"""
+    game_id = data.get('game_id')
+    
+    if not game_id:
+        emit('chat_history', {'messages': []})
+        return
+    
+    messages = chat_messages.get(game_id, [])
+    emit('chat_history', {'messages': messages})
 
 @socketio.on('player_action')
 def handle_player_action(data):

@@ -566,6 +566,157 @@
         #turn-timer[style*="#ff4444"] {
             animation: timerPulse 0.5s infinite;
         }
+
+        /* Chat Styles */
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .chat-container.minimized {
+            height: 45px;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 12px 15px;
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            border-radius: 12px 12px 0 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .chat-header span {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chat-header .chat-count {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 12px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+        }
+
+        .chat-message {
+            padding: 5px 10px;
+            border-radius: 10px;
+            word-wrap: break-word;
+            font-size: 13px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-message.system {
+            background: rgba(255, 215, 0, 0.2);
+            border-left: 3px solid #ffd700;
+            font-style: italic;
+            color: #ffd700;
+        }
+
+        .chat-message.user {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-message .username {
+            font-weight: bold;
+            color: #ffd700;
+            margin-right: 8px;
+        }
+
+        .chat-message .timestamp {
+            font-size: 10px;
+            color: #888;
+            margin-left: 8px;
+        }
+
+        .chat-message .message {
+            color: #fff;
+        }
+
+        .chat-input-area {
+            padding: 10px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #ffd700;
+            border-radius: 20px;
+            color: #fff;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-send-btn {
+            padding: 8px 15px;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chat-send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .chat-minimize-btn {
+            background: none;
+            border: none;
+            color: #1a1a2e;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Responsivo para mobile */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 280px;
+                height: 350px;
+                bottom: 10px;
+                right: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -671,6 +822,22 @@
                 <button onclick="cancelMoveMode()" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; border: none; border-radius: 3px; color: white; cursor: pointer;">Cancelar</button>
             </div>
         </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chat-container">
+            <div class="chat-header" id="chat-header">
+                <span>
+                    💬 Chat da Sala
+                    <span class="chat-count" id="chat-count">0</span>
+                </span>
+                <button class="chat-minimize-btn" id="chat-minimize-btn">−</button>
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." maxlength="500">
+                <button class="chat-send-btn" id="chat-send-btn">Enviar</button>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -703,6 +870,11 @@
         let firstSelection = null;
         let equipMode = false;
         let selectedItemForEquip = null;
+
+        let chatMessagesContainer = null;
+        let chatInput = null;
+        let chatSendBtn = null;
+        let isChatMinimized = false;
 
         let turnTimer = null;
         let turnTimeLeft = 60;
@@ -944,6 +1116,31 @@
                     color: '#fff'
                 });
             }
+        });
+        // |
+        // | Game Chat
+        socket.on('chat_message', function(data) { addChatMessage(data.username, data.message, data.timestamp, data.is_system); });
+        // |
+        socket.on('chat_history', function(data) {
+            if (data.messages && chatMessagesContainer) {
+                chatMessagesContainer.innerHTML = '';
+                data.messages.forEach(msg => {
+                    addChatMessage(msg.username, msg.message, msg.timestamp, msg.is_system);
+                });
+            }
+        });
+        socket.on('chat_error', function(data) {
+            console.error('Chat error:', data.message);
+            // Mostrar erro no chat como mensagem temporária
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'chat-message system';
+            errorDiv.style.background = 'rgba(255, 68, 68, 0.2)';
+            errorDiv.style.borderLeftColor = '#ff4444';
+            errorDiv.innerHTML = `
+                <span class="message">⚠️ ${escapeHtml(data.message)}</span>
+            `;
+            chatMessagesContainer.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 3000);
         });
         // |
         // | Game API
@@ -1991,8 +2188,6 @@
             return icons[type] || '📦';
         }
 
-
-
         function selectGraveyardCard(cardId, cardName) {
             console.log('Carta do cemitério selecionada:', cardId, cardName);
             
@@ -2818,6 +3013,108 @@
             });
         }
 
+        // Chat System
+        function initChat() {
+            chatMessagesContainer = document.getElementById('chat-messages');
+            chatInput = document.getElementById('chat-input');
+            chatSendBtn = document.getElementById('chat-send-btn');
+            
+            // Carregar histórico do chat
+            socket.emit('get_chat_history', { game_id: gameId });
+            
+            // Event listeners
+            chatSendBtn.addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            
+            // Minimizar/Expandir chat
+            const chatHeader = document.getElementById('chat-header');
+            const chatMinimizeBtn = document.getElementById('chat-minimize-btn');
+            
+            chatHeader.addEventListener('click', function(e) {
+                if (e.target !== chatMinimizeBtn) {
+                    toggleChatMinimize();
+                }
+            });
+            
+            chatMinimizeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleChatMinimize();
+            });
+        }
+        function toggleChatMinimize() {
+            const chatContainer = document.getElementById('chat-container');
+            const minimizeBtn = document.getElementById('chat-minimize-btn');
+            
+            isChatMinimized = !isChatMinimized;
+            
+            if (isChatMinimized) {
+                chatContainer.classList.add('minimized');
+                minimizeBtn.textContent = '+';
+            } else {
+                chatContainer.classList.remove('minimized');
+                minimizeBtn.textContent = '−';
+                // Scroll para última mensagem
+                scrollChatToBottom();
+            }
+        }
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+            
+            socket.emit('send_chat_message', {
+                game_id: gameId,
+                message: message
+            });
+            
+            chatInput.value = '';
+            chatInput.focus();
+        }
+        function addChatMessage(username, message, timestamp, isSystem = false) {
+            if (!chatMessagesContainer) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isSystem ? 'system' : 'user'}`;
+            
+            if (isSystem) {
+                messageDiv.innerHTML = `
+                    <span class="message">📢 ${message}</span>
+                    <span class="timestamp">${timestamp}</span>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <span class="username">${escapeHtml(username)}</span>
+                    <span class="message">${escapeHtml(message)}</span>
+                    <span class="timestamp">${timestamp}</span>
+                `;
+            }
+            
+            chatMessagesContainer.appendChild(messageDiv);
+            updateChatCount();
+            
+            // Scroll automático apenas se não estiver minimizado
+            if (!isChatMinimized) {
+                scrollChatToBottom();
+            }
+        }
+        function scrollChatToBottom() {
+            if (chatMessagesContainer) {
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            }
+        }
+        function updateChatCount() {
+            const count = chatMessagesContainer ? chatMessagesContainer.children.length : 0;
+            const chatCount = document.getElementById('chat-count');
+            if (chatCount) {
+                chatCount.textContent = count;
+            }
+        }
+
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
         // UI Event Listeners
         // | (Pegar carta)
@@ -3206,12 +3503,13 @@
         // | DOM do Jogo
         document.addEventListener('DOMContentLoaded', function() {
             // Verificar se acabou de criar uma sala
-            const urlParams = new URLSearchParams(window.location.search);
+            const urlParams = new 'URLSearchParams'(window.location.search);
             if (urlParams.get('created') === 'true') {
                 const playerName = localStorage.getItem('playerName') || 'Jogador';
                 
                 // Limpar sessão anterior se existir
                 clearSession();
+                initChat();
                 
                 // Pequeno delay para garantir que a sala foi criada
                 setTimeout(() => {
