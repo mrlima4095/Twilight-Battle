@@ -627,7 +627,12 @@
             openBookIndex: null,
             isBookEditor: false,
             activeBook: null,
-            activeBookIndex: null
+            activeBookIndex: null,
+            library: {
+                reputation: 50,
+                hasMembership: false,
+                loans: [] // Array de { bookId, bookTitle, dueSeason, dueDay, dueYear }
+            }
         };
         
         const RACES = {
@@ -739,7 +744,19 @@
                 description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
                 actions: [
                     { name: '🚪 Entrar no Salão Principal', action: 'goGreatHall' },
+                    { name: '📚 Visitar Biblioteca Real', action: 'goLibrary' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
+                ]
+            },
+            library: {
+                name: '📚 Biblioteca Real',
+                description: 'Uma imponente biblioteca de pedra com vitrais coloridos. Estantes altas guardam centenas de livros sobre todos os assuntos imagináveis. O cheiro de pergaminho antigo preenche o ar.',
+                allowsStations: false,
+                actions: [
+                    { name: '📖 Procurar Livros', action: 'searchLibraryBooks' },
+                    { name: '🔄 Devolver Livros', action: 'returnLibraryBooks' },
+                    { name: '💬 Conversar com a Bibliotecária', action: 'talkToLibrarian' },
+                    { name: '🔙 Voltar para o Pátio', action: 'goCastleGate' }
                 ]
             },
             great_hall: {
@@ -1090,7 +1107,14 @@
             wooden_spoon: { name: 'Colher de Madeira', type: 'tool', slot: 'mainhand', attack: 3, defense: 0, durability: 40, maxDurability: 40, description: 'Colher de madeira para cozinhar e servir alimentos.' },
             wooden_fork: { name: 'Garfo de Madeira', type: 'tool', slot: 'mainhand', attack: 4, defense: 0, durability: 35, maxDurability: 35, description: 'Garfo rústico de madeira, ideal para refeições camponesas.' },
 
-map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
+            map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
+
+            library_card: { 
+                name: 'Cartão de Membro da Biblioteca', 
+                type: 'library_card', 
+                consumable: false, 
+                description: 'Cartão de membro da Biblioteca Real. Apresente para pegar livros emprestados.' 
+            },
 
             bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5 },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, value: 8, givesEmptyBottle: true },
@@ -1282,7 +1306,6 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 onAbsent: () => addLog('🌲 Carlos foi para a floresta buscar madeira de qualidade.'),
                 onGreet: () => addLog('🔨 Carlos acena com a mão enquanto lixa uma peça de madeira.')
             },
-            
             artisan: {
                 id: 'artisan',
                 name: 'Mateus',
@@ -1317,7 +1340,6 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 onAbsent: () => addLog('🌅 Mateus foi pintar o pôr do sol em algum lugar especial.'),
                 onGreet: () => addLog('🎨 Mateus acena animado enquanto mostra uma nova escultura.')
             },
-            
             weaver: {
                 id: 'weaver',
                 name: 'Isadora',
@@ -1396,7 +1418,6 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 onAbsent: () => addLog('🌾 Miguel foi cuidar da plantação. Volte mais tarde!'),
                 onGreet: () => addLog('👨‍🌾 Miguel acena com um sorriso largo enquanto seca o suor da testa.')
             },
-            
             farmerAna: {
                 id: 'farmerAna',
                 name: 'Ana',
@@ -1438,7 +1459,56 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 onAbsent: () => addLog('🍞 Ana saiu para comprar mais farinha no moinho. Volte mais tarde!'),
                 onGreet: () => addLog('👩‍🌾 Ana sorri e oferece um pedaço de pão enquanto conversa.')
             },
-            
+
+            librarian: {
+                id: 'librarian',
+                name: 'Jenny',
+                title: 'Bibliotecária Real',
+                emoji: '📚',
+                sleepyEmoji: '😴📚',
+                location: 'library',
+                locationName: 'Biblioteca Real',
+                greeting: function() {
+                    if (!gameState.library?.hasMembership) {
+                        return `Bem-vindo à Biblioteca Real, ${gameState.character.name}! Para pegar livros emprestados, você precisa adquirir um cartão de membro. Dê uma olhada na minha loja!`;
+                    }
+                    const activeLoans = gameState.library?.loans?.length || 0;
+                    const reputation = gameState.library?.reputation || 50;
+                    return `Olá, membro ${gameState.character.name}! Você tem ${activeLoans} livro(s) emprestado(s) e sua reputação é ${reputation} pontos. Lembre-se de devolver os livros em até 60 dias!`;
+                },
+                farewell: "Volte sempre! Conhecimento é o maior tesouro.",
+                sleepyMessages: [
+                    "*Ronco suave* Livros... Zzz...",
+                    "*Acordando* A biblioteca já fechou! Volte amanhã.",
+                    "Silêncio... Estou tentando descansar...",
+                    "*Espreguiçando* Hora de fechar. Até amanhã!"
+                ],
+                sleepingMessage: 'Jenny está dormindo. A biblioteca está fechada até o amanhecer!',
+                absentMessage: 'Jenny não está na biblioteca agora. Deve estar organizando os arquivos nos fundos.',
+                topics: [
+                    { name: '🔍 Perdi meu cartão!', message: 'Serio? *risos* Não julgo... Se eu precisasse de um também viveria perdendo. Para recuperar seu acesso basta comprar outro cartão!' }
+                    { name: '📚 Sobre a Biblioteca', message: 'Esta biblioteca foi fundada há 200 anos pelo Rei Alaric I. Temos mais de 5000 volumes!' },
+                    { name: '📖 Livros Recomendados', message: 'Se você gosta de história, recomendo "A Fundação da Aurora". Para aventureiros, o "Bestiário" é essencial!' },
+                    { name: '⭐ Sistema de Reputação', message: 'Devolver livros no prazo aumenta sua reputação. Atrasos diminuem. Se sua reputação chegar a 0, precisará pagar 30 moedas para resetá-la.' },
+                    { name: '💬 Como está o movimento?', message: 'Ultimamente, muitos aventureiros têm visitado a biblioteca. O conhecimento é valioso para quem explora o mundo!' }
+                ],
+                // ========== NOVO: SHOP PARA VENDER O CARTÃO ==========
+                shopItems: [
+                    { id: 'library_card', price: 5 }
+                ],
+                buyPriceMultiplier: 1.0,
+                canSellToNPC: false,
+                sellPriceMultiplier: 0.4,
+                shopkeeperName: 'Jenny - Venda de Cartões',
+                // ================================================
+                dayBehavior: { homeChance: 1.0, alwaysAwake: true },
+                nightBehavior: { homeChance: 1.0, sleepChance: 1.0 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null },
+                onSleep: () => addLog('📚 Jenny apaga as velas e fecha a biblioteca.'),
+                onAbsent: () => addLog('📚 Jenny está organizando os livros nos fundos da biblioteca.'),
+                onGreet: () => addLog('📚 Jenny acena silenciosamente, colocando o dedo nos lábios pedindo silêncio.')
+            },
+
             captain: {
                 id: 'captain',
                 name: 'Aldric',
@@ -1473,7 +1543,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                     { id: 'iron_arrow', price: 3 }
                 ],
                 buyPriceMultiplier: 0.85,
-                canSellToNPC: true,
+                canSellToNPC: false,
                 sellPriceMultiplier: 0.4,
                 shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
                 dayBehavior: { homeChance: 0.8, alwaysAwake: true },
@@ -1484,7 +1554,6 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 onGreet: () => addLog('🗡️ Capitão Aldric acena respeitosamente.'),
                 onFarewell: () => addLog('🗡️ "Vá com honra, aventureiro!"')
             },
-            
             king: {
                 id: 'king',
                 name: 'Alaric',
@@ -1589,6 +1658,40 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 ]
             }
         }
+
+        const LIBRARY_BOOKS = {
+            // Livros de História
+            history_aurora: {
+                id: 'history_aurora',
+                title: 'A Fundação da Aurora',
+                author: 'Historiador Aldric',
+                content: 'Orion Fellmore derrotou Gauthiel Kotah',
+                type: 'history',
+                value: 25,
+                loanDays: 60
+            },
+            great_war: {
+                id: 'great_war',
+                title: 'A Grande Guerra dos Cinco Reinos',
+                author: 'Mestre Theodoro',
+                content: 'No ano de 1123 da Era Antiga, cinco reinos travaram uma batalha sangrenta...',
+                type: 'history',
+                value: 30,
+                loanDays: 60
+            },
+            
+            // Livros de Receitas
+            cookbook: {
+                id: 'cookbook',
+                title: '🍲 Livro de Receitas da Aurora',
+                author: 'Dona Ana',
+                content: 'Pão caseiro, sopa de legumes, carne assada com ervas...',
+                type: 'cooking',
+                value: 20,
+                loanDays: 60
+            },
+            
+        };
 
         // Drag and Drop Variables
         let draggedItemIndex = null;
@@ -4452,7 +4555,8 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
             
             const titleInput = document.getElementById('book-title');
             const contentInput = document.getElementById('book-content');
-            
+
+            //"".replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '').replace(/\s*on\w+\s*=\s*[^\s>]+/gi, '').replace(/<(iframe|object|embed)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '').replace(/<button\b[^>]*>([\s\S]*?)<\/button>/gi, '[$1]').replace(/<a\b[^>]*href=["']([^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)');
             // Salvar conteúdo atual
             gameState.activeBook.title = titleInput.value;
             gameState.activeBook.content = contentInput.value;
@@ -4491,10 +4595,9 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 
                 Swal.fire({
                     title: '📜 Livro Assinado!',
-                    html: `<p>O livro "${gameState.activeBook.title}" foi assinado por <strong>${gameState.activeBook.signer}</strong>.</p>
-                        <p>Agora ele está permanentemente selado e não pode mais ser editado.</p>`,
+                    html: `<p>O livro "${gameState.activeBook.title}" foi assinado por <strong>${gameState.activeBook.signer}</strong>.</p><br><p>Agora ele está permanentemente selado e não pode mais ser editado.</p>`,
                     icon: 'success',
-                    confirmButtonText: 'OK',
+                    confirmButtonText: 'Entendi',
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#4CAF50'
@@ -4502,7 +4605,6 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 
                 addLog(`✍️ ${gameState.character.name} assinou o livro "${gameState.activeBook.title}"!`);
                 
-                // Fechar e reabrir como leitor
                 closeBookUI();
             }
         }
@@ -4540,6 +4642,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         function goToMainSquare() { go('main_square', '🏛️ Você entra na Praça Principal, coração do reino.'); }
         function goToMainGate() { go('main_gate', '🚪 Você se aproxima do imponente Portão Principal.'); }
         function goCastleGate() { go('castle_gate', '🏰 Você entra no pátio do castelo.'); }
+        function goLibrary() { if (gameState.timeOfDay === 'day') { go('library', '📚 Você entra na majestosa Biblioteca Real.'); } else { addLog('🌙 A Biblioteca Real está fechada. Volte durante o dia!'); Swal.fire({ title: '🔒 Biblioteca Fechada', text: 'A Biblioteca Real fecha ao anoitecer. Volte durante o dia!', icon: 'info', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#1a1a2e', color: '#fff' }); } }
         function goGreatHall() { go('great_hall', '🚪 Você entra no majestoso Salão Principal.'); }
         function goThroneRoom() { go('throne_room', '👑 Você entra na Sala do Trono.'); }
         function goWestBridge() { go('west_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
@@ -5132,6 +5235,582 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
                 gameState.character.mana = Math.min(gameState.character.mana + 10, gameState.character.maxMana);
                 addLog('🎵 As histórias inspiradoras recuperam 10 de mana!');
             }
+        }
+
+        // ========== LIBRARY FUNCTIONS ==========
+        async function buyLibraryMembership() {
+            if (gameState.isDead) return;
+            
+            // Verificar se já tem o cartão no inventário
+            let hasCard = false;
+            let cardIndex = -1;
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && item.type === 'library_card') {
+                    hasCard = true;
+                    cardIndex = i;
+                    break;
+                }
+            }
+            
+            // Se já tem o cartão fisicamente
+            if (hasCard) {
+                Swal.fire({
+                    title: '📚 Você já tem o Cartão!',
+                    html: `<div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📚✨</div>
+                        <p>Jenny olha para você com um sorriso:</p>
+                        <p><em>"${gameState.character.name}, você já possui seu cartão de membro!</em></p>
+                        <p><em>Ele está no seu inventário. Não precisa comprar outro!"</em></p>
+                    </div>`,
+                    icon: 'info',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem membro registrado mas perdeu o cartão
+            if (gameState.library.hasMembership) {
+                Swal.fire({
+                    title: '🔍 Cartão Perdido?',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">❓</div>
+                            <div>
+                                <strong style="color: #ffd700; font-size: 18px;">Jenny, a Bibliotecária</strong>
+                                <p style="margin: 5px 0 0 0;">"${gameState.character.name}... Você já é membro, mas parece que perdeu seu cartão?"</p>
+                            </div>
+                        </div>
+                        <p>Posso emitir uma segunda via do seu cartão por apenas <strong style="color: #ffd700;">3 moedas</strong>.</p>
+                        <p style="color: #888;">Deseja emitir uma nova via?</p>
+                    </div>`,
+                    icon: 'question',
+                    confirmButtonText: '✅ Sim, emitir segunda via (3💰)',
+                    cancelButtonText: '❌ Não, vou procurar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    cancelButtonColor: '#ff4444'
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        if (gameState.character.gold >= 3) {
+                            gameState.character.gold -= 3;
+                            
+                            // Adicionar cartão ao inventário
+                            addItemToInventory('library_card', 1);
+                            
+                            addLog('📚 Jenny emitiu uma segunda via do seu cartão de membro por 3 moedas!');
+                            
+                            await Swal.fire({
+                                title: '📚 Segunda Via Emitida!',
+                                html: `<div style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">📚✨</div>
+                                    <p>Jenny entrega um novo cartão:</p>
+                                    <p><em>"Aqui está, ${gameState.character.name}! Não perca novamente!"</em></p>
+                                    <p style="margin-top: 15px;">Você gastou <strong>3 moedas</strong>.</p>
+                                </div>`,
+                                icon: 'success',
+                                confirmButtonText: 'Guardar cartão',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                            
+                            updateUI();
+                        } else {
+                            Swal.fire({
+                                title: '❌ Moedas Insuficientes',
+                                html: `<div style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 15px;">💰</div>
+                                    <p>Jenny olha com pesar:</p>
+                                    <p><em>"Ah, ${gameState.character.name}... A segunda via custa 3 moedas.</em></p>
+                                    <p><em>Volte quando tiver o valor!"</em></p>
+                                    <p style="margin-top: 15px;">Você tem <strong style="color: #ffd700;">${gameState.character.gold} moedas</strong>. Faltam <strong style="color: #ff4444;">${3 - gameState.character.gold} moedas</strong>.</p>
+                                </div>`,
+                                icon: 'error',
+                                confirmButtonText: 'Voltar depois',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                        }
+                    }
+                });
+                return;
+            }
+            
+            // Primeira compra do cartão (nunca teve)
+            if (gameState.character.gold >= 5) {
+                const result = await Swal.fire({
+                    title: '🎫 Comprar Cartão de Membro?',
+                    html: `<div style="text-align: left;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="font-size: 50px;">📚</div>
+                            <div>
+                                <strong style="color: #ffd700; font-size: 18px;">Jenny, a Bibliotecária</strong>
+                                <p style="margin: 5px 0 0 0;">"Então você quer se tornar um membro da nossa biblioteca?"</p>
+                            </div>
+                        </div>
+                        <p>O cartão de membro custa <strong style="color: #ffd700;">5 moedas</strong> e permite que você:</p>
+                        <ul style="margin-top: 10px;">
+                            <li>📖 Pegue até <strong>3 livros</strong> emprestados por vez</li>
+                            <li>⏰ Prazo de <strong>60 dias</strong> para devolução</li>
+                            <li>⭐ Construa <strong>reputação</strong> devolvendo no prazo</li>
+                        </ul>
+                        <p style="margin-top: 15px; color: #888;">Deseja adquirir o cartão de membro?</p>
+                    </div>`,
+                    icon: 'question',
+                    confirmButtonText: '✅ Sim, comprar por 5💰',
+                    cancelButtonText: `❌ Não, obrigad${gameState.character.gender === 'masculino' ? 'o' : 'a'}`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    cancelButtonColor: '#ff4444'
+                });
+                
+                if (result.isConfirmed) {
+                    gameState.character.gold -= 5;
+                    gameState.library.hasMembership = true;
+                    
+                    // Adicionar cartão físico ao inventário
+                    addItemToInventory('library_card', 1);
+                    
+                    addLog('🎫 Você comprou o cartão de membro da Biblioteca Real com Jenny por 5 moedas!');
+                    
+                    await Swal.fire({
+                        title: '🎫 Cartão de Membro Adquirido!',
+                        html: `<div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📚✨</div>
+                            <p><strong>${gameState.character.name}</strong>, agora você é oficialmente um membro da Biblioteca Real!</p>
+                            <p>Jenny sorri e entrega um cartão de membro personalizado.</p>
+                            <p style="margin-top: 10px;"><strong>📇 O cartão foi adicionado ao seu inventário!</strong></p>
+                            <p style="margin-top: 15px; color: #ffd700;">"Bem-vindo à nossa comunidade de leitores!"</p>
+                        </div>`,
+                        icon: 'success',
+                        confirmButtonText: '📖 Explorar a Biblioteca',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    
+                    updateUI();
+                }
+            } else {
+                await Swal.fire({
+                    title: '❌ Moedas Insuficientes',
+                    html: `<div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">💰</div>
+                        <p>Jenny olha com pesar e diz:</p>
+                        <p><em>"Ah, ${gameState.character.name}... O cartão custa 5 moedas.</em></p>
+                        <p><em>Volte quando tiver o valor, vou guardar um cartão para você!"</em></p>
+                        <p style="margin-top: 15px;">Você tem <strong style="color: #ffd700;">${gameState.character.gold} moedas</strong>. Faltam <strong style="color: #ff4444;">${5 - gameState.character.gold} moedas</strong>.</p>
+                    </div>`,
+                    icon: 'error',
+                    confirmButtonText: 'Voltar depois',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+            }
+        }
+        
+        function searchLibraryBooks() {
+            if (gameState.isDead) return;
+            
+            // VERIFICAR SE TEM O CARTÃO FÍSICO NO INVENTÁRIO
+            let hasCard = false;
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && item.type === 'library_card') {
+                    hasCard = true;
+                    gameState.library.hasMembership = true;
+                    break;
+                }
+            }
+            
+            if (gameState.library.hasMembership && !hasCard) {
+                Swal.fire({
+                    title: '🔍 Cadastro Ativo, mas sem Cartão!',
+                    html: `<div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📇❓</div>
+                        <p>Jenny olha para você:</p>
+                        <p><em>"${gameState.character.name}, você está no nosso cadastro, mas não está com o cartão!</em></p>
+                        <p><em>Você precisa do cartão físico para pegar livros emprestados."</em></p>
+                        <p style="margin-top: 15px;">Fale comigo sobre <strong>"Perdi meu cartão"</strong> para emitir uma segunda via por 3 moedas.</p>
+                    </div>`,
+                    icon: 'warning',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            if (!gameState.library.hasMembership) {
+                Swal.fire({
+                    title: '🎫 Acesso Negado',
+                    text: 'Você precisa comprar o cartão de membro para pegar livros emprestados! Fale com a bibliotecária...',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3500,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
+            
+            // Verificar reputação
+            if (gameState.library.reputation <= 0) {
+                Swal.fire({
+                    title: '⚠️ Reputação Esgotada!',
+                    html: `<div style="text-align: left;">
+                        <p>Sua reputação na biblioteca está em 0!</p>
+                        <p>Isso aconteceu porque você não devolveu livros no prazo.</p>
+                        <p>Para resetar sua reputação e voltar a pegar livros, pague <strong style="color: #ffd700;">30 moedas</strong>.</p>
+                    </div>`,
+                    icon: 'error',
+                    confirmButtonText: 'Pagar 30💰 e Resetar',
+                    cancelButtonText: 'Sair',
+                    showCancelButton: true,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffa500',
+                    cancelButtonColor: '#ff4444'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (gameState.character.gold >= 30) {
+                            gameState.character.gold -= 30;
+                            gameState.library.reputation = 50;
+                            addLog('💰 Você pagou 30 moedas e resetou sua reputação na biblioteca para 50!');
+                            Swal.fire({
+                                title: '✅ Reputação Resetada!',
+                                text: 'Sua reputação agora é 50. Use-a com sabedoria!',
+                                icon: 'success',
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 2500,
+                                background: '#1a1a2e',
+                                color: '#4CAF50'
+                            });
+                            updateUI();
+                            searchLibraryBooks();
+                        } else {
+                            Swal.fire({
+                                title: '❌ Moedas Insuficientes',
+                                text: 'Você precisa de 30 moedas para resetar sua reputação.',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                background: '#1a1a2e',
+                                color: '#fff'
+                            });
+                        }
+                    }
+                });
+                return;
+            }
+            
+            // Verificar limite de livros emprestados (máximo 3)
+            const activeLoans = gameState.library.loans?.length || 0;
+            if (activeLoans >= 3) {
+                Swal.fire({
+                    title: '📚 Limite Atingido',
+                    text: 'Você já tem 3 livros emprestados. Devolva alguns antes de pegar mais!',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Construir lista de livros disponíveis
+            let booksHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            let availableCount = 0;
+            
+            for (const [id, book] of Object.entries(LIBRARY_BOOKS)) {
+                // Verificar se o jogador já tem este livro emprestado
+                const alreadyLoaned = gameState.library.loans?.some(loan => loan.bookId === id);
+                if (alreadyLoaned) continue;
+                
+                availableCount++;
+                booksHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffd700; font-size: 16px;">${book.title}</strong>
+                                <div style="color: #888; font-size: 12px;">por ${book.author}</div>
+                                <div style="color: #aaa; font-size: 11px; margin-top: 5px;">${book.content.substring(0, 80)}${book.content.length > 80 ? '...' : ''}</div>
+                                <div style="color: #4a90e2; font-size: 10px; margin-top: 5px;">📚 Tipo: ${book.type}</div>
+                            </div>
+                            <button class="action-btn success" onclick="window.borrowBook('${id}')" style="padding: 8px 20px;">
+                                📖 Pegar Emprestado
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (availableCount === 0) {
+                booksHtml = '<p style="text-align: center; color: #888;">📚 Não há livros disponíveis no momento. Você já pegou todos os que estavam disponíveis ou já tem todos emprestados!</p>';
+            }
+            booksHtml += '</div>';
+            
+            window.borrowBook = function(bookId) {
+                const book = LIBRARY_BOOKS[bookId];
+                if (!book) return;
+                
+                // Calcular data de devolução (60 dias depois)
+                let dueDay = gameState.dayCount + book.loanDays;
+                let dueSeason = gameState.seasonCount;
+                let dueYear = gameState.yearCount;
+                
+                while (dueDay > 60) {
+                    dueDay -= 60;
+                    dueSeason++;
+                    if (dueSeason > 4) {
+                        dueSeason = 1;
+                        dueYear++;
+                    }
+                }
+                
+                // Adicionar ao inventário como livro
+                const bookItem = {
+                    id: `book_${bookId}`,
+                    name: book.title,
+                    type: 'book',
+                    title: book.title,
+                    content: book.content,
+                    author: book.author,
+                    signed: true,
+                    signer: book.author,
+                    libraryBook: true,
+                    bookId: bookId,
+                    dueSeason: dueSeason,
+                    dueDay: dueDay,
+                    dueYear: dueYear
+                };
+                
+                // Encontrar slot vazio no inventário
+                let added = false;
+                for (let i = 0; i < gameState.inventory.length; i++) {
+                    if (!gameState.inventory[i]) {
+                        gameState.inventory[i] = bookItem;
+                        added = true;
+                        break;
+                    }
+                }
+                
+                if (!added) {
+                    Swal.fire({
+                        title: '❌ Inventário Cheio!',
+                        text: 'Você não tem espaço no inventário para pegar este livro.',
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    return;
+                }
+                
+                // Registrar empréstimo
+                gameState.library.loans.push({
+                    bookId: bookId,
+                    bookTitle: book.title,
+                    dueSeason: dueSeason,
+                    dueDay: dueDay,
+                    dueYear: dueYear,
+                    borrowedAt: `${gameState.dayCount}º dia da ${getSeasonName(gameState.seasonCount)} de ${gameState.yearCount}`
+                });
+                
+                addLog(`📖 Você pegou emprestado "${book.title}". Devolva até o ${dueDay}º dia da ${getSeasonName(dueSeason)} de ${dueYear}!`);
+                
+                Swal.fire({
+                    title: '📚 Livro Emprestado!',
+                    html: `<div style="text-align: left;">
+                        <p><strong>${book.title}</strong></p>
+                        <p>por ${book.author}</p>
+                        <p style="margin-top: 10px;">📅 Data de devolução: <strong style="color: #ffd700;">${dueDay}º dia da ${getSeasonName(dueSeason)} de ${dueYear}</strong></p>
+                        <p>⭐ Lembre-se de devolver no prazo para não perder reputação!</p>
+                    </div>`,
+                    icon: 'success',
+                    confirmButtonText: 'Entendi',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50'
+                });
+                
+                updateUI();
+                Swal.close();
+                delete window.borrowBook;
+            };
+            
+            Swal.fire({
+                title: '📚 Catálogo da Biblioteca',
+                html: booksHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                width: '650px',
+                willClose: () => {
+                    delete window.borrowBook;
+                }
+            });
+        }
+        function returnLibraryBooks() {
+            if (gameState.isDead) return;
+            
+            // Verificar se tem livros emprestados
+            const activeLoans = gameState.library.loans || [];
+            
+            // Procurar livros da biblioteca no inventário
+            const libraryBooksInInventory = [];
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const item = gameState.inventory[i];
+                if (item && item.libraryBook && item.bookId) {
+                    libraryBooksInInventory.push({
+                        index: i,
+                        bookId: item.bookId,
+                        title: item.title,
+                        loanInfo: activeLoans.find(loan => loan.bookId === item.bookId)
+                    });
+                }
+            }
+            
+            if (libraryBooksInInventory.length === 0) {
+                Swal.fire({
+                    title: '📚 Nenhum Livro para Devolver',
+                    text: 'Você não tem nenhum livro da biblioteca no seu inventário para devolver.',
+                    icon: 'info',
+                    confirmButtonText: 'OK',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let booksHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (const book of libraryBooksInInventory) {
+                let statusText = '';
+                let statusColor = '#888';
+                
+                if (book.loanInfo) {
+                    const isLate = checkIfBookIsLate(book.loanInfo.dueSeason, book.loanInfo.dueDay, book.loanInfo.dueYear);
+                    if (isLate) {
+                        statusText = '⚠️ ATRASADO!';
+                        statusColor = '#ff4444';
+                    } else {
+                        statusText = '✅ No prazo';
+                        statusColor = '#4CAF50';
+                    }
+                } else {
+                    statusText = '⚠️ Sem registro';
+                    statusColor = '#ffa500';
+                }
+                
+                booksHtml += `
+                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div style="flex: 1;">
+                                <strong style="color: #ffd700;">${book.title}</strong>
+                                <div style="color: ${statusColor}; font-size: 12px;">${statusText}</div>
+                            </div>
+                            <button class="action-btn success" onclick="window.returnBook(${book.index}, '${book.bookId}')" style="padding: 8px 20px;">
+                                🔄 Devolver
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            booksHtml += '</div>';
+            
+            window.returnBook = function(inventoryIndex, bookId) {
+                const bookItem = gameState.inventory[inventoryIndex];
+                if (!bookItem) return;
+                
+                const loanInfo = gameState.library.loans?.find(loan => loan.bookId === bookId);
+                const isLate = loanInfo ? checkIfBookIsLate(loanInfo.dueSeason, loanInfo.dueDay, loanInfo.dueYear) : true;
+                
+                // Atualizar reputação
+                let reputationChange = 0;
+                if (!isLate) {
+                    reputationChange = 5; // Ganha 5 de reputação por devolver no prazo
+                    gameState.library.reputation = Math.min(100, (gameState.library.reputation || 50) + reputationChange);
+                    addLog(`⭐ Você devolveu "${bookItem.title}" no prazo! +${reputationChange} de reputação.`);
+                } else {
+                    reputationChange = -10; // Perde 10 de reputação por atraso
+                    gameState.library.reputation = Math.max(0, (gameState.library.reputation || 50) + reputationChange);
+                    addLog(`⚠️ Você devolveu "${bookItem.title}" ATRASADO! ${reputationChange} de reputação.`);
+                }
+                
+                // Remover do inventário
+                gameState.inventory[inventoryIndex] = null;
+                
+                // Remover do array de empréstimos
+                const loanIndex = gameState.library.loans.findIndex(loan => loan.bookId === bookId);
+                if (loanIndex !== -1) {
+                    gameState.library.loans.splice(loanIndex, 1);
+                }
+                
+                Swal.fire({
+                    title: isLate ? '⚠️ Livro Devolvido com Atraso' : '✅ Livro Devolvido!',
+                    html: `<div style="text-align: left;">
+                        <p><strong>${bookItem.title}</strong> foi devolvido.</p>
+                        <p>⭐ Reputação: ${reputationChange > 0 ? '+' : ''}${reputationChange} pontos</p>
+                        <p>📊 Reputação atual: <strong style="color: #ffd700;">${gameState.library.reputation}</strong></p>
+                    </div>`,
+                    icon: isLate ? 'warning' : 'success',
+                    confirmButtonText: 'OK',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                
+                updateUI();
+                Swal.close();
+                delete window.returnBook;
+                
+                // Recarregar a interface de devolução se ainda houver livros
+                setTimeout(() => {
+                    const remainingBooks = gameState.inventory.some(item => item && item.libraryBook);
+                    if (remainingBooks) {
+                        returnLibraryBooks();
+                    }
+                }, 500);
+            };
+            
+            Swal.fire({
+                title: '🔄 Devolver Livros',
+                html: booksHtml,
+                icon: 'info',
+                confirmButtonText: '🔙 Voltar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                willClose: () => {
+                    delete window.returnBook;
+                }
+            });
+        }
+
+        function checkIfBookIsLate(dueSeason, dueDay, dueYear) {
+            if (gameState.yearCount > dueYear) return true;
+            if (gameState.yearCount < dueYear) return false;
+            
+            if (gameState.seasonCount > dueSeason) return true;
+            if (gameState.seasonCount < dueSeason) return false;
+            
+            return gameState.dayCount > dueDay;
         }
 
         // ========== NPCs ==========
@@ -5843,6 +6522,7 @@ map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
         async function visitWeaver() { return talkToNPC('weaver'); }
         async function visitFarmerHouse1() { return talkToNPC('farmerMiguel'); }
         async function visitFarmerHouse2() { return talkToNPC('farmerAna'); }
+        async function talkToLibrarian() { return talkToNPC('librarian'); }
         async function talkToCaptain() { return talkToNPC('captain'); }
         async function talkToKing() { return talkToNPC('king'); }
 
