@@ -1234,8 +1234,7 @@ class Game:
             'player_killed': player_killed,
             'log': damage_log
         }
-        
-    return result
+        return result
 
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
