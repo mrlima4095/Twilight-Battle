@@ -141,3 +141,26 @@ INSERT INTO comvenda values (3, '003', 2, 3, 3, 14.99, 0.0, '14.99, '2026-04-09'
 INSERT INTO comivenda values (1, 1, 1, 899.99, 1, 0.0);
 INSERT INTO comivenda values (2, 2, 3, 50.0, 1, 0.0);
 INSERT INTO comivenda values (3, 3, 2, 14.99, 1, 0.0);
+
+
+BRIEFING
+
+
+CLIENTE :  ESCOLA CAMINHO SUAVE
+PRODUTO :  APLICATIVO
+PRAZO : 1 SEMANA
+
+ESTUDO DE CASO
+
+Escola de Educação infantil deseja criar um aplicativo onde as crianças vinculem a imagem ao som. O aplicativo será voltado para crianças de 1 á 4 anos de idade. Segundo a pedagoga da escola Sra, Berenice, o app funcionara como aprendizado de forma lúdica. O app será fornecido gratuitamente aos pais e professores.
+
+REQUISITOS 
+
+- Criar identidade Visual ( Icone / Nome/ Logo /Splash Screen)
+- O App deverá trabalhar com som de animais e som de números 
+( 8 Animais , Números do 1 ao 10)
+- Deverá ter no mínimo 3 telas (Excluindo-se Splash Screen)
+
+
+
+
