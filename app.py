@@ -1057,7 +1057,7 @@ class Game:
         return {'success': True, 'card': card_to_play}
     
     def attack(self, username, target_username):
-        """Ataca outro jogador com verificação de primeira rodada"""
+        """Ataca outro jogador com verificação de primeira rodada e armadilhas"""
         can_attack, message = self.can_attack(username)
         if not can_attack:
             return {'success': False, 'message': message}
@@ -1216,7 +1216,7 @@ class Game:
                         player_killed = True
                         self.process_player_death(target_username)
                         damage_log.append(f"💀 {defender['name']} foi derrotado!")
-            
+                
         self.use_action(username, 'attack')
         
         result = {
@@ -1235,8 +1235,8 @@ class Game:
             'log': damage_log
         }
         
-        return result
-    
+    return result
+
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
         
@@ -2657,36 +2657,36 @@ def handle_player_action(data):
             result = game.draw_card(player_name)
             if result and result.get('success'):
                 log_message = f"📥 {player_name} comprou uma carta"
-                
+
         elif action == 'play_card':
             result = game.play_card(player_name, params['card_id'], params['position_type'], params['position_index'])
             if result and result.get('success'):
                 card_name = result.get('card', {}).get('name', 'uma carta')
                 log_message = f"🎴 {player_name} jogou {card_name}"
-                
+
         elif action == 'attack':
             result = game.attack(player_name, params['target_id'])
             if result and result.get('success'):
                 target_name = result.get('target_name', 'um oponente')
                 damage = result.get('damage_to_player', 0)
                 log_message = f"⚔️ {player_name} atacou {target_name} causando {damage} de dano"
-                
+
         elif action == 'equip_item':
             result = game.equip_item_to_creature(player_name, params['item_card_id'], params['creature_card_id'])
             if result and result.get('success'):
                 log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
-                
+
         elif action == 'cast_spell':
             result = game.cast_spell(player_name, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
             if result and result.get('success'):
                 spell_name = result.get('spell', {}).get('name', 'um feitiço')
                 log_message = f"✨ {player_name} usou {spell_name}"
-                
+
         elif action == 'ritual':
             result = game.perform_ritual(player_name, params['ritual_id'], params.get('target_player_id'))
             if result and result.get('success'):
                 log_message = f"📿 {player_name} realizou {result.get('message', 'um ritual')}"
-                
+
         elif action == 'swap_positions':
             result = game.swap_positions(
                 player_name, 
@@ -2697,7 +2697,7 @@ def handle_player_action(data):
             )
             if result and result.get('success'):
                 log_message = f"🔄 {player_name} trocou posições das cartas"
-                
+
         elif action == 'move_card':
             result = game.move_card(player_name, params['from_type'], params['from_index'], params['to_type'], params['to_index'])
             if result and result.get('success'):
@@ -2733,7 +2733,7 @@ def handle_player_action(data):
             result = game.flip_card(player_name, params['position_type'], params['position_index'])
             if result and result.get('success'):
                 log_message = f"🔄 {player_name} desvirou uma carta"
-                
+
         elif action == 'oracle':
             result = game.perform_oracle(player_name, params['target_id'])
             if result and result.get('success'):

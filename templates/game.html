@@ -149,11 +149,6 @@
             border-color: #44aaff;
         }
         
-        .base-slot.trap {
-            border-color: #ff00ff;
-            background: rgba(255, 0, 255, 0.1);
-        }
-        
         .base-slot.has-card {
             background: rgba(255, 215, 0, 0.2);
             border-color: #ffd700;
@@ -279,10 +274,6 @@
             border-color: #4a90e2;
         }
         
-        .card.trap {
-            border-color: #ff00ff;
-        }
-        
         .card-name {
             font-weight: bold;
             font-size: 11px;
@@ -313,36 +304,7 @@
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
         }
-        
-        .trap-slots {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-            padding: 15px;
-            background: rgba(255, 0, 255, 0.1);
-            border-radius: 10px;
-            border: 1px solid #ff00ff;
-        }
-        
-        .trap-slot {
-            width: 80px;
-            height: 100px;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #ff00ff;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-        
-        .trap-slot.has-trap {
-            background: rgba(255, 0, 255, 0.2);
-        }
-        
+
         .deck-info {
             display: flex;
             gap: 20px;
@@ -395,11 +357,6 @@
         
         .action-btn.spell {
             background: linear-gradient(45deg, #4a90e2, #357abd);
-            color: white;
-        }
-        
-        .action-btn.trap {
-            background: linear-gradient(45deg, #ff00ff, #cc00cc);
             color: white;
         }
         
@@ -661,14 +618,6 @@
                 <div class="bases-row" id="defense-bases"></div>
             </div>
             
-            <div class="trap-slots">
-                <h3>⚠️ Armadilhas (2)</h3>
-                <div class="bases-row" id="trap-slots">
-                    <div class="trap-slot" id="trap-1" onclick="selectTrapSlot(0)">Vazio</div>
-                    <div class="trap-slot" id="trap-2" onclick="selectTrapSlot(1)">Vazio</div>
-                </div>
-            </div>
-            
             <div class="hand-area">
                 <div class="hand-title">📖 Sua mão (<span id="hand-count">0</span> cartas)</div>
                 <div class="hand-cards" id="hand-cards"></div>
@@ -754,7 +703,6 @@
         let firstSelection = null;
         let equipMode = false;
         let selectedItemForEquip = null;
-        let trapSlots = [null, null];
 
         let turnTimer = null;
         let turnTimeLeft = 60;
@@ -1064,7 +1012,6 @@
             const armors = data.cards.filter(c => c.type === 'armor');
             const runes = data.cards.filter(c => c.type === 'rune' || c.id === 'runa');
             const talismans = data.cards.filter(c => c.type === 'talisman');
-            const traps = data.cards.filter(c => c.type === 'trap');
             
             let html = `
                 <div style="max-height: 500px; overflow-y: auto; padding: 10px;">
@@ -1112,13 +1059,6 @@
             if (talismans.length > 0) {
                 html += '<h3 style="color: #ffd700; margin: 15px 0 5px; border-bottom: 1px solid #ffd700; padding-bottom: 5px;">🔮 Talismãs</h3>';
                 talismans.forEach(card => {
-                    html += createGraveyardCardHTML(card);
-                });
-            }
-            
-            if (traps.length > 0) {
-                html += '<h3 style="color: #ff00ff; margin: 15px 0 5px; border-bottom: 1px solid #ff00ff; padding-bottom: 5px;">⚠️ Armadilhas</h3>';
-                traps.forEach(card => {
                     html += createGraveyardCardHTML(card);
                 });
             }
@@ -1947,7 +1887,7 @@
                     defenseBases.appendChild(slot);
                 });
             }
-            
+
             // Mão
             const handCards = document.getElementById('hand-cards');
             handCards.innerHTML = '';
@@ -2322,32 +2262,6 @@
             }
         }
         
-        function selectTrapSlot(index) {
-            if (!selectedCard || selectedCard.type !== 'trap') {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Selecione uma armadilha primeiro',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
-            }
-            
-            socket.emit('player_action', {
-                game_id: gameId,
-                action: 'play_card',
-                params: {
-                    card_id: selectedCard.instance_id,
-                    position_type: 'trap',
-                    position_index: index
-                }
-            });
-            
-            selectedCard = null;
-            actionMode = null;
-        }
-
         function selectTarget(targetUsername) {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
@@ -2696,9 +2610,6 @@
             
             if (card.type === 'creature') {
                 message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
-            } 
-            else if (card.type === 'trap') {
-                message = 'Clique em um slot de armadilha (roxo) para colocá-la.';
             } 
             else if (card.type === 'spell') {
                 message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
