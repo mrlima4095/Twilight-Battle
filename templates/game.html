@@ -1807,6 +1807,52 @@
                     });
                     return;
                 }
+
+                if (type === 'attack') {
+                    // Apenas criaturas podem atacar
+                    if (selectedCard.type === 'creature') {
+                        isValidPlacement = true;
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Carta inválida',
+                            text: 'Apenas criaturas podem ser colocadas em posições de ATAQUE',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
+                } 
+                else if (type === 'defense') {
+                    // Defesa pode receber: criaturas E armadilhas
+                    if (selectedCard.type === 'creature' || selectedCard.type === 'trap') {
+                        isValidPlacement = true;
+                        
+                        // Mensagem específica para armadilha
+                        if (selectedCard.type === 'trap') {
+                            Swal.fire({
+                                icon: 'info',
+                                title: '⚠️ Armadilha posicionada!',
+                                text: `${selectedCard.name} foi colocada em posição de defesa. Será ativada quando atacada!`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                                background: '#1a1a2e',
+                                color: '#fff'
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Carta inválida',
+                            text: `Apenas criaturas e armadilhas podem ser colocadas em posições de DEFESA (tipo: ${selectedCard.type})`,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
+                }
                 
                 socket.emit('player_action', {
                     game_id: gameId,
