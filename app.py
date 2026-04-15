@@ -483,13 +483,6 @@ CARDS = {
     }
 
     # Armadilhas
-    "armadilha_51": {
-        "id": "armadilha_51", 
-        "name": "Armadilha 51", 
-        "type": "trap", 
-        "count": 1, 
-        "description": "Faz o exército do outro jogador ficar bêbado e atacar aliados."
-    },
     "armadilha_171": {
         "id": "armadilha_171", 
         "name": "Armadilha 171", 
@@ -1043,7 +1036,6 @@ class Game:
         self.use_action(username, 'draw')
         
         return {'success': True, 'card': card}
-    
     def play_card(self, username, card_instance_id, position_type, position_index):
         """Joga uma carta da mão para o campo com validação de tipo"""
         if not self.can_act(username, 'play'):
@@ -1064,9 +1056,16 @@ class Game:
             return {'success': False, 'message': 'Carta não encontrada na mão'}
         
         # Validar tipo de carta para a posição
-        if position_type in ['attack', 'defense']:
+        if position_type == 'attack':
+            # Apenas criaturas podem atacar
             if card_to_play.get('type') != 'creature':
-                return {'success': False, 'message': 'Apenas criaturas podem ser colocadas em bases de ataque ou defesa'}
+                return {'success': False, 'message': 'Apenas criaturas podem ser colocadas em bases de ataque'}
+        
+        elif position_type == 'defense':
+            # Defesa pode receber: criaturas E armadilhas
+            allowed_types = ['creature', 'trap']
+            if card_to_play.get('type') not in allowed_types:
+                return {'success': False, 'message': f'Apenas criaturas e armadilhas podem ser colocadas em defesa (tipo: {card_to_play.get("type")})'}
         
         elif position_type == 'equipment':
             valid_equipment_types = {
@@ -1091,19 +1090,19 @@ class Game:
         player['hand'].pop(card_index)
         
         # Colocar carta no local apropriado
-        if position_type in ['attack', 'defense']:
-            if position_type == 'attack':
-                if position_index >= len(player['attack_bases']):
-                    return {'success': False, 'message': 'Posição de ataque inválida'}
-                if player['attack_bases'][position_index] is not None:
-                    return {'success': False, 'message': 'Posição de ataque ocupada'}
-                player['attack_bases'][position_index] = card_to_play
-            else:
-                if position_index >= len(player['defense_bases']):
-                    return {'success': False, 'message': 'Posição de defesa inválida'}
-                if player['defense_bases'][position_index] is not None:
-                    return {'success': False, 'message': 'Posição de defesa ocupada'}
-                player['defense_bases'][position_index] = card_to_play
+        if position_type == 'attack':
+            if position_index >= len(player['attack_bases']):
+                return {'success': False, 'message': 'Posição de ataque inválida'}
+            if player['attack_bases'][position_index] is not None:
+                return {'success': False, 'message': 'Posição de ataque ocupada'}
+            player['attack_bases'][position_index] = card_to_play
+        
+        elif position_type == 'defense':
+            if position_index >= len(player['defense_bases']):
+                return {'success': False, 'message': 'Posição de defesa inválida'}
+            if player['defense_bases'][position_index] is not None:
+                return {'success': False, 'message': 'Posição de defesa ocupada'}
+            player['defense_bases'][position_index] = card_to_play
         
         elif position_type == 'equipment':
             player['equipment'][position_index] = card_to_play
@@ -1163,21 +1162,157 @@ class Game:
             if talisman['id'] == 'talisma_guerreiro':
                 attack_power += 1024
         
-        # Coletar cartas de defesa
+        # Coletar cartas de defesa (criaturas E armadilhas)
         defense_cards = []
+        trap_cards = []
+        
         for i, card in enumerate(defender['defense_bases']):
-            if card and card.get('type') == 'creature':
-                defense_cards.append({
-                    'card': card,
-                    'index': i,
-                    'current_life': card.get('life', 0),
-                    'original_life': card.get('life', 0),
-                    'name': card.get('name', 'Desconhecido')
-                })
+            if card:
+                if card.get('type') == 'creature':
+                    defense_cards.append({
+                        'card': card,
+                        'index': i,
+                        'current_life': card.get('life', 0),
+                        'original_life': card.get('life', 0),
+                        'name': card.get('name', 'Desconhecido'),
+                        'type': 'creature'
+                    })
+                elif card.get('type') == 'trap':
+                    trap_cards.append({
+                        'card': card,
+                        'index': i,
+                        'name': card.get('name', 'Armadilha'),
+                        'type': 'trap'
+                    })
         
         defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
         
-        # Aplicar dano às cartas de defesa
+        # Processar armadilhas
+        trap_effects = []
+        mirror_damage = None  # Para armadilha espelho
+        cheat_pass_damage = False  # Para armadilha cheat
+        
+        for trap in trap_cards:
+            trap_result = self.activate_trap(trap['card'], attacker, defender, attack_power)
+            
+            # Verificar se é a armadilha espelho
+            if trap_result and isinstance(trap_result, dict) and trap_result.get('type') == 'mirror_damage':
+                mirror_damage = trap_result
+                trap_effects.append(trap_result)
+                # Remover armadilha após ativação
+                defender['defense_bases'][trap['index']] = None
+                self.graveyard.append(trap['card'])
+            # Verificar se é a armadilha cheat
+            elif trap_result and isinstance(trap_result, dict) and trap_result.get('type') == 'cheat_pass_damage':
+                cheat_pass_damage = True
+                trap_effects.append(trap_result)
+                defender['defense_bases'][trap['index']] = None
+                self.graveyard.append(trap['card'])
+            elif trap_result:
+                trap_effects.extend(trap_result if isinstance(trap_result, list) else [trap_result])
+                defender['defense_bases'][trap['index']] = None
+                self.graveyard.append(trap['card'])
+        
+        # Se alguma armadilha cancelou o ataque (exceto mirror e cheat que tratamos separadamente)
+        non_cancel_traps = [e for e in trap_effects if e.get('cancel_attack', False) and e.get('type') not in ['mirror_damage', 'cheat_pass_damage']]
+        if non_cancel_traps:
+            return {
+                'success': True,
+                'attack_cancelled': True,
+                'trap_effects': trap_effects,
+                'message': '⚠️ O ataque foi cancelado por uma armadilha!'
+            }
+        
+        # PROCESSAR DANO ESPELHADO (Armadilha Espelho)
+        if mirror_damage:
+            reflected_damage = mirror_damage.get('damage_to_reflect', attack_power)
+            
+            # Aplicar dano refletido ao ATACANTE, respeitando suas defesas
+            mirror_result = self.apply_damage_to_player(username, reflected_damage, is_reflected=True)
+            
+            # Registrar o resultado
+            trap_effects.append({
+                'type': 'mirror_applied',
+                'damage': reflected_damage,
+                'message': f'🪞 Dano refletido! {attacker["name"]} sofreu {mirror_result["damage_taken"]} de dano!',
+                'damage_log': mirror_result['log']
+            })
+            
+            # Se o atacante morreu pelo dano refletido
+            if mirror_result.get('player_killed'):
+                trap_effects.append({
+                    'type': 'killed_attacker',
+                    'message': f'💀 {attacker["name"]} foi derrotado pela própria armadilha espelho!'
+                })
+            
+            self.use_action(username, 'attack')
+            
+            return {
+                'success': True,
+                'total_attack': attack_power,
+                'damage_reflected': True,
+                'reflected_damage': reflected_damage,
+                'attacker': username,
+                'attacker_name': attacker['name'],
+                'target': target_username,
+                'target_name': defender['name'],
+                'mirror_result': mirror_result,
+                'trap_effects': trap_effects,
+                'log': mirror_result['log']
+            }
+        
+        # PROCESSAR ARMAZILHA CHEAT (passar dano para próximo jogador)
+        if cheat_pass_damage:
+            # Encontrar o próximo jogador após o defensor
+            current_index = self.players.index(target_username)
+            next_index = (current_index + 1) % len(self.players)
+            next_player_name = self.players[next_index]
+            
+            # Pular se o próximo jogador estiver morto
+            while self.player_data[next_player_name].get('dead', False) and next_index != current_index:
+                next_index = (next_index + 1) % len(self.players)
+                next_player_name = self.players[next_index]
+            
+            # Se todos estão mortos ou só tem um jogador, aplicar dano ao defensor original
+            if next_player_name == target_username:
+                cheat_pass_damage = False
+            else:
+                next_player = self.player_data[next_player_name]
+                
+                # Aplicar dano ao próximo jogador (ignorando defesas)
+                damage_to_next = attack_power
+                next_player['life'] -= damage_to_next
+                
+                trap_effects.append({
+                    'type': 'cheat_applied',
+                    'message': f'⚡ Armadilha Cheat! O dano de {attack_power} foi transferido para {next_player_name}!'
+                })
+                
+                if next_player['life'] <= 0:
+                    self.process_player_death(next_player_name)
+                    trap_effects.append({
+                        'type': 'cheat_killed',
+                        'message': f'💀 {next_player_name} foi derrotado pelo dano transferido!'
+                    })
+                
+                self.use_action(username, 'attack')
+                
+                return {
+                    'success': True,
+                    'total_attack': attack_power,
+                    'damage_to_player': damage_to_next,
+                    'attacker': username,
+                    'attacker_name': attacker['name'],
+                    'target': next_player_name,
+                    'target_name': next_player['name'],
+                    'target_life': next_player['life'] if next_player['life'] > 0 else 0,
+                    'player_killed': next_player['life'] <= 0,
+                    'trap_effects': trap_effects,
+                    'cheat_transferred': True,
+                    'original_target': target_username,
+                    'log': [f"⚡ Armadilha Cheat ativada! Dano transferido de {defender['name']} para {next_player_name}"]
+                }
+        
         remaining_damage = attack_power
         damage_log = []
         cards_destroyed = []
@@ -1267,10 +1402,9 @@ class Game:
                     defender['life'] -= remaining_damage
                     damage_log.append(f"⚔️ {defender['name']} recebeu {remaining_damage} de dano direto")
                     
-                    if defender['life'] <= 0:
-                        player_killed = True
-                        self.process_player_death(target_username)
-                        damage_log.append(f"💀 {defender['name']} foi derrotado!")
+                    player_killed = True
+                    self.process_player_death(target_username)
+                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
                 
         self.use_action(username, 'attack')
         
@@ -1287,7 +1421,8 @@ class Game:
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
             'player_killed': player_killed,
-            'log': damage_log
+            'log': damage_log,
+            'trap_effects': trap_effects
         }
         return result
 
@@ -2058,6 +2193,121 @@ class Game:
             })
         
         return destroyed_info
+
+    # Métodos para armadilhas
+    def activate_trap(self, trap_card, attacker, defender, attack_power):
+        """Ativa o efeito de uma armadilha quando atacada"""
+        trap_id = trap_card.get('id')
+        
+        effects = []
+        
+        # Armadilha 171 - Rouba a carta que dá golpe crítico
+        if trap_id == 'armadilha_171':
+            damage = 0
+            index = -1
+            for card in attacker['attack_bases']:
+                if card['attack'] > damage:
+                    damage = card['attack']
+                    index += 1
+
+            stolen_card = attacker['attack_bases'].pop(index)
+            defender['hand'].append(stolen_card)
+            effects.append({
+                'type': 'steal_card',
+                'stolen_card': stolen_card['name'],
+                'message': f'🔮 Armadilha 171! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!'
+            })
+        
+        # Armadilha Espelho - Reverte ataques
+        elif trap_id == 'armadilha_espelho':
+            # Reverter o dano total para o atacante
+            effects.append({
+                'type': 'mirror',
+                'mirror_damage': True,
+                'damage_to_reflect': attack_power,
+                'message': f'🪞 Armadilha Espelho! O dano de {attack_power} será revertido para {attacker["name"]}!'
+            })
+            # Retornar flag indicando que deve aplicar dano espelhado
+            return {
+                'type': 'mirror_damage',
+                'cancel_attack': True,  # Cancela o dano no defensor atual
+                'damage_to_reflect': attack_power,
+                'message': f'🪞 Armadilha Espelho! {attack_power} de dano refletido para {attacker["name"]}!'
+            }
+        
+        # Armadilha Cheat - Dobra ataque e passa para próximo
+        elif trap_id == 'armadilha_cheat':
+            # Verificar se é noite e tem mago em campo
+            is_night = (self.time_of_day == 'night')
+            has_mage = False
+            
+            for card in attacker['attack_bases'] + attacker['defense_bases']:
+                if card and card.get('type') == 'creature' and card.get('id') in ['mago', 'rei_mago', 'mago_negro']:
+                    has_mage = True
+                    break
+            
+            if is_night and has_mage:
+                # Marcar que o dano deve ser passado para o próximo jogador
+                effects.append({
+                    'type': 'pass_damage',
+                    'message': f'⚡ Armadilha Cheat! O dano do ataque será passado para o próximo jogador!'
+                })
+                # Retornar flag para indicar que o dano deve ser passado adiante
+                return {
+                    'type': 'cheat_pass_damage',
+                    'cancel_attack': True,  # Cancela o dano no defensor atual
+                    'pass_to_next': True,
+                    'message': f'⚡ Armadilha Cheat! {attacker["name"]} passou o dano para o próximo jogador!'
+                }
+            else:
+                effects.append({
+                    'type': 'failed',
+                    'message': f'⚠️ Armadilha Cheat falhou! Precisa ser noite e ter um mago em campo.'
+                })
+                return None
+                
+        # Armadilha Poço Sem Fundo - Destrói todas as 3 criaturas atacantes
+        elif trap_id == 'armadilha_poco':
+            destroyed_attackers = []
+            for i, card in enumerate(attacker['attack_bases']):
+                if card and card.get('type') == 'creature':
+                    destroyed_attackers.append(card['name'])
+                    self.graveyard.append(card)
+                    attacker['attack_bases'][i] = None
+            
+            effects.append({
+                'type': 'destroy_attackers',
+                'destroyed': destroyed_attackers,
+                'message': f'🕳️ Poço Sem Fundo! As criaturas atacantes foram destruídas: {", ".join(destroyed_attackers)}'
+            })
+            
+            # Cancelar o ataque (não causa dano)
+            effects.append({
+                'type': 'cancel_attack',
+                'cancel_attack': True
+            })
+        
+        return effects
+
+    def force_attack_between_players(self, attacker_name, target_name):
+        """Força um ataque entre dois jogadores (usado pela armadilha 51)"""
+        attacker = self.player_data[attacker_name]
+        target = self.player_data[target_name]
+        
+        # Calcular poder de ataque do atacante
+        attack_power = 0
+        for card in attacker['attack_bases']:
+            if card and card.get('type') == 'creature':
+                attack_power += card.get('attack', 0)
+        
+        # Aplicar dano ao alvo
+        target['life'] -= attack_power
+        
+        broadcast_system_message(self.game_id, 
+            f'🍺 {attacker_name} (bêbado) atacou {target_name} causando {attack_power} de dano!')
+        
+        if target['life'] <= 0:
+            self.process_player_death(target_name)
 
 # Rotas da aplicação
 @app.route('/')

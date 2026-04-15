@@ -1034,9 +1034,22 @@
             });
         });
 
-
         function showAttackResult(result) {
             let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
+            
+            // Mostrar efeitos de armadilha primeiro
+            if (result.trap_effects && result.trap_effects.length > 0) {
+                html += `<div style="background: rgba(255, 165, 0, 0.2); border-left: 4px solid #ffa500; padding: 10px; margin: 10px 0; border-radius: 5px;">`;
+                html += `<strong style="color: #ffa500;">⚠️ ARMADILHAS ATIVADAS:</strong><br>`;
+                result.trap_effects.forEach(effect => {
+                    html += `<span style="color: #fff;">• ${effect.message}</span><br>`;
+                });
+                html += `</div>`;
+            }
+            
+            if (result.attack_cancelled) {
+                html += `<p style="color: #ff4444;">🛑 O ataque foi cancelado!</p>`;
+            }
             
             if (result.cards_destroyed && result.cards_destroyed.length > 0) {
                 html += `<p style="color: #ff6b6b;">💀 Destruídas: ${result.cards_destroyed.join(', ')}</p>`;
@@ -1064,7 +1077,7 @@
             // Criar animação de dano
             createDamageAnimation(result.damage_to_player || 0);
         }
-
+        
         function createDamageAnimation(damage) {
             const targetCards = document.querySelectorAll('.opponent-card .base-slot.has-card');
             targetCards.forEach(card => {
@@ -1563,19 +1576,26 @@
                     equippedItems = `<div class="equipped-items">⚔️🛡️${card.equipped_items.length}</div>`;
                 }
                 
+                // Ícone diferente para armadilhas
+                let cardIcon = getTypeIcon(card.type);
+                if (card.type === 'trap') {
+                    cardIcon = '⚠️';
+                }
+                
                 slot.innerHTML = `
-                    <div style="font-size: 16px;">${getTypeIcon(card.type)}</div>
+                    <div style="font-size: 16px;">${cardIcon}</div>
                     <strong>${card.name.substring(0, 8)}</strong>
                     ${card.life ? `<small>❤️${card.life}</small>` : ''}
                     ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
                     ${equippedItems}
                     <div class="card-tooltip">
                         <strong>${card.name}</strong><br>
-                        Tipo: ${card.type}<br>
+                        Tipo: ${card.type === 'trap' ? '⚠️ Armadilha' : card.type}<br>
                         ${card.description}<br>
                         ${card.life ? `Vida: ${card.life}` : ''}
                         ${card.attack ? ` | Ataque: ${card.attack}` : ''}
                         ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
+                        ${card.type === 'trap' ? '<br><span style="color: #ffa500;">⚠️ Ativa ao ser atacada!</span>' : ''}
                     </div>
                 `;
                 
@@ -1598,7 +1618,7 @@
             
             return slot;
         }
-
+        
         function createCardElement(card, index) {
             const div = document.createElement('div');
             div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
