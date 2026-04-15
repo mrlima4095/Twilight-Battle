@@ -1567,54 +1567,107 @@
             },
             king: {
                 id: 'king',
-                name: 'Alaric',
+                name: 'Luthor',
                 title: 'Rei Mago',
                 emoji: '👑',
                 sleepyEmoji: '😴👑',
                 location: 'throne_room',
                 locationName: 'sala do trono',
                 greeting: function() {
-                    return `Aventureir${gameState.character.gender === 'masculino' ? 'o' : 'a'} ${gameState.character.name}, seu nome ecoa pelos corredores do castelo. Continue protegendo nosso povo e terá minha gratidão eterna.`;
+                    const greetings = [
+                        `"${gameState.character.name}! Que bom que veio. Já estava ficando entediado com esses nobres puxa-sacos."`
+                    ];
+                    return greetings[Math.floor(Math.random() * greetings.length)];
                 },
-                farewell: "Que a luz da aurora ilumine seu caminho, nobre aventureiro!",
+                farewell: function() {
+                    const farewells = [
+                        "Que os ventos levem você a aventuras grandiosas! E volte para me contar tudo!",
+                        "Cuide-se por aí, hein? Preciso de heróis vivos, não de estátuas no memorial!"
+                    ];
+                    addLog(`👑 ${farewells[Math.floor(Math.random() * farewells.length)]}`);
+                },
                 sleepyMessages: [
-                    "*Respiração profunda* Zzz... Reino... Zzz...",
-                    "*Acordando* Quem ousa perturbar o descanso real?",
-                    "O rei já se recolheu. Volte amanhã durante a audiência.",
-                    "*Bocejando* A coroa é pesada... Preciso descansar."
+                    "*Roncando suavemente* Mmm... mais pudim... Zzz...",
+                    "*Acordando sobressaltado* O quê?! Invadiram a cozinha?! Ah... é você... *boceja*",
+                    "*Sonâmbulo* O reino precisa... de mais sonecas... é uma lei nova...",
+                    "*Bocejando elegantemente* Desculpe, a coroa é pesada e o travesseiro é muito tentador...",
+                    "*Dormindo com a coroa torta* Zzz... sou o rei... do sofá... Zzz..."
                 ],
-                sleepingMessage: 'Sua Majestade já se recolheu para a câmara real. Volte durante o dia!',
-                absentMessage: 'Sua Majestade está em conselho com os nobres. Volte mais tarde!',
+                sleepingMessage: function() {
+                    const messages = [
+                        "O rei está tendo um sonho onde governa um reino de travesseiros. Melhor não acordar.",
+                        "Sua Majestade está em modo de economia de energia real. Volte quando ele recarregar.",
+                        "O grande Rei Mago... está roncando. Sim, reis também roncam. Volte mais tarde!",
+                        "Os guardas impedem sua entrada: 'Sua Majestade declarou soneca oficial. É crime interrompê-la.'"
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                },
+                absentMessage: function() {
+                    const messages = [
+                        "O rei está em uma reunião secreta. Ou apenas escondendo dos conselheiros chatos. Nunca se sabe.",
+                        "Sua Majestade foi inspecionar a cozinha real. Dizem que há um novo chef fazendo tortas incríveis.",
+                        "O rei foi resolver problemas do reino. Ou dar um passeio. Provavelmente o passeio.",
+                        "Está em conselho. Mas entre nós, acho que só quer um tempo longe da coroa."
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                },
                 topics: [
-                    { name: '👑 Sobre o Reino', message: '"O Reino da Aurora foi fundado por meu bisavô há trezentos anos. Desde então, temos prosperado sob a proteção dos deuses."' },
-                    { name: '⚔️ Ameaça nas Fronteiras', message: '"As criaturas das trevas estão se multiplicando. Suspeito que algo está despertando nas profundezas das montanhas proibidas."' },
-                    { name: '📜 Histórias Antigas', message: '"Diz a lenda que há um artefato escondido nas ruínas antigas, capaz de banir as trevas para sempre. Será que você é o herói destinado a encontrá-lo?"' },
-                    { name: '🏆 Recompensas', message: '"Para aqueles que servem o reino com bravura, as recompensas são generosas. Terras, títulos e tesouros aguardam os mais corajosos."' },
-                    { name: '💬 Tudo bem, Majestade?', message: function() { return `"O peso da coroa é constante, mas ver aventureiros como você dedicados ao reino renova minhas esperanças. Continue assim, ${gameState.character.name}."`; } },
-                    { 
-                        name: '✨ Bênção Real', 
-                        message: '"Que os deuses te abençoem em sua jornada. Leve esta bênção como proteção."',
-                        action: () => blessPlayer()
-                    }
+                    { name: '👑 Sobre o Reino', message: function() {
+                        const messages = [
+                            '"O Reino da Aurora é lindo, não acha? É uma honra ser Rei dessa coisa toda..."',
+                            '"Mil e quinhentos anos de história e ainda não inventaram um botão de silêncio para conselheiros. O reino é ótimo, a política é que é chata."'
+                        ];
+                        return messages[Math.floor(Math.random() * messages.length)];
+                    } },
+                    { name: '📜 Histórias Antigas', message: function() {
+                        const messages = [
+                            '"Lendas dizem que há um artefato nas ruínas. Pode ser verdade. Ou pode ser lorota que os bardos inventaram para vender cerveja."',
+                            '"Artefato lendário, capaz de banir as trevas... Quer saber? Já tentei encontrar. Só achei um mapa falso e um resfriado."',
+                            '"Dizem que você pode ser o herói profetizado. Eu digo: prove com atos, não com discursos. E me traga um souvenir!"'
+                        ];
+                        return messages[Math.floor(Math.random() * messages.length)];
+                    } },
+                    { name: '🏆 Recompensas', message: function() {
+                        const messages = [
+                            '"Terras, títulos, ouro... Mas, honestamente, o melhor prêmio é um jantar no castelo. Meu chef é um gênio!"',
+                            '"Os bravos merecem recompensas. Os espertos merecem mais. Você parece os dois. Continue assim!"',
+                            '"Tesouros? Tenho alguns. Mas guardo os melhores para quem me fizer rir. Você sabe alguma piada?"'
+                        ];
+                        return messages[Math.floor(Math.random() * messages.length)];
+                    } },
+                    { name: '💬 Como está, Majestade?', message: function() {
+                        const messages = [
+                            `"Estou bem, ${gameState.character.name}. Só um pouco cansado de assinar papéis. Quer me ajudar? Não? Ah, que pena..."`,
+                            `"O peso da coroa? Menos do que o peso desse manto. Quem inventou roupa de rei precisa ser demitido. Calor da peste!"`,
+                            `"Sinceramente? Estou feliz que veio. Esses conselheiros só falam de impostos. Você pelo menos tem histórias boas!"`,
+                            `"Entre nós? Estou pensando em declarar 'Dia do Herói' oficial. Você seria o primeiro homenageado. Vem com bolo!"`
+                        ];
+                        return messages[Math.floor(Math.random() * messages.length)];
+                    } }
                 ],
                 shopItems: null,
                 canSellToNPC: false,
                 dayBehavior: { homeChance: 0.9, alwaysAwake: true },
                 nightBehavior: { homeChance: 1.0, sleepChance: 1.0 },
                 baseState: { isHome: true, isSleeping: false, lastUpdate: null },
-                onSleep: () => addLog('😴 O Rei descansa em seus aposentos. Até amanhã.'),
-                onAbsent: () => addLog('👑 O Rei está em conselho com os nobres do reino.'),
-                onGreet: () => {
-                    addLog('👑 Você se curva respeitosamente diante do Rei Alaric.');
-                    // Rei pode dar ouro ocasionalmente
-                    if (Math.random() < 0.15) {
-                        const goldAmount = 50 + Math.floor(Math.random() * 100);
-                        gameState.character.gold += goldAmount;
-                        addLog(`👑 Sua Majestade te concede ${goldAmount} moedas de ouro pela sua lealdade!`);
-                        updateUI();
-                    }
+                onSleep: () => addLog('😴 "Hora do rei descansar! Os problemas do reino que esperem até amanhã. Ou depois."'),
+                onAbsent: () => {
+                    const messages = [
+                        '👑 "Estou em conselho! Ou apenas tomando café. Vocês nunca saberão!"',
+                        '👑 "Rei ausente! Devo estar resolvendo coisas importantes. Ou comendo. Provavelmente comendo."',
+                        '👑 "Volto logo! Se alguém perguntar, diga que fui salvar o reino. Soa mais heroico que soneca."'
+                    ];
+                    addLog(messages[Math.floor(Math.random() * messages.length)]);
                 },
-                onFarewell: () => addLog('👑 "Que a aurora te guie, nobre herói!"')
+                onGreet: () => {
+                    const greetings = [
+                        '👑 Você se curva e o rei acena com um sorriso divertido.',
+                        '👑 "Levante-se, levante-se! Não sou tão formal assim. Quer um doce?"',
+                        '👑 O Rei Luthor se levanta do trono e te dá um tapinha nas costas. "Meu herói favorito!"',
+                        '👑 "Ah, você veio! Os guardas já sabem: você sempre pode entrar."'
+                    ];
+                    addLog(greetings[Math.floor(Math.random() * greetings.length)]);
+                },
             }
         };
         
