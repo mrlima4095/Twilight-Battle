@@ -1223,7 +1223,7 @@ class Game:
         if not attacker or not defender:
             return {'success': False, 'message': 'Dados do jogador não encontrados'}
         
-        # Verificar se tem cartas de ataque
+        # Calcular poder de ataque
         has_attack_cards = False
         attack_power = 0
         attacking_cards = []
@@ -1249,274 +1249,370 @@ class Game:
                 weapon_attack = weapon.get('attack', 0)
                 attack_power += weapon_attack
         
-        # Talismã Guerreiro
+        # Talismã Guerreiro na MÃO
         for talisman in attacker['hand']:
-            if talisman['id'] == 'talisma_guerreiro':
+            if talisman.get('id') == 'talisma_guerreiro':
                 attack_power += 1024
         
-        # Coletar cartas de defesa (criaturas E armadilhas)
-        defense_cards = []
+        # Coletar armadilhas do defensor
         trap_cards = []
-        
         for i, card in enumerate(defender['defense_bases']):
-            if card:
-                if card.get('type') == 'creature':
-                    defense_cards.append({
-                        'card': card,
-                        'index': i,
-                        'current_life': card.get('life', 0),
-                        'original_life': card.get('life', 0),
-                        'name': card.get('name', 'Desconhecido'),
-                        'type': 'creature'
-                    })
-                elif card.get('type') == 'trap':
-                    trap_cards.append({
-                        'card': card,
-                        'index': i,
-                        'name': card.get('name', 'Armadilha'),
-                        'type': 'trap'
-                    })
-        
-        defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
+            if card and card.get('type') == 'trap':
+                trap_cards.append({
+                    'card': card,
+                    'index': i,
+                    'name': card.get('name', 'Armadilha')
+                })
         
         # Processar armadilhas
         trap_effects = []
-        mirror_damage = None  # Para armadilha espelho
-        cheat_pass_damage = False  # Para armadilha cheat
         
         for trap in trap_cards:
             trap_result = self.activate_trap(trap['card'], attacker, defender, attack_power)
             
-            # Verificar se é a armadilha espelho
-            if trap_result and isinstance(trap_result, dict) and trap_result.get('type') == 'mirror_damage':
-                mirror_damage = trap_result
-                trap_effects.append(trap_result)
-                # Remover armadilha após ativação
-                defender['defense_bases'][trap['index']] = None
-                self.graveyard.append(trap['card'])
-            # Verificar se é a armadilha cheat
-            elif trap_result and isinstance(trap_result, dict) and trap_result.get('type') == 'cheat_pass_damage':
-                cheat_pass_damage = True
-                trap_effects.append(trap_result)
-                defender['defense_bases'][trap['index']] = None
-                self.graveyard.append(trap['card'])
-            elif trap_result:
-                trap_effects.extend(trap_result if isinstance(trap_result, list) else [trap_result])
-                defender['defense_bases'][trap['index']] = None
-                self.graveyard.append(trap['card'])
+            if trap_result and isinstance(trap_result, dict):
+                if trap_result.get('type') == 'mirror_damage':
+                    # Armadilha Espelho - refletir dano
+                    reflected_damage = trap_result.get('damage_to_reflect', attack_power)
+                    
+                    # Aplicar dano refletido ao atacante
+                    result = self.apply_damage_to_player(username, reflected_damage, is_reflected=True)
+                    
+                    self.use_action(username, 'attack')
+                    
+                    return {
+                        'success': True,
+                        'total_attack': attack_power,
+                        'damage_reflected': True,
+                        'reflected_damage': reflected_damage,
+                        'attacker': username,
+                        'attacker_name': attacker['name'],
+                        'target': target_username,
+                        'target_name': defender['name'],
+                        'mirror_result': result,
+                        'trap_effects': [{
+                            'type': 'mirror_applied',
+                            'damage': reflected_damage,
+                            'message': f'🪞 Dano refletido! {attacker["name"]} sofreu {result["damage_taken"]} de dano!'
+                        }],
+                        'log': result['log']
+                    }
+                
+                elif trap_result.get('type') == 'cheat_pass_damage':
+                    # Armadilha Cheat - passar dano para próximo jogador
+                    current_index = self.players.index(target_username)
+                    next_index = (current_index + 1) % len(self.players)
+                    next_player_name = self.players[next_index]
+                    
+                    # Pular jogadores mortos
+                    while self.player_data[next_player_name].get('dead', False) and next_index != current_index:
+                        next_index = (next_index + 1) % len(self.players)
+                        next_player_name = self.players[next_index]
+                    
+                    if next_player_name == target_username:
+                        # Sem próximo jogador válido, aplicar dano normal
+                        pass
+                    else:
+                        # Aplicar dano ao próximo jogador
+                        result = self.apply_damage_to_player(next_player_name, attack_power, skip_talisman=False)
+                        
+                        self.use_action(username, 'attack')
+                        
+                        return {
+                            'success': True,
+                            'total_attack': attack_power,
+                            'damage_to_player': result['damage_to_player'],
+                            'attacker': username,
+                            'attacker_name': attacker['name'],
+                            'target': next_player_name,
+                            'target_name': self.player_data[next_player_name]['name'],
+                            'target_life': self.player_data[next_player_name]['life'],
+                            'player_killed': result['player_killed'],
+                            'trap_effects': [{
+                                'type': 'cheat_applied',
+                                'message': f'⚡ Armadilha Cheat! Dano transferido para {next_player_name}!'
+                            }],
+                            'cheat_transferred': True,
+                            'original_target': target_username,
+                            'log': result['log']
+                        }
+                
+                elif trap_result.get('cancel_attack', False):
+                    # Armadilha que cancela o ataque
+                    return {
+                        'success': True,
+                        'attack_cancelled': True,
+                        'trap_effects': trap_effects,
+                        'message': '⚠️ O ataque foi cancelado por uma armadilha!'
+                    }
+                else:
+                    # Outros efeitos de armadilha
+                    trap_effects.extend(trap_result if isinstance(trap_result, list) else [trap_result])
+                    defender['defense_bases'][trap['index']] = None
+                    self.graveyard.append(trap['card'])
         
-        # Se alguma armadilha cancelou o ataque (exceto mirror e cheat que tratamos separadamente)
-        non_cancel_traps = [e for e in trap_effects if e.get('cancel_attack', False) and e.get('type') not in ['mirror_damage', 'cheat_pass_damage']]
-        if non_cancel_traps:
-            return {
-                'success': True,
-                'attack_cancelled': True,
-                'trap_effects': trap_effects,
-                'message': '⚠️ O ataque foi cancelado por uma armadilha!'
-            }
+        # Se chegou aqui, não houve armadilha que cancelou/refletiu/transferiu o ataque
+        # Processar dano normalmente usando apply_damage_to_player
         
-        # PROCESSAR DANO ESPELHADO (Armadilha Espelho)
-        if mirror_damage:
-            reflected_damage = mirror_damage.get('damage_to_reflect', attack_power)
-            
-            # Aplicar dano refletido ao ATACANTE, respeitando suas defesas
-            mirror_result = self.apply_damage_to_player(username, reflected_damage, is_reflected=True)
-            
-            # Registrar o resultado
-            trap_effects.append({
-                'type': 'mirror_applied',
-                'damage': reflected_damage,
-                'message': f'🪞 Dano refletido! {attacker["name"]} sofreu {mirror_result["damage_taken"]} de dano!',
-                'damage_log': mirror_result['log']
-            })
-            
-            # Se o atacante morreu pelo dano refletido
-            if mirror_result.get('player_killed'):
-                trap_effects.append({
-                    'type': 'killed_attacker',
-                    'message': f'💀 {attacker["name"]} foi derrotado pela própria armadilha espelho!'
+        # Passar a mão do atacante para verificar Oráculo
+        self.attacker_hand_for_oracle = attacker['hand']
+        
+        result = self.apply_damage_to_player(target_username, attack_power, is_reflected=False)
+        
+        # Limpar
+        delattr(self, 'attacker_hand_for_oracle')
+        
+        self.use_action(username, 'attack')
+        
+        # Se o Oráculo foi usado, remover da mão
+        if result.get('oracle_activated'):
+            oracle_index = -1
+            for i, card in enumerate(attacker['hand']):
+                if card and card.get('id') == 'oraculo_imortalidade':
+                    oracle_index = i
+                    break
+            if oracle_index != -1:
+                used_oracle = attacker['hand'].pop(oracle_index)
+                self.deck.append(used_oracle)
+                shuffle(self.deck)
+                socketio.emit('oracle_activated', {
+                    'attacker': attacker['name'],
+                    'defender': defender['name'],
+                    'message': f'📜 {attacker["name"]} usou o Oráculo da Imortalidade para anular o Talismã de {defender["name"]}!'
+                }, room=self.game_id)
+        
+        return {
+            'success': True,
+            'total_attack': attack_power,
+            'damage_absorbed': attack_power - result['damage_to_player'],
+            'damage_to_player': result['damage_to_player'],
+            'attacker': username,
+            'attacker_name': attacker['name'],
+            'target': target_username,
+            'target_name': defender['name'],
+            'target_life': defender['life'] if defender['life'] > 0 else 0,
+            'cards_destroyed': result['cards_destroyed'],
+            'cards_damaged': result['cards_damaged'],
+            'player_killed': result['player_killed'],
+            'oracle_activated': result.get('oracle_activated', False),
+            'immortality_activated': result.get('immortality_activated', False),
+            'log': result['log'],
+            'trap_effects': trap_effects
+        }
+
+    def apply_damage_to_player(self, target_username, damage_amount, is_reflected=False, skip_talisman=False):
+        """
+        Aplica dano a um jogador respeitando suas defesas (criaturas, talismãs, etc)
+        A ORDEM de absorção: defesa índice 0→5, depois ataque índice 0→2
+        
+        Args:
+            target_username: Nome do jogador que vai receber o dano
+            damage_amount: Quantidade de dano a ser aplicada
+            is_reflected: Se o dano é refletido (para mensagens diferenciadas)
+            skip_talisman: Se deve pular a verificação do Talismã da Imortalidade
+        
+        Returns:
+            dict: Resultado da aplicação do dano
+        """
+        target = self.player_data.get(target_username)
+        
+        if not target:
+            return {'damage_taken': 0, 'player_killed': False, 'log': ['Jogador não encontrado']}
+        
+        if target.get('dead', False):
+            return {'damage_taken': 0, 'player_killed': False, 'log': [f'{target["name"]} já está morto']}
+        
+        # PRIMEIRO: Coletar cartas de defesa na ORDEM (0 a 5)
+        defense_cards = []
+        for i, card in enumerate(target['defense_bases']):
+            if card and card.get('type') == 'creature':
+                defense_cards.append({
+                    'card': card,
+                    'index': i,
+                    'current_life': card.get('life', 0),
+                    'name': card.get('name', 'Desconhecido')
                 })
-            
-            self.use_action(username, 'attack')
-            
-            return {
-                'success': True,
-                'total_attack': attack_power,
-                'damage_reflected': True,
-                'reflected_damage': reflected_damage,
-                'attacker': username,
-                'attacker_name': attacker['name'],
-                'target': target_username,
-                'target_name': defender['name'],
-                'mirror_result': mirror_result,
-                'trap_effects': trap_effects,
-                'log': mirror_result['log']
-            }
         
-        # PROCESSAR ARMAZILHA CHEAT (passar dano para próximo jogador)
-        if cheat_pass_damage:
-            # Encontrar o próximo jogador após o defensor
-            current_index = self.players.index(target_username)
-            next_index = (current_index + 1) % len(self.players)
-            next_player_name = self.players[next_index]
-            
-            # Pular se o próximo jogador estiver morto
-            while self.player_data[next_player_name].get('dead', False) and next_index != current_index:
-                next_index = (next_index + 1) % len(self.players)
-                next_player_name = self.players[next_index]
-            
-            # Se todos estão mortos ou só tem um jogador, aplicar dano ao defensor original
-            if next_player_name == target_username:
-                cheat_pass_damage = False
-            else:
-                next_player = self.player_data[next_player_name]
-                
-                # Aplicar dano ao próximo jogador (ignorando defesas)
-                damage_to_next = attack_power
-                next_player['life'] -= damage_to_next
-                
-                trap_effects.append({
-                    'type': 'cheat_applied',
-                    'message': f'⚡ Armadilha Cheat! O dano de {attack_power} foi transferido para {next_player_name}!'
+        # SEGUNDO: Coletar cartas de ataque na ORDEM (0 a 2)
+        attack_cards = []
+        for i, card in enumerate(target['attack_bases']):
+            if card and card.get('type') == 'creature':
+                attack_cards.append({
+                    'card': card,
+                    'index': i,
+                    'current_life': card.get('life', 0),
+                    'name': card.get('name', 'Desconhecido')
                 })
-                
-                if next_player['life'] <= 0:
-                    self.process_player_death(next_player_name)
-                    trap_effects.append({
-                        'type': 'cheat_killed',
-                        'message': f'💀 {next_player_name} foi derrotado pelo dano transferido!'
-                    })
-                
-                self.use_action(username, 'attack')
-                
-                return {
-                    'success': True,
-                    'total_attack': attack_power,
-                    'damage_to_player': damage_to_next,
-                    'attacker': username,
-                    'attacker_name': attacker['name'],
-                    'target': next_player_name,
-                    'target_name': next_player['name'],
-                    'target_life': next_player['life'] if next_player['life'] > 0 else 0,
-                    'player_killed': next_player['life'] <= 0,
-                    'trap_effects': trap_effects,
-                    'cheat_transferred': True,
-                    'original_target': target_username,
-                    'log': [f"⚡ Armadilha Cheat ativada! Dano transferido de {defender['name']} para {next_player_name}"]
-                }
         
-        remaining_damage = attack_power
+        remaining_damage = damage_amount
         damage_log = []
         cards_destroyed = []
         cards_damaged = []
         
+        # ORDEM 1: Absorver dano pelas cartas de DEFESA (índice 0 → 5)
         for def_card in defense_cards:
             if remaining_damage <= 0:
                 break
             
             card = def_card['card']
             card_life = def_card['current_life']
+            reflected_text = " [dano refletido]" if is_reflected else ""
             
             if remaining_damage >= card_life:
                 remaining_damage -= card_life
                 self.graveyard.append(card)
-                defender['defense_bases'][def_card['index']] = None
+                target['defense_bases'][def_card['index']] = None
                 cards_destroyed.append(card['name'])
-                damage_log.append(f"{card['name']} foi destruída")
+                damage_log.append(f"{card['name']} (defesa) foi destruída{reflected_text}")
             else:
                 new_life = card_life - remaining_damage
                 card['life'] = new_life
-                cards_damaged.append(f"{card['name']} (-{remaining_damage}❤️)")
-                damage_log.append(f"{card['name']} recebeu {remaining_damage} de dano (vida restante: {new_life})")
+                cards_damaged.append(f"{card['name']} (defesa) (-{remaining_damage}❤️)")
+                damage_log.append(f"{card['name']} (defesa) recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
                 remaining_damage = 0
         
-        # Dano restante vai para o jogador
+        # ORDEM 2: Absorver dano pelas cartas de ATAQUE (índice 0 → 2)
+        for atk_card in attack_cards:
+            if remaining_damage <= 0:
+                break
+            
+            card = atk_card['card']
+            card_life = atk_card['current_life']
+            reflected_text = " [dano refletido]" if is_reflected else ""
+            
+            if remaining_damage >= card_life:
+                remaining_damage -= card_life
+                self.graveyard.append(card)
+                target['attack_bases'][atk_card['index']] = None
+                cards_destroyed.append(card['name'])
+                damage_log.append(f"{card['name']} (ataque) foi destruída{reflected_text}")
+            else:
+                new_life = card_life - remaining_damage
+                card['life'] = new_life
+                cards_damaged.append(f"{card['name']} (ataque) (-{remaining_damage}❤️)")
+                damage_log.append(f"{card['name']} (ataque) recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
+                remaining_damage = 0
+        
+        # ORDEM 3: Dano restante vai para o JOGADOR
         damage_to_player = 0
         player_killed = False
-
+        oracle_activated = False
+        immortality_activated = False
+        
         if remaining_damage > 0:
             damage_to_player = remaining_damage
+            reflected_text = " [dano refletido]" if is_reflected else ""
             
+            # Verificar Oráculo do atacante (apenas para ataques normais, não refletidos)
             oracle_index = -1
-            for i, card in enumerate(attacker['hand']):
-                if card['id'] == 'oraculo_imortalidade':
-                    oracle_index = i
-                    break
+            if not is_reflected and hasattr(self, 'attacker_hand_for_oracle'):
+                # Isso será setado pelo método attack antes de chamar apply_damage_to_player
+                for i, card in enumerate(self.attacker_hand_for_oracle):
+                    if card and card.get('id') == 'oraculo_imortalidade':
+                        oracle_index = i
+                        break
             
+            # Verificar Talismã da Imortalidade no alvo
             immortality_index = -1
+            if not skip_talisman:
+                for i, talisman in enumerate(target['hand']):
+                    if talisman and talisman.get('id') == 'talisma_imortalidade':
+                        immortality_index = i
+                        break
             
-            for i, talisman in enumerate(defender['hand']):
-                if talisman['id'] == 'talisma_imortalidade':
-                    immortality_index = i
-                    break
+            # Aplicar dano ao jogador
+            old_life = target['life']
+            target['life'] -= remaining_damage
+            damage_log.append(f"⚔️ {target['name']} recebeu {remaining_damage} de dano direto{reflected_text} (vida: {old_life} → {target['life']})")
             
-            defender['life'] -= remaining_damage
-            damage_log.append(f"⚔️ {defender['name']} recebeu {remaining_damage} de dano direto")
-
-            if defender['life'] <= 0:
+            # Verificar se morreu
+            if target['life'] <= 0:
+                # Caso especial: Oráculo anula Talismã
                 if oracle_index != -1 and immortality_index != -1:
                     player_killed = True
+                    oracle_activated = True
                     self.process_player_death(target_username)
-                    damage_log.append(f"💀 {defender['name']} foi derrotado! O Oráculo cumpriu seu propósito!")
-
-                    used_oracle = attacker['hand'].pop(oracle_index)
-                    self.deck.append(used_oracle)
-                    shuffle(self.deck)
-
-                    socketio.emit('oracle_activated', {
-                        'attacker': attacker['name'],
-                        'defender': defender['name'],
-                        'message': f'📜 {attacker["name"]} usou o Oráculo da Imortalidade para anular o Talismã de {defender["name"]}!'
-                    }, room=self.game_id)
-                elif immortality_index != -1:
-                    talisman = defender['hand'][immortality_index]
-                    
+                    damage_log.append(f"💀 {target['name']} foi derrotado! O Oráculo anulou o Talismã da Imortalidade!")
+                elif immortality_index != -1 and not skip_talisman:
+                    # Talismã da Imortalidade salva
+                    talisman = target['hand'][immortality_index]
                     if 'uses_left' not in talisman:
                         talisman['uses_left'] = 2
                     
                     talisman['uses_left'] -= 1
                     uses_left = talisman['uses_left']
+                    immortality_activated = True
                     
-                    old_life = defender['life']
-                    defender['life'] = 5000
+                    old_life = target['life']
+                    target['life'] = 5000
                     
-                    damage_log.append(f"✨ Talismã da Imortalidade salvou {defender['name']}! ({uses_left} uso(s) restante(s))")
+                    damage_log.append(f"✨ Talismã da Imortalidade salvou {target['name']}! ({uses_left} uso(s) restante(s))")
                     damage_log.append(f"   Vida restaurada: {old_life} → 5000")
                     damage_to_player = 0
                     
                     if uses_left <= 0:
-                        used_talisman = defender['hand'].pop(immortality_index)
+                        used_talisman = target['hand'].pop(immortality_index)
                         used_talisman['uses_left'] = 2
                         self.deck.append(used_talisman)
                         shuffle(self.deck)
                         damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
                 else:
-                    defender['life'] -= remaining_damage
-                    damage_log.append(f"⚔️ {defender['name']} recebeu {remaining_damage} de dano direto")
-                    
                     player_killed = True
                     self.process_player_death(target_username)
-                    damage_log.append(f"💀 {defender['name']} foi derrotado!")
-                
-        self.use_action(username, 'attack')
+                    damage_log.append(f"💀 {target['name']} foi derrotado!{reflected_text}")
         
-        result = {
-            'success': True,
-            'total_attack': attack_power,
-            'damage_absorbed': attack_power - remaining_damage,
+        return {
+            'damage_taken': damage_amount - remaining_damage,
             'damage_to_player': damage_to_player,
-            'attacker': username,
-            'attacker_name': attacker['name'],
-            'target': target_username,
-            'target_name': defender['name'],
-            'target_life': defender['life'] if defender['life'] > 0 else 0,
+            'player_killed': player_killed,
+            'oracle_activated': oracle_activated,
+            'immortality_activated': immortality_activated,
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
-            'player_killed': player_killed,
-            'log': damage_log,
-            'trap_effects': trap_effects
+            'log': damage_log
         }
-        return result
+    def force_attack_between_players(self, attacker_name, target_name):
+        """
+        Força um ataque entre dois jogadores (usado pela armadilha 51)
+        
+        Args:
+            attacker_name: Nome do jogador que vai atacar
+            target_name: Nome do jogador que vai ser atacado
+        """
+        attacker = self.player_data.get(attacker_name)
+        target = self.player_data.get(target_name)
+        
+        if not attacker or not target:
+            return
+        
+        # Calcular poder de ataque do atacante
+        attack_power = 0
+        for card in attacker['attack_bases']:
+            if card and card.get('type') == 'creature':
+                attack_power += card.get('attack', 0)
+        
+        # Adicionar bônus de equipamentos
+        if attacker['equipment']['weapon']:
+            weapon = attacker['equipment']['weapon']
+            if weapon.get('type') == 'weapon':
+                weapon_attack = weapon.get('attack', 0)
+                attack_power += weapon_attack
+        
+        # Talismã Guerreiro
+        for talisman in attacker['hand']:
+            if talisman.get('id') == 'talisma_guerreiro':
+                attack_power += 1024
+        
+        # Aplicar dano ao alvo (respeitando defesas)
+        result = self.apply_damage_to_player(target_name, attack_power, is_reflected=False)
+        
+        # Broadcast do ataque forçado
+        broadcast_system_message(self.game_id, 
+            f'🍺 {attacker_name} (controlado pela armadilha) atacou {target_name} causando {attack_power} de dano!')
+        
+        # Se o alvo morreu, já foi processado pelo apply_damage_to_player
+        if result.get('player_killed'):
+            broadcast_system_message(self.game_id, f'💀 {target_name} foi derrotado pelo ataque forçado!')
 
     def process_player_death(self, username):
         """Processa a morte de um jogador"""
@@ -2380,175 +2476,6 @@ class Game:
             })
         
         return effects
-
-    def apply_damage_to_player(self, target_username, damage_amount, is_reflected=False):
-        """
-        Aplica dano a um jogador respeitando suas defesas (criaturas, talismãs, etc)
-        
-        Args:
-            target_username: Nome do jogador que vai receber o dano
-            damage_amount: Quantidade de dano a ser aplicada
-            is_reflected: Se o dano é refletido (para mensagens diferenciadas)
-        
-        Returns:
-            dict: Resultado da aplicação do dano
-        """
-        target = self.player_data.get(target_username)
-        
-        if not target:
-            return {'damage_taken': 0, 'player_killed': False, 'log': ['Jogador não encontrado']}
-        
-        # Se o jogador está morto, não aplicar dano
-        if target.get('dead', False):
-            return {'damage_taken': 0, 'player_killed': False, 'log': [f'{target["name"]} já está morto']}
-        
-        # Coletar cartas de defesa do alvo (apenas criaturas)
-        defense_cards = []
-        for i, card in enumerate(target['defense_bases']):
-            if card and card.get('type') == 'creature':
-                defense_cards.append({
-                    'card': card,
-                    'index': i,
-                    'current_life': card.get('life', 0),
-                    'original_life': card.get('life', 0),
-                    'name': card.get('name', 'Desconhecido')
-                })
-        
-        # Ordenar por vida (maior primeiro para melhor absorção)
-        defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
-        
-        remaining_damage = damage_amount
-        damage_log = []
-        cards_destroyed = []
-        cards_damaged = []
-        
-        # Primeiro, dano nas criaturas de defesa
-        for def_card in defense_cards:
-            if remaining_damage <= 0:
-                break
-            
-            card = def_card['card']
-            card_life = def_card['current_life']
-            reflected_text = " [dano refletido]" if is_reflected else ""
-            
-            if remaining_damage >= card_life:
-                # Carta é destruída
-                remaining_damage -= card_life
-                self.graveyard.append(card)
-                target['defense_bases'][def_card['index']] = None
-                cards_destroyed.append(card['name'])
-                damage_log.append(f"{card['name']} foi destruída{reflected_text}")
-            else:
-                # Carta sofre dano mas sobrevive
-                new_life = card_life - remaining_damage
-                card['life'] = new_life
-                cards_damaged.append(f"{card['name']} (-{remaining_damage}❤️)")
-                damage_log.append(f"{card['name']} recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
-                remaining_damage = 0
-        
-        # Dano restante vai para o jogador
-        damage_to_player = 0
-        player_killed = False
-        
-        if remaining_damage > 0:
-            damage_to_player = remaining_damage
-            reflected_text = " [dano refletido]" if is_reflected else ""
-            
-            # Verificar Talismã da Imortalidade na MÃO
-            immortality_index = -1
-            for i, talisman in enumerate(target['hand']):
-                if talisman and talisman.get('id') == 'talisma_imortalidade':
-                    immortality_index = i
-                    break
-            
-            # Aplicar dano ao jogador
-            old_life = target['life']
-            target['life'] -= remaining_damage
-            damage_log.append(f"⚔️ {target['name']} recebeu {remaining_damage} de dano direto{reflected_text} (vida: {old_life} → {target['life']})")
-            
-            # Verificar se morreu e tem Talismã da Imortalidade
-            if target['life'] <= 0:
-                if immortality_index != -1:
-                    # Talismã da Imortalidade salva o jogador
-                    talisman = target['hand'][immortality_index]
-                    
-                    if 'uses_left' not in talisman:
-                        talisman['uses_left'] = 2
-                    
-                    talisman['uses_left'] -= 1
-                    uses_left = talisman['uses_left']
-                    
-                    old_life = target['life']
-                    target['life'] = 5000
-                    
-                    damage_log.append(f"✨ Talismã da Imortalidade salvou {target['name']}! ({uses_left} uso(s) restante(s))")
-                    damage_log.append(f"   Vida restaurada: {old_life} → 5000")
-                    damage_to_player = 0  # Não conta como dano ao jogador pois foi salvo
-                    
-                    # Se acabaram os usos, talismã volta para o deck
-                    if uses_left <= 0:
-                        used_talisman = target['hand'].pop(immortality_index)
-                        used_talisman['uses_left'] = 2
-                        self.deck.append(used_talisman)
-                        shuffle(self.deck)
-                        damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
-                else:
-                    # Sem talismã, jogador morre
-                    player_killed = True
-                    self.process_player_death(target_username)
-                    damage_log.append(f"💀 {target['name']} foi derrotado!{reflected_text}")
-        
-        # Retornar resultado detalhado
-        return {
-            'damage_taken': damage_amount - remaining_damage,
-            'damage_to_player': damage_to_player,
-            'player_killed': player_killed,
-            'cards_destroyed': cards_destroyed,
-            'cards_damaged': cards_damaged,
-            'log': damage_log
-        }
-    def force_attack_between_players(self, attacker_name, target_name):
-        """
-        Força um ataque entre dois jogadores (usado pela armadilha 51)
-        
-        Args:
-            attacker_name: Nome do jogador que vai atacar
-            target_name: Nome do jogador que vai ser atacado
-        """
-        attacker = self.player_data.get(attacker_name)
-        target = self.player_data.get(target_name)
-        
-        if not attacker or not target:
-            return
-        
-        # Calcular poder de ataque do atacante
-        attack_power = 0
-        for card in attacker['attack_bases']:
-            if card and card.get('type') == 'creature':
-                attack_power += card.get('attack', 0)
-        
-        # Adicionar bônus de equipamentos
-        if attacker['equipment']['weapon']:
-            weapon = attacker['equipment']['weapon']
-            if weapon.get('type') == 'weapon':
-                weapon_attack = weapon.get('attack', 0)
-                attack_power += weapon_attack
-        
-        # Talismã Guerreiro
-        for talisman in attacker['hand']:
-            if talisman.get('id') == 'talisma_guerreiro':
-                attack_power += 1024
-        
-        # Aplicar dano ao alvo (respeitando defesas)
-        result = self.apply_damage_to_player(target_name, attack_power, is_reflected=False)
-        
-        # Broadcast do ataque forçado
-        broadcast_system_message(self.game_id, 
-            f'🍺 {attacker_name} (controlado pela armadilha) atacou {target_name} causando {attack_power} de dano!')
-        
-        # Se o alvo morreu, já foi processado pelo apply_damage_to_player
-        if result.get('player_killed'):
-            broadcast_system_message(self.game_id, f'💀 {target_name} foi derrotado pelo ataque forçado!')
 
 # Rotas da aplicação
 @app.route('/')
