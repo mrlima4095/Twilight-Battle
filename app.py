@@ -549,7 +549,7 @@ DISGUISE_OPTIONS = [
     },
 ]
 
-def get_random_disguise(self):
+def get_random_disguise():
     disguise = random.choice(DISGUISE_OPTIONS)
     return {
         'id': disguise['id'],
