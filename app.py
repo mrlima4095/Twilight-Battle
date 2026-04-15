@@ -997,6 +997,38 @@ class Game:
                 count += 1
         return count
 
+    def get_card_for_player(self, card, viewer_username, owner_username):
+        """
+        Retorna a versão apropriada da carta para o visualizador.
+        - Se o visualizador é o dono, mostra a carta real
+        - Se não, mostra o disfarce (se for armadilha)
+        """
+        # Se for o dono da carta, mostrar o real
+        if viewer_username == owner_username:
+            # Criar uma cópia sem informações sensíveis de disfarce
+            if card.get('is_disguised'):
+                # Para o dono, mostrar que é uma armadilha
+                display_card = card.copy()
+                display_card['type'] = 'trap'
+                display_card['is_trap'] = True
+                # Remover dados de disfarce
+                display_card.pop('disguise', None)
+                display_card.pop('is_disguised', None)
+                return display_card
+            return card
+        
+        # Para espectadores e oponentes
+        if card.get('is_disguised') and card.get('disguise'):
+            # Retornar o disfarce (parece uma criatura normal)
+            disguise = card['disguise'].copy()
+            disguise['instance_id'] = card['instance_id']
+            disguise['is_disguised'] = True
+            disguise['is_trap'] = False  # Esconder que é armadilha
+            return disguise
+        
+        # Se não for armadilha, mostrar normal
+        return card
+
     def use_action(self, username, action):
         """Registra que uma ação foi usada"""
         if username not in self.turn_actions_used:
@@ -2753,7 +2785,7 @@ def handle_get_game_state(data):
         'deck_count': len(game.deck),
         'graveyard_count': len(game.graveyard),
         'is_spectator': is_spectator,
-        'spectators': []  # Lista de espectadores
+        'spectators': []
     }
     
     # Coletar lista de espectadores
@@ -2767,23 +2799,40 @@ def handle_get_game_state(data):
     # Informações de todos os jogadores
     for uname in game.players:
         if uname in game.player_data:
+            player_data = game.player_data[uname]
+            
+            # Para cada carta em campo, verificar se precisa ofuscar
+            attack_bases = []
+            for card in player_data['attack_bases']:
+                if card:
+                    attack_bases.append(game.get_card_for_player(card, username, uname))
+                else:
+                    attack_bases.append(None)
+            
+            defense_bases = []
+            for card in player_data['defense_bases']:
+                if card:
+                    defense_bases.append(game.get_card_for_player(card, username, uname))
+                else:
+                    defense_bases.append(None)
+            
             player_info = {
-                'name': game.player_data[uname]['name'],
+                'name': player_data['name'],
                 'username': uname,
-                'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
-                'attack_bases': game.player_data[uname]['attack_bases'],
-                'defense_bases': game.player_data[uname]['defense_bases'],
-                'talisman_count': game.get_player_talismans_count(uname),  # ← Conta da mão
-                'runes': game.get_player_runes_count(uname),               # ← Conta da mão
-                'dead': game.player_data[uname].get('dead', False),
-                'observer': game.player_data[uname].get('observer', False)
+                'life': player_data['life'] if not player_data.get('dead', False) else 0,
+                'attack_bases': attack_bases,
+                'defense_bases': defense_bases,
+                'talisman_count': game.get_player_talismans_count(uname),
+                'runes': game.get_player_runes_count(uname),
+                'dead': player_data.get('dead', False),
+                'observer': player_data.get('observer', False)
             }
             
             # Informações privadas apenas para o próprio jogador (não para espectadores)
             if uname == username and not is_spectator and not player_info.get('dead', False):
-                player_info['hand'] = game.player_data[uname]['hand']
-                player_info['equipment'] = game.player_data[uname]['equipment']
-                player_info['talismans'] = game.player_data[uname]['talismans']
+                player_info['hand'] = player_data['hand']
+                player_info['equipment'] = player_data['equipment']
+                player_info['talismans'] = player_data['talismans']
             
             state['players'][uname] = player_info
     
