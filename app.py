@@ -1119,7 +1119,7 @@ class Game:
             
             # Se for armadilha, gerar um disfarce aleatório
             if card_to_play.get('type') == 'trap':
-                disguise = self.get_random_disguise()
+                disguise = get_random_disguise()
                 disguise['original_trap_id'] = card_to_play['id']
                 disguise['original_trap_name'] = card_to_play['name']
                 disguise['instance_id'] = card_to_play['instance_id']  # Manter mesmo instance_id
