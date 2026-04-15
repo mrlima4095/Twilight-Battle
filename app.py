@@ -481,9 +481,7 @@ CARDS = {
         "count": 1, 
         "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."
     }
-}
 
-"""
     # Armadilhas
     "armadilha_51": {
         "id": "armadilha_51", 
@@ -520,7 +518,8 @@ CARDS = {
         "count": 1, 
         "description": "Quando o oponente atacar, TODAS as 3 criaturas atacantes são destruídas e enviadas para o cemitério. Armadilha é desativada após o uso."
     }
-"""
+}
+
 
 def create_deck():
     """Cria o baralho inicial baseado na quantidade de cartas"""
