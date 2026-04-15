@@ -3302,7 +3302,7 @@ def handle_player_action(data):
             next_player_name = game.player_data[next_player_name]['name']
             result = {'success': True, 'next_turn': next_player_name}
             log_message = f"⏰ {player_name} finalizou o turno (próximo: {next_player_name})"
-            broadcast_system_message(self.game_id, log_message)
+            broadcast_system_message(game_id, log_message)
         
         if result and result.get('success'):
             # Registrar ação para primeira rodada (exceto end_turn)
