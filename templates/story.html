@@ -632,7 +632,8 @@
                 reputation: 50,
                 hasMembership: false,
                 loans: [] // Array de { bookId, bookTitle, dueSeason, dueDay, dueYear }
-            }
+            },
+            learnedRecipes: []
         };
         
         const RACES = {
@@ -1148,7 +1149,8 @@
                 ],
                 result: 'book',
                 quantity: 1,
-                station: 'crafting_table'
+                station: 'crafting_table',
+                requires_learn: false
             },
             string: {
                 name: '🧵 Linha',
@@ -1158,7 +1160,8 @@
                 ],
                 result: 'string',
                 quantity: 2,
-                station: 'loom'
+                station: 'loom',
+                requires_learn: false
             },
             cloth: {
                 name: '🧶 Tecido',
@@ -1168,7 +1171,8 @@
                 ],
                 result: 'cloth',
                 quantity: 1,
-                station: 'loom'
+                station: 'loom',
+                requires_learn: false
             },
             shirt: {
                 name: '👕 Camisa',
@@ -1180,7 +1184,8 @@
                 ],
                 result: 'shirt',
                 quantity: 1,
-                station: 'loom'
+                station: 'loom',
+                requires_learn: false
             },
             pants: {
                 name: '👖 Calças',
@@ -1191,7 +1196,8 @@
                 ],
                 result: 'pants',
                 quantity: 1,
-                station: 'loom'
+                station: 'loom',
+                requires_learn: false
             },
             boots: {
                 name: '🥾 Botas',
@@ -1203,7 +1209,8 @@
                 ],
                 result: 'boots',
                 quantity: 1,
-                station: 'loom'
+                station: 'loom',
+                requires_learn: false
             },
         
             mill_wheat: {
@@ -1213,7 +1220,8 @@
                 result: 'wheat_flour',
                 quantity: 1,
                 station: 'mill',
-                millTime: 3
+                millTime: 3,
+                requires_learn: false
             },
             mill_corn: {
                 name: '🌽 Milho',
@@ -1222,7 +1230,8 @@
                 result: 'corn_flour',
                 quantity: 1,
                 station: 'mill',
-                millTime: 4
+                millTime: 4,
+                requires_learn: false
             },
         
             bread_dough: {
@@ -1232,7 +1241,9 @@
                 result: 'bread_dough',
                 quantity: 1,
                 station: 'crafting_table',
-                returnsBottle: true
+                returnsBottle: true,
+                requires_learn: true,
+                learnFrom: 'cookbook'
             }
         };
         const FURNACE_RECIPES = {
@@ -2282,6 +2293,7 @@
             gameState.sleepTimeout = null;
             gameState.location = 'home';
             gameState.placedStations = {};
+            gameState.learnedRecipes = [];
 
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
@@ -3208,7 +3220,16 @@
             const recipes = [];
             for (const [id, recipe] of Object.entries(CRAFTING_RECIPES)) {
                 if (recipe.station === stationType) {
-                    recipes.push({ id, ...recipe });
+                    // Verificar se a receita precisa ser aprendida
+                    if (recipe.requires_learn) {
+                        // Só mostrar se o jogador aprendeu
+                        if (gameState.learnedRecipes && gameState.learnedRecipes.includes(id)) {
+                            recipes.push({ id, ...recipe });
+                        }
+                    } else {
+                        // Receitas básicas sempre disponíveis
+                        recipes.push({ id, ...recipe });
+                    }
                 }
             }
             return recipes;
@@ -5811,6 +5832,64 @@
             if (gameState.seasonCount < dueSeason) return false;
             
             return gameState.dayCount > dueDay;
+        }
+        //
+        // Learning from Books
+        async function learnRecipeFromBook(bookId, recipeId) {
+            if (gameState.isDead) return false;
+            
+            const book = LIBRARY_BOOKS[bookId];
+            if (!book) {
+                addLog('❌ Livro não encontrado.');
+                return false;
+            }
+            
+            const recipe = CRAFTING_RECIPES[recipeId];
+            if (!recipe || !recipe.requires_learn) {
+                addLog('❌ Esta receita não pode ser aprendida.');
+                return false;
+            }
+            
+            // Verificar se já aprendeu
+            if (gameState.learnedRecipes && gameState.learnedRecipes.includes(recipeId)) {
+                Swal.fire({
+                    title: '📚 Receita já conhecida!',
+                    text: `Você já sabe fazer ${recipe.name}.`,
+                    icon: 'info',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2500,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                addLog(`📚 Você já conhece a receita de ${recipe.name}!`);
+                return false;
+            }
+            
+            // Aprender a receita
+            if (!gameState.learnedRecipes) gameState.learnedRecipes = [];
+            gameState.learnedRecipes.push(recipeId);
+            
+            addLog(`📖✨ Você aprendeu a receita: ${recipe.name}!`);
+            
+            // Toast de sucesso
+            Swal.fire({
+                title: '📖 Receita Aprendida!',
+                text: `${recipe.name} - Agora você pode craftar este item!`,
+                icon: 'success',
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true,
+                background: '#1a1a2e',
+                color: '#4CAF50'
+            });
+            
+            updateUI();
+            return true;
         }
 
         // ========== NPCs ==========
