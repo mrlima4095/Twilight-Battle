@@ -2381,10 +2381,145 @@ class Game:
         
         return effects
 
+    def apply_damage_to_player(self, target_username, damage_amount, is_reflected=False):
+        """
+        Aplica dano a um jogador respeitando suas defesas (criaturas, talismãs, etc)
+        
+        Args:
+            target_username: Nome do jogador que vai receber o dano
+            damage_amount: Quantidade de dano a ser aplicada
+            is_reflected: Se o dano é refletido (para mensagens diferenciadas)
+        
+        Returns:
+            dict: Resultado da aplicação do dano
+        """
+        target = self.player_data.get(target_username)
+        
+        if not target:
+            return {'damage_taken': 0, 'player_killed': False, 'log': ['Jogador não encontrado']}
+        
+        # Se o jogador está morto, não aplicar dano
+        if target.get('dead', False):
+            return {'damage_taken': 0, 'player_killed': False, 'log': [f'{target["name"]} já está morto']}
+        
+        # Coletar cartas de defesa do alvo (apenas criaturas)
+        defense_cards = []
+        for i, card in enumerate(target['defense_bases']):
+            if card and card.get('type') == 'creature':
+                defense_cards.append({
+                    'card': card,
+                    'index': i,
+                    'current_life': card.get('life', 0),
+                    'original_life': card.get('life', 0),
+                    'name': card.get('name', 'Desconhecido')
+                })
+        
+        # Ordenar por vida (maior primeiro para melhor absorção)
+        defense_cards.sort(key=lambda x: x['current_life'], reverse=True)
+        
+        remaining_damage = damage_amount
+        damage_log = []
+        cards_destroyed = []
+        cards_damaged = []
+        
+        # Primeiro, dano nas criaturas de defesa
+        for def_card in defense_cards:
+            if remaining_damage <= 0:
+                break
+            
+            card = def_card['card']
+            card_life = def_card['current_life']
+            reflected_text = " [dano refletido]" if is_reflected else ""
+            
+            if remaining_damage >= card_life:
+                # Carta é destruída
+                remaining_damage -= card_life
+                self.graveyard.append(card)
+                target['defense_bases'][def_card['index']] = None
+                cards_destroyed.append(card['name'])
+                damage_log.append(f"{card['name']} foi destruída{reflected_text}")
+            else:
+                # Carta sofre dano mas sobrevive
+                new_life = card_life - remaining_damage
+                card['life'] = new_life
+                cards_damaged.append(f"{card['name']} (-{remaining_damage}❤️)")
+                damage_log.append(f"{card['name']} recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
+                remaining_damage = 0
+        
+        # Dano restante vai para o jogador
+        damage_to_player = 0
+        player_killed = False
+        
+        if remaining_damage > 0:
+            damage_to_player = remaining_damage
+            reflected_text = " [dano refletido]" if is_reflected else ""
+            
+            # Verificar Talismã da Imortalidade na MÃO
+            immortality_index = -1
+            for i, talisman in enumerate(target['hand']):
+                if talisman and talisman.get('id') == 'talisma_imortalidade':
+                    immortality_index = i
+                    break
+            
+            # Aplicar dano ao jogador
+            old_life = target['life']
+            target['life'] -= remaining_damage
+            damage_log.append(f"⚔️ {target['name']} recebeu {remaining_damage} de dano direto{reflected_text} (vida: {old_life} → {target['life']})")
+            
+            # Verificar se morreu e tem Talismã da Imortalidade
+            if target['life'] <= 0:
+                if immortality_index != -1:
+                    # Talismã da Imortalidade salva o jogador
+                    talisman = target['hand'][immortality_index]
+                    
+                    if 'uses_left' not in talisman:
+                        talisman['uses_left'] = 2
+                    
+                    talisman['uses_left'] -= 1
+                    uses_left = talisman['uses_left']
+                    
+                    old_life = target['life']
+                    target['life'] = 5000
+                    
+                    damage_log.append(f"✨ Talismã da Imortalidade salvou {target['name']}! ({uses_left} uso(s) restante(s))")
+                    damage_log.append(f"   Vida restaurada: {old_life} → 5000")
+                    damage_to_player = 0  # Não conta como dano ao jogador pois foi salvo
+                    
+                    # Se acabaram os usos, talismã volta para o deck
+                    if uses_left <= 0:
+                        used_talisman = target['hand'].pop(immortality_index)
+                        used_talisman['uses_left'] = 2
+                        self.deck.append(used_talisman)
+                        shuffle(self.deck)
+                        damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
+                else:
+                    # Sem talismã, jogador morre
+                    player_killed = True
+                    self.process_player_death(target_username)
+                    damage_log.append(f"💀 {target['name']} foi derrotado!{reflected_text}")
+        
+        # Retornar resultado detalhado
+        return {
+            'damage_taken': damage_amount - remaining_damage,
+            'damage_to_player': damage_to_player,
+            'player_killed': player_killed,
+            'cards_destroyed': cards_destroyed,
+            'cards_damaged': cards_damaged,
+            'log': damage_log
+        }
     def force_attack_between_players(self, attacker_name, target_name):
-        """Força um ataque entre dois jogadores (usado pela armadilha 51)"""
-        attacker = self.player_data[attacker_name]
-        target = self.player_data[target_name]
+        """
+        Força um ataque entre dois jogadores (usado pela armadilha 51)
+        
+        Args:
+            attacker_name: Nome do jogador que vai atacar
+            target_name: Nome do jogador que vai ser atacado
+        """
+        attacker = self.player_data.get(attacker_name)
+        target = self.player_data.get(target_name)
+        
+        if not attacker or not target:
+            return
         
         # Calcular poder de ataque do atacante
         attack_power = 0
@@ -2392,14 +2527,28 @@ class Game:
             if card and card.get('type') == 'creature':
                 attack_power += card.get('attack', 0)
         
-        # Aplicar dano ao alvo
-        target['life'] -= attack_power
+        # Adicionar bônus de equipamentos
+        if attacker['equipment']['weapon']:
+            weapon = attacker['equipment']['weapon']
+            if weapon.get('type') == 'weapon':
+                weapon_attack = weapon.get('attack', 0)
+                attack_power += weapon_attack
         
+        # Talismã Guerreiro
+        for talisman in attacker['hand']:
+            if talisman.get('id') == 'talisma_guerreiro':
+                attack_power += 1024
+        
+        # Aplicar dano ao alvo (respeitando defesas)
+        result = self.apply_damage_to_player(target_name, attack_power, is_reflected=False)
+        
+        # Broadcast do ataque forçado
         broadcast_system_message(self.game_id, 
-            f'🍺 {attacker_name} (bêbado) atacou {target_name} causando {attack_power} de dano!')
+            f'🍺 {attacker_name} (controlado pela armadilha) atacou {target_name} causando {attack_power} de dano!')
         
-        if target['life'] <= 0:
-            self.process_player_death(target_name)
+        # Se o alvo morreu, já foi processado pelo apply_damage_to_player
+        if result.get('player_killed'):
+            broadcast_system_message(self.game_id, f'💀 {target_name} foi derrotado pelo ataque forçado!')
 
 # Rotas da aplicação
 @app.route('/')
