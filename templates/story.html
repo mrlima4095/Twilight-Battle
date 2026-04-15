@@ -7490,14 +7490,7 @@
                         document.getElementById('game-ui').style.display = 'block';
                         
                         updateUI();
-                        startCycleTimer(); // Isso vai usar o remainingCycleTime salvo
-                        
-                        addLog('📂 Jogo carregado!');
-                        
-                        // Mostrar informação do tempo atual
-                        const currentPhase = gameState.timeOfDay === 'day' ? '☀️ Dia' : '🌙 Noite';
-                        addLog(`⏰ ${currentPhase} - Ciclo de tempo restaurado!`);
-                        
+                        startCycleTimer(); // Isso vai usar o remainingCycleTime salvo                        
                     } catch (err) {
                         alert('Erro ao carregar arquivo!');
                         document.getElementById('title-screen').style.display = 'flex';
