@@ -513,6 +513,56 @@ CARDS = {
     }
 }
 
+DISGUISE_OPTIONS = [
+    {
+        'id': 'elfo',
+        'name': 'Elfo',
+        'type': 'creature',
+        'life': 512,
+        'attack': 512,
+        'description': 'Não ataca outros elfos. Use para realizar oráculos.'
+    },
+    {
+        'id': 'zumbi',
+        'name': 'Zumbi',
+        'type': 'creature',
+        'life': 100,
+        'attack': 100,
+        'description': 'Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.',
+        'dies_daylight': True
+    },
+    {
+        'id': 'centauro',
+        'name': 'Centauro',
+        'type': 'creature',
+        'life': 512,
+        'attack': 150,
+        'description': 'O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre.'
+    },
+    {
+        'id': 'mago',
+        'name': 'Mago',
+        'type': 'creature',
+        'life': 800,
+        'attack': 250,
+        'description': 'Use-o para invocar feitiços.'
+    },
+]
+
+def get_random_disguise(self):
+    disguise = random.choice(DISGUISE_OPTIONS)
+    return {
+        'id': disguise['id'],
+        'name': disguise['name'],
+        'type': 'creature',
+        'life': disguise['life'],
+        'attack': disguise['attack'],
+        'description': disguise['description'],
+        'dies_daylight': disguise.get('dies_daylight', False),
+        'is_disguised_trap': True,  # Marcar como disfarce
+        'original_trap_id': None  # Será preenchido depois
+    }
+
 
 def create_deck():
     """Cria o baralho inicial baseado na quantidade de cartas"""
@@ -1066,6 +1116,15 @@ class Game:
             allowed_types = ['creature', 'trap']
             if card_to_play.get('type') not in allowed_types:
                 return {'success': False, 'message': f'Apenas criaturas e armadilhas podem ser colocadas em defesa (tipo: {card_to_play.get("type")})'}
+            
+            # Se for armadilha, gerar um disfarce aleatório
+            if card_to_play.get('type') == 'trap':
+                disguise = self.get_random_disguise()
+                disguise['original_trap_id'] = card_to_play['id']
+                disguise['original_trap_name'] = card_to_play['name']
+                disguise['instance_id'] = card_to_play['instance_id']  # Manter mesmo instance_id
+                card_to_play['disguise'] = disguise
+                card_to_play['is_disguised'] = True
         
         elif position_type == 'equipment':
             valid_equipment_types = {
@@ -1108,6 +1167,7 @@ class Game:
             player['equipment'][position_index] = card_to_play
         
         self.use_action(username, 'play')
+        
         return {'success': True, 'card': card_to_play}
     
     def attack(self, username, target_username):
@@ -2196,8 +2256,8 @@ class Game:
 
     # Métodos para armadilhas
     def activate_trap(self, trap_card, attacker, defender, attack_power):
-        """Ativa o efeito de uma armadilha quando atacada"""
-        trap_id = trap_card.get('id')
+        trap_id = trap_card.get('original_trap_id') or trap_card.get('id')
+        trap_name = trap_card.get('original_trap_name') or trap_card.get('name')
         
         effects = []
         
