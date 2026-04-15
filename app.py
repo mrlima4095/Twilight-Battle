@@ -480,7 +480,7 @@ CARDS = {
         "type": "ritual", 
         "count": 1, 
         "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."
-    }
+    },
 
     # Armadilhas
     "armadilha_171": {
