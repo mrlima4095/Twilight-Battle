@@ -1796,18 +1796,6 @@
             }
             
             if (actionMode === 'play' && selectedCard) {
-                if (selectedCard.type !== 'creature') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Carta inválida',
-                        text: 'Apenas criaturas podem ser colocadas em bases',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    return;
-                }
-
                 if (type === 'attack') {
                     // Apenas criaturas podem atacar
                     if (selectedCard.type === 'creature') {
