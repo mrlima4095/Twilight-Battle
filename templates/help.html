@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle - Regras do Jogo</title>
+    <title>Twilight Battle - Modo História | Como Jogar</title>
     <style>
         * {
             margin: 0;
@@ -13,47 +13,46 @@
         }
         
         body {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
             min-height: 100vh;
             color: #fff;
             padding: 40px 20px;
         }
         
-        .rules-container {
-            max-width: 1200px;
+        .container {
+            max-width: 1300px;
             margin: 0 auto;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 30px;
-            padding: 40px;
-            border: 2px solid #ffd700;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
         }
         
+        /* Header */
         .header {
             text-align: center;
             margin-bottom: 40px;
-            border-bottom: 2px solid #ffd700;
-            padding-bottom: 20px;
+            position: relative;
         }
         
-        h1 {
-            color: #ffd700;
-            font-size: 3em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            margin-bottom: 10px;
+        .header h1 {
+            font-size: 3.5em;
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
         }
         
-        .subtitle {
+        .header p {
             color: #a8a8a8;
             font-size: 1.2em;
+            margin-top: 10px;
         }
         
-        .nav-buttons {
+        /* Navegação */
+        .nav-bar {
             display: flex;
-            gap: 20px;
             justify-content: center;
-            margin-bottom: 30px;
+            gap: 20px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
         }
         
         .nav-btn {
@@ -61,11 +60,12 @@
             background: linear-gradient(45deg, #ffd700, #ffa500);
             color: #1a1a2e;
             text-decoration: none;
-            border-radius: 25px;
+            border-radius: 30px;
             font-weight: bold;
             transition: all 0.3s;
             border: none;
             cursor: pointer;
+            font-size: 16px;
         }
         
         .nav-btn:hover {
@@ -73,128 +73,159 @@
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
         }
         
-        .section {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            border-left: 5px solid #ffd700;
+        .nav-btn.secondary {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
         }
         
-        h2 {
-            color: #ffd700;
+        /* Seções */
+        .section {
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+        
+        .section-title {
             font-size: 2em;
+            color: #ffd700;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            border-bottom: 2px solid #ffd700;
+            padding-bottom: 10px;
         }
         
-        h3 {
-            color: #4a90e2;
-            font-size: 1.5em;
-            margin: 20px 0 10px;
+        .section-title .emoji {
+            font-size: 1.2em;
         }
         
-        .rule-grid {
+        /* Grid de cards */
+        .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px;
             margin-top: 20px;
         }
         
-        .rule-card {
-            background: rgba(255, 255, 255, 0.03);
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
             padding: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
             transition: all 0.3s;
+            border-left: 4px solid #ffd700;
         }
         
-        .rule-card:hover {
+        .info-card:hover {
             transform: translateY(-5px);
-            border-color: #ffd700;
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+            background: rgba(255, 255, 255, 0.08);
         }
         
-        .rule-card h4 {
+        .info-card h3 {
             color: #ffd700;
-            font-size: 1.3em;
             margin-bottom: 15px;
-            border-bottom: 1px solid #ffd700;
-            padding-bottom: 10px;
+            font-size: 1.4em;
         }
         
-        .phase-timeline {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+        .info-card p {
+            color: #ccc;
+            line-height: 1.6;
+        }
+        
+        /* Tabelas */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
             margin: 20px 0;
         }
         
-        .phase {
-            flex: 1;
-            min-width: 150px;
-            background: rgba(74, 144, 226, 0.2);
-            border: 1px solid #4a90e2;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
+        .stats-table th,
+        .stats-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
         }
         
-        .phase .number {
-            background: #4a90e2;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 10px;
+        .stats-table th {
+            background: rgba(255, 215, 0, 0.15);
+            color: #ffd700;
             font-weight: bold;
         }
         
-        .card-types {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
+        .stats-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        /* Raças */
+        .races-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
             margin: 20px 0;
         }
         
-        .card-type {
-            flex: 1;
-            min-width: 150px;
+        .race-card {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
             padding: 20px;
-            border-radius: 10px;
             text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s;
         }
         
-        .card-type.creature { background: rgba(255, 68, 68, 0.2); border: 2px solid #ff4444; }
-        .card-type.weapon { background: rgba(255, 165, 0, 0.2); border: 2px solid #ffa500; }
-        .card-type.armor { background: rgba(74, 144, 226, 0.2); border: 2px solid #4a90e2; }
-        .card-type.spell { background: rgba(147, 112, 219, 0.2); border: 2px solid #9370db; }
-        .card-type.talisman { background: rgba(255, 215, 0, 0.2); border: 2px solid #ffd700; }
-        .card-type.trap { background: rgba(255, 0, 255, 0.2); border: 2px solid #ff00ff; }
-        .card-type.rune { background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; }
-        .card-type.oracle { background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; }
-        .card-type.ritual { background: rgba(255, 215, 0, 0.2); border: 2px solid #ffd700; }
+        .race-card.elf { border-top: 4px solid #4CAF50; }
+        .race-card.wizard { border-top: 4px solid #9370db; }
+        .race-card.centaur { border-top: 4px solid #ffa500; }
+        .race-card.nymph { border-top: 4px solid #ff69b4; }
         
-        .example-board {
+        .race-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        
+        .race-name {
+            font-size: 1.5em;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .race-stats {
+            color: #ccc;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .race-skill {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        /* Inventário */
+        .inventory-demo {
             background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
         }
         
-        .example-slot {
-            width: 80px;
-            height: 100px;
-            background: rgba(255, 215, 0, 0.1);
-            border: 2px solid #ffd700;
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .demo-slot {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #444;
             border-radius: 8px;
             display: flex;
             flex-direction: column;
@@ -204,691 +235,674 @@
             text-align: center;
         }
         
-        .example-slot.attack { border-color: #ff4444; }
-        .example-slot.defense { border-color: #4a90e2; }
+        .demo-slot.has-item {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
+        }
         
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        /* Combate */
+        .combat-demo {
+            background: linear-gradient(135deg, #2a1a1a, #1a0a0a);
+            border-radius: 20px;
+            padding: 25px;
             margin: 20px 0;
         }
         
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        .combat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 15px 0;
         }
         
-        th {
-            background: rgba(255, 215, 0, 0.2);
+        .combatant {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .health-bar {
+            width: 100%;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 20px;
+            margin: 10px 0;
+        }
+        
+        .health-fill {
+            width: 70%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            height: 100%;
+        }
+        
+        /* Estações */
+        .stations-demo {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .station-card {
+            background: rgba(147, 112, 219, 0.2);
+            border: 1px solid #9370db;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        /* Sistema de tempo */
+        .time-cycle {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .time-phase {
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            flex: 1;
+        }
+        
+        .time-phase.day {
+            background: linear-gradient(135deg, #ffa50020, #ffd70020);
+            border: 1px solid #ffd700;
+        }
+        
+        .time-phase.night {
+            background: linear-gradient(135deg, #4a90e220, #9370db20);
+            border: 1px solid #9370db;
+        }
+        
+        .time-icon {
+            font-size: 48px;
+        }
+        
+        /* Dicas */
+        .tip-box {
+            background: rgba(76, 175, 80, 0.15);
+            border-left: 4px solid #4CAF50;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background: rgba(255, 68, 68, 0.15);
+            border-left: 4px solid #ff4444;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        /* Comandos */
+        .commands-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .commands-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .command-key {
+            background: #1a1a2e;
+            border: 1px solid #ffd700;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-family: monospace;
+            font-weight: bold;
             color: #ffd700;
+            min-width: 80px;
+            text-align: center;
         }
         
-        tr:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-        
-        .tip {
-            background: rgba(76, 175, 80, 0.2);
-            border-left: 5px solid #4CAF50;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-        }
-        
-        .warning {
-            background: rgba(255, 68, 68, 0.2);
-            border-left: 5px solid #ff4444;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-        }
-        
-        .info {
-            background: rgba(74, 144, 226, 0.2);
-            border-left: 5px solid #4a90e2;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 5px;
-        }
-        
+        /* Footer */
         .footer {
             text-align: center;
             margin-top: 40px;
             padding-top: 20px;
             border-top: 1px solid rgba(255, 215, 0, 0.3);
-            color: #a8a8a8;
+            color: #888;
         }
         
+        /* Responsivo */
         @media (max-width: 768px) {
-            .rules-container {
+            .container {
+                padding: 0 10px;
+            }
+            
+            .section {
                 padding: 20px;
             }
             
-            h1 {
+            .section-title {
+                font-size: 1.5em;
+            }
+            
+            .header h1 {
                 font-size: 2em;
             }
+            
+            .demo-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .time-cycle {
+                flex-direction: column;
+            }
+        }
+        
+        /* Animações */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .highlight {
+            animation: pulse 2s infinite;
+            color: #ffd700;
         }
     </style>
 </head>
 <body>
-    <div class="rules-container">
+    <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1>📜 Twilight Battle</h1>
-            <p class="subtitle">Guia de Regras e Como Jogar - Versão Atualizada</p>
+            <h1>🌆 Twilight Battle</h1>
+            <p>Modo História - Guia Completo para Aventureiros</p>
         </div>
         
-        <div class="nav-buttons">
+        <!-- Navegação -->
+        <div class="nav-bar">
             <a href="/" class="nav-btn">🏠 Início</a>
-            <button class="nav-btn" onclick="window.print()">🖨️ Imprimir</button>
+            <a href="/rules" class="nav-btn secondary">📜 Modo Batalha</a>
+            <button class="nav-btn secondary" onclick="window.print()">🖨️ Imprimir</button>
         </div>
         
-        <!-- Visão Geral -->
+        <!-- Introdução -->
         <div class="section">
-            <h2>🎮 Visão Geral do Jogo</h2>
-            <p>Twilight Battle é um RPG de cartas estratégico onde 2 a 6 jogadores duelam até restar apenas um sobrevivente. Cada jogador começa com <strong>5000 de vida</strong> e <strong>5 cartas iniciais</strong>, podendo invocar criaturas, equipar itens, lançar feitiços e usar armadilhas para derrotar seus oponentes.</p>
-            
-            <div class="tip">
-                <strong>🎯 Objetivo:</strong> Ser o último jogador com vida. Quando a vida de um jogador chega a 0, ele é eliminado.
+            <div class="section-title">
+                <span class="emoji">✨</span>
+                <span>Bem-vindo ao Reino da Aurora</span>
             </div>
-        </div>
-        
-        <!-- Fases do Jogo -->
-        <div class="section">
-            <h2>⏳ Fases do Jogo</h2>
+            <p style="font-size: 1.1em; line-height: 1.6; margin-bottom: 20px;">
+                O <strong>Modo História</strong> de Twilight Battle é um RPG de mundo aberto onde você cria seu personagem, 
+                explora um vasto reino, luta contra criaturas, coleta tesouros e constrói sua própria história. 
+                Diferente do modo batalha PvP, aqui você vive uma aventura solo cheia de descobertas!
+            </p>
             
-            <div class="phase-timeline">
-                <div class="phase">
-                    <div class="number">1</div>
-                    <strong>Preparação</strong>
-                    <small>Primeira rodada sem ataques</small>
-                </div>
-                <div class="phase">
-                    <div class="number">2</div>
-                    <strong>Turnos</strong>
-                    <small>1 ação de cada tipo por turno</small>
-                </div>
-                <div class="phase">
-                    <div class="number">3</div>
-                    <strong>Ciclo Dia/Noite</strong>
-                    <small>Muda a cada 24 turnos</small>
-                </div>
-                <div class="phase">
-                    <div class="number">4</div>
-                    <strong>Fim</strong>
-                    <small>Último sobrevivente vence</small>
-                </div>
-            </div>
-            
-            <h3>🎲 Primeira Rodada (Preparação)</h3>
-            <p>Na primeira rodada, <strong>ataques são bloqueados</strong>. Todos os jogadores devem fazer pelo menos uma ação (comprar carta, jogar criatura, equipar item, etc.) antes dos ataques serem liberados. Isso dá tempo para todos se prepararem.</p>
-            
-            <h3>🔄 Turnos</h3>
-            <p>Em seu turno, você pode realizar <strong>UMA ação de cada tipo</strong>:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>📥 Comprar uma carta</li>
-                <li>🎴 Jogar uma carta (criatura, armadilha, etc.)</li>
-                <li>⚔️ Atacar um oponente</li>
-                <li>🔰 Equipar um item em uma criatura</li>
-                <li>🔄 Trocar posições de cartas</li>
-                <li>✨ Usar um feitiço</li>
-                <li>👁️ Usar o Oráculo</li>
-                <li>🔮 Profetizar (com o Profeta)</li>
-                <li>📿 Realizar um Ritual</li>
-            </ul>
-            
-            <div class="info">
-                <strong>💡 Talismã da Sabedoria:</strong> Permite jogar <strong>DUAS cartas por turno</strong> (em vez de uma)!
-            </div>
-            
-            <h3>☀️ Ciclo Dia/Noite</h3>
-            <p>A cada 24 turnos, o ciclo muda:</p>
-            <div class="rule-grid">
-                <div class="rule-card">
-                    <h4>☀️ Dia</h4>
-                    <p>Criaturas noturnas (Vampiros, Zumbis) tomam <strong>100 de dano</strong> da luz do sol, a menos que estejam usando <strong>Capacete das Trevas</strong>.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🌙 Noite</h4>
-                    <p>Criaturas noturnas ficam mais fortes. Alguns feitiços e armadilhas só funcionam à noite.</p>
-                </div>
+            <div class="tip-box">
+                <strong>🎯 Seu Objetivo:</strong> Sobreviva, explore, fique mais forte e descubra todos os segredos 
+                do Reino da Aurora. Não há um "final" definido - sua jornada é o que você faz dela!
             </div>
         </div>
         
-        <!-- Campo de Batalha -->
+        <!-- Criação de Personagem -->
         <div class="section">
-            <h2>🏰 Campo de Batalha</h2>
+            <div class="section-title">
+                <span class="emoji">👤</span>
+                <span>Criando Seu Herói</span>
+            </div>
             
-            <h3>⚔️ Bases de Ataque (3 slots)</h3>
-            <p>Criaturas em ataque contribuem com seu poder de ataque quando você ataca. <strong>Apenas criaturas podem ser colocadas aqui.</strong></p>
+            <p>Antes de começar sua jornada, você precisa criar um personagem. Escolha sabiamente - cada decisão afeta sua gameplay!</p>
             
-            <h3>🛡️ Bases de Defesa (6 slots)</h3>
-            <p>Criaturas e <strong>armadilhas</strong> podem ser colocadas aqui. A ordem de absorção de dano é das cartas com <strong>maior vida primeiro</strong>.</p>
+            <div class="races-container">
+                <div class="race-card elf">
+                    <div class="race-icon">🧝</div>
+                    <div class="race-name">Elfo</div>
+                    <div class="race-stats">❤️ 512 Vida | ⚔️ 50 Ataque | 🔮 80 Mana</div>
+                    <div class="race-skill">✨ Habilidade: Esquiva - Chance de evitar ataques</div>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Ágeis e precisos, os elfos são ótimos arqueiros e escaramuçadores.</p>
+                </div>
+                
+                <div class="race-card wizard">
+                    <div class="race-icon">🔮</div>
+                    <div class="race-name">Mago</div>
+                    <div class="race-stats">❤️ 600 Vida | ⚔️ 75 Ataque | 🔮 150 Mana</div>
+                    <div class="race-skill">✨ Habilidade: Magia - Pode usar feitiços poderosos</div>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Mestres das artes arcanas, com a maior reserva de mana.</p>
+                </div>
+                
+                <div class="race-card centaur">
+                    <div class="race-icon">🏹</div>
+                    <div class="race-name">Centauro</div>
+                    <div class="race-stats">❤️ 600 Vida | ⚔️ 120 Ataque | 🔮 80 Mana</div>
+                    <div class="race-skill">✨ Habilidade: Carga - Ataques causam dano extra</div>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Guerreiros imponentes com o maior ataque base.</p>
+                </div>
+                
+                <div class="race-card nymph">
+                    <div class="race-icon">🌸</div>
+                    <div class="race-name">Ninfa</div>
+                    <div class="race-stats">❤️ 512 Vida | ⚔️ 30 Ataque | 🔮 100 Mana</div>
+                    <div class="race-skill">✨ Habilidade: Cura - Recupera vida com o tempo</div>
+                    <p style="font-size: 12px; color: #888; margin-top: 10px;">Seres da natureza, especialistas em suporte e sobrevivência.</p>
+                </div>
+            </div>
             
-            <h3>⚠️ Armadilhas em Defesa</h3>
-            <p>Armadilhas colocadas em defesa <strong>aparecem como criaturas comuns</strong> (disfarce) para os oponentes! Quando atacadas, são ativadas e revelam sua verdadeira natureza.</p>
-            
-            <div class="example-board">
-                <div class="example-slot attack">⚔️<br>Ataque<br><small style="color:#ff4444;">(só criaturas)</small></div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot defense">🛡️<br>Defesa<br><small style="color:#44aaff;">(criaturas/armadilhas)</small></div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
+            <div class="tip-box">
+                <strong>💡 Dica:</strong> Ninfas são exclusivamente femininas. Se você escolher esta raça, o gênero será automaticamente definido como Feminino.
             </div>
         </div>
         
-        <!-- Tipos de Cartas -->
+        <!-- Interface do Jogo -->
         <div class="section">
-            <h2>🃏 Tipos de Cartas</h2>
+            <div class="section-title">
+                <span class="emoji">🖥️</span>
+                <span>Interface do Jogo</span>
+            </div>
             
-            <div class="card-types">
-                <div class="card-type creature">
-                    <div style="font-size: 30px;">👤</div>
-                    <h4>Criaturas</h4>
-                    <p>Vida e ataque. Colocadas em bases de ataque ou defesa.</p>
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>🎒 Inventário (Esquerda)</h3>
+                    <p>Onde seus itens ficam armazenados. Você tem <strong>18 espaços</strong> para carregar tudo que encontrar.</p>
+                    <div class="inventory-demo" style="margin-top: 10px; padding: 10px;">
+                        <div class="demo-grid">
+                            <div class="demo-slot has-item">🍎<br>Maçã</div>
+                            <div class="demo-slot has-item">🗡️<br>Espada</div>
+                            <div class="demo-slot has-item">🛡️<br>Escudo</div>
+                            <div class="demo-slot">⬜</div>
+                            <div class="demo-slot">⬜</div>
+                            <div class="demo-slot">⬜</div>
+                        </div>
+                    </div>
+                    <p><small>🔹 Clique em um item para usá-lo<br>🔹 Arraste itens para organizar<br>🔹 Arraste para a lixeira para descartar</small></p>
                 </div>
-                <div class="card-type weapon">
-                    <div style="font-size: 30px;">⚔️</div>
-                    <h4>Armas</h4>
-                    <p>Aumentam ataque da criatura equipada. <strong>Limite: 1 por criatura</strong></p>
+                
+                <div class="info-card">
+                    <h3>⚔️ Equipamentos (Direita)</h3>
+                    <p>Espaços para equipar armas e armaduras que aumentam seus atributos.</p>
+                    <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            <div style="text-align: center;"><span style="font-size: 24px;">🧢</span><br>Capacete</div>
+                            <div style="text-align: center;"><span style="font-size: 24px;">👕</span><br>Peitoral</div>
+                            <div style="text-align: center;"><span style="font-size: 24px;">👖</span><br>Calças</div>
+                            <div style="text-align: center;"><span style="font-size: 24px;">👢</span><br>Botas</div>
+                            <div style="text-align: center;"><span style="font-size: 24px;">⚔️</span><br>Arma</div>
+                            <div style="text-align: center;"><span style="font-size: 24px;">🛡️</span><br>Escudo</div>
+                        </div>
+                    </div>
+                    <p><small>🔹 Clique em um espaço vazio para equipar um item do inventário<br>🔹 Clique em um item equipado para guardá-lo</small></p>
                 </div>
-                <div class="card-type armor">
-                    <div style="font-size: 30px;">🛡️</div>
-                    <h4>Armaduras</h4>
-                    <p>Aumentam vida/proteção da criatura. <strong>Limite: 4 por criatura</strong></p>
+                
+                <div class="info-card">
+                    <h3>🗺️ Área do Jogo (Centro)</h3>
+                    <p>Onde a magia acontece! Aqui você vê sua localização atual, as ações disponíveis e os eventos.</p>
+                    <p><small>🔹 Use os botões de ação para interagir com o mundo<br>🔹 O log de combate mostra tudo que acontece<br>🔹 O relógio indica se é Dia ☀️ ou Noite 🌙</small></p>
                 </div>
-                <div class="card-type spell">
-                    <div style="font-size: 30px;">✨</div>
-                    <h4>Feitiços</h4>
-                    <p>Efeitos mágicos. <strong>Requerem um Mago em campo</strong></p>
+            </div>
+        </div>
+        
+        <!-- Sistema de Tempo -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">⏰</span>
+                <span>Ciclo de Tempo</span>
+            </div>
+            
+            <p>O mundo do Reino da Aurora é vivo! O tempo passa enquanto você joga, alternando entre Dia e Noite a cada <strong>20 minutos reais</strong>.</p>
+            
+            <div class="time-cycle">
+                <div class="time-phase day">
+                    <div class="time-icon">☀️</div>
+                    <h3 style="color: #ffd700;">Dia</h3>
+                    <p>🌙 Você pode dormir para avançar o tempo<br>⚔️ Monstros comuns estão ativos<br>🛡️ Mais seguro para explorar perto da cidade</p>
                 </div>
-                <div class="card-type talisman">
-                    <div style="font-size: 30px;">🔮</div>
-                    <h4>Talismãs</h4>
-                    <p>Ficam na mão e ativam automaticamente. <strong>Não podem ser jogados</strong></p>
+                <div class="time-phase night">
+                    <div class="time-icon">🌙</div>
+                    <h3 style="color: #9370db;">Noite</h3>
+                    <p>😴 Dormir recupera toda sua mana<br>🌑 Criaturas noturnas mais fortes<br>💀 Perigo aumentado nas florestas</p>
                 </div>
-                <div class="card-type trap">
-                    <div style="font-size: 30px;">⚠️</div>
-                    <h4>Armadilhas</h4>
-                    <p>Colocadas em defesa com <strong>disfarce</strong>. Ativam quando atacadas.</p>
-                </div>
-                <div class="card-type rune">
-                    <div style="font-size: 30px;">🔷</div>
-                    <h4>Runas</h4>
-                    <p>4 runas = reviver 1 carta do cemitério</p>
-                </div>
-                <div class="card-type oracle">
-                    <div style="font-size: 30px;">👁️</div>
-                    <h4>Oráculo</h4>
-                    <p>Anula o Talismã da Imortalidade</p>
-                </div>
-                <div class="card-type ritual">
-                    <div style="font-size: 30px;">📿</div>
-                    <h4>Rituais</h4>
-                    <p>Efeitos poderosos com requisitos específicos</p>
-                </div>
+            </div>
+            
+            <div class="tip-box">
+                <strong>💡 Dica do Relógio:</strong> Use o item "Relógio" (no seu baú inicial) para ver exatamente quanto tempo falta para a próxima mudança de ciclo!
+            </div>
+            
+            <div class="warning-box">
+                <strong>⚠️ Atenção:</strong> Durante o dia, você só pode dormir se sua mana estiver abaixo de 50%. Durante a noite, pode dormir a qualquer momento.
             </div>
         </div>
         
         <!-- Combate -->
         <div class="section">
-            <h2>⚔️ Sistema de Combate</h2>
+            <div class="section-title">
+                <span class="emoji">⚔️</span>
+                <span>Sistema de Combate</span>
+            </div>
             
-            <h3>📈 Cálculo de Dano</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li><strong>Soma-se</strong> o ataque de todas as criaturas em posição de ataque</li>
-                <li><strong>Adiciona-se</strong> ataque de armas equipadas</li>
-                <li><strong>Adiciona-se</strong> bônus de talismãs (Guerreiro: +1000)</li>
-                <li>Este é seu <strong>Poder de Ataque</strong> total</li>
-            </ol>
+            <p>Quando você explora áreas perigosas, pode encontrar inimigos. O combate é em turnos e funciona assim:</p>
             
-            <h3>🛡️ Absorção de Dano</h3>
-            <p>Quando você ataca, o dano é aplicado nesta ordem:</p>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li><strong>Primeiro:</strong> Armadilhas em defesa são ativadas (podem cancelar, refletir ou transferir o dano)</li>
-                <li><strong>Depois:</strong> Cartas em defesa do oponente (maior vida primeiro)</li>
-                <li><strong>Depois:</strong> Se sobrar dano, vai para cartas em ataque</li>
-                <li><strong>Por último:</strong> Dano restante vai para a vida do jogador</li>
-            </ol>
+            <div class="combat-demo">
+                <div class="combat-row">
+                    <div class="combatant">
+                        <div style="font-size: 36px;">🐺</div>
+                        <div><strong style="color: #ff4444;">Lobo Selvagem</strong></div>
+                        <div>❤️ <span id="enemy-life">150</span>/150</div>
+                        <div>⚔️ 40 | 🛡️ 15</div>
+                        <div class="health-bar"><div class="health-fill" style="width: 100%; background: linear-gradient(90deg, #ff4444, #cc0000);"></div></div>
+                    </div>
+                    
+                    <div style="font-size: 32px;">⚔️ VS ⚔️</div>
+                    
+                    <div class="combatant">
+                        <div style="font-size: 36px;">🧝</div>
+                        <div><strong style="color: #ffd700;">Seu Personagem</strong></div>
+                        <div>❤️ <span id="player-life">512</span>/512</div>
+                        <div>⚔️ 50 | 🛡️ 50</div>
+                        <div class="health-bar"><div class="health-fill" style="width: 100%;"></div></div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
+                    <div style="background: #ff4444; padding: 10px 20px; border-radius: 8px;">⚔️ ATACAR</div>
+                    <div style="background: #ffa500; padding: 10px 20px; border-radius: 8px;">🏃 FUGIR</div>
+                </div>
+            </div>
             
-            <h3>💀 Morte de Criaturas</h3>
-            <p>Quando uma criatura tem sua vida reduzida a 0, ela vai para o <strong>cemitério</strong>.</p>
+            <div class="cards-grid" style="margin-top: 20px;">
+                <div class="info-card">
+                    <h3>⚔️ Como Atacar</h3>
+                    <p>Seu dano é calculado como: <strong>Ataque base da raça + Bônus de equipamentos</strong>.<br>
+                    O dano final é reduzido pela defesa do inimigo, com um componente aleatório.</p>
+                </div>
+                <div class="info-card">
+                    <h3>🏃 Como Fugir</h3>
+                    <p>Você tem <strong>50% de chance</strong> de escapar do combate. Se falhar, o inimigo te ataca gratuitamente!</p>
+                </div>
+                <div class="info-card">
+                    <h3>🎁 Recompensas</h3>
+                    <p>Ao derrotar um inimigo, você ganha:<br>
+                    ✨ Experiência (para subir de nível)<br>
+                    💰 Ouro (raramente)<br>
+                    📦 Possíveis drops de itens</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progressão -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">📈</span>
+                <span>Progressão e Níveis</span>
+            </div>
             
-            <h3>🏆 Morte de Jogador</h3>
-            <p>Quando a vida de um jogador chega a 0:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>Se tiver <strong>Talismã da Imortalidade</strong> (com usos restantes): vida restaurada para 5000</li>
-                <li>Se <strong>Oráculo</strong> foi usado contra ele: Talismã é anulado e jogador morre</li>
-                <li>Caso contrário: jogador é eliminado</li>
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>✨ Ganhando Experiência</h3>
+                    <p>Você ganha EXP ao derrotar monstros. Cada nível requer <strong>100 × nível atual</strong> de experiência.</p>
+                    <div class="tip-box" style="margin-top: 10px;">
+                        <strong>Exemplo:</strong> Para passar do nível 1 para o 2, você precisa de 100 EXP.
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>⬆️ Benefícios de Subir de Nível</h3>
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li>❤️ +50 de Vida Máxima</li>
+                        <li>🔮 +25 de Mana Máxima</li>
+                        <li>⚔️ +10 de Ataque Base</li>
+                        <li>🛡️ +5 de Defesa Base</li>
+                        <li>❤️ Vida e Mana completamente restauradas</li>
+                    </ul>
+                </div>
+                
+                <div class="info-card">
+                    <h3>👑 Perfil do Personagem</h3>
+                    <p>Clique no botão 👤 no topo da tela para ver seu perfil completo, incluindo:</p>
+                    <ul style="margin-left: 20px; line-height: 1.8;">
+                        <li>📊 Progresso de nível e EXP</li>
+                        <li>📜 Biografia e estatísticas</li>
+                        <li>⚔️ Bônus de equipamentos</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Itens e Equipamentos -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🎒</span>
+                <span>Itens e Equipamentos</span>
+            </div>
+            
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>🍎 Comidas e Bebidas</h3>
+                    <p>Consumíveis que restauram vida e/ou mana. Você pode comprá-los no mercado ou encontrá-los explorando.</p>
+                    <div style="background: rgba(76, 175, 80, 0.2); border-radius: 8px; padding: 8px; margin-top: 8px;">
+                        🍎 Maçã (+50❤️) | 🍞 Pão (+75❤️) | 🍺 Cerveja (+20❤️ +10🔮)
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>⚔️ Armas e Armaduras</h3>
+                    <p>Equipamentos que aumentam seus atributos. Armaduras têm <strong>durabilidade</strong> e podem quebrar com o uso!</p>
+                    <div class="warning-box" style="margin-top: 8px; padding: 8px;">
+                        ⚠️ Quando uma armadura quebra, ela para de fornecer proteção até ser reparada!
+                    </div>
+                </div>
+                
+                <div class="info-card">
+                    <h3>🔨 Ferramentas e Estações</h3>
+                    <p>Alguns itens podem ser <strong>montados</strong> no mundo para criar novos itens:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>🪵 Bancada de Trabalho - Craft básico</li>
+                        <li>🔥 Fornalha - Assar alimentos</li>
+                        <li>🌾 Moinho - Moer grãos</li>
+                        <li>🧵 Tear - Tecer roupas</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Crafting e Estações -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">🔨</span>
+                <span>Crafting e Estações de Trabalho</span>
+            </div>
+            
+            <p>Com as estações certas, você pode criar itens mais poderosos a partir de materiais básicos.</p>
+            
+            <div class="stations-demo">
+                <div class="station-card">
+                    <div style="font-size: 32px;">🪵</div>
+                    <h4>Bancada</h4>
+                    <p>Cria livros, massas e itens básicos</p>
+                </div>
+                <div class="station-card">
+                    <div style="font-size: 32px;">🔥</div>
+                    <h4>Fornalha</h4>
+                    <p>Asse carne crua, frango e massa de pão</p>
+                </div>
+                <div class="station-card">
+                    <div style="font-size: 32px;">🌾</div>
+                    <h4>Moinho</h4>
+                    <p>Transforma trigo em farinha</p>
+                </div>
+                <div class="station-card">
+                    <div style="font-size: 32px;">🧵</div>
+                    <h4>Tear</h4>
+                    <p>Cria tecidos, roupas e linhas</p>
+                </div>
+            </div>
+            
+            <div class="tip-box">
+                <strong>💡 Dica de Crafting:</strong> Para usar uma estação, primeiro monte-a no chão (clique no item no inventário), depois interaja com ela na área do jogo!
+            </div>
+        </div>
+        
+        <!-- NPCs e Interações -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">👥</span>
+                <span>Personagens Não-Jogáveis (NPCs)</span>
+            </div>
+            
+            <p>O Reino da Aurora é habitado por diversos NPCs com quem você pode interagir. Cada um tem sua própria rotina!</p>
+            
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>🔨 Carlos (Marceneiro)</h3>
+                    <p>Localizado no Vilarejo Norte. Especialista em madeira e móveis.</p>
+                </div>
+                <div class="info-card">
+                    <h3>🎨 Mateus (Artesão)</h3>
+                    <p>Também no Vilarejo Norte. Fala sobre arte e inspiração.</p>
+                </div>
+                <div class="info-card">
+                    <h3>🧵 Isadora (Tecelã)</h3>
+                    <p>No Vilarejo Sul. Vende tecidos e linhas, e também compra itens.</p>
+                </div>
+                <div class="info-card">
+                    <h3>👨‍🌾 Miguel (Fazendeiro)</h3>
+                    <p>Nos Campos de Plantação. Histórias sobre a vida no campo.</p>
+                </div>
+                <div class="info-card">
+                    <h3>🍞 Ana (Padeira)</h3>
+                    <p>Nos Campos. Vende alimentos e compra seus itens.</p>
+                </div>
+                <div class="info-card">
+                    <h3>🗡️ Capitão Aldric</h3>
+                    <p>No Castelo. Vende armas e fala sobre missões.</p>
+                </div>
+                <div class="info-card">
+                    <h3>👑 Rei Alaric</h3>
+                    <p>Na Sala do Trono. Pode te abençoar uma vez por dia!</p>
+                </div>
+            </div>
+            
+            <div class="tip-box">
+                <strong>💡 Rotina dos NPCs:</strong> Durante o dia, os NPCs estão trabalhando. À noite, podem estar dormindo. Volte em outro horário se não encontrar alguém!
+            </div>
+        </div>
+        
+        <!-- Livros -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">📖</span>
+                <span>Sistema de Livros</span>
+            </div>
+            
+            <p>Você pode encontrar livros em branco e escrever suas próprias histórias! Livros assinados se tornam permanentes e não podem mais ser editados.</p>
+            
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>✍️ Escrevendo um Livro</h3>
+                    <p>Clique no livro no inventário para abrir o editor. Dê um título, escreva seu conteúdo e depois <strong>assine</strong> para finalizar.</p>
+                </div>
+                <div class="info-card">
+                    <h3>📚 Lendo um Livro</h3>
+                    <p>Livros já assinados abrem no modo leitor. Livros especiais (root) podem até executar scripts interativos!</p>
+                </div>
+                <div class="info-card">
+                    <h3>🔧 Crafting de Livros</h3>
+                    <p>Você pode criar livros em branco na bancada de trabalho usando 3 papéis e 2 couros.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Atalhos e Comandos -->
+        <div class="section">
+            <div class="section-title">
+                <span class="emoji">⌨️</span>
+                <span>Controles e Dicas Rápidas</span>
+            </div>
+            
+            <ul class="commands-list">
+                <li><span class="command-key">Clique no item</span> Usar item (comer, equipar, etc.)</li>
+                <li><span class="command-key">Arrastar item</span> Mover entre inventário e baú</li>
+                <li><span class="command-key">Arrastar para lixeira</span> Descartar item</li>
+                <li><span class="command-key">Clique no slot de equipamento</span> Guardar item equipado</li>
+                <li><span class="command-key">Botão 💾 Salvar</span> Salvar jogo em arquivo</li>
+                <li><span class="command-key">Botão 📂 Carregar</span> Carregar jogo salvo</li>
+                <li><span class="command-key">Botão 👤 Perfil</span> Ver estatísticas e biografia</li>
+                <li><span class="command-key">Botão 🏠 Menu</span> Voltar à tela inicial (autosalva)</li>
             </ul>
             
-            <div class="tip">
-                <strong>💡 Dica:</strong> O Talismã da Imortalidade tem <strong>2 usos</strong>. Após usá-lo duas vezes, ele volta para o deck.
+            <div class="warning-box">
+                <strong>⚠️ Importante:</strong> Personagens que morrem ficam permanentemente bloqueados. Não é possível carregar ou continuar com um personagem morto!
             </div>
         </div>
         
-        <!-- Equipamentos -->
+        <!-- Dicas Finais -->
         <div class="section">
-            <h2>🔰 Sistema de Equipamentos</h2>
-            
-            <p>Criaturas podem equipar:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>1 arma</strong> (aumenta ataque)</li>
-                <li><strong>4 armaduras</strong> (capacete, peitoral, botas, etc. - aumentam vida/proteção)</li>
-            </ul>
-            
-            <h3>Itens Especiais:</h3>
-            <table>
-                <tr>
-                    <th>Item</th>
-                    <th>Quem pode usar</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Blade of Vampires</td>
-                    <td>Apenas vampiros</td>
-                    <td>+5000 ataque, torna oponente noturno</td>
-                </tr>
-                <tr>
-                    <td>Blade of Dragons</td>
-                    <td>Elfos, magos e vampiros</td>
-                    <td>+5000 ataque, pode eliminar permanentemente</td>
-                </tr>
-                <tr>
-                    <td>Lâmina das Almas</td>
-                    <td>Elfos, magos e vampiros</td>
-                    <td>Assume dano de carta do cemitério</td>
-                </tr>
-                <tr>
-                    <td>Capacete das Trevas</td>
-                    <td>Todos</td>
-                    <td>+800 proteção, protege da luz do dia</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Feitiços -->
-        <div class="section">
-            <h2>✨ Sistema de Feitiços</h2>
-            
-            <p>Para usar feitiços, você precisa de:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>Mago comum:</strong> Pode usar feitiços que estão na sua mão</li>
-                <li><strong>Rei Mago:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo (mesmo sem ter na mão)</li>
-                <li><strong>Mago Negro:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo</li>
-            </ul>
-            
-            <div class="info">
-                <strong>📝 Nota:</strong> Feitiços voltam para o <strong>fundo do deck</strong> após serem usados.
+            <div class="section-title">
+                <span class="emoji">💡</span>
+                <span>Dicas para Iniciantes</span>
             </div>
             
-            <h3>Lista de Feitiços:</h3>
-            <table>
-                <tr>
-                    <th>Feitiço</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Cortes</td>
-                    <td>Aumenta ataque de um monstro em <strong>1024</strong> por duas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Duro de matar</td>
-                    <td>Aumenta defesa do jogador em <strong>1024</strong> por duas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Troca</td>
-                    <td>Troca cartas de defesa por ataque de um jogador</td>
-                </tr>
-                <tr>
-                    <td>Comunista</td>
-                    <td>Todas as cartas das mãos voltam para a pilha</td>
-                </tr>
-                <tr>
-                    <td>Silêncio</td>
-                    <td>2 rodadas sem armadilhas</td>
-                </tr>
-                <tr>
-                    <td>Para Sempre</td>
-                    <td>Reverte efeito da Blade of Vampires</td>
-                </tr>
-                <tr>
-                    <td>Capitalista</td>
-                    <td>Troca cartas com outros jogadores</td>
-                </tr>
-                <tr>
-                    <td>Cura</td>
-                    <td>Cura <strong>1024</strong> pontos de vida do jogador alvo</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Armadilhas -->
-        <div class="section">
-            <h2>⚠️ Sistema de Armadilhas</h2>
-            
-            <div class="info">
-                <strong>🃏 Disfarce:</strong> Quando você coloca uma armadilha em defesa, ela aparece como uma <strong>criatura comum</strong> para os oponentes! Eles só descobrem quando atacam e a armadilha é ativada.
-            </div>
-            
-            <h3>Lista de Armadilhas:</h3>
-            <table>
-                <tr>
-                    <th>Armadilha</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Armadilha 171</td>
-                    <td>Rouba a carta que te dá um golpe crítico</td>
-                </tr>
-                <tr>
-                    <td>Armadilha Espelho</td>
-                    <td><strong>Reflete</strong> todo o dano de volta para o atacante</td>
-                </tr>
-                <tr>
-                    <td>Armadilha Cheat</td>
-                    <td>Dobra o ataque e <strong>passa para o próximo jogador</strong> (requer noite + mago em campo)</td>
-                </tr>
-                <tr>
-                    <td>Poço Sem Fundo</td>
-                    <td>Destrói <strong>TODAS as 3 criaturas atacantes</strong></td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Rituais -->
-        <div class="section">
-            <h2>📿 Rituais</h2>
-            
-            <p>Rituais são feitiços poderosos que requerem condições específicas para serem realizados. <strong>Mago Negro</strong> pode realizar qualquer ritual sem ter a carta.</p>
-            
-            <table>
-                <tr>
-                    <th>Ritual</th>
-                    <th>Requisitos</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Ritual 157</td>
-                    <td>Apofis + Mago Negro + 6 zumbis + 2 elfos em defesa</td>
-                    <td>Rouba <strong>TODOS</strong> os talismãs da mão do alvo</td>
-                </tr>
-                <tr>
-                    <td>Ritual Amor</td>
-                    <td>Ninfa Belly Lorem + Vampiro Necrothic Tayler</td>
-                    <td><strong>Anula</strong> a maldição do Profeta</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Profeta -->
-        <div class="section">
-            <h2>🔮 Profeta - Maldição da Morte</h2>
-            
-            <p>O <strong>Profeta</strong> é uma criatura especial que pode anunciar a morte de qualquer carta em campo.</p>
-            
-            <h3>Como funciona:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha um <strong>Profeta</strong> em campo (ataque ou defesa)</li>
-                <li>Use a ação "🔮 Profetizar" durante seu turno</li>
-                <li>Selecione uma carta inimiga em campo</li>
-                <li>A carta recebe uma <strong>maldição</strong> e será destruída em <strong>2 rodadas</strong></li>
-            </ol>
-            
-            <div class="tip">
-                <strong>💡 Dica:</strong> O <strong>Ritual Amor</strong> pode anular a maldição do Profeta!
-            </div>
-        </div>
-        
-        <!-- Oráculo -->
-        <div class="section">
-            <h2>👁️ Oráculo da Imortalidade</h2>
-            
-            <p>O Oráculo é uma carta especial que pode <strong>anular o Talismã da Imortalidade</strong> e eliminar permanentemente um oponente.</p>
-            
-            <h3>Como usar:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha a carta <strong>Oráculo</strong> na mão</li>
-                <li>Durante seu ataque, quando o oponente tem Talismã da Imortalidade</li>
-                <li>O Oráculo é <strong>consumido</strong> e volta para o deck</li>
-                <li>O Talismã é anulado e o oponente morre</li>
-            </ol>
-            
-            <div class="warning">
-                <strong>⚠️ Atenção:</strong> O Oráculo <strong>não funciona</strong> contra Talismã da Verdade (imunidade a oráculos).
-            </div>
-        </div>
-        
-        <!-- Efeitos Especiais -->
-        <div class="section">
-            <h2>🌟 Efeitos Especiais das Criaturas</h2>
-            
-            <table>
-                <tr>
-                    <th>Criatura</th>
-                    <th>Efeito Especial</th>
-                </tr>
-                <tr>
-                    <td>Vampiros</td>
-                    <td>Morrem durante o dia (100 de dano), a menos que equipados com Capacete das Trevas</td>
-                </tr>
-                <tr>
-                    <td>Zumbis</td>
-                    <td>Morrem durante o dia. Quando mortos por outro zumbi, voltam para a mão do jogador</td>
-                </tr>
-                <tr>
-                    <td>Dragão</td>
-                    <td>Seu ataque incendeia o inimigo, causando <strong>50 de dano por rodada</strong> nas próximas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Centauro</td>
-                    <td>Permite que outras criaturas montem nele para ataques terrestres</td>
-                </tr>
-                <tr>
-                    <td>Fênix</td>
-                    <td>Pode <strong>mudar o ciclo dia/noite</strong> quando quiser</td>
-                </tr>
-                <tr>
-                    <td>Medusa</td>
-                    <td>Seu ataque transforma personagens em pedra (cartas com maior vida são imunes)</td>
-                </tr>
-                <tr>
-                    <td>Apofis</td>
-                    <td>Rei do Caos - pode desativar armadilhas e magias de outros jogadores</td>
-                </tr>
-                <tr>
-                    <td>Leviatã</td>
-                    <td>Só pode ser domado por deuses e magos supremos</td>
-                </tr>
-                <tr>
-                    <td>Ninfa Lorem</td>
-                    <td>Torna o jogador <strong>imune a rituais</strong></td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Runas e Reviver -->
-        <div class="section">
-            <h2>🔷 Runas - Reviver Cartas</h2>
-            
-            <p>Runas são cartas especiais que permitem reviver cartas do cemitério.</p>
-            
-            <h3>Como reviver:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha <strong>4 runas</strong> na sua mão</li>
-                <li>Clique no cemitério para ver as cartas disponíveis</li>
-                <li>Selecione a carta que deseja reviver</li>
-                <li>As 4 runas são <strong>consumidas</strong> (vão para o cemitério)</li>
-                <li>A carta revivida vai para sua <strong>mão</strong></li>
-            </ol>
-            
-            <div class="tip">
-                <strong>💡 Dica:</strong> Você pode reviver <strong>qualquer tipo de carta</strong> (criaturas, feitiços, armas, etc.)!
-            </div>
-        </div>
-        
-        <!-- Chat e Reconexão -->
-        <div class="section">
-            <h2>💬 Chat e Reconexão</h2>
-            
-            <h3>💬 Chat da Sala</h3>
-            <p>O jogo possui um chat integrado onde você pode conversar com outros jogadores durante a partida. O chat tem:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>Histórico</strong> das últimas mensagens</li>
-                <li>Opção de <strong>minimizar/expandir</strong> a janela</li>
-                <li><strong>Censura automática</strong> de palavras impróprias</li>
-                <li><strong>Notificações</strong> de novas mensagens quando o chat está minimizado</li>
-            </ul>
-            
-            <h3>🔄 Sistema de Reconexão</h3>
-            <p>Se você perder a conexão com o servidor:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>O jogo tenta <strong>reconectar automaticamente</strong></li>
-                <li>Sua sessão é <strong>salva localmente</strong></li>
-                <li>Ao reconectar, você volta exatamente de onde parou</li>
-                <li>Outros jogadores são notificados da sua desconexão/reconexão</li>
-            </ul>
-            
-            <div class="info">
-                <strong>💡 Dica:</strong> Se você sair do jogo voluntariamente, sua sessão é limpa e você precisa entrar novamente.
-            </div>
-        </div>
-        
-        <!-- Talismãs -->
-        <div class="section">
-            <h2>🔮 Talismãs</h2>
-            
-            <p>Talismãs são cartas especiais que <strong>ficam na mão</strong> e se ativam automaticamente. Eles <strong>não podem ser jogados</strong> em campo.</p>
-            
-            <table>
-                <tr>
-                    <th>Talismã</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Imortalidade</th>
-                    <td>Salva o jogador da morte <strong>2 vezes</strong>. Vida restaurada para 5000</th>
-                </tr>
-                <tr>
-                    <td>Talismã do Guerreiro</th>
-                    <td>Aumenta em <strong>1024</strong> o ataque do jogador</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Sabedoria</th>
-                    <td>Permite jogar <strong>2 cartas por turno</strong> (em vez de 1)</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Verdade</th>
-                    <td>Imunidade a <strong>feitiços e oráculos</strong></th>
-                </tr>
-                <tr>
-                    <td>Talismã da Ordem</th>
-                    <td>Imunidade ao <strong>Caos</strong> (Apofis)</th>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Dicas Estratégicas -->
-        <div class="section">
-            <h2>💡 Dicas Estratégicas</h2>
-            
-            <div class="rule-grid">
-                <div class="rule-card">
-                    <h4>🛡️ Defesa é Prioridade</h4>
-                    <p>Sempre mantenha criaturas em defesa. Elas absorvem dano e protegem sua vida.</p>
+            <div class="cards-grid">
+                <div class="info-card">
+                    <h3>1️⃣ Comece Devagar</h3>
+                    <p>Explore primeiro sua casa e o vilarejo. Conheça os NPCs e entenda a interface antes de se aventurar.</p>
                 </div>
-                <div class="rule-card">
-                    <h4>⚔️ Ataque Calculado</h4>
-                    <p>Calcule se seu poder de ataque é suficiente para superar as defesas do oponente antes de atacar.</p>
+                <div class="info-card">
+                    <h3>2️⃣ Use o Baú</h3>
+                    <p>Sua casa tem um baú com 18 espaços extras. Use-o para guardar itens que não quer carregar.</p>
                 </div>
-                <div class="rule-card">
-                    <h4>🔮 Guarde Talismãs</h4>
-                    <p>Talismãs são extremamente poderosos. O da Imortalidade pode salvar sua vida!</p>
+                <div class="info-card">
+                    <h3>3️⃣ Durma para Recuperar</h3>
+                    <p>Dormir recupera vida e mana. Durante a noite, recupera toda a mana de uma vez!</p>
                 </div>
-                <div class="rule-card">
-                    <h4>🌙 Aproveite a Noite</h4>
-                    <p>Use vampiros e zumbis à noite. Durante o dia, proteja-os com Capacete das Trevas.</p>
+                <div class="info-card">
+                    <h3>4️⃣ Equipe-se Bem</h3>
+                    <p>Antes de explorar áreas perigosas, certifique-se de ter boas armas e armaduras equipadas.</p>
                 </div>
-                <div class="rule-card">
-                    <h4>🎴 Gerencie sua Mão</h4>
-                    <p>Não acumule muitas cartas. Use runas para reviver criaturas importantes do cemitério.</p>
+                <div class="info-card">
+                    <h3>5️⃣ Leve Comida</h3>
+                    <p>Sempre carregue comida para se curar durante ou após combates. Pão e maçãs são baratos e eficientes.</p>
                 </div>
-                <div class="rule-card">
-                    <h4>⚠️ Armadilhas Enganosas</h4>
-                    <p>Armadilhas são mais efetivas quando o oponente não sabe que são armadilhas. Coloque-as em defesa!</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🔮 Profeta Estratégico</h4>
-                    <p>Use o Profeta para eliminar cartas-chave do oponente, mas cuidado com o Ritual Amor!</p>
-                </div>
-                <div class="rule-card">
-                    <h4>📿 Rituais Poderosos</h4>
-                    <p>Rituais exigem preparação, mas podem mudar completamente o jogo. Invista neles!</p>
+                <div class="info-card">
+                    <h3>6️⃣ Salve Frequentemente</h3>
+                    <p>O jogo autosalva a cada 5 minutos, mas é sempre bom fazer saves manuais antes de aventuras perigosas.</p>
                 </div>
             </div>
         </div>
         
-        <!-- Glossário -->
-        <div class="section">
-            <h2>📚 Glossário</h2>
-            
-            <table>
-                <tr>
-                    <th>Termo</th>
-                    <th>Significado</th>
-                </tr>
-                <tr>
-                    <td>Monte</th>
-                    <td>Pilha de cartas para comprar</th>
-                </tr>
-                <tr>
-                    <td>Cemitério</th>
-                    <td>Onde vão as cartas destruídas/usadas</th>
-                </tr>
-                <tr>
-                    <td>Poder de Ataque</th>
-                    <td>Soma do ataque de todas as suas criaturas + equipamentos</th>
-                </tr>
-                <tr>
-                    <td>Runas</th>
-                    <td>Cartas especiais. <strong>4 runas</strong> revivem uma carta do cemitério</th>
-                </tr>
-                <tr>
-                    <td>Talismãs</th>
-                    <td>Cartas que ficam na mão e dão bônus passivos</th>
-                </tr>
-                <tr>
-                    <td>Modo Troca</th>
-                    <td>Permite trocar cartas entre posições de ataque e defesa</th>
-                </tr>
-                <tr>
-                    <td>Modo Equipar</th>
-                    <td>Permite equipar itens em criaturas</th>
-                </tr>
-                <tr>
-                    <td>Primeira Rodada</th>
-                    <td>Rodada inicial sem ataques para preparação</th>
-                </tr>
-                <tr>
-                    <td>Disfarce</th>
-                    <td>Armadilhas aparecem como criaturas comuns para oponentes</th>
-                </tr>
-                <tr>
-                    <td>Maldição do Profeta</th>
-                    <td>Carta amaldiçoada morre em 2 rodadas</th>
-                </tr>
-            </table>
-        </div>
-        
+        <!-- Footer -->
         <div class="footer">
-            <p>Twilight Battle - Um jogo de estratégia e cartas</p>
-            <p>Desenvolvido por Mr. Lima</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">Versão 2.0 - © 2026</p>
+            <p>🌆 Twilight Battle - Modo História</p>
+            <p>Um RPG de mundo aberto onde cada escolha molda sua jornada</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Versão 1.0 - Desenvolvido para aventureiros destemidos</p>
         </div>
     </div>
+    
+    <script>
+        // Animação simples para destacar elementos
+        function addHighlights() {
+            const elements = document.querySelectorAll('.highlight');
+            elements.forEach(el => el.classList.add('highlight'));
+        }
+        
+        // Pequena interação para mostrar exemplo de combate
+        function simulateCombat() {
+            const enemyLife = document.getElementById('enemy-life');
+            const playerLife = document.getElementById('player-life');
+            if (enemyLife && playerLife) {
+                // Apenas exemplo visual estático
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            simulateCombat();
+        });
+    </script>
 </body>
 </html>

@@ -1,4 +1,3 @@
-<!-- templates/rules.html -->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -176,6 +175,9 @@
         .card-type.spell { background: rgba(147, 112, 219, 0.2); border: 2px solid #9370db; }
         .card-type.talisman { background: rgba(255, 215, 0, 0.2); border: 2px solid #ffd700; }
         .card-type.trap { background: rgba(255, 0, 255, 0.2); border: 2px solid #ff00ff; }
+        .card-type.rune { background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; }
+        .card-type.oracle { background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; }
+        .card-type.ritual { background: rgba(255, 215, 0, 0.2); border: 2px solid #ffd700; }
         
         .example-board {
             background: rgba(0, 0, 0, 0.5);
@@ -242,6 +244,14 @@
             border-radius: 5px;
         }
         
+        .info {
+            background: rgba(74, 144, 226, 0.2);
+            border-left: 5px solid #4a90e2;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
         .footer {
             text-align: center;
             margin-top: 40px;
@@ -265,7 +275,7 @@
     <div class="rules-container">
         <div class="header">
             <h1>📜 Twilight Battle</h1>
-            <p class="subtitle">Guia de Regras e Como Jogar</p>
+            <p class="subtitle">Guia de Regras e Como Jogar - Versão Atualizada</p>
         </div>
         
         <div class="nav-buttons">
@@ -276,10 +286,10 @@
         <!-- Visão Geral -->
         <div class="section">
             <h2>🎮 Visão Geral do Jogo</h2>
-            <p>Twilight Battle é um RPG de cartas estratégico onde 2 a 6 jogadores duelam até restar apenas um sobrevivente. Cada jogador começa com 5000 de vida e 5 cartas, podendo invocar criaturas, equipar itens, lançar feitiços e usar armadilhas para derrotar seus oponentes.</p>
+            <p>Twilight Battle é um RPG de cartas estratégico onde 2 a 6 jogadores duelam até restar apenas um sobrevivente. Cada jogador começa com <strong>5000 de vida</strong> e <strong>5 cartas iniciais</strong>, podendo invocar criaturas, equipar itens, lançar feitiços e usar armadilhas para derrotar seus oponentes.</p>
             
             <div class="tip">
-                <strong>🎯 Objetivo:</strong> Ser o último jogador com vida. Quando a vida de um jogador chega a 0, sua torre cai e ele é eliminado.
+                <strong>🎯 Objetivo:</strong> Ser o último jogador com vida. Quando a vida de um jogador chega a 0, ele é eliminado.
             </div>
         </div>
         
@@ -310,7 +320,7 @@
                 </div>
             </div>
             
-            <h3>🎲 Primeira Rodada</h3>
+            <h3>🎲 Primeira Rodada (Preparação)</h3>
             <p>Na primeira rodada, <strong>ataques são bloqueados</strong>. Todos os jogadores devem fazer pelo menos uma ação (comprar carta, jogar criatura, equipar item, etc.) antes dos ataques serem liberados. Isso dá tempo para todos se prepararem.</p>
             
             <h3>🔄 Turnos</h3>
@@ -323,7 +333,13 @@
                 <li>🔄 Trocar posições de cartas</li>
                 <li>✨ Usar um feitiço</li>
                 <li>👁️ Usar o Oráculo</li>
+                <li>🔮 Profetizar (com o Profeta)</li>
+                <li>📿 Realizar um Ritual</li>
             </ul>
+            
+            <div class="info">
+                <strong>💡 Talismã da Sabedoria:</strong> Permite jogar <strong>DUAS cartas por turno</strong> (em vez de uma)!
+            </div>
             
             <h3>☀️ Ciclo Dia/Noite</h3>
             <p>A cada 24 turnos, o ciclo muda:</p>
@@ -336,6 +352,32 @@
                     <h4>🌙 Noite</h4>
                     <p>Criaturas noturnas ficam mais fortes. Alguns feitiços e armadilhas só funcionam à noite.</p>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Campo de Batalha -->
+        <div class="section">
+            <h2>🏰 Campo de Batalha</h2>
+            
+            <h3>⚔️ Bases de Ataque (3 slots)</h3>
+            <p>Criaturas em ataque contribuem com seu poder de ataque quando você ataca. <strong>Apenas criaturas podem ser colocadas aqui.</strong></p>
+            
+            <h3>🛡️ Bases de Defesa (6 slots)</h3>
+            <p>Criaturas e <strong>armadilhas</strong> podem ser colocadas aqui. A ordem de absorção de dano é das cartas com <strong>maior vida primeiro</strong>.</p>
+            
+            <h3>⚠️ Armadilhas em Defesa</h3>
+            <p>Armadilhas colocadas em defesa <strong>aparecem como criaturas comuns</strong> (disfarce) para os oponentes! Quando atacadas, são ativadas e revelam sua verdadeira natureza.</p>
+            
+            <div class="example-board">
+                <div class="example-slot attack">⚔️<br>Ataque<br><small style="color:#ff4444;">(só criaturas)</small></div>
+                <div class="example-slot attack">⚔️<br>Ataque</div>
+                <div class="example-slot attack">⚔️<br>Ataque</div>
+                <div class="example-slot defense">🛡️<br>Defesa<br><small style="color:#44aaff;">(criaturas/armadilhas)</small></div>
+                <div class="example-slot defense">🛡️<br>Defesa</div>
+                <div class="example-slot defense">🛡️<br>Defesa</div>
+                <div class="example-slot defense">🛡️<br>Defesa</div>
+                <div class="example-slot defense">🛡️<br>Defesa</div>
+                <div class="example-slot defense">🛡️<br>Defesa</div>
             </div>
         </div>
         
@@ -352,70 +394,43 @@
                 <div class="card-type weapon">
                     <div style="font-size: 30px;">⚔️</div>
                     <h4>Armas</h4>
-                    <p>Aumentam ataque da criatura equipada.</p>
+                    <p>Aumentam ataque da criatura equipada. <strong>Limite: 1 por criatura</strong></p>
                 </div>
                 <div class="card-type armor">
                     <div style="font-size: 30px;">🛡️</div>
                     <h4>Armaduras</h4>
-                    <p>Aumentam vida/proteção da criatura.</p>
+                    <p>Aumentam vida/proteção da criatura. <strong>Limite: 4 por criatura</strong></p>
                 </div>
                 <div class="card-type spell">
                     <div style="font-size: 30px;">✨</div>
                     <h4>Feitiços</h4>
-                    <p>Efeitos mágicos. Requerem mago em campo.</p>
+                    <p>Efeitos mágicos. <strong>Requerem um Mago em campo</strong></p>
                 </div>
                 <div class="card-type talisman">
                     <div style="font-size: 30px;">🔮</div>
                     <h4>Talismãs</h4>
-                    <p>Ficam na mão e ativam automaticamente.</p>
+                    <p>Ficam na mão e ativam automaticamente. <strong>Não podem ser jogados</strong></p>
                 </div>
                 <div class="card-type trap">
                     <div style="font-size: 30px;">⚠️</div>
                     <h4>Armadilhas</h4>
-                    <p>2 slots especiais. Ativam quando acionadas.</p>
+                    <p>Colocadas em defesa com <strong>disfarce</strong>. Ativam quando atacadas.</p>
                 </div>
-            </div>
-            
-            <h3>📊 Exemplo de Carta</h3>
-            <div style="display: flex; justify-content: center;">
-                <div class="card" style="width: 200px; height: 280px; background: linear-gradient(145deg, #2a2a3a, #1a1a2a); border: 2px solid #ffd700; border-radius: 10px; padding: 15px; margin: 20px;">
-                    <div style="font-size: 30px; text-align: center;">👤</div>
-                    <div style="font-weight: bold; color: #ffd700; text-align: center;">Dragão</div>
-                    <div style="color: #888; text-align: center;">criatura</div>
-                    <div style="margin: 10px 0;">
-                        <span style="color: #ff6b6b;">❤️ 5000</span><br>
-                        <span style="color: #ffa500;">⚔️ 1500</span>
-                    </div>
-                    <div style="color: #ccc; font-size: 12px;">
-                        Seu ataque incendeia o inimigo, causando 50 de dano por rodada.
-                    </div>
+                <div class="card-type rune">
+                    <div style="font-size: 30px;">🔷</div>
+                    <h4>Runas</h4>
+                    <p>4 runas = reviver 1 carta do cemitério</p>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Campo de Batalha -->
-        <div class="section">
-            <h2>🏰 Campo de Batalha</h2>
-            
-            <h3>⚔️ Bases de Ataque (3 slots)</h3>
-            <p>Criaturas em ataque contribuem com seu poder de ataque quando você ataca.</p>
-            
-            <h3>🛡️ Bases de Defesa (6 slots)</h3>
-            <p>Criaturas em defesa absorvem dano quando você é atacado. A ordem de absorção é das cartas com <strong>maior vida primeiro</strong>.</p>
-            
-            <h3>⚠️ Slots de Armadilha (2 slots)</h3>
-            <p>Armadilhas são colocadas aqui e ativam quando certas condições são atendidas.</p>
-            
-            <div class="example-board">
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
+                <div class="card-type oracle">
+                    <div style="font-size: 30px;">👁️</div>
+                    <h4>Oráculo</h4>
+                    <p>Anula o Talismã da Imortalidade</p>
+                </div>
+                <div class="card-type ritual">
+                    <div style="font-size: 30px;">📿</div>
+                    <h4>Rituais</h4>
+                    <p>Efeitos poderosos com requisitos específicos</p>
+                </div>
             </div>
         </div>
         
@@ -434,7 +449,8 @@
             <h3>🛡️ Absorção de Dano</h3>
             <p>Quando você ataca, o dano é aplicado nesta ordem:</p>
             <ol style="margin-left: 20px; line-height: 2;">
-                <li><strong>Primeiro:</strong> Cartas em defesa do oponente (maior vida primeiro)</li>
+                <li><strong>Primeiro:</strong> Armadilhas em defesa são ativadas (podem cancelar, refletir ou transferir o dano)</li>
+                <li><strong>Depois:</strong> Cartas em defesa do oponente (maior vida primeiro)</li>
                 <li><strong>Depois:</strong> Se sobrar dano, vai para cartas em ataque</li>
                 <li><strong>Por último:</strong> Dano restante vai para a vida do jogador</li>
             </ol>
@@ -443,10 +459,15 @@
             <p>Quando uma criatura tem sua vida reduzida a 0, ela vai para o <strong>cemitério</strong>.</p>
             
             <h3>🏆 Morte de Jogador</h3>
-            <p>Quando a vida de um jogador chega a 0, ele é eliminado. O último jogador vivo vence.</p>
+            <p>Quando a vida de um jogador chega a 0:</p>
+            <ul style="margin-left: 20px; line-height: 2;">
+                <li>Se tiver <strong>Talismã da Imortalidade</strong> (com usos restantes): vida restaurada para 5000</li>
+                <li>Se <strong>Oráculo</strong> foi usado contra ele: Talismã é anulado e jogador morre</li>
+                <li>Caso contrário: jogador é eliminado</li>
+            </ul>
             
             <div class="tip">
-                <strong>💡 Dica:</strong> O Talismã da Imortalidade salva o jogador da morte uma vez, restaurando sua vida para 5000, mas é consumido.
+                <strong>💡 Dica:</strong> O Talismã da Imortalidade tem <strong>2 usos</strong>. Após usá-lo duas vezes, ele volta para o deck.
             </div>
         </div>
         
@@ -454,33 +475,38 @@
         <div class="section">
             <h2>🔰 Sistema de Equipamentos</h2>
             
-            <p>Criaturas podem equipar até:</p>
+            <p>Criaturas podem equipar:</p>
             <ul style="margin-left: 20px; line-height: 2;">
                 <li><strong>1 arma</strong> (aumenta ataque)</li>
                 <li><strong>4 armaduras</strong> (capacete, peitoral, botas, etc. - aumentam vida/proteção)</li>
             </ul>
             
-            <h3>Restrições:</h3>
+            <h3>Itens Especiais:</h3>
             <table>
                 <tr>
                     <th>Item</th>
                     <th>Quem pode usar</th>
+                    <th>Efeito</th>
                 </tr>
                 <tr>
                     <td>Blade of Vampires</td>
                     <td>Apenas vampiros</td>
+                    <td>+5000 ataque, torna oponente noturno</td>
                 </tr>
                 <tr>
                     <td>Blade of Dragons</td>
                     <td>Elfos, magos e vampiros</td>
+                    <td>+5000 ataque, pode eliminar permanentemente</td>
                 </tr>
                 <tr>
                     <td>Lâmina das Almas</td>
                     <td>Elfos, magos e vampiros</td>
+                    <td>Assume dano de carta do cemitério</td>
                 </tr>
                 <tr>
                     <td>Capacete das Trevas</td>
-                    <td>Todos (protege da luz do dia)</td>
+                    <td>Todos</td>
+                    <td>+800 proteção, protege da luz do dia</td>
                 </tr>
             </table>
         </div>
@@ -492,9 +518,13 @@
             <p>Para usar feitiços, você precisa de:</p>
             <ul style="margin-left: 20px; line-height: 2;">
                 <li><strong>Mago comum:</strong> Pode usar feitiços que estão na sua mão</li>
-                <li><strong>Rei Mago:</strong> Pode usar QUALQUER feitiço do jogo (mesmo sem ter na mão)</li>
-                <li><strong>Mago Negro:</strong> Pode usar QUALQUER feitiço do jogo</li>
+                <li><strong>Rei Mago:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo (mesmo sem ter na mão)</li>
+                <li><strong>Mago Negro:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo</li>
             </ul>
+            
+            <div class="info">
+                <strong>📝 Nota:</strong> Feitiços voltam para o <strong>fundo do deck</strong> após serem usados.
+            </div>
             
             <h3>Lista de Feitiços:</h3>
             <table>
@@ -504,11 +534,11 @@
                 </tr>
                 <tr>
                     <td>Cortes</td>
-                    <td>Aumenta ataque de um monstro em 1024</td>
+                    <td>Aumenta ataque de um monstro em <strong>1024</strong> por duas rodadas</td>
                 </tr>
                 <tr>
                     <td>Duro de matar</td>
-                    <td>Aumenta defesa do jogador em 1024</td>
+                    <td>Aumenta defesa do jogador em <strong>1024</strong> por duas rodadas</td>
                 </tr>
                 <tr>
                     <td>Troca</td>
@@ -530,52 +560,51 @@
                     <td>Capitalista</td>
                     <td>Troca cartas com outros jogadores</td>
                 </tr>
+                <tr>
+                    <td>Cura</td>
+                    <td>Cura <strong>1024</strong> pontos de vida do jogador alvo</td>
+                </tr>
             </table>
         </div>
         
-        <!-- Oráculo -->
+        <!-- Armadilhas -->
         <div class="section">
-            <h2>👁️ O Oráculo</h2>
+            <h2>⚠️ Sistema de Armadilhas</h2>
             
-            <p>O Oráculo é uma carta especial que pode <strong>eliminar permanentemente</strong> um oponente.</p>
-            
-            <h3>Como usar:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha um <strong>elfo em modo de defesa</strong></li>
-                <li>Tenha a carta <strong>Oráculo</strong> na mão</li>
-                <li>O alvo deve ter um <strong>Talismã da Imortalidade</strong></li>
-                <li>Ao usar, o Oráculo é revelado e volta para o deck</li>
-                <li>Se conseguir matar o alvo 3 vezes com ele tendo o talismã, ele é eliminado permanentemente</li>
-            </ol>
-            
-            <div class="warning">
-                <strong>⚠️ Atenção:</strong> Se alguém descobrir que você tem um Oráculo, você perde a missão e o Oráculo volta para a pilha!
+            <div class="info">
+                <strong>🃏 Disfarce:</strong> Quando você coloca uma armadilha em defesa, ela aparece como uma <strong>criatura comum</strong> para os oponentes! Eles só descobrem quando atacam e a armadilha é ativada.
             </div>
-        </div>
-        
-        <!-- Efeitos Especiais -->
-        <div class="section">
-            <h2>🌟 Efeitos Especiais</h2>
             
-            <h3>💀 Criaturas Noturnas</h3>
-            <p>Vampiros e Zumbis morrem durante o dia (100 de dano), a menos que equipados com Capacete das Trevas.</p>
-            
-            <h3>🔄 Zumbis</h3>
-            <p>Quando mortos por outro zumbi, voltam para a mão do jogador em vez de ir para o cemitério.</p>
-            
-            <h3>🐉 Dragões</h3>
-            <p>Seu ataque incendeia o inimigo, causando 50 de dano por rodada nas próximas rodadas.</p>
-            
-            <h3>🦄 Centauros</h3>
-            <p>Permitem que outras criaturas montem neles para ataques terrestres.</p>
-            
-            <h3>🔥 Fênix</h3>
-            <p>Pode mudar o ciclo dia/noite quando quiser.</p>
+            <h3>Lista de Armadilhas:</h3>
+            <table>
+                <tr>
+                    <th>Armadilha</th>
+                    <th>Efeito</th>
+                </tr>
+                <tr>
+                    <td>Armadilha 171</td>
+                    <td>Rouba a carta que te dá um golpe crítico</td>
+                </tr>
+                <tr>
+                    <td>Armadilha Espelho</td>
+                    <td><strong>Reflete</strong> todo o dano de volta para o atacante</td>
+                </tr>
+                <tr>
+                    <td>Armadilha Cheat</td>
+                    <td>Dobra o ataque e <strong>passa para o próximo jogador</strong> (requer noite + mago em campo)</td>
+                </tr>
+                <tr>
+                    <td>Poço Sem Fundo</td>
+                    <td>Destrói <strong>TODAS as 3 criaturas atacantes</strong></td>
+                </tr>
+            </table>
         </div>
         
         <!-- Rituais -->
         <div class="section">
             <h2>📿 Rituais</h2>
+            
+            <p>Rituais são feitiços poderosos que requerem condições específicas para serem realizados. <strong>Mago Negro</strong> pode realizar qualquer ritual sem ter a carta.</p>
             
             <table>
                 <tr>
@@ -584,14 +613,181 @@
                     <th>Efeito</th>
                 </tr>
                 <tr>
-                    <td>157</td>
+                    <td>Ritual 157</td>
                     <td>Apofis + Mago Negro + 6 zumbis + 2 elfos em defesa</td>
-                    <td>Rouba todos os talismãs da mão do alvo</td>
+                    <td>Rouba <strong>TODOS</strong> os talismãs da mão do alvo</td>
                 </tr>
                 <tr>
-                    <td>Amor</td>
+                    <td>Ritual Amor</td>
                     <td>Ninfa Belly Lorem + Vampiro Necrothic Tayler</td>
-                    <td>Anula a maldição do Profeta</td>
+                    <td><strong>Anula</strong> a maldição do Profeta</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Profeta -->
+        <div class="section">
+            <h2>🔮 Profeta - Maldição da Morte</h2>
+            
+            <p>O <strong>Profeta</strong> é uma criatura especial que pode anunciar a morte de qualquer carta em campo.</p>
+            
+            <h3>Como funciona:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>Tenha um <strong>Profeta</strong> em campo (ataque ou defesa)</li>
+                <li>Use a ação "🔮 Profetizar" durante seu turno</li>
+                <li>Selecione uma carta inimiga em campo</li>
+                <li>A carta recebe uma <strong>maldição</strong> e será destruída em <strong>2 rodadas</strong></li>
+            </ol>
+            
+            <div class="tip">
+                <strong>💡 Dica:</strong> O <strong>Ritual Amor</strong> pode anular a maldição do Profeta!
+            </div>
+        </div>
+        
+        <!-- Oráculo -->
+        <div class="section">
+            <h2>👁️ Oráculo da Imortalidade</h2>
+            
+            <p>O Oráculo é uma carta especial que pode <strong>anular o Talismã da Imortalidade</strong> e eliminar permanentemente um oponente.</p>
+            
+            <h3>Como usar:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>Tenha a carta <strong>Oráculo</strong> na mão</li>
+                <li>Durante seu ataque, quando o oponente tem Talismã da Imortalidade</li>
+                <li>O Oráculo é <strong>consumido</strong> e volta para o deck</li>
+                <li>O Talismã é anulado e o oponente morre</li>
+            </ol>
+            
+            <div class="warning">
+                <strong>⚠️ Atenção:</strong> O Oráculo <strong>não funciona</strong> contra Talismã da Verdade (imunidade a oráculos).
+            </div>
+        </div>
+        
+        <!-- Efeitos Especiais -->
+        <div class="section">
+            <h2>🌟 Efeitos Especiais das Criaturas</h2>
+            
+            <table>
+                <tr>
+                    <th>Criatura</th>
+                    <th>Efeito Especial</th>
+                </tr>
+                <tr>
+                    <td>Vampiros</td>
+                    <td>Morrem durante o dia (100 de dano), a menos que equipados com Capacete das Trevas</td>
+                </tr>
+                <tr>
+                    <td>Zumbis</td>
+                    <td>Morrem durante o dia. Quando mortos por outro zumbi, voltam para a mão do jogador</td>
+                </tr>
+                <tr>
+                    <td>Dragão</td>
+                    <td>Seu ataque incendeia o inimigo, causando <strong>50 de dano por rodada</strong> nas próximas rodadas</td>
+                </tr>
+                <tr>
+                    <td>Centauro</td>
+                    <td>Permite que outras criaturas montem nele para ataques terrestres</td>
+                </tr>
+                <tr>
+                    <td>Fênix</td>
+                    <td>Pode <strong>mudar o ciclo dia/noite</strong> quando quiser</td>
+                </tr>
+                <tr>
+                    <td>Medusa</td>
+                    <td>Seu ataque transforma personagens em pedra (cartas com maior vida são imunes)</td>
+                </tr>
+                <tr>
+                    <td>Apofis</td>
+                    <td>Rei do Caos - pode desativar armadilhas e magias de outros jogadores</td>
+                </tr>
+                <tr>
+                    <td>Leviatã</td>
+                    <td>Só pode ser domado por deuses e magos supremos</td>
+                </tr>
+                <tr>
+                    <td>Ninfa Lorem</td>
+                    <td>Torna o jogador <strong>imune a rituais</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Runas e Reviver -->
+        <div class="section">
+            <h2>🔷 Runas - Reviver Cartas</h2>
+            
+            <p>Runas são cartas especiais que permitem reviver cartas do cemitério.</p>
+            
+            <h3>Como reviver:</h3>
+            <ol style="margin-left: 20px; line-height: 2;">
+                <li>Tenha <strong>4 runas</strong> na sua mão</li>
+                <li>Clique no cemitério para ver as cartas disponíveis</li>
+                <li>Selecione a carta que deseja reviver</li>
+                <li>As 4 runas são <strong>consumidas</strong> (vão para o cemitério)</li>
+                <li>A carta revivida vai para sua <strong>mão</strong></li>
+            </ol>
+            
+            <div class="tip">
+                <strong>💡 Dica:</strong> Você pode reviver <strong>qualquer tipo de carta</strong> (criaturas, feitiços, armas, etc.)!
+            </div>
+        </div>
+        
+        <!-- Chat e Reconexão -->
+        <div class="section">
+            <h2>💬 Chat e Reconexão</h2>
+            
+            <h3>💬 Chat da Sala</h3>
+            <p>O jogo possui um chat integrado onde você pode conversar com outros jogadores durante a partida. O chat tem:</p>
+            <ul style="margin-left: 20px; line-height: 2;">
+                <li><strong>Histórico</strong> das últimas mensagens</li>
+                <li>Opção de <strong>minimizar/expandir</strong> a janela</li>
+                <li><strong>Censura automática</strong> de palavras impróprias</li>
+                <li><strong>Notificações</strong> de novas mensagens quando o chat está minimizado</li>
+            </ul>
+            
+            <h3>🔄 Sistema de Reconexão</h3>
+            <p>Se você perder a conexão com o servidor:</p>
+            <ul style="margin-left: 20px; line-height: 2;">
+                <li>O jogo tenta <strong>reconectar automaticamente</strong></li>
+                <li>Sua sessão é <strong>salva localmente</strong></li>
+                <li>Ao reconectar, você volta exatamente de onde parou</li>
+                <li>Outros jogadores são notificados da sua desconexão/reconexão</li>
+            </ul>
+            
+            <div class="info">
+                <strong>💡 Dica:</strong> Se você sair do jogo voluntariamente, sua sessão é limpa e você precisa entrar novamente.
+            </div>
+        </div>
+        
+        <!-- Talismãs -->
+        <div class="section">
+            <h2>🔮 Talismãs</h2>
+            
+            <p>Talismãs são cartas especiais que <strong>ficam na mão</strong> e se ativam automaticamente. Eles <strong>não podem ser jogados</strong> em campo.</p>
+            
+            <table>
+                <tr>
+                    <th>Talismã</th>
+                    <th>Efeito</th>
+                </tr>
+                <tr>
+                    <td>Talismã da Imortalidade</th>
+                    <td>Salva o jogador da morte <strong>2 vezes</strong>. Vida restaurada para 5000</th>
+                </tr>
+                <tr>
+                    <td>Talismã do Guerreiro</th>
+                    <td>Aumenta em <strong>1024</strong> o ataque do jogador</th>
+                </tr>
+                <tr>
+                    <td>Talismã da Sabedoria</th>
+                    <td>Permite jogar <strong>2 cartas por turno</strong> (em vez de 1)</th>
+                </tr>
+                <tr>
+                    <td>Talismã da Verdade</th>
+                    <td>Imunidade a <strong>feitiços e oráculos</strong></th>
+                </tr>
+                <tr>
+                    <td>Talismã da Ordem</th>
+                    <td>Imunidade ao <strong>Caos</strong> (Apofis)</th>
                 </tr>
             </table>
         </div>
@@ -602,8 +798,8 @@
             
             <div class="rule-grid">
                 <div class="rule-card">
-                    <h4>🛡️ Defesa em Primeiro Lugar</h4>
-                    <p>Sempre mantenha algumas criaturas em defesa. Elas absorvem dano e protegem sua vida.</p>
+                    <h4>🛡️ Defesa é Prioridade</h4>
+                    <p>Sempre mantenha criaturas em defesa. Elas absorvem dano e protegem sua vida.</p>
                 </div>
                 <div class="rule-card">
                     <h4>⚔️ Ataque Calculado</h4>
@@ -622,8 +818,16 @@
                     <p>Não acumule muitas cartas. Use runas para reviver criaturas importantes do cemitério.</p>
                 </div>
                 <div class="rule-card">
-                    <h4>👁️ O Oráculo é Secreto</h4>
-                    <p>Não revele que tem o Oráculo. Use quando tiver a oportunidade certa.</p>
+                    <h4>⚠️ Armadilhas Enganosas</h4>
+                    <p>Armadilhas são mais efetivas quando o oponente não sabe que são armadilhas. Coloque-as em defesa!</p>
+                </div>
+                <div class="rule-card">
+                    <h4>🔮 Profeta Estratégico</h4>
+                    <p>Use o Profeta para eliminar cartas-chave do oponente, mas cuidado com o Ritual Amor!</p>
+                </div>
+                <div class="rule-card">
+                    <h4>📿 Rituais Poderosos</h4>
+                    <p>Rituais exigem preparação, mas podem mudar completamente o jogo. Invista neles!</p>
                 </div>
             </div>
         </div>
@@ -638,36 +842,44 @@
                     <th>Significado</th>
                 </tr>
                 <tr>
-                    <td>Monte</td>
-                    <td>Pilha de cartas para comprar</td>
+                    <td>Monte</th>
+                    <td>Pilha de cartas para comprar</th>
                 </tr>
                 <tr>
-                    <td>Cemitério</td>
-                    <td>Onde vão as cartas destruídas/usadas</td>
+                    <td>Cemitério</th>
+                    <td>Onde vão as cartas destruídas/usadas</th>
                 </tr>
                 <tr>
-                    <td>Poder de Ataque</td>
-                    <td>Soma do ataque de todas as suas criaturas + equipamentos</td>
+                    <td>Poder de Ataque</th>
+                    <td>Soma do ataque de todas as suas criaturas + equipamentos</th>
                 </tr>
                 <tr>
-                    <td>Runas</td>
-                    <td>Cartas especiais. 4 runas revivem uma carta do cemitério</td>
+                    <td>Runas</th>
+                    <td>Cartas especiais. <strong>4 runas</strong> revivem uma carta do cemitério</th>
                 </tr>
                 <tr>
-                    <td>Talismãs</td>
-                    <td>Cartas que ficam na mão e dão bônus passivos</td>
+                    <td>Talismãs</th>
+                    <td>Cartas que ficam na mão e dão bônus passivos</th>
                 </tr>
                 <tr>
-                    <td>Modo Troca</td>
-                    <td>Permite trocar cartas entre posições de ataque e defesa</td>
+                    <td>Modo Troca</th>
+                    <td>Permite trocar cartas entre posições de ataque e defesa</th>
                 </tr>
                 <tr>
-                    <td>Modo Equipar</td>
-                    <td>Permite equipar itens em criaturas</td>
+                    <td>Modo Equipar</th>
+                    <td>Permite equipar itens em criaturas</th>
                 </tr>
                 <tr>
-                    <td>Primeira Rodada</td>
-                    <td>Rodada inicial sem ataques para preparação</td>
+                    <td>Primeira Rodada</th>
+                    <td>Rodada inicial sem ataques para preparação</th>
+                </tr>
+                <tr>
+                    <td>Disfarce</th>
+                    <td>Armadilhas aparecem como criaturas comuns para oponentes</th>
+                </tr>
+                <tr>
+                    <td>Maldição do Profeta</th>
+                    <td>Carta amaldiçoada morre em 2 rodadas</th>
                 </tr>
             </table>
         </div>
@@ -675,7 +887,7 @@
         <div class="footer">
             <p>Twilight Battle - Um jogo de estratégia e cartas</p>
             <p>Desenvolvido por Mr. Lima</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">Versão 1.0 - © 2026</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Versão 2.0 - © 2026</p>
         </div>
     </div>
 </body>
