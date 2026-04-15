@@ -1794,6 +1794,8 @@ class Game:
         if item_card.get('life'):
             target_creature['life'] = target_creature.get('life', 0) + item_card['life']
         
+        broadcast_system_message(self.game_id, f'🔧 {username} equipou {item_card["name"]} em {target_creature["name"]}')
+
         return {
             'success': True,
             'creature': target_creature['name'],
@@ -2046,6 +2048,8 @@ class Game:
         shuffle(self.deck)
         
         self.use_action(username, 'spell')
+
+        broadcast_system_message(self.game_id, f'✨ {username} usou {spell_card["name"]} {f"em {target_username}" if target_username else ""}')
         
         return {
             'success': True,
@@ -2336,6 +2340,7 @@ class Game:
         })
         
         self.use_action(username, 'prophet_curse')
+        broadcast_system_message(self.game_id, f'🔮 {username} amaldiçoou {target_card["name"]} de {target_player["name"]} (morre em 2 rodadas)')
         
         return {
             'success': True,
@@ -2400,6 +2405,8 @@ class Game:
 
             stolen_card = attacker['attack_bases'].pop(index)
             defender['hand'].append(stolen_card)
+
+            broadcast_system_message(self.game_id, f'🔮 Armadilha 171 ativada! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!')
             effects.append({
                 'type': 'steal_card',
                 'stolen_card': stolen_card['name'],
@@ -2415,7 +2422,7 @@ class Game:
                 'damage_to_reflect': attack_power,
                 'message': f'🪞 Armadilha Espelho! O dano de {attack_power} será revertido para {attacker["name"]}!'
             })
-            # Retornar flag indicando que deve aplicar dano espelhado
+            broadcast_system_message(self.game_id, f'🪞 Armadilha Espelho ativada! O ataque de {attack_power} foi refletido para {attacker["name"]}!')
             return {
                 'type': 'mirror_damage',
                 'cancel_attack': True,  # Cancela o dano no defensor atual
@@ -2440,7 +2447,7 @@ class Game:
                     'type': 'pass_damage',
                     'message': f'⚡ Armadilha Cheat! O dano do ataque será passado para o próximo jogador!'
                 })
-                # Retornar flag para indicar que o dano deve ser passado adiante
+                broadcast_system_message(self.game_id, f'⚡ Armadilha Cheat ativada! O dano foi transferido para {next_player_name}!')
                 return {
                     'type': 'cheat_pass_damage',
                     'cancel_attack': True,  # Cancela o dano no defensor atual
@@ -2469,7 +2476,7 @@ class Game:
                 'message': f'🕳️ Poço Sem Fundo! As criaturas atacantes foram destruídas: {", ".join(destroyed_attackers)}'
             })
             
-            # Cancelar o ataque (não causa dano)
+            broadcast_system_message(self.game_id, f'🕳️ Poço Sem Fundo ativado! As criaturas atacantes {", ".join(destroyed_attackers)} foram destruídas!')
             effects.append({
                 'type': 'cancel_attack',
                 'cancel_attack': True
@@ -3020,6 +3027,7 @@ def handle_spectate_game(data):
     
     if success:
         join_room(game_id)
+        broadcast_system_message(game_id, f'👁️ {username} entrou como espectador')
         
         # Atualizar jogo atual na conta (opcional para espectadores)
         update_user_game(username, game_id)
@@ -3294,6 +3302,7 @@ def handle_player_action(data):
             next_player_name = game.player_data[next_player_name]['name']
             result = {'success': True, 'next_turn': next_player_name}
             log_message = f"⏰ {player_name} finalizou o turno (próximo: {next_player_name})"
+            broadcast_system_message(self.game_id, log_message)
         
         if result and result.get('success'):
             # Registrar ação para primeira rodada (exceto end_turn)
