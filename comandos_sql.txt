@@ -118,17 +118,17 @@ n_descivenda float(10,2),
 primary key (n_numeivenda));
 
 
-INSERT INTO comclien values(1, '001', 'Felipe Lima', 'Lima Systems Inc.', '2009-10-28', '43034323859', '5511933336892', 'São Paulo', 'SP');
-INSERT INTO comclien values(2, '002', 'Gustavo Nakano', 'Nanako Machines Corp.', '2009-01-07', '12345678911', '5511948422737', 'São Paulo', 'SP');
-INSERT INTO comclien values(3, '003', 'Luiz Fernando Joaquim da Silva', 'Robo Security LTDA', '2009-12-11', '13234512311', '5511914889432', 'São Paulo', 'SP');
+INSERT INTO comclien values(1, '001', 'Lima TI', 'Lima Systems Inc.', '2009-10-28', '18539329000190', '5511933336892', 'São Paulo', 'SP');
+INSERT INTO comclien values(2, '002', 'Inter Hardware', 'Nanako Machines Corp.', '2009-01-07', '70124775000154', '5511948422737', 'São Paulo', 'SP');
+INSERT INTO comclien values(3, '003', 'Robo Security', 'Robo Security LTDA', '2009-12-11', '82652726000173', '5511914889432', 'São Paulo', 'SP');
 
-INSERT INTO comforne values(1, '001', 'Pedro Henrique Mesquita Nogueira', 'Nogueira Eletronics', '5511916932009');
-INSERT INTO comforne values(2, '002', 'Gustavo Ribeiro Cavalcante', 'Ribeiro Inc.', '5511968961850');
-INSERT INTO comforne values(3, '003', 'Thiago Campos de Sousa', 'Campos & Souza Cabos', '5511998047436');
+INSERT INTO comforne values(1, '001', 'Nogueira Eletronics', 'Nogueira Eletronics', '5511916932009');
+INSERT INTO comforne values(2, '002', 'Ribeiro Inc', 'Ribeiro Inc.', '5511968961850');
+INSERT INTO comforne values(3, '003', 'Thiago Cabos', 'Campos & Souza Cabos', '5511998047436');
 
-INSERT INTO comvende values (1, '001', 'nome', 'raza', 'fone', 1.2);
-INSERT INTO comvende values (2, '002', 'nome', 'raza', 'fone', 1.2);
-INSERT INTO comvende values (3, '003', 'nome', 'raza', 'fone', 1.2);
+INSERT INTO comvende values(1, '001', 'Hesseu', 'Abreu Hesseu Corp.', '5511916932001', 1.20);
+INSERT INTO comvende values(2, '002', 'Santana LABS', 'Santana InfoTec Labs LTDA', '5511995626543', 4.50);
+INSERT INTO comvende values(3, '003', 'Gatao Shop', 'K Marques Varejo', '5511923451121', 2.55);
 
 INSERT INTO comprodu values (1, '001', 'Celular', 899.99, 'E', 1);
 INSERT INTO comprodu values (2, '002', 'Cabo USB', 14.99, 'E', 3);
@@ -136,31 +136,8 @@ INSERT INTO comprodu values (3, '003', 'Pendrive', 50.0, 'E', 1);
 
 INSERT INTO comvenda values (1, '001', 1, 2, 1, 899.99, 0.0, 899.99, '2026-04-07');
 INSERT INTO comvenda values (2, '002', 3, 1, 2, 50.0, 0.0, 50.0, '2026-04-08');
-INSERT INTO comvenda values (3, '003', 2, 3, 3, 14.99, 0.0, '14.99, '2026-04-09');
+INSERT INTO comvenda values (3, '003', 2, 3, 3, 14.99, 0.0, 14.99, '2026-04-09');
 
 INSERT INTO comivenda values (1, 1, 1, 899.99, 1, 0.0);
 INSERT INTO comivenda values (2, 2, 3, 50.0, 1, 0.0);
 INSERT INTO comivenda values (3, 3, 2, 14.99, 1, 0.0);
-
-
-BRIEFING
-
-
-CLIENTE :  ESCOLA CAMINHO SUAVE
-PRODUTO :  APLICATIVO
-PRAZO : 1 SEMANA
-
-ESTUDO DE CASO
-
-Escola de Educação infantil deseja criar um aplicativo onde as crianças vinculem a imagem ao som. O aplicativo será voltado para crianças de 1 á 4 anos de idade. Segundo a pedagoga da escola Sra, Berenice, o app funcionara como aprendizado de forma lúdica. O app será fornecido gratuitamente aos pais e professores.
-
-REQUISITOS 
-
-- Criar identidade Visual ( Icone / Nome/ Logo /Splash Screen)
-- O App deverá trabalhar com som de animais e som de números 
-( 8 Animais , Números do 1 ao 10)
-- Deverá ter no mínimo 3 telas (Excluindo-se Splash Screen)
-
-
-
-
