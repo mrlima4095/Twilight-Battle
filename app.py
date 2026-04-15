@@ -2060,12 +2060,6 @@ class Game:
         
         return destroyed_info
 
-@app.after_request
-def remove_frame_options(response):
-    response.headers.pop('X-Frame-Options', None)
-    response.headers['Content-Security-Policy'] = "frame-ancestors *"
-    return response
-
 # Rotas da aplicação
 @app.route('/')
 def index():
