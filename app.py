@@ -3208,6 +3208,7 @@ def handle_player_action(data):
     result = None
     player_name = username
     timestamp = time.strftime('%H:%M:%S')
+    log_message = ""
     
     try:
         if action == 'draw':
