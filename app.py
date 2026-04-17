@@ -155,25 +155,6 @@ CARDS = {
         "count": 50, 
         "description": "Não ataca outros elfos. Use para realizar oraculos."
     },
-    "zumbi": {
-        "id": "zumbi", 
-        "name": "Zumbi",
-        "type": "creature",
-        "life": 100, 
-        "attack": 25,
-        "count": 50, 
-        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
-        "dies_daylight": True
-    },
-    "centauro": {
-        "id": "centauro",
-        "name": "Centauro", 
-        "type": "creature", 
-        "life": 512, 
-        "attack": 75, 
-        "count": 50, 
-        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
-    },
     "mago": {
         "id": "mago",
         "name": "Mago",
@@ -191,6 +172,34 @@ CARDS = {
         "attack": 60,
         "count": 50,
         "description": "Brutais."
+    },
+    "zumbi": {
+        "id": "zumbi", 
+        "name": "Zumbi",
+        "type": "creature",
+        "life": 100, 
+        "attack": 25,
+        "count": 50, 
+        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
+        "dies_daylight": True
+    },
+    "centauro": {
+        "id": "centauro",
+        "name": "Centauro", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 70, 
+        "count": 50, 
+        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
+    },
+    "ninfa": {
+        "id": "ninfa",
+        "name": "Ninfa",
+        "type": "creature",
+        "life": 512,
+        "attack": 30,
+        "count": 35,
+        "description": "Espiritos Magicos da Natureza"
     },
     
     # -- Especiais
@@ -224,15 +233,6 @@ CARDS = {
         "count": 1, 
         "description": "Torna o jogador imune a rituais."
     },
-    "ninfa": {
-        "id": "ninfa",
-        "name": "Ninfa",
-        "type": "creature",
-        "life": 512,
-        "attack": 30,
-        "count": 35,
-        "description": "Espiritos Magicos da Natureza"
-    },
     
     # - Mestres
     "rei_mago": {
@@ -258,10 +258,10 @@ CARDS = {
         "id": "apollo", 
         "name": "Apollo", 
         "type": "creature", 
-        "life": 2400, 
-        "attack": 750, 
+        "life": 1500, 
+        "attack": 600, 
         "count": 1, 
-        "description": "Ataques sofridos com menos de 2k de dano recuperam a vida do jogador se colocado na defesa."
+        "description": "Ataques sofridos com menos de 1k de dano recuperam a vida do jogador se colocado na defesa."
     },
     
     # - Bestas
@@ -270,7 +270,7 @@ CARDS = {
         "name": "Dragão", 
         "type": "creature", 
         "life": 1500, 
-        "attack": 500, 
+        "attack": 250, 
         "count": 12, 
         "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
     },
@@ -541,38 +541,60 @@ CARDS = {
 
 DISGUISE_OPTIONS = [
     {
-        'id': 'elfo',
-        'name': 'Elfo',
-        'type': 'creature',
-        'life': 512,
-        'attack': 512,
-        'description': 'Não ataca outros elfos. Use para realizar oráculos.'
+        "id": "elfo",
+        "name": "Elfo",
+        "type": "creature",
+        "life": 512, 
+        "attack": 50,
+        "count": 50, 
+        "description": "Não ataca outros elfos. Use para realizar oraculos."
     },
     {
-        'id': 'zumbi',
-        'name': 'Zumbi',
-        'type': 'creature',
-        'life': 100,
-        'attack': 100,
-        'description': 'Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.',
-        'dies_daylight': True
+        "id": "mago",
+        "name": "Mago",
+        "type": "creature", 
+        "life": 512, 
+        "attack": 50, 
+        "count": 50, 
+        "description": "Use-o para invocar feitiços."
     },
     {
-        'id': 'centauro',
-        'name': 'Centauro',
-        'type': 'creature',
-        'life': 512,
-        'attack': 150,
-        'description': 'O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre.'
+        "id": "orc",
+        "name": "Orc",
+        "type": "creature",
+        "life": 512,
+        "attack": 60,
+        "count": 50,
+        "description": "Brutais."
     },
     {
-        'id': 'mago',
-        'name': 'Mago',
-        'type': 'creature',
-        'life': 800,
-        'attack': 250,
-        'description': 'Use-o para invocar feitiços.'
+        "id": "zumbi", 
+        "name": "Zumbi",
+        "type": "creature",
+        "life": 100, 
+        "attack": 25,
+        "count": 50, 
+        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
+        "dies_daylight": True
     },
+    {
+        "id": "centauro",
+        "name": "Centauro", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 70, 
+        "count": 50, 
+        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
+    },
+    {
+        "id": "ninfa",
+        "name": "Ninfa",
+        "type": "creature",
+        "life": 512,
+        "attack": 30,
+        "count": 35,
+        "description": "Espiritos Magicos da Natureza"
+    }
 ]
 
 def get_random_disguise():
