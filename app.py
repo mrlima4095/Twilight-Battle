@@ -260,7 +260,7 @@ CARDS = {
         "id": "dragao", 
         "name": "Dragão", 
         "type": "creature", 
-        "life": 1600, 
+        "life": 1500, 
         "attack": 500, 
         "count": 12, 
         "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
@@ -270,7 +270,7 @@ CARDS = {
         "name": "Leviatã", 
         "type": "creature", 
         "life": 5000, 
-        "attack": 2500, 
+        "attack": 1024, 
         "count": 1, 
         "description": "Só pode ser domado por deuses e magos supremos."
     },
@@ -278,7 +278,7 @@ CARDS = {
         "id": "apofis", 
         "name": "Apofis", 
         "type": "creature", 
-        "life": 12000, 
+        "life": 5000, 
         "attack": 2500, 
         "count": 1, 
         "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."
@@ -287,7 +287,7 @@ CARDS = {
         "id": "fenix", 
         "name": "Fênix", 
         "type": "creature", 
-        "life": 15000, 
+        "life": 5000, 
         "attack": 3000, 
         "count": 1, 
         "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."
