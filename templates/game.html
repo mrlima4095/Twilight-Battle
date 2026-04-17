@@ -119,6 +119,9 @@
         .action-buttons .action-btn { display: none; }
         .action-buttons .action-btn[style*="display: inline-block"] { display: inline-block !important; }
 
+        .action-btn.centaur { background: linear-gradient(45deg, #8B4513, #A0522D); color: white; }
+        .action-btn.centaur:hover { box-shadow: 0 5px 15px #8B4513; }
+
         #end-turn-btn { display: none; }
 
         .base-slot.selected-for-move { border-color: #4a90e2 !important; box-shadow: 0 0 20px #4a90e2, 0 0 40px rgba(74, 144, 226, 0.5); animation: pulse-blue 1s infinite; transform: scale(1.05); z-index: 100; }
@@ -245,6 +248,7 @@
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
                 <button class="action-btn" id="prophet-curse-btn" style="background: linear-gradient(45deg, #800080, #4b0082); color: white;">🔮 Profetizar</button>
+                <button class="action-btn centaur" id="call-centaurs-btn">🐎 Chamar Centauros</button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
                 <button class="action-btn" id="end-turn-btn">⏰ Finalizar turno</button>
@@ -1032,6 +1036,25 @@
                     });
                 }
             }
+            else if (data.action === 'call_centaurs' && data.result && data.result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🐎 Centauros Coletados!',
+                    html: `
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🐎</div>
+                            <p style="color: #ffd700; font-size: 18px;">${data.result.message}</p>
+                            <p style="color: #fff; margin-top: 10px;">Você coletou <strong>${data.result.centaurs_collected}</strong> centauro(s) para sua mão!</p>
+                        </div>
+                    `,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    timer: 3000
+                });
+                
+                requestGameState();
+            }
             else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
             /*else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
                 turnTimeLeft = 60;
@@ -1280,6 +1303,10 @@
                         btn.style.display = 'none';
                         btn.disabled = true;
                     }
+                }
+                else if (btn.id === 'call-centaurs-btn') {
+                    btn.style.display = (isMyTurn && hasCentaurAbility) ? 'inline-block' : 'none';
+                    btn.disabled = !(isMyTurn && hasCentaurAbility);
                 }
                 else {
                     // Para os outros botões, manter comportamento normal
@@ -2537,6 +2564,94 @@
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
                 width: '500px'
+            });
+        }
+
+        function hasCallCentaurosAvailable() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && card.id === 'super_centauro') {
+                    // Verificar se a habilidade já foi usada
+                    if (!card.call_centaurs_used) {
+                        console.log('Super Centauro encontrado com habilidade disponível:', card.name);
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        function callCentauros() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Super Centauro com habilidade disponível
+            if (!hasCallCentaurosAvailable()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Super Centauro não disponível',
+                    text: 'Você precisa ter um Super Centauro em campo que ainda não usou esta habilidade',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Confirmar ação
+            Swal.fire({
+                title: '🐎 Chamar Centauros?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Use a habilidade especial do <strong style="color: #ffd700;">Super Centauro</strong>!</p>
+                        <p>Todos os centauros em campo de <strong>TODOS OS JOGADORES</strong> serão coletados para sua mão.</p>
+                        <p style="color: #ffa500; margin-top: 15px;">⚠️ Esta habilidade só pode ser usada uma vez por Super Centauro!</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🐎 Sim, chamar centauros!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Chamando centauros...',
+                        html: 'Aguarde enquanto os centauros são coletados',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    // Enviar ação
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'call_centaurs',
+                        params: {}
+                    });
+                }
             });
         }
 

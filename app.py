@@ -489,7 +489,7 @@ CARDS = {
         "name": "Oráculo", 
         "type": "oracle", 
         "count": 1, 
-        "description": "Se você atacar um jogador que possui o Talismã da Imortalidade, o talismã é anulado e o jogador morre como qualquer outro. O Oráculo é consumido após o uso."
+        "description": "Se você atacar um jogador que possui o Talismã da Imortalidade, o talismã é anulado e o jogador morre como qualquer outro. O Oráculo é consumido após o uso. Requer elfo em modo de defesa."
     },
     
     # Rituais (requerem condições específicas)
@@ -1010,7 +1010,8 @@ class Game:
             'ritual': 1,
             'block': 1,
             'oracle': 1,
-            'prophet_curse': 1  # Adicionar limite para a habilidade do Profeta
+            'prophet_curse': 1,
+            'call_centaurs': 1
         }
 
         def get_player_runes_count(self, username):
@@ -1551,15 +1552,27 @@ class Game:
             damage_to_player = remaining_damage
             reflected_text = " [dano refletido]" if is_reflected else ""
             
-            # Verificar Oráculo do atacante (apenas para ataques normais, não refletidos)
             oracle_index = -1
+            has_elf_in_defense = False
+            
             if not is_reflected and hasattr(self, 'attacker_hand_for_oracle'):
-                # Isso será setado pelo método attack antes de chamar apply_damage_to_player
                 for i, card in enumerate(self.attacker_hand_for_oracle):
                     if card and card.get('id') == 'oraculo_imortalidade':
                         oracle_index = i
                         break
-            
+
+                if oracle_index != -1: 
+                    attacker = self.player_data.get(self.players[self.current_turn])
+                    if attacker:
+                        for card in attacker['defense_bases']:
+                            if card and card.get('id') == 'elfo':
+                                has_elf_in_defense = True
+                                break
+                    
+                    if not has_elf_in_defense:
+                        damage_log.append(f"⚠️ Oráculo não pode ser usado: requer um Elfo em modo de defesa")
+                        oracle_index = -1
+
             # Verificar Talismã da Imortalidade no alvo
             immortality_index = -1
             if not skip_talisman:
@@ -1931,6 +1944,113 @@ class Game:
             'message': f"{target_card['name']} foi revivido do cemitério!"
         }
     
+    def call_centaurs(self, username):
+        """Habilidade especial do Super Centauro: Coleta todos os centauros em campo de todos os jogadores para a mão do usuário"""
+        if not self.can_act(username, 'call_centaurs'):
+            return {'success': False, 'message': 'Você já usou esta habilidade neste turno'}
+        
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return {'success': False, 'message': 'Jogador inválido ou morto'}
+        
+        # Verificar se tem Super Centauro em campo (ataque ou defesa)
+        has_super_centauro = False
+        super_centauro_card = None
+        super_centauro_location = None
+        
+        for base_type in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(player[base_type]):
+                if card and card.get('id') == 'super_centauro':
+                    has_super_centauro = True
+                    super_centauro_card = card
+                    super_centauro_location = (base_type, i)
+                    break
+            if has_super_centauro:
+                break
+        
+        if not has_super_centauro:
+            return {'success': False, 'message': 'Você precisa ter um Super Centauro em campo para usar esta habilidade'}
+        
+        # Verificar se a habilidade já foi usada neste Super Centauro
+        if super_centauro_card.get('call_centaurs_used', False):
+            return {'success': False, 'message': 'Este Super Centauro já usou sua habilidade de chamar centauros'}
+        
+        # Coletar todos os centauros em campo de todos os jogadores
+        centaurs_collected = []
+        centaurs_info = []
+        
+        for target_username in self.players:
+            target_player = self.player_data[target_username]
+            if target_player.get('dead', False):
+                continue
+            
+            # Verificar em bases de ataque
+            for i, card in enumerate(target_player['attack_bases']):
+                if card and card.get('id') == 'centauro':
+                    centaurs_collected.append({
+                        'player': target_username,
+                        'base_type': 'attack',
+                        'index': i,
+                        'card': card
+                    })
+            
+            # Verificar em bases de defesa
+            for i, card in enumerate(target_player['defense_bases']):
+                if card and card.get('id') == 'centauro':
+                    centaurs_collected.append({
+                        'player': target_username,
+                        'base_type': 'defense',
+                        'index': i,
+                        'card': card
+                    })
+        
+        if not centaurs_collected:
+            return {'success': False, 'message': 'Não há centauros em campo para coletar'}
+        
+        # Coletar os centauros e adicionar à mão do jogador
+        for centaur_data in centaurs_collected:
+            target_player = self.player_data[centaur_data['player']]
+            card = centaur_data['card']
+            
+            # Remover do campo
+            target_player[centaur_data['base_type']][centaur_data['index']] = None
+            
+            # Adicionar à mão do jogador que usou a habilidade
+            player['hand'].append(card)
+            
+            centaurs_info.append({
+                'card_name': card['name'],
+                'from_player': centaur_data['player']
+            })
+        
+        # Marcar que a habilidade foi usada neste Super Centauro
+        super_centauro_card['call_centaurs_used'] = True
+        
+        self.use_action(username, 'call_centaurs')
+        
+        broadcast_system_message(self.game_id, 
+            f'🐎 {username} usou a habilidade CHAMAR CENTAUROS do Super Centauro! Coletou {len(centaurs_info)} centauro(s) de todos os jogadores!')
+        
+        return {
+            'success': True,
+            'centaurs_collected': len(centaurs_info),
+            'centaurs': centaurs_info,
+            'message': f'🐎 Você coletou {len(centaurs_info)} centauro(s) para sua mão!'
+        }
+    def has_call_centaurs_available(self, username):
+        """Verifica se o jogador pode usar a habilidade Chamar Centauros"""
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return False
+        
+        # Verificar se o jogador tem Super Centauro em campo que ainda não usou a habilidade
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'super_centauro':
+                    if not card.get('call_centaurs_used', False):
+                        return True
+        return False
+
     # Métodos para rituais
     def get_available_rituals(self, username):
         """Retorna lista de rituais disponíveis"""
@@ -3288,6 +3408,11 @@ def handle_player_action(data):
                 spell_name = result.get('spell', {}).get('name', 'um feitiço')
                 log_message = f"✨ {player_name} usou {spell_name}"
 
+        elif action == 'call_centaurs':
+            result = game.call_centaurs(player_name)
+            if result and result.get('success'):
+                log_message = f"🐎 {player_name} usou CHAMAR CENTAUROS e coletou {result.get('centaurs_collected', 0)} centauro(s)"
+
         elif action == 'ritual':
             result = game.perform_ritual(player_name, params['ritual_id'], params.get('target_player_id'))
             if result and result.get('success'):
@@ -4172,6 +4297,37 @@ class AdminShell(cmd.Cmd):
                 print(f"   👁️ {username} (espectador)")
         
         print("=" * 70)
+
+    def do_reset_centaur(self, arg):
+        """reset_centaur [jogador] - Reseta a habilidade do Super Centauro de um jogador"""
+        username = arg.strip().lower()
+        if not username:
+            print("❌ Uso: reset_centaur [jogador]")
+            return
+        
+        game, error = self.get_player_game(username)
+        if error:
+            print(f"❌ {error}")
+            return
+        
+        if username not in game.player_data:
+            print(f"❌ Jogador {username} não está neste jogo")
+            return
+        
+        player = game.player_data[username]
+        
+        reset_count = 0
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'super_centauro':
+                    if card.get('call_centaurs_used', False):
+                        card['call_centaurs_used'] = False
+                        reset_count += 1
+        
+        if reset_count > 0:
+            print(f"✅ Resetada habilidade de {reset_count} Super Centauro(s) de {username}")
+        else:
+            print(f"⚠️ Nenhum Super Centauro com habilidade usada encontrado para {username}")
 
     def do_list(self, arg):
         """list games - Listar jogos | list players - Listar jogadores online"""
