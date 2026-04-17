@@ -169,8 +169,8 @@ CARDS = {
         "id": "centauro",
         "name": "Centauro", 
         "type": "creature", 
-        "life": 600, 
-        "attack": 60, 
+        "life": 512, 
+        "attack": 75, 
         "count": 50, 
         "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
     },
@@ -178,10 +178,19 @@ CARDS = {
         "id": "mago",
         "name": "Mago",
         "type": "creature", 
-        "life": 600, 
-        "attack": 75, 
+        "life": 512, 
+        "attack": 50, 
         "count": 50, 
         "description": "Use-o para invocar feitiços."
+    },
+    "orc": {
+        "id": "orc",
+        "name": "Orc",
+        "type": "creature",
+        "life": 512,
+        "attack": 60,
+        "count": 50,
+        "description": "Brutais."
     },
     
     # -- Especiais
