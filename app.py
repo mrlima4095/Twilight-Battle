@@ -279,7 +279,7 @@ CARDS = {
         "name": "Apofis", 
         "type": "creature", 
         "life": 5000, 
-        "attack": 2500, 
+        "attack": 1250, 
         "count": 1, 
         "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."
     },
@@ -288,7 +288,7 @@ CARDS = {
         "name": "Fênix", 
         "type": "creature", 
         "life": 5000, 
-        "attack": 3000, 
+        "attack": 1500, 
         "count": 1, 
         "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."
     },
