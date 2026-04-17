@@ -230,8 +230,8 @@ CARDS = {
         "id": "rei_mago", 
         "name": "Rei Mago", 
         "type": "creature", 
-        "life": 1500, 
-        "attack": 750, 
+        "life": 1250, 
+        "attack": 512, 
         "count": 1, 
         "description": "Pode impedir outros magos de realizar feitiços. Realiza feitiços sem possuir a carta."
     },
@@ -239,8 +239,8 @@ CARDS = {
         "id": "mago_negro", 
         "name": "Mago Negro", 
         "type": "creature", 
-        "life": 1500, 
-        "attack": 750, 
+        "life": 1250, 
+        "attack": 510, 
         "count": 1, 
         "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta."
     },
@@ -250,7 +250,7 @@ CARDS = {
         "name": "Apollo", 
         "type": "creature", 
         "life": 2400, 
-        "attack": 800, 
+        "attack": 750, 
         "count": 1, 
         "description": "Ataques sofridos com menos de 2k de dano recuperam a vida do jogador se colocado na defesa."
     },
@@ -260,7 +260,7 @@ CARDS = {
         "id": "dragao", 
         "name": "Dragão", 
         "type": "creature", 
-        "life": 1800, 
+        "life": 1600, 
         "attack": 500, 
         "count": 12, 
         "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
