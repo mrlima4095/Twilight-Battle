@@ -1244,9 +1244,10 @@
             
             let hasProphet = false;
             let hasWitch = false;
+            let hasCentaur = false;
             let hasMage = hasSpellInHand();
             let hasRitual = hasRitualInHand();
-            let hasEquippable = hasEquippableItems();;
+            let hasEquippable = hasEquippableItems();
             
             if (gameState && gameState.players[currentUsername]) {
                 const playerData = gameState.players[currentUsername];
@@ -1258,7 +1259,7 @@
                     if (card) {
                         if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) { hasProphet = true; }
                         if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
-                        if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaurAbility = true; }
+                        if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaur = true; }
                     }
                 }
             }
@@ -1306,8 +1307,8 @@
                     }
                 }
                 else if (btn.id === 'call-centaurs-btn') {
-                    btn.style.display = (isMyTurn && hasCentaurAbility) ? 'inline-block' : 'none';
-                    btn.disabled = !(isMyTurn && hasCentaurAbility);
+                    btn.style.display = (isMyTurn && hasCentaur) ? 'inline-block' : 'none';
+                    btn.disabled = !(isMyTurn && hasCentaur);
                 }
                 else {
                     // Para os outros botões, manter comportamento normal
