@@ -174,7 +174,6 @@ CARDS = {
         "count": 50, 
         "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
     },
-    
     "mago": {
         "id": "mago",
         "name": "Mago",
