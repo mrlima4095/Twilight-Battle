@@ -224,7 +224,7 @@ CARDS = {
         "attack": 30,
         "count": 35,
         "description": "Espiritos Magicos da Natureza"
-    }
+    },
     
     # - Mestres
     "rei_mago": {
