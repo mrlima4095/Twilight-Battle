@@ -205,8 +205,8 @@ CARDS = {
         "count": 1, 
         "description": "Rouba a vida do oponente para recuperar a vida de seu jogador.", 
         "dies_daylight": True
-    },
-    
+    }
+
     "ninfa_lorem": {
         "id": "ninfa", 
         "name": "Ninfa - Belly Lorem", 
@@ -231,8 +231,8 @@ CARDS = {
         "id": "rei_mago", 
         "name": "Rei Mago", 
         "type": "creature", 
-        "life": 2000, 
-        "attack": 1500, 
+        "life": 1500, 
+        "attack": 750, 
         "count": 1, 
         "description": "Pode impedir outros magos de realizar feitiços. Realiza feitiços sem possuir a carta."
     },
@@ -240,20 +240,20 @@ CARDS = {
         "id": "mago_negro", 
         "name": "Mago Negro", 
         "type": "creature", 
-        "life": 2000, 
-        "attack": 1500, 
+        "life": 1500, 
+        "attack": 750, 
         "count": 1, 
-        "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta"
+        "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta."
     },
     
     "apollo": {
         "id": "apollo", 
         "name": "Apollo", 
         "type": "creature", 
-        "life": 8200, 
-        "attack": 2000, 
+        "life": 2400, 
+        "attack": 800, 
         "count": 1, 
-        "description": "Ataques sofridos com menos de 5k de dano recuperam a vida do jogador se colocado na defesa, não pode ficar na defesa por mais de 5 rodadas."
+        "description": "Ataques sofridos com menos de 2k de dano recuperam a vida do jogador se colocado na defesa."
     },
     
     # - Bestas
@@ -261,17 +261,17 @@ CARDS = {
         "id": "dragao", 
         "name": "Dragão", 
         "type": "creature", 
-        "life": 5000, 
-        "attack": 1500, 
-        "count": 10, 
+        "life": 1800, 
+        "attack": 500, 
+        "count": 12, 
         "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
     },
     "leviatan": {
         "id": "leviatan", 
         "name": "Leviatã", 
         "type": "creature", 
-        "life": 15000, 
-        "attack": 15000, 
+        "life": 5000, 
+        "attack": 2500, 
         "count": 1, 
         "description": "Só pode ser domado por deuses e magos supremos."
     },
@@ -279,8 +279,8 @@ CARDS = {
         "id": "apofis", 
         "name": "Apofis", 
         "type": "creature", 
-        "life": 32500, 
-        "attack": 5000, 
+        "life": 12000, 
+        "attack": 2500, 
         "count": 1, 
         "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."
     },
@@ -288,8 +288,8 @@ CARDS = {
         "id": "fenix", 
         "name": "Fênix", 
         "type": "creature", 
-        "life": 32500, 
-        "attack": 10000, 
+        "life": 15000, 
+        "attack": 3000, 
         "count": 1, 
         "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."
     },
@@ -347,7 +347,7 @@ CARDS = {
         "id": "blade_vampires", 
         "name": "Blade of Vampires", 
         "type": "weapon", 
-        "attack": 5000, 
+        "attack": 1500, 
         "count": 1, 
         "description": "Só pode ser usada por um vampiro. Seu ataque torna o oponente noturno (morre de dia)"
     },
@@ -355,7 +355,7 @@ CARDS = {
         "id": "blade_dragons", 
         "name": "Blade of Dragons", 
         "type": "weapon", 
-        "attack": 5000, 
+        "attack": 1500, 
         "count": 1, 
         "description": "Usada apenas por elfos ou vampiros. Seu ataque pode eliminar personagens permanentemente tornando impossíveis de reviver ou ser invocados de volta do cemitério."
     },
@@ -365,7 +365,7 @@ CARDS = {
         "id": "capacete_trevas", 
         "name": "Capacete das Trevas", 
         "type": "armor", 
-        "protection": 800, 
+        "protection": 300, 
         "count": 20, 
         "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada a carta."
     },
@@ -422,49 +422,49 @@ CARDS = {
         "id": "feitico_cortes", 
         "name": "Feitiço - Cortes", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Aumenta ataque de um monstro em 1024 pontos por duas rodadas."
     },
     "feitico_duro_matar": {
         "id": "feitico_duro_matar", 
         "name": "Feitiço - Duro de matar", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Aumenta defesa do jogador em 1024 pontos por duas rodadas."
     },
     "feitico_troca": {
         "id": "feitico_troca", 
         "name": "Feitiço - Troca", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Troca as cartas de outro Jogador de ataque para defesa e vice-versa."
     },
     "feitico_comunista": {
         "id": "feitico_comunista", 
         "name": "Feitiço - Comunista", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Faz as cartas das mãos dos jogadores irem de volta para a pilha."
     },
     "feitico_silencio": {
         "id": "feitico_silencio", 
         "name": "Feitiço - Silêncio", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Os ataques das próximas duas rodadas não ativam armadilhas."
     },
     "feitico_para_sempre": {
         "id": "feitico_para_sempre", 
         "name": "Feitiço - Para Sempre", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Reverte o efeito da espada Blade of Vampires."
     },
     "feitico_capitalista": {
         "id": "feitico_capitalista", 
         "name": "Feitiço - Capitalista", 
         "type": "spell", 
-        "count": 1, 
+        "count": 2, 
         "description": "Troque cartas com outros jogadores."
     },
     "feitico_cura": {
@@ -505,28 +505,28 @@ CARDS = {
         "id": "armadilha_171", 
         "name": "Armadilha 171", 
         "type": "trap", 
-        "count": 1, 
+        "count": 2, 
         "description": "Rouba a carta que te dá um golpe crítico."
     },
     "armadilha_espelho": {
         "id": "armadilha_espelho", 
         "name": "Armadilha Espelho", 
         "type": "trap", 
-        "count": 1, 
+        "count": 2, 
         "description": "Reverte ataques e magia."
     },    
     "armadilha_cheat": {
         "id": "armadilha_cheat", 
         "name": "Armadilha Cheat", 
         "type": "trap", 
-        "count": 1, 
+        "count": 2, 
         "description": "Dobrar o ataque e passar para o próximo jogador na rodada, precisa estar de noite e um mago em campo."
     },
     "armadilha_poco": {
         "id": "armadilha_poco", 
         "name": "Armadilha - Poço Sem Fundo", 
         "type": "trap", 
-        "count": 1, 
+        "count": 2, 
         "description": "Quando o oponente atacar, TODAS as 3 criaturas atacantes são destruídas e enviadas para o cemitério. Armadilha é desativada após o uso."
     }
 }
