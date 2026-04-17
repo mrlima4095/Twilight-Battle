@@ -322,7 +322,8 @@
         let turnTimeLeft = 60;
         let timerInterval = null;
         let isTimerRunning = false;
-        let gameStarted = false; 
+        let gameStarted = false;
+        let isMyTurnFlag = false;
 
         // Verificar autenticação ao carregar
         fetch('/api/check-auth')
@@ -592,11 +593,35 @@
         socket.on('game_state', function(data) {
             console.log('Game state recebido:', data);
             const oldGameState = gameState;
+            const oldTurn = oldGameState ? oldGameState.current_turn : null;
             gameState = data;
             
-            // Verificar se o turno mudou
-            if (oldGameState && oldGameState.current_turn !== data.current_turn) {
-                console.log('Turno mudou de', oldGameState.current_turn, 'para', data.current_turn);
+            if (oldTurn !== data.current_turn && data.current_turn === currentUsername && data.started && !data.current_player_dead) {
+                console.log('🎲 É MEU TURNO! Mostrando alerta...');
+                showTurnStartAlert(currentUsername);
+                
+                // Parar timer antigo (se existir)
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                isTimerRunning = false;
+                
+                // Iniciar novo timer
+                startTurnTimer();
+            }
+            else if (oldTurn !== data.current_turn && data.current_turn !== currentUsername) {
+                console.log('Turno mudou para outro jogador, parando timer');
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                isTimerRunning = false;
+                const timerElement = document.getElementById('turn-timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
+
                 if (data.current_turn !== currentUsername && moveMode) {
                     cancelMoveMode();
                 }
@@ -1008,7 +1033,7 @@
                 }
             }
             else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
-            else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
+            /*else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
                 turnTimeLeft = 60;
                 const timerElement = document.getElementById('turn-timer');
                 if (timerElement && isTimerRunning) {
@@ -1017,6 +1042,10 @@
                     timerElement.style.borderColor = '#ffd700';
                     timerElement.style.animation = 'none';
                 }
+            }*/
+
+            if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started && !isTimerRunning) {
+                startTurnTimer();
             }
             
             requestGameState();
@@ -3425,7 +3454,13 @@
                 return;
             }
             
-            // Limpar timer anterior se existir
+            // Se o timer já estiver rodando, NÃO reiniciar
+            if (isTimerRunning && timerInterval) {
+                console.log('Timer já está rodando, não reiniciando');
+                return;
+            }
+            
+            // Limpar timer anterior se existir (apenas se realmente precisar)
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
@@ -3472,6 +3507,7 @@
                     clearInterval(timerInterval);
                     timerInterval = null;
                     isTimerRunning = false;
+                    isMyTurnFlag = false;
                     
                     // Verificar se ainda é o turno do jogador e jogo está ativo
                     if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
@@ -3532,7 +3568,6 @@
                 }
             }, 1000);
         }
-
         function stopTurnTimer() {
             isTimerRunning = false;
             if (timerInterval) {
@@ -3545,15 +3580,28 @@
                 timerElement.style.display = 'none';
             }
         }
-
         function resetTurnTimer() {
             if (!gameStarted) return;
             
-            stopTurnTimer();
+            // Parar o timer atual
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            
+            // Iniciar novo timer se for o turno do jogador
             if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
                 startTurnTimer();
+            } else {
+                // Esconder timer se não for o turno do jogador
+                const timerElement = document.getElementById('turn-timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
             }
         }
+
         function cleanupTurnTimer() {
             if (timerInterval) {
                 clearInterval(timerInterval);
@@ -3565,6 +3613,32 @@
             if (timerElement) {
                 timerElement.remove();
             }
+        }
+        // |
+        function showTurnStartAlert(playerName) {
+            Swal.fire({
+                title: '🎲 SEU TURNO!',
+                html: `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">⚔️</div>
+                        <p style="color: #ffd700; font-size: 20px; margin-bottom: 10px;">${playerName}</p>
+                        <p style="color: #fff;">É a sua vez de jogar!</p>
+                        <p style="color: #888; font-size: 12px; margin-top: 10px;">Você tem 60 segundos para agir</p>
+                    </div>
+                `,
+                icon: 'success',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: '🎮 Jogar!',
+                timer: 5000,
+                timerProgressBar: true,
+                allowOutsideClick: false
+            }).then(() => {
+                // Focar no chat para facilitar ações
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) chatInput.focus();
+            });
         }
         // | Game Engine
         setInterval(requestGameState, 3000);

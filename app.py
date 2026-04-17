@@ -151,7 +151,7 @@ CARDS = {
         "name": "Elfo",
         "type": "creature",
         "life": 512, 
-        "attack": 512,
+        "attack": 50,
         "count": 50, 
         "description": "Não ataca outros elfos. Use para realizar oraculos."
     },
@@ -160,7 +160,7 @@ CARDS = {
         "name": "Zumbi",
         "type": "creature",
         "life": 100, 
-        "attack": 100,
+        "attack": 25,
         "count": 50, 
         "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
         "dies_daylight": True
@@ -169,8 +169,8 @@ CARDS = {
         "id": "centauro",
         "name": "Centauro", 
         "type": "creature", 
-        "life": 512, 
-        "attack": 150, 
+        "life": 600, 
+        "attack": 60, 
         "count": 50, 
         "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
     },
@@ -179,8 +179,8 @@ CARDS = {
         "id": "mago",
         "name": "Mago",
         "type": "creature", 
-        "life": 800, 
-        "attack": 250, 
+        "life": 600, 
+        "attack": 75, 
         "count": 50, 
         "description": "Use-o para invocar feitiços."
     },
@@ -216,6 +216,15 @@ CARDS = {
         "count": 1, 
         "description": "Torna o jogador imune a rituais."
     },
+    "ninfa": {
+        "id": "ninfa",
+        "name": "Ninfa",
+        "type": "creature",
+        "life": 512,
+        "attack": 30,
+        "count": 35,
+        "description": "Espiritos Magicos da Natureza"
+    }
     
     # - Mestres
     "rei_mago": {
@@ -323,6 +332,15 @@ CARDS = {
         "attack": 0, 
         "count": 1, 
         "description": "Assume o dano de uma carta do cemitério. Só pode ser equipado por Elfos, magos e vampiros."
+    },
+
+    "espada_ferro": {
+        "id": "espada_ferro",
+        "name": "Espada de Ferro",
+        "type": "weapon",
+        "attack": 256,
+        "count": 40,
+        "description": "Uma espada para seus soldados."
     },
     
     "blade_vampires": {
