@@ -205,7 +205,7 @@ CARDS = {
         "count": 1, 
         "description": "Rouba a vida do oponente para recuperar a vida de seu jogador.", 
         "dies_daylight": True
-    }
+    },
 
     "ninfa_lorem": {
         "id": "ninfa", 
