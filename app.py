@@ -1011,7 +1011,8 @@ class Game:
             'block': 1,
             'oracle': 1,
             'prophet_curse': 1,
-            'call_centaurs': 1
+            'call_centaurs': 1,
+            'toggle_time': 1
         }
 
         def get_player_runes_count(self, username):
@@ -2080,6 +2081,66 @@ class Game:
             for card in player[base_type]:
                 if card and card.get('id') == 'super_centauro':
                     if not card.get('call_centaurs_used', False):
+                        return True
+        return False
+
+    def toggle_time_of_day(self, username):
+        """Habilidade da Fênix: muda o ciclo de dia para noite ou vice-versa"""
+        if not self.can_act(username, 'toggle_time'):
+            return {'success': False, 'message': 'Você já usou esta habilidade neste turno'}
+        
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return {'success': False, 'message': 'Jogador inválido ou morto'}
+        
+        # Verificar se tem Fênix em campo (ataque ou defesa)
+        has_fenix = False
+        fenix_card = None
+        fenix_location = None
+        
+        for base_type in ['attack_bases', 'defense_bases']:
+            for i, card in enumerate(player[base_type]):
+                if card and card.get('id') == 'fenix':
+                    has_fenix = True
+                    fenix_card = card
+                    fenix_location = (base_type, i)
+                    break
+            if has_fenix:
+                break
+        
+        if not has_fenix:
+            return {'success': False, 'message': 'Você precisa ter uma Fênix em campo para usar esta habilidade'}
+        
+        # Mudar o ciclo
+        old_time = self.time_of_day
+        self.time_of_day = "night" if self.time_of_day == "day" else "day"
+        
+        # Aplicar efeitos do dia se mudou para dia
+        if self.time_of_day == "day":
+            self.apply_day_effects()
+        
+        self.use_action(username, 'toggle_time')
+        
+        broadcast_system_message(self.game_id, 
+            f'🔥 {username} usou a habilidade da Fênix! O ciclo mudou de {old_time.upper()} para {self.time_of_day.upper()}!')
+        
+        return {
+            'success': True,
+            'old_time': old_time,
+            'new_time': self.time_of_day,
+            'message': f'🌓 O ciclo mudou de {old_time.upper()} para {self.time_of_day.upper()}!'
+        }
+    def has_toggle_time_available(self, username):
+        """Verifica se o jogador pode usar a habilidade da Fênix de mudar ciclo"""
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return False
+        
+        # Verificar se o jogador tem Fênix em campo que ainda não usou a habilidade neste turno
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'fenix':
+                    if not card.get('toggle_time_used_turn', False):
                         return True
         return False
 
@@ -3501,6 +3562,11 @@ def handle_player_action(data):
             result = game.perform_oracle(player_name, params['target_id'])
             if result and result.get('success'):
                 log_message = f"👁️ {player_name} realizou um oráculo"
+
+        elif action == 'toggle_time':
+            result = game.toggle_time_of_day(player_name)
+            if result and result.get('success'):
+                log_message = f"🔥 {player_name} usou a habilidade da Fênix para mudar o ciclo para {result['new_time'].upper()}
 
         elif action == 'end_turn':
             game.next_turn()

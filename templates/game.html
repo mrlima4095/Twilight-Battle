@@ -248,6 +248,7 @@
                 <button class="action-btn spell" id="spell-btn">✨ Usar Feitiço</button>
                 <button class="action-btn ritual" id="ritual-btn">📿 Realizar Ritual</button>
                 <button class="action-btn" id="prophet-curse-btn" style="background: linear-gradient(45deg, #800080, #4b0082); color: white;">🔮 Profetizar</button>
+                <button class="action-btn fenix" id="toggle-time-btn" style="background: linear-gradient(45deg, #ff4444, #ff6600); color: white; display: none;">🔥 Mudar Ciclo</button>
                 <button class="action-btn centaur" id="call-centaurs-btn">🐎 Chamar Centauros</button>
                 <button class="action-btn equip" id="equip-mode-btn">🔰 Modo Equipar</button>
                 <button class="action-btn move" id="move-mode-btn">🔄 Modo Troca</button>
@@ -1247,6 +1248,7 @@
             let hasCentaur = false;
             let hasMage = hasSpellInHand();
             let hasRitual = hasRitualInHand();
+            let hasFenix = hasToggleTimeAvailable();
             let hasEquippable = hasEquippableItems();
             
             if (gameState && gameState.players[currentUsername]) {
@@ -1310,6 +1312,11 @@
                     btn.style.display = (isMyTurn && hasCentaur) ? 'inline-block' : 'none';
                     btn.disabled = !(isMyTurn && hasCentaur);
                 }
+                else if (btn.id === 'call-centaurs-btn') {
+                    btn.style.display = (isMyTurn && hasFenix) ? 'inline-block' : 'none';
+                    btn.disabled = !(isMyTurn && hasFenix);
+                }
+
                 else {
                     // Para os outros botões, manter comportamento normal
                     if (isMyTurn) {
@@ -2589,7 +2596,7 @@
             
             return false;
         }
-        function callCentauros() {
+        function callCentaurs() {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
@@ -2651,6 +2658,96 @@
                     socket.emit('player_action', {
                         game_id: gameId,
                         action: 'call_centaurs',
+                        params: {}
+                    });
+                }
+            });
+        }
+
+        function hasToggleTimeAvailable() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && card.id === 'fenix') {
+                    // Verificar se a habilidade já foi usada neste turno
+                    if (!card.toggle_time_used_turn) {
+                        console.log('Fênix encontrada com habilidade disponível:', card.name);
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function toggleTimeOfDay() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Fênix com habilidade disponível
+            if (!hasToggleTimeAvailable()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fênix não disponível',
+                    text: 'Você precisa ter uma Fênix em campo que ainda não usou esta habilidade neste turno',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Confirmar ação
+            Swal.fire({
+                title: '🔥 Mudar Ciclo?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Use a habilidade especial da <strong style="color: #ff6600;">Fênix</strong>!</p>
+                        <p>O ciclo de <strong style="color: #ffd700;">${gameState.time_of_day === 'day' ? 'DIA' : 'NOITE'}</strong> será alterado para <strong style="color: #ff6600;">${gameState.time_of_day === 'day' ? 'NOITE' : 'DIA'}</strong>.</p>
+                        <p style="color: #ffa500; margin-top: 15px;">⚠️ Se mudar para DIA, zumbis e vampiros sem proteção morrerão!</p>
+                        <p style="color: #888; margin-top: 10px;">⚡ Esta habilidade só pode ser usada uma vez por turno!</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🔥 Sim, mudar ciclo!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ff6600',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Mudando ciclo...',
+                        html: 'A Fênix está alterando o ciclo dia/noite',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    // Enviar ação
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'toggle_time',
                         params: {}
                     });
                 }
@@ -3121,7 +3218,9 @@
             });
         });
         // | (Encantar Centauros)
-        document.getElementById('call-centaurs-btn').addEventListener('click', callCentauros);
+        document.getElementById('call-centaurs-btn').addEventListener('click', callCentaurs);
+        // | (Mudar o Ciclo de Tempo)
+        document.getElementById('toggle-time-btn').addEventListener('click', toggleTimeOfDay);
         // | (Iniciar ou sair do jogo)
         document.getElementById('start-game-btn').addEventListener('click', function() {
             const btn = this;
