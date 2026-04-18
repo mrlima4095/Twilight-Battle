@@ -1989,7 +1989,7 @@ class Game:
                 if card and card.get('id') == 'centauro':
                     centaurs_collected.append({
                         'player': target_username,
-                        'base_type': 'attack',
+                        'base_type': 'attack_bases',  # CORRIGIDO: usar o nome completo
                         'index': i,
                         'card': card
                     })
@@ -1999,7 +1999,7 @@ class Game:
                 if card and card.get('id') == 'centauro':
                     centaurs_collected.append({
                         'player': target_username,
-                        'base_type': 'defense',
+                        'base_type': 'defense_bases',  # CORRIGIDO: usar o nome completo
                         'index': i,
                         'card': card
                     })
@@ -2012,7 +2012,7 @@ class Game:
             target_player = self.player_data[centaur_data['player']]
             card = centaur_data['card']
             
-            # Remover do campo
+            # Remover do campo - agora 'base_type' já é 'attack_bases' ou 'defense_bases'
             target_player[centaur_data['base_type']][centaur_data['index']] = None
             
             # Adicionar à mão do jogador que usou a habilidade
