@@ -2301,7 +2301,7 @@
         // ** Add Actions Logs
         function addLog(message) {
             gameState.combatLog.unshift(message);
-            if (gameState.combatLog.length > 200) gameState.combatLog.pop();
+            if (gameState.combatLog.length > 500) gameState.combatLog.pop();
             
             const log = document.getElementById('combat-log');
             log.innerHTML = gameState.combatLog.map(msg => `<div class="log-entry">${msg}</div>`).join('');
@@ -7102,7 +7102,6 @@
             const eventKey = `${eventType}_${JSON.stringify(eventData)}_${currentStageIdx}`;
             const now = Date.now();
             if (lastProcessedEvent === eventKey && (now - (gameState._lastEventTime || 0)) < 1000) {
-                console.log('⏱️ Evento duplicado ignorado:', eventKey);
                 return false;
             }
             lastProcessedEvent = eventKey;
