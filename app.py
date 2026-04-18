@@ -1720,29 +1720,61 @@ class Game:
         return None
     
     def apply_day_effects(self):
-        """Aplica efeitos do dia (zumbis e vampiros morrem)"""
         for username in self.players:
             player = self.player_data[username]
-            for i, card in enumerate(player['defense_bases']):
-                if card and card.get('dies_daylight'):
-                    has_protection = False
-                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                        has_protection = True
-                    
-                    if not has_protection:
-                        self.graveyard.append(card)
-                        player['defense_bases'][i] = None
             
-            for i, card in enumerate(player['attack_bases']):
-                if card and card.get('dies_daylight'):
-                    has_protection = False
-                    if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                        has_protection = True
+            # Processar cartas em defesa
+            for i, card in enumerate(player['defense_bases']):
+                if card:
+                    # Verificar se morre durante o dia (zumbis, vampiros)
+                    if card.get('dies_daylight'):
+                        has_protection = False
+                        if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
+                            has_protection = True
+                        
+                        if not has_protection:
+                            self.graveyard.append(card)
+                            player['defense_bases'][i] = None
+                            broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
                     
-                    if not has_protection:
-                        self.graveyard.append(card)
-                        player['attack_bases'][i] = None
-    
+                    # Criaturas noturnas tomam 10 de dano
+                    elif card.get('night_creature', False):
+                        card_life = card.get('life', 0)
+                        if card_life > 0:
+                            new_life = max(0, card_life - 10)
+                            card['life'] = new_life
+                            
+                            if new_life <= 0:
+                                self.graveyard.append(card)
+                                player['defense_bases'][i] = None
+                                broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
+            
+            # Processar cartas em ataque
+            for i, card in enumerate(player['attack_bases']):
+                if card:
+                    # Verificar se morre durante o dia (zumbis, vampiros)
+                    if card.get('dies_daylight'):
+                        has_protection = False
+                        if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
+                            has_protection = True
+                        
+                        if not has_protection:
+                            self.graveyard.append(card)
+                            player['attack_bases'][i] = None
+                            broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
+                    
+                    # Criaturas noturnas tomam 10 de dano
+                    elif card.get('night_creature', False):
+                        card_life = card.get('life', 0)
+                        if card_life > 0:
+                            new_life = max(0, card_life - 10)
+                            card['life'] = new_life
+                            
+                            if new_life <= 0:
+                                self.graveyard.append(card)
+                                player['attack_bases'][i] = None
+                                broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
+
     def swap_positions(self, username, pos1_type, pos1_index, pos2_type, pos2_index):
         """Troca duas cartas de posição"""
         if not self.can_act(username, 'swap'):
