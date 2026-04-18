@@ -1275,12 +1275,12 @@
             
             console.log('Atualizando botões - isMyTurn:', isMyTurn);
             
-            let hasProphet = false;
             let hasWitch = false;
+            let hasFenix = false;
+            let hasProphet = false;
             let hasCentaur = false;
             let hasMage = hasSpellInHand();
             let hasRitual = hasRitualInHand();
-            let hasFenix = hasToggleTimeAvailable();
             let hasEquippable = hasEquippableItems();
             
             if (gameState && gameState.players[currentUsername]) {
@@ -1292,8 +1292,9 @@
                 for (let card of allBases) {
                     if (card) {
                         if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) { hasProphet = true; }
-                        if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
-                        if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaur = true; }
+                        else if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
+                        else if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaur = true; }
+                        else if (card.id === 'fenix') { hasFenix = true; }
                     }
                 }
             }
