@@ -3566,7 +3566,7 @@ def handle_player_action(data):
         elif action == 'toggle_time':
             result = game.toggle_time_of_day(player_name)
             if result and result.get('success'):
-                log_message = f"🔥 {player_name} usou a habilidade da Fênix para mudar o ciclo para {result['new_time'].upper()}
+                log_message = f"🔥 {player_name} usou a habilidade da Fênix para mudar o ciclo para {result['new_time'].upper()}"
 
         elif action == 'end_turn':
             game.next_turn()
