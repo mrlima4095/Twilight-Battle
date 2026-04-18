@@ -1236,7 +1236,7 @@
             }
             
             // Verificar se o jogador atual está morto
-            if (gameState.current_player_dead) {
+            if (gameState.players[currentUsername] && gameState.players[currentUsername].dead) {
                 document.getElementById('player-area').style.display = 'none';
                 
                 let spectatorMsg = document.getElementById('spectator-message');
@@ -1262,7 +1262,6 @@
                 const spectatorMsg = document.getElementById('spectator-message');
                 if (spectatorMsg) { spectatorMsg.style.display = 'none'; }
                 
-                // IMPORTANTE: Chamar updatePlayerArea para renderizar as bases e mão
                 updatePlayerArea();
             }
             
