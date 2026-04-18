@@ -1,0 +1,404 @@
+<style>
+    #container {
+        width: 100%;
+        max-width: 1000px;
+        height: 100%;
+        background: #0C0C0C;
+        border-radius: 12px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid #2d2d2d;
+    }
+
+    #container::before {
+        content: "admin@world: ~";
+        display: block;
+        background: #1e1e1e;
+        color: #bbbbbb;
+        font-size: 12px;
+        font-family: monospace;
+        padding: 8px 16px;
+        border-bottom: 1px solid #2d2d2d;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+
+    /* Console output area */
+    #console {
+        flex: 1;
+        background: #0C0C0C;
+        color: #D4D4D4;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 16px;
+        overflow-y: auto;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        scroll-behavior: smooth;
+    }
+
+    /* Custom scrollbar - xterm style */
+    #console::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    #console::-webkit-scrollbar-track {
+        background: #1e1e1e;
+        border-radius: 5px;
+    }
+
+    #console::-webkit-scrollbar-thumb {
+        background: #4a4a4a;
+        border-radius: 5px;
+    }
+
+    #console::-webkit-scrollbar-thumb:hover {
+        background: #6e6e6e;
+    }
+
+    #console::-webkit-scrollbar-corner {
+        background: #1e1e1e;
+    }
+
+    /* Console lines styling */
+    #console div {
+        animation: fadeIn 0.15s ease-out;
+        border-left: 3px solid transparent;
+        padding-left: 8px;
+        transition: all 0.1s ease;
+    }
+
+    #console div:hover {
+        background: rgba(255, 255, 255, 0.03);
+        border-left-color: #4a9eff;
+    }
+
+    /* Input line styling */
+    #console div[style*="color: rgb(0, 170, 0)"] {
+        color: #4ade80 !important;
+    }
+
+    /* Output line styling */
+    #console div[style*="color: rgb(0, 0, 170)"] {
+        color: #60a5fa !important;
+    }
+
+    /* Error line styling */
+    #console div[style*="color: rgb(255, 0, 0)"] {
+        color: #f87171 !important;
+        border-left-color: #f87171;
+    }
+
+    /* Input area container */
+    #in {
+        background: #1a1a1a;
+        border-top: 1px solid #2d2d2d;
+        padding: 12px 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* Input field - xterm style */
+    #reading {
+        flex: 1;
+        background: #0C0C0C;
+        border: 1px solid #3a3a3a;
+        color: #D4D4D4;
+        font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+        font-size: 14px;
+        padding: 10px 14px;
+        border-radius: 6px;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    #reading:focus {
+        border-color: #4a9eff;
+        box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+    }
+
+    #reading::placeholder {
+        color: #5a5a5a;
+        font-style: italic;
+    }
+
+    /* Execute button - xterm style */
+    #run {
+        background: #2a2a2a;
+        border: 1px solid #4a4a4a;
+        color: #D4D4D4;
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        letter-spacing: 0.5px;
+    }
+
+    #run:hover {
+        background: #3a3a3a;
+        border-color: #6a6a6a;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    #run:active {
+        transform: translateY(0px);
+        background: #222222;
+    }
+
+    /* Prompt symbol - adds $ before input */
+    #in::before {
+        content: "$";
+        color: #4ade80;
+        font-family: monospace;
+        font-size: 14px;
+        font-weight: bold;
+        margin-right: -6px;
+    }
+
+    /* Animation for new lines */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Blinking cursor effect for input */
+    @keyframes blink {
+        0%, 50% {
+            opacity: 1;
+        }
+        51%, 100% {
+            opacity: 0;
+        }
+    }
+
+    /* Custom selection colors */
+    #console ::selection {
+        background: #264f78;
+        color: #ffffff;
+    }
+
+    #reading::selection {
+        background: #264f78;
+        color: #ffffff;
+    }
+
+    /* Styling for different message types */
+    #console div[style*="color: rgb(0, 170, 0)"]::before {
+        content: "❯ ";
+        color: #4ade80;
+        font-weight: bold;
+    }
+
+    #console div[style*="color: rgb(0, 0, 170)"]::before {
+        content: "→ ";
+        color: #60a5fa;
+        font-weight: bold;
+    }
+
+    #console div[style*="color: rgb(255, 0, 0)"]::before {
+        content: "✗ ";
+        color: #f87171;
+        font-weight: bold;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        #container {
+            height: 90vh;
+            border-radius: 8px;
+        }
+        
+        #console {
+            font-size: 12px;
+            padding: 12px;
+        }
+        
+        #reading {
+            font-size: 12px;
+            padding: 8px 12px;
+        }
+        
+        #run {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        #in {
+            padding: 10px 12px;
+            gap: 8px;
+        }
+    }
+
+    /* Add a subtle glow effect on focus */
+    #container:focus-within {
+        box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Style for empty console state */
+    #console:empty::after {
+        content: "Terminal ready. Type a JavaScript command and press Execute...";
+        color: #5a5a5a;
+        font-style: italic;
+        opacity: 0.7;
+    }
+
+    /* Make the console feel more like a real terminal */
+    #console div:last-child::after {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 14px;
+        background: #D4D4D4;
+        vertical-align: middle;
+        margin-left: 4px;
+        animation: blink 1s step-end infinite;
+        opacity: 0.5;
+    }
+
+    /* Remove the cursor effect when there's no focused input, but keep for active terminal feel */
+    #console:active div:last-child::after {
+        animation: blink 1s step-end infinite;
+    }
+</style>
+<div id="container">
+    <div id="console"></div>
+    <div id="in">
+        <input type="text" id="reading">
+        <button type="submit" id="run" onclick="
+            const cmd = document.getElementById('reading').value;
+            if (cmd) {
+                try {
+                    let text;
+                    const oldLog = console.log;
+                    const oldError = console.error;
+                    const oldWarn = console.warn;
+                    let outputBuffer = [];
+                    
+                    // Redireciona console.log para acumular mensagens
+                    console.log = function(...args) {
+                        outputBuffer.push(args.map(arg => {
+                            if (arg === null) return 'null';
+                            if (arg === undefined) return 'undefined';
+                            try {
+                                if (typeof arg === 'object') {
+                                    return JSON.stringify(arg);
+                                }
+                                return String(arg);
+                            } catch(e) {
+                                return '[Object]';
+                            }
+                        }).join(' '));
+                        oldLog.apply(console, args);
+                    };
+                    console.error = function(...args) {
+                        outputBuffer.push('ERROR: ' + args.map(arg => String(arg)).join(' '));
+                        oldError.apply(console, args);
+                    };
+                    console.warn = function(...args) {
+                        outputBuffer.push('WARN: ' + args.map(arg => String(arg)).join(' '));
+                        oldWarn.apply(console, args);
+                    };
+                    
+                    let result, evaluationError = null;
+
+                    try {
+                        result = eval(cmd);
+                    } catch (err) {
+                        evaluationError = err;
+                    }
+                    
+                    // Restaura console original
+                    console.log = oldLog;
+                    console.error = oldError;
+                    console.warn = oldWarn;
+                    
+                    // Prepara a saída para exibir no console div
+                    const consoleDiv = document.getElementById('console');
+                    
+                    // Função para adicionar linha de entrada/saída
+                    const addLine = (content, type) => {
+                        const line = document.createElement('div');
+                        line.style.fontFamily = 'monospace';
+                        line.style.whiteSpace = 'pre-wrap';
+                        line.style.margin = '2px 0';
+                        if (type === 'input') {
+                            line.style.color = '#0a0';
+                            line.style.fontWeight = 'bold';
+                        } else if (type === 'error') {
+                            line.style.color = '#f00';
+                        } else if (type === 'output') {
+                            line.style.color = '#00a';
+                        } else {
+                            line.style.color = '#000';
+                        }
+                        line.textContent = content;
+                        consoleDiv.appendChild(line);
+                        // Scroll automático para o final
+                        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+                    };
+                    
+                    // Mostra o comando executado (input)
+                    addLine(`> ${cmd}`, 'input');
+                    
+                    // Exibe mensagens de console.log capturadas
+                    if (outputBuffer.length > 0) {
+                        for (const msg of outputBuffer) {
+                            addLine(msg, 'output');
+                        }
+                    }
+                    
+                    // Se houve erro no eval, mostra erro
+                    if (evaluationError) {
+                        addLine(`Uncaught ${evaluationError.name}: ${evaluationError.message}`, 'error');
+                    } 
+                    // Se não houve erro e o resultado não é undefined, mostra resultado
+                    else if (result !== undefined) {
+                        let resultStr;
+                        try {
+                            if (result === null) resultStr = 'null';
+                            else if (result === undefined) resultStr = 'undefined';
+                            else if (typeof result === 'object') {
+                                resultStr = JSON.stringify(result);
+                            } else {
+                                resultStr = String(result);
+                            }
+                        } catch(e) {
+                            resultStr = '[Object]';
+                        }
+                        addLine(`← ${resultStr}`, 'output');
+                    }
+                    
+                    // Limpa o input e mantém foco
+                    document.getElementById('reading').value = '';
+                    document.getElementById('reading').focus();
+                    
+                } catch (error) {
+                    const consoleDiv = document.getElementById('console');
+                    const errLine = document.createElement('div');
+                    errLine.style.fontFamily = 'monospace';
+                    errLine.style.color = '#f00';
+                    errLine.textContent = `Erro crítico: ${error.message}`;
+                    consoleDiv.appendChild(errLine);
+                    document.getElementById('reading').value = '';
+                    document.getElementById('reading').focus();
+                }
+            }
+        ">Execute</button>
+    </div>
+</div>
