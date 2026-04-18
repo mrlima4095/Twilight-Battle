@@ -1056,6 +1056,38 @@
                 
                 requestGameState();
             }
+            else if (data.action === 'toggle_time' && data.result && data.result.success) {
+                const oldTime = data.result.old_time;
+                const newTime = data.result.new_time;
+                
+                // Animação de transição
+                const timeIndicator = document.getElementById('time-indicator');
+                if (timeIndicator) {
+                    timeIndicator.style.animation = 'fadeInOut 0.5s ease';
+                    setTimeout(() => {
+                        timeIndicator.style.animation = '';
+                    }, 500);
+                }
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔥 Fênix Ativada!',
+                    html: `
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🔥</div>
+                            <p style="color: #ff6600; font-size: 20px;">Ciclo Alterado!</p>
+                            <p style="color: #fff;">${oldTime.toUpperCase()} → ${newTime.toUpperCase()}</p>
+                            ${newTime === 'day' ? '<p style="color: #ffa500; margin-top: 10px;">☀️ Zumbis e vampiros sem proteção morreram!</p>' : '<p style="color: #4a90e2; margin-top: 10px;">🌙 A noite chegou...</p>'}
+                        </div>
+                    `,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ff6600',
+                    timer: 3000
+                });
+                
+                requestGameState();
+            }
             else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
             /*else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
                 turnTimeLeft = 60;
@@ -2684,7 +2716,6 @@
             
             return false;
         }
-
         function toggleTimeOfDay() {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
@@ -2732,19 +2763,6 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Mostrar loading
-                    Swal.fire({
-                        title: 'Mudando ciclo...',
-                        html: 'A Fênix está alterando o ciclo dia/noite',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        },
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                    
-                    // Enviar ação
                     socket.emit('player_action', {
                         game_id: gameId,
                         action: 'toggle_time',
