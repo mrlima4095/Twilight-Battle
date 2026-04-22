@@ -1086,8 +1086,8 @@
     
             // Station
             crafting_table: { name: 'Bancada de Trabalho', type: 'station', stationType: 'crafting_table', consumable: false, description: 'Permite criar itens básicos.' },
-            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', value: 150, description: 'Para reparar e melhorar equipamentos.', consumable: false },
-            alchemy_table: { name: 'Mesa de Alquimia', type: 'station', stationType: 'alchemy', value: 200, description: 'Permite criar poções e elixires.', consumable: false },
+            anvil: { name: 'Bigorna', type: 'station', stationType: 'anvil', description: 'Para reparar e melhorar equipamentos.', consumable: false },
+            alchemy_table: { name: 'Mesa de Alquimia', type: 'station', stationType: 'alchemy', description: 'Permite criar poções e elixires.', consumable: false },
             furnace: { name: 'Fornalha', type: 'station', stationType: 'furnace', consumable: false, description: 'Uma fornalha para assar alimentos e fundir minérios.' },
             loom: { name: 'Tear', type: 'station', stationType: 'loom', description: 'Para tecer tecidos e roupas.', consumable: false },
 
@@ -1125,8 +1125,8 @@
                 root: true
             },
 
-            bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.', value: 5 },
-            water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, value: 8, givesEmptyBottle: true },
+            bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.' },
+            water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, givesEmptyBottle: true },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
             sleeping_bag: { 
@@ -1142,9 +1142,9 @@
             boots: { name: 'Botas', type: 'armor', slot: 'boots', attack: 0, defense: 0, durability: 50, maxDurability: 50, description: 'Calçado para seus pés' }
         };
         const FUEL_ITEMS = {
-            wood: { name: 'Madeira', burnTime: 8, value: 5 },
-            paper: { name: 'Papel', burnTime: 4, value: 1 },
-            coal: { name: 'Carvão', burnTime: 20, value: 15 }
+            wood: { name: 'Madeira', burnTime: 8 },
+            paper: { name: 'Papel', burnTime: 4 },
+            coal: { name: 'Carvão', burnTime: 20 }
         };
 
         const CRAFTING_RECIPES = {
@@ -1434,22 +1434,8 @@
                     "*Cabeça balançando* Explorar... o mundo... Zzz... sonhos...",
                     "*Murmurando* Pegue a trilha norte... não, a sul... Zzz..."
                 ],
-                sleepingMessage: function() {
-                    const messages = [
-                        "Pedro está tirando uma soneca. O velho explorador precisa descansar. Volte durante o dia!",
-                        "O Cartógrafo está dormindo. A idade pesa, coitado... Volte mais tarde!",
-                        "Pedro cochila sobre uma pilha de mapas. Melhor não acordar o velho."
-                    ];
-                    return messages[Math.floor(Math.random() * messages.length)];
-                },
-                absentMessage: function() {
-                    const messages = [
-                        "Pedro deve estar na taberna contando suas histórias de juventude... Volte mais tarde!",
-                        "O Cartógrafo saiu para dar uma volta. Disse que precisava sentir o cheiro da estrada de novo.",
-                        "Pedro não está na oficina. Provavelmente foi comprar pergaminhos no mercado."
-                    ];
-                    return messages[Math.floor(Math.random() * messages.length)];
-                },
+                absentMessage: "Pedro deve estar na taberna contando suas histórias de juventude... Volte mais tarde!",
+                sleepingMessage: "Pedro está tirando uma soneca. O velho explorador precisa descansar. Volte durante o dia!",
                 topics: [
                     { 
                         name: '🗺️ Como era ser explorador?', 
@@ -6297,15 +6283,9 @@
             // Construir botões de ação
             const actionButtons = [];
             
-            if (npc.shopItems && npc.shopItems.length > 0) {
-                actionButtons.push({ text: '🛒 Comprar', value: 'shop', color: '#4CAF50' });
-            }
-            if (npc.canSellToNPC) {
-                actionButtons.push({ text: '💰 Vender', value: 'sell', color: '#ffa500' });
-            }
-            if (npc.topics && npc.topics.length > 0) {
-                actionButtons.push({ text: '💬 Conversar', value: 'talk', color: '#9370db' });
-            }
+            if (npc.shopItems && npc.shopItems.length > 0) { actionButtons.push({ text: '🛒 Comprar', value: 'shop', color: '#4CAF50' }); }
+            if (npc.canSellToNPC) { actionButtons.push({ text: '💰 Vender', value: 'sell', color: '#ffa500' }); }
+            if (npc.topics && npc.topics.length > 0) { actionButtons.push({ text: '💬 Conversar', value: 'talk', color: '#9370db' }); }
             actionButtons.push({ text: '👋 Apenas cumprimentar', value: 'greet', color: '#4a90e2' });
             
             // Se não houver botões, mostrar apenas mensagem
