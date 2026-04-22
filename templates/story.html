@@ -221,7 +221,69 @@
             .shop-item, .sell-item { flex-direction: column; text-align: center; }
         }
 
-/* Mill UI - Mobile Fix */
+/* Botão Voltar nos sub-modais */
+.submodal-back-btn {
+    margin-top: 20px;
+    padding: 12px;
+    background: #4a90e2;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    font-size: 14px;
+}
+.submodal-back-btn:hover {
+    background: #357abd;
+    transform: translateY(-2px);
+}
+
+/* Modal de despedida */
+.farewell-modal-content {
+    max-width: 450px;
+    text-align: center;
+}
+.farewell-avatar {
+    font-size: 64px;
+    background: rgba(255, 215, 0, 0.1);
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+}
+.farewell-message {
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+    color: #fff;
+    line-height: 1.6;
+    font-style: italic;
+    border-left: 4px solid #ffd700;
+}
+.farewell-close-btn {
+    padding: 12px 30px;
+    background: linear-gradient(45deg, #4a90e2, #357abd);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+}
+.farewell-close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(74, 144, 226, 0.4);
+}
+
+        /* Mill UI - Mobile Fix */
 .mill-container {
     max-width: 100%;
     overflow-x: hidden;
@@ -530,6 +592,15 @@
             <div class="npc-greeting" id="npc-greeting">...</div>
             <div class="npc-actions" id="npc-actions"></div>
             <button class="npc-close-btn" onclick="closeNPCModal()">🔙 Voltar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Despedida -->
+    <div class="modal" id="farewell-modal">
+        <div class="modal-content farewell-modal-content">
+            <div class="farewell-avatar" id="farewell-avatar">👋</div>
+            <div class="farewell-message" id="farewell-message">...</div>
+            <button class="farewell-close-btn" onclick="closeFarewellModal()">🔙 Fechar</button>
         </div>
     </div>
 
@@ -6881,12 +6952,11 @@ async function openNPCDialog(npcId) {
     }
     
     // Botão Apenas Cumprimentar
-    const greetBtn = createNPCActionButton('👋', 'Cumprimentar', 'Apenas uma saudação rápida', '#4a90e2');
+    const greetBtn = createNPCActionButton('👋', 'Cumprimentar', 'Saudar e se despedir do NPC', '#4a90e2');
     greetBtn.onclick = () => {
-        const randomGreeting = getRandomGreeting(npc);
-        updateNPCMessage(randomGreeting);
-        if (npc.onGreet) npc.onGreet();
-        addLog(`👋 Você cumprimentou ${npc.name}.`);
+        closeNPCModal();  // Fecha o modal principal
+        showFarewellModal(npc);  // Mostra modal de despedida
+        addLog(`👋 Você se despediu de ${npc.name}.`);
     };
     actionsContainer.appendChild(greetBtn);
     
@@ -6894,9 +6964,7 @@ async function openNPCDialog(npcId) {
     document.getElementById('npc-modal').classList.add('active');
 }
 
-async function talkToNPC(npcId) {
-    openNPCDialog(npcId);
-}
+async function talkToNPC(npcId) { openNPCDialog(npcId); }
 
 function createNPCActionButton(icon, text, description, color) {
     const btn = document.createElement('button');
@@ -6972,6 +7040,16 @@ async function openShopSubmodal(npcId) {
         container.appendChild(itemDiv);
     }
     
+    // Adicionar botão Voltar
+    const backBtn = document.createElement('button');
+    backBtn.className = 'submodal-back-btn';
+    backBtn.innerHTML = '🔙 Voltar';
+    backBtn.onclick = () => {
+        document.getElementById('shop-submodal').classList.remove('active');
+        openNPCDialog(npcId);
+    };
+    container.appendChild(backBtn);
+    
     document.getElementById('shop-submodal').classList.add('active');
 }
 
@@ -7033,6 +7111,16 @@ async function openSellSubmodal(npcId) {
         container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Você não tem nada que eu possa comprar no momento...</p>';
     }
     
+    // Adicionar botão Voltar
+    const backBtn = document.createElement('button');
+    backBtn.className = 'submodal-back-btn';
+    backBtn.innerHTML = '🔙 Voltar';
+    backBtn.onclick = () => {
+        document.getElementById('sell-submodal').classList.remove('active');
+        openNPCDialog(npcId);
+    };
+    container.appendChild(backBtn);
+    
     document.getElementById('sell-submodal').classList.add('active');
 }
 
@@ -7068,6 +7156,8 @@ async function openTalkSubmodal(npcId) {
     const messageContainer = document.getElementById('talk-message-container');
     
     document.getElementById('talk-title').innerHTML = `💬 Conversar com ${npc.name}`;
+    container.innerHTML = '';
+    messageContainer.innerHTML = '';
     
     if (topics.length === 0) {
         const defaultTopics = [
@@ -7081,8 +7171,60 @@ async function openTalkSubmodal(npcId) {
         renderTalkTopics(topics, npc);
     }
     
+    // Adicionar botão Voltar
+    const backBtn = document.createElement('button');
+    backBtn.className = 'submodal-back-btn';
+    backBtn.innerHTML = '🔙 Voltar';
+    backBtn.onclick = () => {
+        document.getElementById('talk-submodal').classList.remove('active');
+        openNPCDialog(npcId);
+    };
+    document.getElementById('talk-topics-container').appendChild(backBtn);
+    
     document.getElementById('talk-submodal').classList.add('active');
 }
+
+// Modal de Despedida
+function showFarewellModal(npc) {
+    const farewellMessages = [
+        `"Volte sempre, ${gameState.character.name}! Foi um prazer conversar com você."`,
+        `"Até a próxima, aventureiro! Que os ventos guiem seus passos."`,
+        `"Cuide-se por aí, ${gameState.character.name}! E não se esqueça de mim!"`,
+        `"Que sua jornada seja repleta de glórias! Até breve!"`,
+        `"Foi bom conversar com você. Volte quando quiser!"`,
+        `"${gameState.character.name}, foi um prazer! Até logo!"`
+    ];
+    
+    const farewellsComerciais = [
+        `"Volte sempre à minha loja, ${gameState.character.name}! Tenho sempre novidades!"`,
+        `"Negócio fechado! Apareça novamente quando precisar."`,
+        `"Obrigado pela preferência, ${gameState.character.name}! Até a próxima compra!"`,
+        `"Sempre um prazer fazer negócios com você. Volte sempre!"`
+    ];
+    
+    // Escolher mensagem aleatória
+    const isShopkeeper = npc.shopItems && npc.shopItems.length > 0;
+    const messagePool = isShopkeeper ? farewellsComerciais : farewellMessages;
+    const farewellMessage = messagePool[Math.floor(Math.random() * messagePool.length)];
+    
+    document.getElementById('farewell-avatar').textContent = npc.emoji;
+    document.getElementById('farewell-message').innerHTML = `"${farewellMessage}"`;
+    document.getElementById('farewell-modal').classList.add('active');
+    
+    if (npc.onFarewell) npc.onFarewell();
+}
+
+function closeFarewellModal() {
+    document.getElementById('farewell-modal').classList.remove('active');
+    closeNPCModal();
+}
+
+function closeSubmodal() {
+    document.getElementById('shop-submodal').classList.remove('active');
+    document.getElementById('sell-submodal').classList.remove('active');
+    document.getElementById('talk-submodal').classList.remove('active');
+}
+
 
 function renderTalkTopics(topics, npc) {
     const container = document.getElementById('talk-topics-container');
