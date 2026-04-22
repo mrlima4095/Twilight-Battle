@@ -6894,6 +6894,10 @@ async function openNPCDialog(npcId) {
     document.getElementById('npc-modal').classList.add('active');
 }
 
+async function talkToNPC(npcId) {
+    openNPCDialog(npcId);
+}
+
 function createNPCActionButton(icon, text, description, color) {
     const btn = document.createElement('button');
     btn.className = 'npc-action-btn';
