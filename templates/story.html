@@ -1577,10 +1577,10 @@
                 locationName: 'oficina do cartógrafo',
                 greeting: function() {
                     const greetings = [
-                        `"Ah, ${gameState.character.name}! Que bom ver um${gameState.character.gender === 'masculino' ? ' rapaz' : 'a moça'} jovem com sede de aventura! Nos meus tempos de explorador, eu também tinha esse brilho nos olhos..."`,
-                        `"Entre, entre! Deixa eu te mostrar meus mapas. Tenho histórias para cada centímetro desenhado neles!"`,
-                        `"Ora, ora! ${gameState.character.name}! Sente aí que o velho Pedro vai te contar umas histórias das antigas..."`,
-                        `"Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} à minha humilde oficina! Aqui guardo as memórias de uma vida inteira de explorações."`
+                        `Ah, ${gameState.character.name}! Que bom ver um${gameState.character.gender === 'masculino' ? ' rapaz' : 'a moça'} jovem com sede de aventura! Nos meus tempos de explorador, eu também tinha esse brilho nos olhos...`,
+                        `Entre, entre! Deixa eu te mostrar meus mapas. Tenho histórias para cada centímetro desenhado neles!`,
+                        `Ora, ora! ${gameState.character.name}! Sente aí que o velho Pedro vai te contar umas histórias das antigas...`,
+                        `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} à minha humilde oficina! Aqui guardo as memórias de uma vida inteira de explorações.`
                     ];
                     return greetings[Math.floor(Math.random() * greetings.length)];
                 },
@@ -1607,9 +1607,9 @@
                         name: '🗺️ Como era ser explorador?', 
                         message: function() {
                             const stories = [
-                                `"Ah, meu jovem... Eu já atravessei florestas que ninguém ousava pisar, cruzei rios que nem tinham nome nos mapas, e dormi sob as estrelas mais lindas que estes olhos já viram. Cada cicatriz tem uma história, cada ruga é uma lembrança."`,
-                                `"Quando eu tinha sua idade, ${gameState.character.name}, eu parti com uma mochila nas costas e um sonho no peito. Passei meses sem ver um vilarejo, vivendo da caça e da generosidade da natureza. Foram os melhores anos da minha vida!"`,
-                                `"Já escalei a Montanha do Vento Uivante, desci nas cavernas de Cristal e até entrei nas Ruínas Antigas antes de ficarem perigosas demais. Cada pedra daquele lugar tem uma história para contar."`
+                                `Ah, meu jovem... Eu já atravessei florestas que ninguém ousava pisar, cruzei rios que nem tinham nome nos mapas, e dormi sob as estrelas mais lindas que estes olhos já viram. Cada cicatriz tem uma história, cada ruga é uma lembrança.`,
+                                `Quando eu tinha sua idade, ${gameState.character.name}, eu parti com uma mochila nas costas e um sonho no peito. Passei meses sem ver um vilarejo, vivendo da caça e da generosidade da natureza. Foram os melhores anos da minha vida!`,
+                                `Já escalei a Montanha do Vento Uivante, desci nas cavernas de Cristal e até entrei nas Ruínas Antigas antes de ficarem perigosas demais. Cada pedra daquele lugar tem uma história para contar.`
                             ];
                             return stories[Math.floor(Math.random() * stories.length)];
                         }
@@ -1618,9 +1618,9 @@
                         name: '📜 Histórias de tesouros', 
                         message: function() {
                             const treasureStories = [
-                                `"Dizem que nas profundezas da Floresta Sombria existe um tesouro deixado por um antigo rei. Eu mesmo já vi uma caverna escondida atrás de uma cachoeira... Mas os monstros de lá são grandes demais para um velho como eu."`,
-                                `"Certa vez, encontrei um baú enterrado sob as raízes de uma árvore milenar. Não tinha ouro, mas dentro havia um diário de bordo de um navegador antigo. As anotações dele falavam de terras além-mar que nunca vi em nenhum mapa oficial!"`,
-                                `"O maior tesouro que encontrei? Uma pedra azul brilhante no fundo do Lago Sagrado. Ela me guiou para casa numa noite de tempestade. Desde então, carrego ela comigo... Está guardada aqui na oficina."`
+                                `Dizem que nas profundezas da Floresta Sombria existe um tesouro deixado por um antigo rei. Eu mesmo já vi uma caverna escondida atrás de uma cachoeira... Mas os monstros de lá são grandes demais para um velho como eu.`,
+                                `Certa vez, encontrei um baú enterrado sob as raízes de uma árvore milenar. Não tinha ouro, mas dentro havia um diário de bordo de um navegador antigo. As anotações dele falavam de terras além-mar que nunca vi em nenhum mapa oficial!`,
+                                `O maior tesouro que encontrei? Uma pedra azul brilhante no fundo do Lago Sagrado. Ela me guiou para casa numa noite de tempestade. Desde então, carrego ela comigo... Está guardada aqui na oficina.`
                             ];
                             return treasureStories[Math.floor(Math.random() * treasureStories.length)];
                         }
@@ -1629,9 +1629,9 @@
                         name: '🗺️ Dicas de viagem', 
                         message: function() {
                             const tips = [
-                                `"Uma dica de quem já viveu muito: sempre leve um mapa, mesmo que ache que conhece o caminho. As florestas mudam, os rios secam, mas um bom mapa é como um amigo fiel."`,
-                                `"Nunca viaje sem água e comida extra. Eu já passei fome nas montanhas uma vez... Não recomendo a experiência."`,
-                                `"Confie no seu instinto, ${gameState.character.name}. Se o lugar parece perigoso, provavelmente é. Não há vergonha em recuar e planejar melhor."`
+                                `Uma dica de quem já viveu muito: sempre leve um mapa, mesmo que ache que conhece o caminho. As florestas mudam, os rios secam, mas um bom mapa é como um amigo fiel.`,
+                                `Nunca viaje sem água e comida extra. Eu já passei fome nas montanhas uma vez... Não recomendo a experiência.`,
+                                `Confie no seu instinto, ${gameState.character.name}. Se o lugar parece perigoso, provavelmente é. Não há vergonha em recuar e planejar melhor.`
                             ];
                             return tips[Math.floor(Math.random() * tips.length)];
                         }
@@ -1640,19 +1640,17 @@
                         name: '💬 Como está, Pedro?', 
                         message: function() {
                             const status = [
-                                `"Ah, estou bem, ${gameState.character.name}. As pernas já não são as mesmas, mas a memória continua afiada. E a vista? Posso te mostrar cada detalhe desse mapa de olhos fechados!"`,
-                                `"Estou tranquilo, meu jovem. Vivo das vendas dos meus mapas e das histórias que conto na taverna. Não é uma vida de rei, mas é uma vida honesta."`,
-                                `"Hoje estou animado! Terminei um mapa novo da região leste. Tem uns detalhes que poucos exploradores notaram. Quer dar uma olhada?"`
+                                `Ah, estou bem, ${gameState.character.name}. As pernas já não são as mesmas, mas a memória continua afiada. E a vista? Posso te mostrar cada detalhe desse mapa de olhos fechados!`,
+                                `Estou tranquilo, meu jovem. Vivo das vendas dos meus mapas e das histórias que conto na taverna. Não é uma vida de rei, mas é uma vida honesta.`,
+                                `Hoje estou animado! Terminei um mapa novo da região leste. Tem uns detalhes que poucos exploradores notaram. Quer dar uma olhada?`
                             ];
                             return status[Math.floor(Math.random() * status.length)];
                         }
                     }
                 ],
-                shopItems: [
-                    { id: 'map', price: 3, quantity: -1 }  // Vende mapas por 3 moedas (estoque infinito)
-                ],
+                shopItems: [ { id: 'map', price: 3, quantity: -1 } ],
                 buyPriceMultiplier: 1.0,
-                canSellToNPC: false,  // Não compra itens do jogador
+                canSellToNPC: false,
                 sellPriceMultiplier: 0.4,
                 shopkeeperName: 'Pedro, o Cartógrafo',
                 dayBehavior: { 
@@ -6296,34 +6294,10 @@
             }
             
         }
-        function isNPCAvailable(npcId) {
-            const state = gameState.bots[npcId];
-            if (!state) return false;
-            
-            const isDay = gameState.timeOfDay === 'day';
-            
-            // Durante o dia: disponível se estiver em casa
-            if (isDay) {
-                return state.isHome;
-            }
-            
-            // Durante a noite: disponível apenas se estiver em casa E acordado
-            return state.isHome && !state.isSleeping;
-        }
-        function getNPCAbsentMessage(npcId) {
-            const messages = {
-                carpenter: '🔨 Deve estar na oficina ou buscando madeira.',
-                artisan: '🎨 Saiu para buscar inspiração na natureza.',
-                weaver: '🧵 Foi ao mercado comprar novos tecidos.',
-                farmerMiguel: '🌾 Está trabalhando nos campos.',
-                farmerAna: '🍞 Foi ao moinho buscar farinha.',
-                captain: '🗡️ Deve estar em patrulha nas muralhas.',
-                king: '👑 Está em conselho com os nobres.'
-            };
-            return messages[npcId] || 'Volte mais tarde!';
-        }
 
         let npcUpdateInterval = null;
+        let currentNPCId = null;
+        let currentNPC = null;
 
         function startNPCUpdateTimer() {
             if (npcUpdateInterval) {
@@ -6338,402 +6312,248 @@
             
         }
 
-        function getNPCStateForDialog(npcId) {
-            const state = gameState.bots[npcId];
-            if (!state) return null;
-            
-            return {
-                isHome: state.isHome,
-                isSleeping: state.isSleeping,
-                isDay: gameState.timeOfDay === 'day',
-                isAvailable: isNPCAvailable(npcId)
-            };
-        }
-
         async function talkToNPC(npcId) {
-            if (gameState.isDead) return { success: false, reason: 'dead' };
+            if (gameState.isDead) return;
             
-            const npc = NPC_DEFINITIONS[npcId];
-            if (!npc) {
-                console.error(`NPC ${npcId} não encontrado!`);
-                return { success: false, reason: 'not_found' };
-            }
-            
-            // Garantir que o estado do NPC existe
-            if (!gameState.bots) gameState.bots = {};
-            if (!gameState.bots[npcId]) {
-                gameState.bots[npcId] = { ...npc.baseState, lastUpdate: Date.now() };
-            }
-            
-            const isDay = gameState.timeOfDay === 'day';
-            const npcState = gameState.bots[npcId];
-            
-            // Atualizar estado baseado no comportamento se necessário
-            if (!npcState.lastUpdate || (Date.now() - npcState.lastUpdate) > 60000) {
-                updateSingleNPCState(npcId);
-            }
-            
-            // ========== VERIFICAÇÕES DE DISPONIBILIDADE ==========
-            
-            // CASO 1: Noite e NPC está dormindo
-            if (!isDay && npcState.isSleeping) {
-                await Swal.fire({
-                    title: `🌙 ${npc.name} - Dormindo`,
-                    text: npc.sleepingMessage,
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} estava dormindo`);
-                if (npc.onSleep) npc.onSleep();
-                updateUI();
-                return { success: false, reason: 'sleeping' };
-            }
-            
-            // CASO 2: Noite e NPC está em casa mas acordado (raro)
-            if (!isDay && npcState.isHome && !npcState.isSleeping) {
-                const randomLine = npc.sleepyMessages[Math.floor(Math.random() * npc.sleepyMessages.length)];
-                
-                await Swal.fire({
-                    title: `${npc.sleepyEmoji || npc.emoji} ${npc.name}`,
-                    html: `<div style="text-align: left;">
-                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                            <div style="font-size: 50px;">${npc.sleepyEmoji || npc.emoji}</div>
-                            <div style="font-weight: bold; font-size: 20px; color: #ffd700;">${npc.name}</div>
-                        </div>
-                        <p style="font-size: 16px; line-height: 1.5; font-style: italic;">${randomLine}</p>
-                    </div>`,
-                    icon: 'info',
-                    confirmButtonText: 'Voltar depois',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                
-                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} não pode conversar, volte durante o dia!`);
-                updateUI();
-                return { success: false, reason: 'sleepy' };
-            }
-            
-            // CASO 3: NPC não está em casa (dia ou noite)
-            if (!npcState.isHome) {
-                await Swal.fire({
-                    title: npc.absentMessage,
-                    text: `${npc.name} não está em casa, volte mais tarde!`,
-                    icon: 'info',
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                addLog(`🏠 Você foi na ${npc.locationName} - ${npc.name} não estava em casa`);
-                if (npc.onAbsent) npc.onAbsent();
-                updateUI();
-                return { success: false, reason: 'absent' };
-            }
-            
-            // ========== NPC DISPONÍVEL - MOSTRAR DIÁLOGO ==========
-            
-            const greetingText = typeof npc.greeting === 'function' ? npc.greeting() : npc.greeting;
-            
-            // Construir botões de ação
-            const actionButtons = [];
-            
-            if (npc.shopItems && npc.shopItems.length > 0) { actionButtons.push({ text: '🛒 Comprar', value: 'shop', color: '#4CAF50' }); }
-            if (npc.canSellToNPC) { actionButtons.push({ text: '💰 Vender', value: 'sell', color: '#ffa500' }); }
-            if (npc.topics && npc.topics.length > 0) { actionButtons.push({ text: '💬 Conversar', value: 'talk', color: '#9370db' }); }
-            actionButtons.push({ text: '👋 Apenas cumprimentar', value: 'greet', color: '#4a90e2' });
-            
-            // Se não houver botões, mostrar apenas mensagem
-            if (actionButtons.length === 1 && actionButtons[0].value === 'greet') {
-                await Swal.fire({
-                    title: `${npc.emoji} ${npc.name}`,
-                    text: greetingText,
-                    icon: 'info',
-                    confirmButtonText: 'Voltar',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                updateUI();
-                return { success: true, action: 'none' };
-            }
-            
-            // Mostrar menu de interação
-            let result;
-            
-            if (actionButtons.length === 1) {
-                result = await Swal.fire({
-                    title: `${npc.emoji} ${npc.name}`,
-                    html: `<div style="text-align: left;"><p style="font-size: 16px; line-height: 1.5;">${greetingText}</p></div>`,
-                    icon: 'info',
-                    showConfirmButton: true,
-                    showCancelButton: false,
-                    confirmButtonText: actionButtons[0].text,
-                    confirmButtonColor: actionButtons[0].color,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                if (result.isConfirmed) {
-                    await processNPCAction(npcId, actionButtons[0].value);
-                }
-            } 
-            else if (actionButtons.length === 2) {
-                result = await Swal.fire({
-                    title: `${npc.emoji} ${npc.name}`,
-                    html: `<div style="text-align: left;"><p style="font-size: 16px; line-height: 1.5;">${greetingText}</p></div>`,
-                    icon: 'info',
-                    showConfirmButton: true,
-                    showDenyButton: true,
-                    confirmButtonText: actionButtons[0].text,
-                    denyButtonText: actionButtons[1].text,
-                    confirmButtonColor: actionButtons[0].color,
-                    denyButtonColor: actionButtons[1].color,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
-                
-                if (result.isConfirmed) {
-                    await processNPCAction(npcId, actionButtons[0].value);
-                } else if (result.isDenied) {
-                    await processNPCAction(npcId, actionButtons[1].value);
-                }
-            }
-            else {
-                const optionsHtml = actionButtons.map((btn, idx) => 
-                    `<button class="action-btn" onclick="window.selectNPCAction(${idx})" style="margin: 8px; width: calc(50% - 16px); background: ${btn.color};">${btn.text}</button>`
-                ).join('');
-                
-                await Swal.fire({
-                    title: `${npc.emoji} ${npc.name}`,
-                    html: `<div style="text-align: left;">
-                        <p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">${greetingText}</p>
-                        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 5px;">
-                            ${optionsHtml}
-                        </div>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    didOpen: () => {
-                        window.selectNPCAction = async (idx) => {
-                            Swal.close();
-                            await processNPCAction(npcId, actionButtons[idx].value);
-                            delete window.selectNPCAction;
-                        };
-                    },
-                    willClose: () => {
-                        if (window.selectNPCAction) delete window.selectNPCAction;
-                        if (npc.onFarewell) npc.onFarewell();
-                        addLog(`🏠 Você se despediu de ${npc.name}. ${npc.farewell}`);
-                    }
-                });
-            }
-            
-            updateUI();
-            trigger('npc_talk', { npcId: npcId });
-            return { success: true };
-        }
-        async function processNPCAction(npcId, action) {
             const npc = NPC_DEFINITIONS[npcId];
             if (!npc) return;
             
-            switch (action) {
-                case 'shop':
-                    await handleNPCShop(npcId);
-                    break;
-                case 'sell':
-                    await handleNPCSell(npcId);
-                    break;
-                case 'talk':
-                    await handleNPCTalk(npcId);
-                    break;
-                case 'greet':
-                    await handleNPCGreet(npcId);
-                    break;
+            currentNPCId = npcId;
+            currentNPC = npc;
+            
+            // Atualizar cabeçalho do modal
+            document.getElementById('npc-avatar').textContent = npc.emoji;
+            document.getElementById('npc-name').textContent = npc.name;
+            document.getElementById('npc-title').textContent = npc.title;
+            
+            // Mensagem de saudação (pode ser função ou string)
+            const greetingText = typeof npc.greeting === 'function' ? npc.greeting() : npc.greeting;
+            document.getElementById('npc-greeting').innerHTML = greetingText;
+            
+            // Construir botões de ação
+            const actionsContainer = document.getElementById('npc-actions');
+            actionsContainer.innerHTML = '';
+            
+            // Botão Comprar
+            if (npc.shopItems && npc.shopItems.length > 0) {
+                const buyBtn = createNPCActionButton('🛒', 'Comprar', 'Adquira itens da loja', '#4CAF50');
+                buyBtn.onclick = () => { closeNPCModal(); openShopSubmodal(npcId); };
+                actionsContainer.appendChild(buyBtn);
             }
+            
+            // Botão Vender
+            if (npc.canSellToNPC) {
+                const sellBtn = createNPCActionButton('💰', 'Vender', 'Venda itens do seu inventário', '#ffa500');
+                sellBtn.onclick = () => { closeNPCModal(); openSellSubmodal(npcId); };
+                actionsContainer.appendChild(sellBtn);
+            }
+            
+            // Botão Conversar
+            if (npc.topics && npc.topics.length > 0) {
+                const talkBtn = createNPCActionButton('💬', 'Conversar', 'Bate-papo sobre diversos assuntos', '#9370db');
+                talkBtn.onclick = () => { closeNPCModal(); openTalkSubmodal(npcId); };
+                actionsContainer.appendChild(talkBtn);
+            }
+            
+            // Botão Apenas Cumprimentar
+            const greetBtn = createNPCActionButton('👋', 'Cumprimentar', 'Saudar e se despedir do NPC', '#4a90e2');
+            greetBtn.onclick = () => {
+                closeNPCModal(); 
+                showFarewellModal(npc);
+                addLog(`👋 Você se despediu de ${npc.name}.`);
+            };
+            actionsContainer.appendChild(greetBtn);
+            
+            // Mostrar modal
+            document.getElementById('npc-modal').classList.add('active');
         }
-        async function handleNPCShop(npcId) {
+
+        function createNPCActionButton(icon, text, description, color) {
+            const btn = document.createElement('button');
+            btn.className = 'npc-action-btn';
+            btn.innerHTML = `
+                <span class="npc-action-icon">${icon}</span>
+                <div class="npc-action-text">
+                    <div>${text}</div>
+                    <div class="npc-action-desc">${description}</div>
+                </div>
+            `;
+            btn.style.borderLeft = `4px solid ${color}`;
+            return btn;
+        }
+        function getRandomGreeting(npc) {
+            const greetings = [
+                `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
+                `"Saudações, aventureiro! Que os deuses te protejam."`,
+                `"Bom dia! Está um belo dia para explorar, não acha?"`,
+                `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
+                `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
+                `"Que bom ver você! Como posso ajudar hoje?"`,
+                `"Olá, viajante! Tem trazido boas notícias?"`
+            ];
+            return greetings[Math.floor(Math.random() * greetings.length)];
+        }
+        function updateNPCMessage(message) {
+            const greetingDiv = document.getElementById('npc-greeting');
+            greetingDiv.innerHTML = `"${message}"`;
+            // Voltar ao estado normal após 2.5 segundos
+            setTimeout(() => {
+                if (currentNPC) {
+                    const originalGreeting = typeof currentNPC.greeting === 'function' ? currentNPC.greeting() : currentNPC.greeting;
+                    greetingDiv.innerHTML = `${originalGreeting}`;
+                }
+            }, 2500);
+        }
+        function closeNPCModal() {
+            document.getElementById('npc-modal').classList.remove('active');
+            currentNPCId = null;
+            currentNPC = null;
+        }
+
+        async function openShopSubmodal(npcId) {
             const npc = NPC_DEFINITIONS[npcId];
-            if (!npc.shopItems || npc.shopItems.length === 0) {
-                addLog(`❌ ${npc.name} não tem nada para vender no momento.`);
-                return;
-            }
+            if (!npc || !npc.shopItems) return;
             
             const multiplier = npc.buyPriceMultiplier || 1.0;
+            const container = document.getElementById('shop-items-container');
+            container.innerHTML = '';
             
-            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            for (let i = 0; i < npc.shopItems.length; i++) {
-                const item = npc.shopItems[i];
+            document.getElementById('shop-title').innerHTML = `🛒 Loja de ${npc.shopkeeperName || npc.name}`;
+            
+            for (const item of npc.shopItems) {
                 const itemData = ITEMS[item.id];
                 if (!itemData) continue;
                 
                 const price = Math.floor(item.price * multiplier);
-                itemsHtml += `
-                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="flex: 1;">
-                            <strong style="color: #ffd700;">${itemData.name}</strong>
-                            <div style="font-size: 12px; color: #888;">${itemData.description || ''}</div>
-                            <div style="font-size: 14px; color: #4CAF50;">💰 ${price} moedas</div>
-                        </div>
-                        <button class="action-btn success" onclick="window.buyFromNPC('${npcId}', '${item.id}', ${price})" style="padding: 5px 15px;">
-                            🛒 Comprar
-                        </button>
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'shop-item';
+                itemDiv.innerHTML = `
+                    <div class="shop-item-info">
+                        <div class="shop-item-name">${itemData.name}</div>
+                        <div class="shop-item-desc">${itemData.description || ''}</div>
+                        <div class="shop-item-price">💰 ${price} moedas</div>
                     </div>
+                    <button class="action-btn success" onclick="buyFromNPCShop('${npcId}', '${item.id}', ${price})" style="padding: 8px 20px;">🛒 Comprar</button>
                 `;
+                container.appendChild(itemDiv);
             }
-            itemsHtml += '</div>';
             
-            window.buyFromNPC = (npcId, itemId, price) => {
-                if (gameState.character.gold >= price) {
-                    gameState.character.gold -= price;
-                    addItemToInventory(itemId);
-                    addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${NPC_DEFINITIONS[npcId].name}.`);
-                    updateUI();
-                    
-                    Swal.fire({
-                        title: '✅ Compra Realizada!',
-                        text: `Você adquiriu ${ITEMS[itemId].name}.`,
-                        icon: 'success',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                } else {
-                    Swal.fire({
-                        title: '❌ Moedas Insuficientes!',
-                        text: `Você precisa de ${price} moedas para comprar ${ITEMS[itemId].name}.`,
-                        icon: 'error',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                }
+            // Adicionar botão Voltar
+            const backBtn = document.createElement('button');
+            backBtn.className = 'submodal-back-btn';
+            backBtn.innerHTML = '🔙 Voltar';
+            backBtn.onclick = () => {
+                document.getElementById('shop-submodal').classList.remove('active');
+                openNPCDialog(npcId);
             };
+            container.appendChild(backBtn);
             
-            await Swal.fire({
-                title: `🛒 Loja de ${npc.shopkeeperName || npc.name}`,
-                html: itemsHtml,
-                icon: 'info',
-                confirmButtonText: '🔙 Voltar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                willClose: () => {
-                    delete window.buyFromNPC;
-                }
-            });
+            document.getElementById('shop-submodal').classList.add('active');
         }
-        async function handleNPCSell(npcId) {
+
+        window.buyFromNPCShop = function(npcId, itemId, price) {
+            if (gameState.character.gold >= price) {
+                gameState.character.gold -= price;
+                addItemToInventory(itemId);
+                addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${NPC_DEFINITIONS[npcId].name}.`);
+                updateUI();
+                
+                const tempMsg = document.getElementById('shop-title');
+                const originalText = tempMsg.innerHTML;
+                tempMsg.innerHTML = `✅ Comprou ${ITEMS[itemId].name}!`;
+                setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
+            } else {
+                const tempMsg = document.getElementById('shop-title');
+                const originalText = tempMsg.innerHTML;
+                tempMsg.innerHTML = `❌ Moedas insuficientes! (${price}💰)`;
+                setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
+            }
+        };
+
+        async function openSellSubmodal(npcId) {
             const npc = NPC_DEFINITIONS[npcId];
-            const multiplier = npc.sellPriceMultiplier || 0.5;
+            if (!npc) return;
             
-            const sellableItems = [];
+            const multiplier = npc.sellPriceMultiplier || 0.5;
+            const container = document.getElementById('sell-items-container');
+            container.innerHTML = '';
+            
+            document.getElementById('sell-title').innerHTML = `💰 Vender para ${npc.name}`;
+            
+            let hasItems = false;
             for (let i = 0; i < gameState.inventory.length; i++) {
                 const item = gameState.inventory[i];
                 if (item && item.consumable !== false) {
                     const basePrice = item.value || 10;
                     const sellPrice = Math.floor(basePrice * multiplier);
                     if (sellPrice > 0) {
-                        sellableItems.push({ index: i, item, sellPrice });
+                        hasItems = true;
+                        const quantity = item.quantity || 1;
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'sell-item';
+                        itemDiv.innerHTML = `
+                            <div class="sell-item-info">
+                                <div class="sell-item-name">${item.name} ${quantity > 1 ? `x${quantity}` : ''}</div>
+                                <div class="sell-item-desc">${item.description || ''}</div>
+                                <div class="sell-item-price">💰 Vende por: ${sellPrice} moedas</div>
+                            </div>
+                            <button class="action-btn warning" onclick="sellToNPCFromModal(${i}, ${sellPrice}, '${npcId}')" style="padding: 8px 20px;">💰 Vender</button>
+                        `;
+                        container.appendChild(itemDiv);
                     }
                 }
             }
             
-            if (sellableItems.length === 0) {
-                await Swal.fire({
-                    title: `${npc.emoji} ${npc.name}`,
-                    text: "Você não tem nada que eu possa comprar no momento...",
-                    icon: 'info',
-                    confirmButtonText: 'Entendi',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                return;
+            if (!hasItems) {
+                container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Você não tem nada que eu possa comprar no momento...</p>';
             }
             
-            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
-            for (const { item, sellPrice, index } of sellableItems) {
-                const quantity = item.quantity || 1;
-                itemsHtml += `
-                    <div style="background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <div style="flex: 1;">
-                            <strong style="color: #ffd700;">${item.name}</strong>
-                            ${quantity > 1 ? `<span style="color: #888;"> x${quantity}</span>` : ''}
-                            <div style="font-size: 12px; color: #888;">${item.description || ''}</div>
-                            <div style="font-size: 14px; color: #ffa500;">💰 Vende por: ${sellPrice} moedas</div>
-                        </div>
-                        <button class="action-btn warning" onclick="window.sellToNPC(${index}, ${sellPrice}, '${npcId}')" style="padding: 5px 15px;">
-                            💰 Vender
-                        </button>
-                    </div>
-                `;
-            }
-            itemsHtml += '</div>';
-            
-            window.sellToNPC = (index, price, npcId) => {
-                const item = gameState.inventory[index];
-                if (item) {
-                    if (item.quantity > 1) {
-                        item.quantity--;
-                    } else {
-                        gameState.inventory[index] = null;
-                    }
-                    gameState.character.gold += price;
-                    addLog(`💰 Você vendeu ${item.name} para ${NPC_DEFINITIONS[npcId].name} por ${price} moedas.`);
-                    updateUI();
-                    
-                    Swal.fire({
-                        title: '✅ Venda Realizada!',
-                        text: `Você recebeu ${price} moedas por ${item.name}.`,
-                        icon: 'success',
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1500,
-                        background: '#1a1a2e',
-                        color: '#fff'
-                    });
-                    
-                    setTimeout(() => handleNPCSell(npcId), 500);
-                }
+            // Adicionar botão Voltar
+            const backBtn = document.createElement('button');
+            backBtn.className = 'submodal-back-btn';
+            backBtn.innerHTML = '🔙 Voltar';
+            backBtn.onclick = () => {
+                document.getElementById('sell-submodal').classList.remove('active');
+                openNPCDialog(npcId);
             };
+            container.appendChild(backBtn);
             
-            await Swal.fire({
-                title: `💰 Vender para ${npc.name}`,
-                html: itemsHtml,
-                icon: 'info',
-                confirmButtonText: '🔙 Voltar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                willClose: () => {
-                    delete window.sellToNPC;
-                }
-            });
+            document.getElementById('sell-submodal').classList.add('active');
         }
-        async function handleNPCTalk(npcId) {
+
+        window.sellToNPCFromModal = function(index, price, npcId) {
+            const item = gameState.inventory[index];
+            if (item) {
+                if (item.quantity > 1) {
+                    item.quantity--;
+                } else {
+                    gameState.inventory[index] = null;
+                }
+                gameState.character.gold += price;
+                addLog(`💰 Você vendeu ${item.name} para ${NPC_DEFINITIONS[npcId].name} por ${price} moedas.`);
+                updateUI();
+                
+                const tempMsg = document.getElementById('sell-title');
+                const originalText = tempMsg.innerHTML;
+                tempMsg.innerHTML = `✅ Vendeu ${item.name}!`;
+                setTimeout(() => {
+                    tempMsg.innerHTML = originalText;
+                    openSellSubmodal(npcId);
+                }, 800);
+            }
+        };
+
+        async function openTalkSubmodal(npcId) {
             const npc = NPC_DEFINITIONS[npcId];
+            if (!npc) return;
+            
             const topics = npc.topics || [];
+            const container = document.getElementById('talk-topics-container');
+            const messageContainer = document.getElementById('talk-message-container');
+            
+            document.getElementById('talk-title').innerHTML = `💬 Conversar com ${npc.name}`;
+            container.innerHTML = '';
+            messageContainer.innerHTML = '';
             
             if (topics.length === 0) {
                 const defaultTopics = [
@@ -6742,153 +6562,96 @@
                     { name: '📰 Novidades', message: '"Ouvi dizer que o rei está planejando um grande festival em breve."' },
                     { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
                 ];
-                
-                const topicHtml = defaultTopics.map((topic, idx) => 
-                    `<button class="action-btn" onclick="window.selectTopic(${idx})" style="margin: 8px; width: calc(50% - 16px);">${topic.name}</button>`
-                ).join('');
-                
-                await Swal.fire({
-                    title: `${npc.emoji} Conversar com ${npc.name}`,
-                    html: `<div style="text-align: left;">
-                        <p>${npc.name} olha para você e pergunta:</p>
-                        <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-                        <div style="display: flex; flex-wrap: wrap; justify-content: center;">${topicHtml}</div>
-                    </div>`,
-                    icon: 'info',
-                    showConfirmButton: false,
-                    showCancelButton: true,
-                    cancelButtonText: '🔙 Voltar',
-                    cancelButtonColor: '#ff4444',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    didOpen: () => {
-                        window.selectTopic = async (idx) => {
-                            Swal.close();
-                            await Swal.fire({
-                                title: `${npc.emoji} ${npc.name}`,
-                                text: defaultTopics[idx].message,
-                                icon: 'info',
-                                confirmButtonText: 'Continuar',
-                                background: '#1a1a2e',
-                                color: '#fff',
-                                confirmButtonColor: '#ffd700'
-                            });
-                            delete window.selectTopic;
-                        };
-                    },
-                    willClose: () => {
-                        if (window.selectTopic) delete window.selectTopic;
-                    }
-                });
-                return;
+                renderTalkTopics(defaultTopics, npc);
+            } else {
+                renderTalkTopics(topics, npc);
             }
             
-            const topicHtml = topics.map((topic, idx) => 
-                `<button class="action-btn" onclick="window.selectCustomTopic(${idx})" style="margin: 8px; width: calc(50% - 16px); background: #9370db;">${topic.name}</button>`
-            ).join('');
+            // Adicionar botão Voltar
+            const backBtn = document.createElement('button');
+            backBtn.className = 'submodal-back-btn';
+            backBtn.innerHTML = '🔙 Voltar';
+            backBtn.onclick = () => {
+                document.getElementById('talk-submodal').classList.remove('active');
+                openNPCDialog(npcId);
+            };
+            document.getElementById('talk-topics-container').appendChild(backBtn);
             
-            await Swal.fire({
-                title: `${npc.emoji} Conversar com ${npc.name}`,
-                html: `<div style="text-align: left;">
-                    <p>${npc.name} olha para você e pergunta:</p>
-                    <p style="font-style: italic; color: #ffd700; margin: 10px 0;">"Sobre o que gostaria de conversar?"</p>
-                    <div style="display: flex; flex-wrap: wrap; justify-content: center;">${topicHtml}</div>
-                </div>`,
-                icon: 'info',
-                showConfirmButton: false,
-                showCancelButton: true,
-                cancelButtonText: '🔙 Voltar',
-                cancelButtonColor: '#ff4444',
-                background: '#1a1a2e',
-                color: '#fff',
-                didOpen: () => {
-                    window.selectCustomTopic = async (idx) => {
-                        const topic = topics[idx];
-                        let message = typeof topic.message === 'function' ? topic.message() : topic.message;
-                        
-                        Swal.close();
-                        
-                        if (topic.action) {
-                            await topic.action();
-                        }
-                        
-                        await Swal.fire({
-                            title: `${npc.emoji} ${npc.name}`,
-                            text: message,
-                            icon: 'info',
-                            confirmButtonText: 'Continuar',
-                            background: '#1a1a2e',
-                            color: '#fff',
-                            confirmButtonColor: '#ffd700'
-                        });
-                        delete window.selectCustomTopic;
-                    };
-                },
-                willClose: () => {
-                    if (window.selectCustomTopic) delete window.selectCustomTopic;
-                }
-            });
+            document.getElementById('talk-submodal').classList.add('active');
         }
-        async function handleNPCGreet(npcId) {
-            const npc = NPC_DEFINITIONS[npcId];
-            
-            const greetings = [
-                `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
-                `"Saudações, aventureiro! Que os deuses te protejam."`,
-                `"Bom dia! Está um belo dia para explorar, não acha?"`,
-                `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
-                `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
-                `"Puxa, como você está forte hoje! Tem treinado muito?"`,
-                `"Que bom ver você! Como posso ajudar hoje?"`,
-                `"Olá, viajante! Tem trazido boas notícias?"`
+
+        function showFarewellModal(npc) {
+            const farewellMessages = [
+                `Volte sempre, ${gameState.character.name}! Foi um prazer conversar com você.`,
+                `Até a próxima, aventureiro! Que os ventos guiem seus passos.`,
+                `Cuide-se por aí, ${gameState.character.name}! E não se esqueça de mim!`,
+                `Que sua jornada seja repleta de glórias! Até breve!`,
+                `Foi bom conversar com você. Volte quando quiser!`,
+                `${gameState.character.name}, foi um prazer! Até logo!`
             ];
             
-            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            const farewellsComerciais = [
+                `Volte sempre à minha loja, ${gameState.character.name}! Tenho sempre novidades!`,
+                `Negócio fechado! Apareça novamente quando precisar.`,
+                `Obrigado pela preferência, ${gameState.character.name}! Até a próxima compra!`,
+                `Sempre um prazer fazer negócios com você. Volte sempre!`
+            ];
             
-            await Swal.fire({
-                title: `${npc.emoji} ${npc.name}`,
-                text: randomGreeting,
-                icon: 'success',
-                confirmButtonText: 'Até logo!',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ffd700',
-                timer: 2500
-            });
+            // Escolher mensagem aleatória
+            const isShopkeeper = npc.shopItems && npc.shopItems.length > 0;
+            const messagePool = isShopkeeper ? farewellsComerciais : farewellMessages;
+            const farewellMessage = messagePool[Math.floor(Math.random() * messagePool.length)];
             
-            addLog(`👋 Você cumprimentou ${npc.name}.`);
-            if (npc.onGreet) npc.onGreet();
+            document.getElementById('farewell-avatar').textContent = npc.emoji;
+            document.getElementById('farewell-message').innerHTML = farewellMessage;
+            document.getElementById('farewell-modal').classList.add('active');
+            
+            if (npc.onFarewell) npc.onFarewell();
         }
-        function updateSingleNPCState(npcId) {
-            const npc = NPC_DEFINITIONS[npcId];
-            if (!npc) return;
+        function closeFarewellModal() {
+            document.getElementById('farewell-modal').classList.remove('active');
+            closeNPCModal();
+        }
+        function closeSubmodal() {
+            document.getElementById('shop-submodal').classList.remove('active');
+            document.getElementById('sell-submodal').classList.remove('active');
+            document.getElementById('talk-submodal').classList.remove('active');
+        }
+
+        function renderTalkTopics(topics, npc) {
+            const container = document.getElementById('talk-topics-container');
+            const messageContainer = document.getElementById('talk-message-container');
+            container.innerHTML = '';
+            messageContainer.innerHTML = '';
             
-            if (!gameState.bots) gameState.bots = {};
-            if (!gameState.bots[npcId]) {
-                gameState.bots[npcId] = { ...npc.baseState, lastUpdate: Date.now() };
+            const topicsGrid = document.createElement('div');
+            topicsGrid.className = 'topics-grid';
+            
+            for (let i = 0; i < topics.length; i++) {
+                const topic = topics[i];
+                const topicBtn = document.createElement('button');
+                topicBtn.className = 'topic-btn';
+                topicBtn.textContent = topic.name;
+                topicBtn.onclick = () => {
+                    let message = typeof topic.message === 'function' ? topic.message() : topic.message;
+                    messageContainer.innerHTML = `<div class="topic-message">${message}</div>`;
+                    if (topic.action) topic.action();
+                    messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                };
+                topicsGrid.appendChild(topicBtn);
             }
             
-            const currentState = gameState.bots[npcId];
-            const isDay = gameState.timeOfDay === 'day';
-            const behavior = isDay ? npc.dayBehavior : npc.nightBehavior;
+            container.appendChild(topicsGrid);
+        }
+
+        function closeSubmodal() {
+            document.getElementById('shop-submodal').classList.remove('active');
+            document.getElementById('sell-submodal').classList.remove('active');
+            document.getElementById('talk-submodal').classList.remove('active');
             
-            if (isDay) {
-                currentState.isSleeping = false;
-                const random = Math.random();
-                currentState.isHome = random < behavior.homeChance;
-            } else {
-                const homeRandom = Math.random();
-                currentState.isHome = homeRandom < behavior.homeChance;
-                
-                if (currentState.isHome) {
-                    const sleepRandom = Math.random();
-                    currentState.isSleeping = sleepRandom < (behavior.sleepChance || 0.7);
-                } else {
-                    currentState.isSleeping = false;
-                }
+            if (currentNPCId && currentNPC) {
+                openNPCDialog(currentNPCId);
             }
-            
-            currentState.lastUpdate = Date.now();
         }
 
         async function visitCarpenter() { return talkToNPC('carpenter'); }
@@ -6900,404 +6663,6 @@
         async function talkToLibrarian() { return talkToNPC('librarian'); }
         async function talkToCaptain() { return talkToNPC('captain'); }
         async function talkToKing() { return talkToNPC('king'); }
-
-// ========== NOVAS FUNÇÕES PARA MODAIS DE NPC ==========
-
-// Variáveis para controlar o NPC atual no modal
-let currentNPCId = null;
-let currentNPC = null;
-
-// Abrir o modal principal do NPC
-async function openNPCDialog(npcId) {
-    if (gameState.isDead) return;
-    
-    const npc = NPC_DEFINITIONS[npcId];
-    if (!npc) return;
-    
-    currentNPCId = npcId;
-    currentNPC = npc;
-    
-    // Atualizar cabeçalho do modal
-    document.getElementById('npc-avatar').textContent = npc.emoji;
-    document.getElementById('npc-name').textContent = npc.name;
-    document.getElementById('npc-title').textContent = npc.title;
-    
-    // Mensagem de saudação (pode ser função ou string)
-    const greetingText = typeof npc.greeting === 'function' ? npc.greeting() : npc.greeting;
-    document.getElementById('npc-greeting').innerHTML = `"${greetingText}"`;
-    
-    // Construir botões de ação
-    const actionsContainer = document.getElementById('npc-actions');
-    actionsContainer.innerHTML = '';
-    
-    // Botão Comprar
-    if (npc.shopItems && npc.shopItems.length > 0) {
-        const buyBtn = createNPCActionButton('🛒', 'Comprar', 'Adquira itens da loja', '#4CAF50');
-        buyBtn.onclick = () => { closeNPCModal(); openShopSubmodal(npcId); };
-        actionsContainer.appendChild(buyBtn);
-    }
-    
-    // Botão Vender
-    if (npc.canSellToNPC) {
-        const sellBtn = createNPCActionButton('💰', 'Vender', 'Venda itens do seu inventário', '#ffa500');
-        sellBtn.onclick = () => { closeNPCModal(); openSellSubmodal(npcId); };
-        actionsContainer.appendChild(sellBtn);
-    }
-    
-    // Botão Conversar
-    if (npc.topics && npc.topics.length > 0) {
-        const talkBtn = createNPCActionButton('💬', 'Conversar', 'Bate-papo sobre diversos assuntos', '#9370db');
-        talkBtn.onclick = () => { closeNPCModal(); openTalkSubmodal(npcId); };
-        actionsContainer.appendChild(talkBtn);
-    }
-    
-    // Botão Apenas Cumprimentar
-    const greetBtn = createNPCActionButton('👋', 'Cumprimentar', 'Saudar e se despedir do NPC', '#4a90e2');
-    greetBtn.onclick = () => {
-        closeNPCModal();  // Fecha o modal principal
-        showFarewellModal(npc);  // Mostra modal de despedida
-        addLog(`👋 Você se despediu de ${npc.name}.`);
-    };
-    actionsContainer.appendChild(greetBtn);
-    
-    // Mostrar modal
-    document.getElementById('npc-modal').classList.add('active');
-}
-
-async function talkToNPC(npcId) { openNPCDialog(npcId); }
-
-function createNPCActionButton(icon, text, description, color) {
-    const btn = document.createElement('button');
-    btn.className = 'npc-action-btn';
-    btn.innerHTML = `
-        <span class="npc-action-icon">${icon}</span>
-        <div class="npc-action-text">
-            <div>${text}</div>
-            <div class="npc-action-desc">${description}</div>
-        </div>
-    `;
-    btn.style.borderLeft = `4px solid ${color}`;
-    return btn;
-}
-
-function getRandomGreeting(npc) {
-    const greetings = [
-        `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
-        `"Saudações, aventureiro! Que os deuses te protejam."`,
-        `"Bom dia! Está um belo dia para explorar, não acha?"`,
-        `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
-        `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
-        `"Que bom ver você! Como posso ajudar hoje?"`,
-        `"Olá, viajante! Tem trazido boas notícias?"`
-    ];
-    return greetings[Math.floor(Math.random() * greetings.length)];
-}
-
-function updateNPCMessage(message) {
-    const greetingDiv = document.getElementById('npc-greeting');
-    greetingDiv.innerHTML = `"${message}"`;
-    // Voltar ao estado normal após 2.5 segundos
-    setTimeout(() => {
-        if (currentNPC) {
-            const originalGreeting = typeof currentNPC.greeting === 'function' ? currentNPC.greeting() : currentNPC.greeting;
-            greetingDiv.innerHTML = `"${originalGreeting}"`;
-        }
-    }, 2500);
-}
-
-function closeNPCModal() {
-    document.getElementById('npc-modal').classList.remove('active');
-    currentNPCId = null;
-    currentNPC = null;
-}
-
-// Sub-modal de Compra
-async function openShopSubmodal(npcId) {
-    const npc = NPC_DEFINITIONS[npcId];
-    if (!npc || !npc.shopItems) return;
-    
-    const multiplier = npc.buyPriceMultiplier || 1.0;
-    const container = document.getElementById('shop-items-container');
-    container.innerHTML = '';
-    
-    document.getElementById('shop-title').innerHTML = `🛒 Loja de ${npc.shopkeeperName || npc.name}`;
-    
-    for (const item of npc.shopItems) {
-        const itemData = ITEMS[item.id];
-        if (!itemData) continue;
-        
-        const price = Math.floor(item.price * multiplier);
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'shop-item';
-        itemDiv.innerHTML = `
-            <div class="shop-item-info">
-                <div class="shop-item-name">${itemData.name}</div>
-                <div class="shop-item-desc">${itemData.description || ''}</div>
-                <div class="shop-item-price">💰 ${price} moedas</div>
-            </div>
-            <button class="action-btn success" onclick="buyFromNPCShop('${npcId}', '${item.id}', ${price})" style="padding: 8px 20px;">🛒 Comprar</button>
-        `;
-        container.appendChild(itemDiv);
-    }
-    
-    // Adicionar botão Voltar
-    const backBtn = document.createElement('button');
-    backBtn.className = 'submodal-back-btn';
-    backBtn.innerHTML = '🔙 Voltar';
-    backBtn.onclick = () => {
-        document.getElementById('shop-submodal').classList.remove('active');
-        openNPCDialog(npcId);
-    };
-    container.appendChild(backBtn);
-    
-    document.getElementById('shop-submodal').classList.add('active');
-}
-
-window.buyFromNPCShop = function(npcId, itemId, price) {
-    if (gameState.character.gold >= price) {
-        gameState.character.gold -= price;
-        addItemToInventory(itemId);
-        addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${NPC_DEFINITIONS[npcId].name}.`);
-        updateUI();
-        
-        const tempMsg = document.getElementById('shop-title');
-        const originalText = tempMsg.innerHTML;
-        tempMsg.innerHTML = `✅ Comprou ${ITEMS[itemId].name}!`;
-        setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
-    } else {
-        const tempMsg = document.getElementById('shop-title');
-        const originalText = tempMsg.innerHTML;
-        tempMsg.innerHTML = `❌ Moedas insuficientes! (${price}💰)`;
-        setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
-    }
-};
-
-// Sub-modal de Venda
-async function openSellSubmodal(npcId) {
-    const npc = NPC_DEFINITIONS[npcId];
-    if (!npc) return;
-    
-    const multiplier = npc.sellPriceMultiplier || 0.5;
-    const container = document.getElementById('sell-items-container');
-    container.innerHTML = '';
-    
-    document.getElementById('sell-title').innerHTML = `💰 Vender para ${npc.name}`;
-    
-    let hasItems = false;
-    for (let i = 0; i < gameState.inventory.length; i++) {
-        const item = gameState.inventory[i];
-        if (item && item.consumable !== false) {
-            const basePrice = item.value || 10;
-            const sellPrice = Math.floor(basePrice * multiplier);
-            if (sellPrice > 0) {
-                hasItems = true;
-                const quantity = item.quantity || 1;
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'sell-item';
-                itemDiv.innerHTML = `
-                    <div class="sell-item-info">
-                        <div class="sell-item-name">${item.name} ${quantity > 1 ? `x${quantity}` : ''}</div>
-                        <div class="sell-item-desc">${item.description || ''}</div>
-                        <div class="sell-item-price">💰 Vende por: ${sellPrice} moedas</div>
-                    </div>
-                    <button class="action-btn warning" onclick="sellToNPCFromModal(${i}, ${sellPrice}, '${npcId}')" style="padding: 8px 20px;">💰 Vender</button>
-                `;
-                container.appendChild(itemDiv);
-            }
-        }
-    }
-    
-    if (!hasItems) {
-        container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Você não tem nada que eu possa comprar no momento...</p>';
-    }
-    
-    // Adicionar botão Voltar
-    const backBtn = document.createElement('button');
-    backBtn.className = 'submodal-back-btn';
-    backBtn.innerHTML = '🔙 Voltar';
-    backBtn.onclick = () => {
-        document.getElementById('sell-submodal').classList.remove('active');
-        openNPCDialog(npcId);
-    };
-    container.appendChild(backBtn);
-    
-    document.getElementById('sell-submodal').classList.add('active');
-}
-
-window.sellToNPCFromModal = function(index, price, npcId) {
-    const item = gameState.inventory[index];
-    if (item) {
-        if (item.quantity > 1) {
-            item.quantity--;
-        } else {
-            gameState.inventory[index] = null;
-        }
-        gameState.character.gold += price;
-        addLog(`💰 Você vendeu ${item.name} para ${NPC_DEFINITIONS[npcId].name} por ${price} moedas.`);
-        updateUI();
-        
-        const tempMsg = document.getElementById('sell-title');
-        const originalText = tempMsg.innerHTML;
-        tempMsg.innerHTML = `✅ Vendeu ${item.name}!`;
-        setTimeout(() => {
-            tempMsg.innerHTML = originalText;
-            openSellSubmodal(npcId);
-        }, 800);
-    }
-};
-
-// Sub-modal de Conversa
-async function openTalkSubmodal(npcId) {
-    const npc = NPC_DEFINITIONS[npcId];
-    if (!npc) return;
-    
-    const topics = npc.topics || [];
-    const container = document.getElementById('talk-topics-container');
-    const messageContainer = document.getElementById('talk-message-container');
-    
-    document.getElementById('talk-title').innerHTML = `💬 Conversar com ${npc.name}`;
-    container.innerHTML = '';
-    messageContainer.innerHTML = '';
-    
-    if (topics.length === 0) {
-        const defaultTopics = [
-            { name: '👋 Cumprimentar', message: `"Olá, ${gameState.character.name}! Prazer em conhecê-lo."` },
-            { name: '🌤️ Clima', message: '"O clima tem estado agradável ultimamente. As colheitas estão boas!"' },
-            { name: '📰 Novidades', message: '"Ouvi dizer que o rei está planejando um grande festival em breve."' },
-            { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
-        ];
-        renderTalkTopics(defaultTopics, npc);
-    } else {
-        renderTalkTopics(topics, npc);
-    }
-    
-    // Adicionar botão Voltar
-    const backBtn = document.createElement('button');
-    backBtn.className = 'submodal-back-btn';
-    backBtn.innerHTML = '🔙 Voltar';
-    backBtn.onclick = () => {
-        document.getElementById('talk-submodal').classList.remove('active');
-        openNPCDialog(npcId);
-    };
-    document.getElementById('talk-topics-container').appendChild(backBtn);
-    
-    document.getElementById('talk-submodal').classList.add('active');
-}
-
-// Modal de Despedida
-function showFarewellModal(npc) {
-    const farewellMessages = [
-        `"Volte sempre, ${gameState.character.name}! Foi um prazer conversar com você."`,
-        `"Até a próxima, aventureiro! Que os ventos guiem seus passos."`,
-        `"Cuide-se por aí, ${gameState.character.name}! E não se esqueça de mim!"`,
-        `"Que sua jornada seja repleta de glórias! Até breve!"`,
-        `"Foi bom conversar com você. Volte quando quiser!"`,
-        `"${gameState.character.name}, foi um prazer! Até logo!"`
-    ];
-    
-    const farewellsComerciais = [
-        `"Volte sempre à minha loja, ${gameState.character.name}! Tenho sempre novidades!"`,
-        `"Negócio fechado! Apareça novamente quando precisar."`,
-        `"Obrigado pela preferência, ${gameState.character.name}! Até a próxima compra!"`,
-        `"Sempre um prazer fazer negócios com você. Volte sempre!"`
-    ];
-    
-    // Escolher mensagem aleatória
-    const isShopkeeper = npc.shopItems && npc.shopItems.length > 0;
-    const messagePool = isShopkeeper ? farewellsComerciais : farewellMessages;
-    const farewellMessage = messagePool[Math.floor(Math.random() * messagePool.length)];
-    
-    document.getElementById('farewell-avatar').textContent = npc.emoji;
-    document.getElementById('farewell-message').innerHTML = `"${farewellMessage}"`;
-    document.getElementById('farewell-modal').classList.add('active');
-    
-    if (npc.onFarewell) npc.onFarewell();
-}
-
-function closeFarewellModal() {
-    document.getElementById('farewell-modal').classList.remove('active');
-    closeNPCModal();
-}
-
-function closeSubmodal() {
-    document.getElementById('shop-submodal').classList.remove('active');
-    document.getElementById('sell-submodal').classList.remove('active');
-    document.getElementById('talk-submodal').classList.remove('active');
-}
-
-
-function renderTalkTopics(topics, npc) {
-    const container = document.getElementById('talk-topics-container');
-    const messageContainer = document.getElementById('talk-message-container');
-    container.innerHTML = '';
-    messageContainer.innerHTML = '';
-    
-    const topicsGrid = document.createElement('div');
-    topicsGrid.className = 'topics-grid';
-    
-    for (let i = 0; i < topics.length; i++) {
-        const topic = topics[i];
-        const topicBtn = document.createElement('button');
-        topicBtn.className = 'topic-btn';
-        topicBtn.textContent = topic.name;
-        topicBtn.onclick = () => {
-            let message = typeof topic.message === 'function' ? topic.message() : topic.message;
-            messageContainer.innerHTML = `<div class="topic-message">${message}</div>`;
-            if (topic.action) topic.action();
-            messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        };
-        topicsGrid.appendChild(topicBtn);
-    }
-    
-    container.appendChild(topicsGrid);
-}
-
-function closeSubmodal() {
-    document.getElementById('shop-submodal').classList.remove('active');
-    document.getElementById('sell-submodal').classList.remove('active');
-    document.getElementById('talk-submodal').classList.remove('active');
-    
-    if (currentNPCId && currentNPC) {
-        openNPCDialog(currentNPCId);
-    }
-}
-
-        function blessPlayer() {
-            const lastBlessing = localStorage.getItem('last_royal_blessing');
-            const now = Date.now();
-            const oneDay = 24 * 60 * 60 * 1000;
-            
-            if (!lastBlessing || (now - parseInt(lastBlessing)) > oneDay) {
-                const healAmount = Math.floor(gameState.character.maxLife * 0.3);
-                const manaAmount = Math.floor(gameState.character.maxMana * 0.2);
-                gameState.character.life = Math.min(gameState.character.life + healAmount, gameState.character.maxLife);
-                gameState.character.mana = Math.min(gameState.character.mana + manaAmount, gameState.character.maxMana);
-                localStorage.setItem('last_royal_blessing', now.toString());
-                
-                addLog(`👑 O Rei te abençoou! Você recuperou ${healAmount} de vida e ${manaAmount} de mana.`);
-                Swal.fire({
-                    title: '✨ Bênção Real Recebida!',
-                    text: `Você foi abençoado pelo Rei! +${healAmount}❤️ +${manaAmount}🔮`,
-                    icon: 'success',
-                    confirmButtonText: 'Agradecer',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-                updateUI();
-            } else {
-                addLog('👑 O Rei já te abençoou hoje. Volte amanhã para outra bênção.');
-                Swal.fire({
-                    title: '⏰ Ainda não...',
-                    text: 'O Rei já te abençoou hoje. Volte amanhã para receber outra bênção.',
-                    icon: 'info',
-                    confirmButtonText: 'Entendi',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-            }
-        }
 
         // ========== SHOP FUNCTIONS ==========
         function buyItem(itemId, cost) {
