@@ -176,6 +176,51 @@
         @media (max-width: 480px) { .furnace-slot-content { width: 80px !important; height: 80px !important; } .furnace-slot-content .item-name { font-size: 10px !important; } .furnace-slot-label { font-size: 10px; } .furnace-recipes { font-size: 10px; } }
         @media (max-width: 768px) and (orientation: landscape) { .furnace-grid { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 8px !important; flex-direction: row !important; } .furnace-arrow { transform: none !important; font-size: 16px !important; } .furnace-slot { max-width: 120px !important; } .furnace-slot-content { width: 60px !important; height: 60px !important; } .furnace-slot-content .item-name { font-size: 8px !important; } .furnace-slot-label { font-size: 8px; } }
 
+        /* NPC Modal específico */
+        .npc-modal-content { max-width: 600px; padding: 30px; }
+        .npc-header { display: flex; align-items: center; gap: 20px; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 215, 0, 0.3); }
+        .npc-avatar { font-size: 64px; background: rgba(255, 215, 0, 0.1); border-radius: 50%; width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+        .npc-info { flex: 1; }
+        .npc-name { font-size: 24px; color: #ffd700; margin-bottom: 5px; }
+        .npc-title { color: #888; font-size: 14px; }
+        .npc-greeting { background: rgba(0, 0, 0, 0.5); border-radius: 15px; padding: 20px; margin-bottom: 25px; color: #fff; line-height: 1.6; font-style: italic; border-left: 4px solid #ffd700; }
+        .npc-actions { display: flex; flex-direction: column; gap: 12px; }
+        .npc-action-btn { padding: 14px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 12px; color: white; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; text-align: left; display: flex; align-items: center; gap: 12px; }
+        .npc-action-btn:hover:not(:disabled) { background: rgba(255, 215, 0, 0.15); transform: translateX(5px); border-color: #ffd700; }
+        .npc-action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .npc-action-icon { font-size: 24px; min-width: 40px; text-align: center; }
+        .npc-action-text { flex: 1; }
+        .npc-action-desc { font-size: 12px; color: #888; margin-top: 4px; font-weight: normal; }
+        .npc-close-btn { margin-top: 20px; padding: 12px; background: #4a90e2; border: none; border-radius: 10px; color: white; font-weight: bold; cursor: pointer; transition: all 0.3s; width: 100%; }
+        .npc-close-btn:hover { background: #357abd; transform: translateY(-2px); }
+
+        /* Sub-modal para compra/venda */
+        .submodal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.98); z-index: 1100; display: none; justify-content: center; align-items: center; }
+        .submodal.active { display: flex; }
+        .submodal-content { background: #1a1a2e; border: 2px solid #ffd700; border-radius: 20px; padding: 25px; max-width: 500px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .submodal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 215, 0, 0.3); }
+        .submodal-title { color: #ffd700; font-size: 22px; margin: 0; }
+        .submodal-close { background: none; border: none; color: #ff4444; font-size: 28px; cursor: pointer; padding: 0 10px; }
+        .shop-item, .sell-item { background: rgba(0, 0, 0, 0.5); border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .shop-item-info, .sell-item-info { flex: 1; }
+        .shop-item-name, .sell-item-name { color: #ffd700; font-weight: bold; }
+        .shop-item-desc, .sell-item-desc { font-size: 11px; color: #888; margin-top: 4px; }
+        .shop-item-price, .sell-item-price { color: #4CAF50; font-size: 14px; }
+        .topic-btn { background: rgba(147, 112, 219, 0.2); border: 1px solid #9370db; border-radius: 8px; padding: 10px 15px; margin: 5px; cursor: pointer; transition: all 0.2s; color: white; font-size: 13px; }
+        .topic-btn:hover { background: rgba(147, 112, 219, 0.4); transform: translateY(-2px); }
+        .topics-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .topic-message { background: rgba(0, 0, 0, 0.5); border-radius: 12px; padding: 15px; margin-top: 15px; color: #ddd; line-height: 1.5; font-style: italic; border-left: 3px solid #9370db; }
+
+        @media (max-width: 768px) {
+            .npc-header { flex-direction: column; text-align: center; }
+            .npc-avatar { width: 70px; height: 70px; font-size: 48px; }
+            .npc-name { font-size: 20px; }
+            .npc-action-btn { padding: 12px; }
+            .npc-action-icon { font-size: 20px; min-width: 35px; }
+            .submodal-content { padding: 20px; }
+            .shop-item, .sell-item { flex-direction: column; text-align: center; }
+        }
+
 /* Mill UI - Mobile Fix */
 .mill-container {
     max-width: 100%;
@@ -469,6 +514,56 @@
 
             <button class="action-btn success" onclick="saveProfileEdit()">💾 Salvar Alterações</button>
             <button class="action-btn" onclick="closeEditProfile()" style="margin-top: 10px;">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- NPC Dialog Modal -->
+    <div class="modal" id="npc-modal">
+        <div class="modal-content npc-modal-content">
+            <div class="npc-header">
+                <div class="npc-avatar" id="npc-avatar">🗡️</div>
+                <div class="npc-info">
+                    <div class="npc-name" id="npc-name">NPC</div>
+                    <div class="npc-title" id="npc-title">Título</div>
+                </div>
+            </div>
+            <div class="npc-greeting" id="npc-greeting">...</div>
+            <div class="npc-actions" id="npc-actions"></div>
+            <button class="npc-close-btn" onclick="closeNPCModal()">🔙 Voltar</button>
+        </div>
+    </div>
+
+    <!-- Sub-modal para Comprar -->
+    <div class="submodal" id="shop-submodal">
+        <div class="submodal-content">
+            <div class="submodal-header">
+                <h3 class="submodal-title" id="shop-title">🛒 Loja</h3>
+                <button class="submodal-close" onclick="closeSubmodal()">✕</button>
+            </div>
+            <div id="shop-items-container"></div>
+        </div>
+    </div>
+
+    <!-- Sub-modal para Vender -->
+    <div class="submodal" id="sell-submodal">
+        <div class="submodal-content">
+            <div class="submodal-header">
+                <h3 class="submodal-title" id="sell-title">💰 Vender Itens</h3>
+                <button class="submodal-close" onclick="closeSubmodal()">✕</button>
+            </div>
+            <div id="sell-items-container"></div>
+        </div>
+    </div>
+
+    <!-- Sub-modal para Conversa -->
+    <div class="submodal" id="talk-submodal">
+        <div class="submodal-content">
+            <div class="submodal-header">
+                <h3 class="submodal-title" id="talk-title">💬 Conversar</h3>
+                <button class="submodal-close" onclick="closeSubmodal()">✕</button>
+            </div>
+            <div id="talk-topics-container"></div>
+            <div id="talk-message-container"></div>
         </div>
     </div>
 
@@ -6734,6 +6829,292 @@
         async function talkToLibrarian() { return talkToNPC('librarian'); }
         async function talkToCaptain() { return talkToNPC('captain'); }
         async function talkToKing() { return talkToNPC('king'); }
+
+// ========== NOVAS FUNÇÕES PARA MODAIS DE NPC ==========
+
+// Variáveis para controlar o NPC atual no modal
+let currentNPCId = null;
+let currentNPC = null;
+
+// Abrir o modal principal do NPC
+async function openNPCDialog(npcId) {
+    if (gameState.isDead) return;
+    
+    const npc = NPC_DEFINITIONS[npcId];
+    if (!npc) return;
+    
+    currentNPCId = npcId;
+    currentNPC = npc;
+    
+    // Atualizar cabeçalho do modal
+    document.getElementById('npc-avatar').textContent = npc.emoji;
+    document.getElementById('npc-name').textContent = npc.name;
+    document.getElementById('npc-title').textContent = npc.title;
+    
+    // Mensagem de saudação (pode ser função ou string)
+    const greetingText = typeof npc.greeting === 'function' ? npc.greeting() : npc.greeting;
+    document.getElementById('npc-greeting').innerHTML = `"${greetingText}"`;
+    
+    // Construir botões de ação
+    const actionsContainer = document.getElementById('npc-actions');
+    actionsContainer.innerHTML = '';
+    
+    // Botão Comprar
+    if (npc.shopItems && npc.shopItems.length > 0) {
+        const buyBtn = createNPCActionButton('🛒', 'Comprar', 'Adquira itens da loja', '#4CAF50');
+        buyBtn.onclick = () => { closeNPCModal(); openShopSubmodal(npcId); };
+        actionsContainer.appendChild(buyBtn);
+    }
+    
+    // Botão Vender
+    if (npc.canSellToNPC) {
+        const sellBtn = createNPCActionButton('💰', 'Vender', 'Venda itens do seu inventário', '#ffa500');
+        sellBtn.onclick = () => { closeNPCModal(); openSellSubmodal(npcId); };
+        actionsContainer.appendChild(sellBtn);
+    }
+    
+    // Botão Conversar
+    if (npc.topics && npc.topics.length > 0) {
+        const talkBtn = createNPCActionButton('💬', 'Conversar', 'Bate-papo sobre diversos assuntos', '#9370db');
+        talkBtn.onclick = () => { closeNPCModal(); openTalkSubmodal(npcId); };
+        actionsContainer.appendChild(talkBtn);
+    }
+    
+    // Botão Apenas Cumprimentar
+    const greetBtn = createNPCActionButton('👋', 'Cumprimentar', 'Apenas uma saudação rápida', '#4a90e2');
+    greetBtn.onclick = () => {
+        const randomGreeting = getRandomGreeting(npc);
+        updateNPCMessage(randomGreeting);
+        if (npc.onGreet) npc.onGreet();
+        addLog(`👋 Você cumprimentou ${npc.name}.`);
+    };
+    actionsContainer.appendChild(greetBtn);
+    
+    // Mostrar modal
+    document.getElementById('npc-modal').classList.add('active');
+}
+
+function createNPCActionButton(icon, text, description, color) {
+    const btn = document.createElement('button');
+    btn.className = 'npc-action-btn';
+    btn.innerHTML = `
+        <span class="npc-action-icon">${icon}</span>
+        <div class="npc-action-text">
+            <div>${text}</div>
+            <div class="npc-action-desc">${description}</div>
+        </div>
+    `;
+    btn.style.borderLeft = `4px solid ${color}`;
+    return btn;
+}
+
+function getRandomGreeting(npc) {
+    const greetings = [
+        `"Olá, ${gameState.character.name}! Como vai a jornada?"`,
+        `"Saudações, aventureiro! Que os deuses te protejam."`,
+        `"Bom dia! Está um belo dia para explorar, não acha?"`,
+        `"Ah, é você! Sempre um prazer ver sua face por aqui."`,
+        `"${gameState.character.name}! Entre, entre. Fique à vontade."`,
+        `"Que bom ver você! Como posso ajudar hoje?"`,
+        `"Olá, viajante! Tem trazido boas notícias?"`
+    ];
+    return greetings[Math.floor(Math.random() * greetings.length)];
+}
+
+function updateNPCMessage(message) {
+    const greetingDiv = document.getElementById('npc-greeting');
+    greetingDiv.innerHTML = `"${message}"`;
+    // Voltar ao estado normal após 2.5 segundos
+    setTimeout(() => {
+        if (currentNPC) {
+            const originalGreeting = typeof currentNPC.greeting === 'function' ? currentNPC.greeting() : currentNPC.greeting;
+            greetingDiv.innerHTML = `"${originalGreeting}"`;
+        }
+    }, 2500);
+}
+
+function closeNPCModal() {
+    document.getElementById('npc-modal').classList.remove('active');
+    currentNPCId = null;
+    currentNPC = null;
+}
+
+// Sub-modal de Compra
+async function openShopSubmodal(npcId) {
+    const npc = NPC_DEFINITIONS[npcId];
+    if (!npc || !npc.shopItems) return;
+    
+    const multiplier = npc.buyPriceMultiplier || 1.0;
+    const container = document.getElementById('shop-items-container');
+    container.innerHTML = '';
+    
+    document.getElementById('shop-title').innerHTML = `🛒 Loja de ${npc.shopkeeperName || npc.name}`;
+    
+    for (const item of npc.shopItems) {
+        const itemData = ITEMS[item.id];
+        if (!itemData) continue;
+        
+        const price = Math.floor(item.price * multiplier);
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'shop-item';
+        itemDiv.innerHTML = `
+            <div class="shop-item-info">
+                <div class="shop-item-name">${itemData.name}</div>
+                <div class="shop-item-desc">${itemData.description || ''}</div>
+                <div class="shop-item-price">💰 ${price} moedas</div>
+            </div>
+            <button class="action-btn success" onclick="buyFromNPCShop('${npcId}', '${item.id}', ${price})" style="padding: 8px 20px;">🛒 Comprar</button>
+        `;
+        container.appendChild(itemDiv);
+    }
+    
+    document.getElementById('shop-submodal').classList.add('active');
+}
+
+window.buyFromNPCShop = function(npcId, itemId, price) {
+    if (gameState.character.gold >= price) {
+        gameState.character.gold -= price;
+        addItemToInventory(itemId);
+        addLog(`🛒 Você comprou ${ITEMS[itemId].name} por ${price} moedas de ${NPC_DEFINITIONS[npcId].name}.`);
+        updateUI();
+        
+        const tempMsg = document.getElementById('shop-title');
+        const originalText = tempMsg.innerHTML;
+        tempMsg.innerHTML = `✅ Comprou ${ITEMS[itemId].name}!`;
+        setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
+    } else {
+        const tempMsg = document.getElementById('shop-title');
+        const originalText = tempMsg.innerHTML;
+        tempMsg.innerHTML = `❌ Moedas insuficientes! (${price}💰)`;
+        setTimeout(() => { tempMsg.innerHTML = originalText; }, 1500);
+    }
+};
+
+// Sub-modal de Venda
+async function openSellSubmodal(npcId) {
+    const npc = NPC_DEFINITIONS[npcId];
+    if (!npc) return;
+    
+    const multiplier = npc.sellPriceMultiplier || 0.5;
+    const container = document.getElementById('sell-items-container');
+    container.innerHTML = '';
+    
+    document.getElementById('sell-title').innerHTML = `💰 Vender para ${npc.name}`;
+    
+    let hasItems = false;
+    for (let i = 0; i < gameState.inventory.length; i++) {
+        const item = gameState.inventory[i];
+        if (item && item.consumable !== false) {
+            const basePrice = item.value || 10;
+            const sellPrice = Math.floor(basePrice * multiplier);
+            if (sellPrice > 0) {
+                hasItems = true;
+                const quantity = item.quantity || 1;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'sell-item';
+                itemDiv.innerHTML = `
+                    <div class="sell-item-info">
+                        <div class="sell-item-name">${item.name} ${quantity > 1 ? `x${quantity}` : ''}</div>
+                        <div class="sell-item-desc">${item.description || ''}</div>
+                        <div class="sell-item-price">💰 Vende por: ${sellPrice} moedas</div>
+                    </div>
+                    <button class="action-btn warning" onclick="sellToNPCFromModal(${i}, ${sellPrice}, '${npcId}')" style="padding: 8px 20px;">💰 Vender</button>
+                `;
+                container.appendChild(itemDiv);
+            }
+        }
+    }
+    
+    if (!hasItems) {
+        container.innerHTML = '<p style="text-align: center; color: #888; padding: 20px;">Você não tem nada que eu possa comprar no momento...</p>';
+    }
+    
+    document.getElementById('sell-submodal').classList.add('active');
+}
+
+window.sellToNPCFromModal = function(index, price, npcId) {
+    const item = gameState.inventory[index];
+    if (item) {
+        if (item.quantity > 1) {
+            item.quantity--;
+        } else {
+            gameState.inventory[index] = null;
+        }
+        gameState.character.gold += price;
+        addLog(`💰 Você vendeu ${item.name} para ${NPC_DEFINITIONS[npcId].name} por ${price} moedas.`);
+        updateUI();
+        
+        const tempMsg = document.getElementById('sell-title');
+        const originalText = tempMsg.innerHTML;
+        tempMsg.innerHTML = `✅ Vendeu ${item.name}!`;
+        setTimeout(() => {
+            tempMsg.innerHTML = originalText;
+            openSellSubmodal(npcId);
+        }, 800);
+    }
+};
+
+// Sub-modal de Conversa
+async function openTalkSubmodal(npcId) {
+    const npc = NPC_DEFINITIONS[npcId];
+    if (!npc) return;
+    
+    const topics = npc.topics || [];
+    const container = document.getElementById('talk-topics-container');
+    const messageContainer = document.getElementById('talk-message-container');
+    
+    document.getElementById('talk-title').innerHTML = `💬 Conversar com ${npc.name}`;
+    
+    if (topics.length === 0) {
+        const defaultTopics = [
+            { name: '👋 Cumprimentar', message: `"Olá, ${gameState.character.name}! Prazer em conhecê-lo."` },
+            { name: '🌤️ Clima', message: '"O clima tem estado agradável ultimamente. As colheitas estão boas!"' },
+            { name: '📰 Novidades', message: '"Ouvi dizer que o rei está planejando um grande festival em breve."' },
+            { name: '⚔️ Aventuras', message: '"Você parece um aventureiro experiente. Já enfrentou muitos monstros?"' }
+        ];
+        renderTalkTopics(defaultTopics, npc);
+    } else {
+        renderTalkTopics(topics, npc);
+    }
+    
+    document.getElementById('talk-submodal').classList.add('active');
+}
+
+function renderTalkTopics(topics, npc) {
+    const container = document.getElementById('talk-topics-container');
+    const messageContainer = document.getElementById('talk-message-container');
+    container.innerHTML = '';
+    messageContainer.innerHTML = '';
+    
+    const topicsGrid = document.createElement('div');
+    topicsGrid.className = 'topics-grid';
+    
+    for (let i = 0; i < topics.length; i++) {
+        const topic = topics[i];
+        const topicBtn = document.createElement('button');
+        topicBtn.className = 'topic-btn';
+        topicBtn.textContent = topic.name;
+        topicBtn.onclick = () => {
+            let message = typeof topic.message === 'function' ? topic.message() : topic.message;
+            messageContainer.innerHTML = `<div class="topic-message">${message}</div>`;
+            if (topic.action) topic.action();
+            messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        };
+        topicsGrid.appendChild(topicBtn);
+    }
+    
+    container.appendChild(topicsGrid);
+}
+
+function closeSubmodal() {
+    document.getElementById('shop-submodal').classList.remove('active');
+    document.getElementById('sell-submodal').classList.remove('active');
+    document.getElementById('talk-submodal').classList.remove('active');
+    
+    if (currentNPCId && currentNPC) {
+        openNPCDialog(currentNPCId);
+    }
+}
 
         function blessPlayer() {
             const lastBlessing = localStorage.getItem('last_royal_blessing');
