@@ -823,6 +823,7 @@
                 description: 'Vilarejo conhecido pelos tecelões e tintureiros. Tecidos coloridos secam nas varandas.',
                 actions: [
                     { name: '🧵 Visitar Tecelã', action: 'visitWeaver' },
+                    { name: '🗺️ Visitar Cartógrafo', action: 'visitCartographer' },
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
                 ]
             },
@@ -1400,6 +1401,134 @@
                 onGreet: () => addLog('🧵 Isadora sorri e acena enquanto continua tecendo.')
             },
             
+            cartographer: {
+                id: 'cartographer',
+                name: 'Pedro',
+                title: 'Cartógrafo',
+                emoji: '🗺️',
+                sleepyEmoji: '😴🗺️',
+                location: 'south_village',
+                locationName: 'oficina do cartógrafo',
+                greeting: function() {
+                    const greetings = [
+                        `"Ah, ${gameState.character.name}! Que bom ver um${gameState.character.gender === 'masculino' ? ' rapaz' : 'a moça'} jovem com sede de aventura! Nos meus tempos de explorador, eu também tinha esse brilho nos olhos..."`,
+                        `"Entre, entre! Deixa eu te mostrar meus mapas. Tenho histórias para cada centímetro desenhado neles!"`,
+                        `"Ora, ora! ${gameState.character.name}! Sente aí que o velho Pedro vai te contar umas histórias das antigas..."`,
+                        `"Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} à minha humilde oficina! Aqui guardo as memórias de uma vida inteira de explorações."`
+                    ];
+                    return greetings[Math.floor(Math.random() * greetings.length)];
+                },
+                farewell: function() {
+                    const farewells = [
+                        "Que os ventos guiem seus passos, jovem! E não se perca por aí, hein?",
+                        "Volte sempre que precisar de um mapa! Ou só para bater um papo com esse velho.",
+                        "Cuide-se na estrada! E lembre-se: o melhor tesouro são as histórias que a gente vive.",
+                        "Até a próxima, aventureiro! Se encontrar alguma terra nova, me conta que eu atualizo meus mapas!"
+                    ];
+                    addLog(`🗺️ ${farewells[Math.floor(Math.random() * farewells.length)]}`);
+                },
+                sleepyMessages: [
+                    "*Ronco suave* Mapa... tesouro... Zzz...",
+                    "*Acordando com um susto* Ah! Já amanheceu? Desculpe, a idade pesa...",
+                    "*Bocejando* A juventude... não tem preço... aproveite enquanto pode... Zzz",
+                    "*Cabeça balançando* Explorar... o mundo... Zzz... sonhos...",
+                    "*Murmurando* Pegue a trilha norte... não, a sul... Zzz..."
+                ],
+                sleepingMessage: function() {
+                    const messages = [
+                        "Pedro está tirando uma soneca. O velho explorador precisa descansar. Volte durante o dia!",
+                        "O Cartógrafo está dormindo. A idade pesa, coitado... Volte mais tarde!",
+                        "Pedro cochila sobre uma pilha de mapas. Melhor não acordar o velho."
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                },
+                absentMessage: function() {
+                    const messages = [
+                        "Pedro deve estar na taberna contando suas histórias de juventude... Volte mais tarde!",
+                        "O Cartógrafo saiu para dar uma volta. Disse que precisava sentir o cheiro da estrada de novo.",
+                        "Pedro não está na oficina. Provavelmente foi comprar pergaminhos no mercado."
+                    ];
+                    return messages[Math.floor(Math.random() * messages.length)];
+                },
+                topics: [
+                    { 
+                        name: '🗺️ Como era ser explorador?', 
+                        message: function() {
+                            const stories = [
+                                `"Ah, meu jovem... Eu já atravessei florestas que ninguém ousava pisar, cruzei rios que nem tinham nome nos mapas, e dormi sob as estrelas mais lindas que estes olhos já viram. Cada cicatriz tem uma história, cada ruga é uma lembrança."`,
+                                `"Quando eu tinha sua idade, ${gameState.character.name}, eu parti com uma mochila nas costas e um sonho no peito. Passei meses sem ver um vilarejo, vivendo da caça e da generosidade da natureza. Foram os melhores anos da minha vida!"`,
+                                `"Já escalei a Montanha do Vento Uivante, desci nas cavernas de Cristal e até entrei nas Ruínas Antigas antes de ficarem perigosas demais. Cada pedra daquele lugar tem uma história para contar."`
+                            ];
+                            return stories[Math.floor(Math.random() * stories.length)];
+                        }
+                    },
+                    { 
+                        name: '📜 Histórias de tesouros', 
+                        message: function() {
+                            const treasureStories = [
+                                `"Dizem que nas profundezas da Floresta Sombria existe um tesouro deixado por um antigo rei. Eu mesmo já vi uma caverna escondida atrás de uma cachoeira... Mas os monstros de lá são grandes demais para um velho como eu."`,
+                                `"Certa vez, encontrei um baú enterrado sob as raízes de uma árvore milenar. Não tinha ouro, mas dentro havia um diário de bordo de um navegador antigo. As anotações dele falavam de terras além-mar que nunca vi em nenhum mapa oficial!"`,
+                                `"O maior tesouro que encontrei? Uma pedra azul brilhante no fundo do Lago Sagrado. Ela me guiou para casa numa noite de tempestade. Desde então, carrego ela comigo... Está guardada aqui na oficina."`
+                            ];
+                            return treasureStories[Math.floor(Math.random() * treasureStories.length)];
+                        }
+                    },
+                    { 
+                        name: '🗺️ Dicas de viagem', 
+                        message: function() {
+                            const tips = [
+                                `"Uma dica de quem já viveu muito: sempre leve um mapa, mesmo que ache que conhece o caminho. As florestas mudam, os rios secam, mas um bom mapa é como um amigo fiel."`,
+                                `"Nunca viaje sem água e comida extra. Eu já passei fome nas montanhas uma vez... Não recomendo a experiência."`,
+                                `"Confie no seu instinto, ${gameState.character.name}. Se o lugar parece perigoso, provavelmente é. Não há vergonha em recuar e planejar melhor."`
+                            ];
+                            return tips[Math.floor(Math.random() * tips.length)];
+                        }
+                    },
+                    { 
+                        name: '💬 Como está, Pedro?', 
+                        message: function() {
+                            const status = [
+                                `"Ah, estou bem, ${gameState.character.name}. As pernas já não são as mesmas, mas a memória continua afiada. E a vista? Posso te mostrar cada detalhe desse mapa de olhos fechados!"`,
+                                `"Estou tranquilo, meu jovem. Vivo das vendas dos meus mapas e das histórias que conto na taverna. Não é uma vida de rei, mas é uma vida honesta."`,
+                                `"Hoje estou animado! Terminei um mapa novo da região leste. Tem uns detalhes que poucos exploradores notaram. Quer dar uma olhada?"`
+                            ];
+                            return status[Math.floor(Math.random() * status.length)];
+                        }
+                    }
+                ],
+                shopItems: [
+                    { id: 'map', price: 3, quantity: -1 }  // Vende mapas por 3 moedas (estoque infinito)
+                ],
+                buyPriceMultiplier: 1.0,
+                canSellToNPC: false,  // Não compra itens do jogador
+                sellPriceMultiplier: 0.4,
+                shopkeeperName: 'Pedro, o Cartógrafo',
+                dayBehavior: { 
+                    homeChance: 0.7,  // 70% de chance de estar na oficina durante o dia
+                    alwaysAwake: true 
+                },
+                nightBehavior: { 
+                    homeChance: 0.85,  // 85% de chance de estar em casa à noite
+                    sleepChance: 0.9    // 90% de chance de estar dormindo se estiver em casa
+                },
+                baseState: { 
+                    isHome: true, 
+                    isSleeping: false, 
+                    lastUpdate: null 
+                },
+                onSleep: () => addLog('😴 O velho Pedro está dormindo, sonhando com as terras que explorou quando jovem.'),
+                onAbsent: () => {
+                    const messages = [
+                        '🗺️ Pedro deve estar na taberna contando histórias de suas aventuras.',
+                        '🗺️ O Cartógrafo saiu para buscar inspiração. Diz que o cheiro da estrada faz falta.',
+                        '🗺️ Pedro foi visitar uns amigos no vilarejo norte. Volte mais tarde!'
+                    ];
+                    addLog(messages[Math.floor(Math.random() * messages.length)]);
+                },
+                onGreet: () => addLog('🗺️ Pedro ajusta os óculos e sorri, mostrando um mapa antigo em suas mãos calejadas.'),
+                onFarewell: () => addLog('🗺️ "Vá com Deus, aventureiro! E não esqueça do mapa!"')
+            },
+
             farmerMiguel: {
                 id: 'farmerMiguel',
                 name: 'Miguel',
@@ -6617,6 +6746,7 @@
         }
 
         async function visitCarpenter() { return talkToNPC('carpenter'); }
+        async function visitCartographer() { return talkToNPC('cartographer'); }
         async function visitArtisan() { return talkToNPC('artisan'); }
         async function visitWeaver() { return talkToNPC('weaver'); }
         async function visitFarmerHouse1() { return talkToNPC('farmerMiguel'); }
