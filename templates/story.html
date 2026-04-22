@@ -921,7 +921,7 @@
                 ]
             },
             north_trail_middle: {
-                name: 'Margem do Rio Cristalino',
+                name: 'Margem do Rio da Aurora',
                 description: 'A trilha te trouxe as margens do Rio de águas mais cristalinas, você se depara a frente uma ponte velha de madeira que cruza o rio.',
                 allowsStations: true,
                 actions: [
@@ -942,7 +942,7 @@
                 ]
             },
             swim_in_river: {
-                name: 'Dentro do Rio Cristalino',
+                name: 'Dentro do Rio da Aurora',
                 description: 'Você mergulha nas águas geladas e cristalinas do rio. A sensação de frescor envolve seu corpo. Peixes coloridos nadam ao seu redor, e o fundo é coberto por seixos rolados e pequenas conchas.',
                 actions: [
                     { name: '💧 Pegar água', action: 'fillBottle' },
@@ -956,7 +956,6 @@
                 allowsStations: true,
                 actions: [
                     { name: '🏛️ Explorar as Ruínas Antigas', action: 'exploreRuins' },
-                    { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
                     { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
                     { name: '🌉 Voltar pela Ponte', action: 'goNorthTrailMiddle' }
                 ]
@@ -968,7 +967,6 @@
                 actions: [
                     { name: '🔍 Examinar os escombros', action: 'searchRuins' },
                     { name: '⬆️ Seguir para o Norte', action: 'goNorthFromRuins' },
-                    { name: '➡️ Seguir para o Leste', action: 'goEastFromRuins' },
                     { name: '🌉 Voltar para a Ponte', action: 'goAcrossBridge' }
                 ]
             },
@@ -4756,10 +4754,10 @@
         function exitAbandonedCemetery() { go('abandoned_cemetery_gate', '🚪 Você saiu do cemitério abandonado.'); }
 
         function goNorthTrailStart() { go('north_trail_start', '🚶 Você entra na trilha que leva ao norte.'); }
-        function goNorthTrailMiddle() { go('north_trail_middle', '🌊 Você continua pela trilha e chega à margem de um rio cristalino.'); }
+        function goNorthTrailMiddle() { go('north_trail_middle', '🌊 Você continua pela trilha e chega à margem do Rio da aurora.'); }
         function goRiverBank() { go('river_bank', '🏞️ Você decide caminhar pela margem do rio, desviando da ponte.'); }
         function goAcrossBridge() { go('across_bridge', '🌉 Você atravessa a antiga ponte de madeira e chega a uma planície com ruínas antigas.'); }
-        function swimInRiver() { go('swim_in_river', '💧 Você mergulha nas águas geladas do rio cristalino.'); }
+        function swimInRiver() { go('swim_in_river', '💧 Você mergulha nas águas geladas do Rio da Aurora.'); }
         function exitRiver() { go('river_bank', '🏊 Você sai do rio, se sentindo revigorado e renovado.'); }
         function exploreRuins() { go('ancient_ruins', '🏛️ Você se aventura entre as ruínas antigas, observando cada detalhe.'); }
         function searchRuins() {
