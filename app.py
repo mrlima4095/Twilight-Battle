@@ -1323,7 +1323,10 @@ class Game:
             
             if trap_result:
                 traps_to_remove.append(trap['index'])
-                
+                self.graveyard.append(defender['defense_bases'][trap['index']])
+                defender['defense_bases'][trap['index']] = None
+                broadcast_system_message(self.game_id, f'💀 Armadilha "{trap_card["name"]}" foi consumida e enviada ao cemitério!')
+
                 if trap_result.get('type') == 'mirror_damage':
                     # Armadilha Espelho - refletir dano
                     reflected_damage = trap_result.get('damage_to_reflect', attack_power)
@@ -1350,7 +1353,6 @@ class Game:
                         }],
                         'log': result['log']
                     }
-                
                 elif trap_result.get('type') == 'cheat_pass_damage':
                     # Armadilha Cheat - passar dano para próximo jogador
                     current_index = self.players.index(target_username)
@@ -1389,7 +1391,6 @@ class Game:
                             'original_target': target_username,
                             'log': result['log']
                         }
-                
                 elif trap_result.get('cancel_attack', False):
                     # Armadilha que cancela o ataque
                     return {
@@ -1401,14 +1402,6 @@ class Game:
                 else:
                     # Outros efeitos de armadilha
                     trap_effects.extend(trap_result.get('effects', []) if isinstance(trap_result, dict) else [trap_result])
-
-        # APÓS processar todas as armadilhas, remover as que foram consumidas
-        for trap_index in traps_to_remove:
-            trap_card = defender['defense_bases'][trap_index]
-            if trap_card:
-                self.graveyard.append(trap_card)
-                defender['defense_bases'][trap_index] = None
-                broadcast_system_message(self.game_id, f'💀 Armadilha "{trap_card["name"]}" foi consumida e enviada ao cemitério!')
 
         # Se chegou aqui, não houve armadilha que cancelou/refletiu/transferiu o ataque
         # Processar dano normalmente usando apply_damage_to_player
