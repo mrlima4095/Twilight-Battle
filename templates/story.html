@@ -1500,7 +1500,7 @@
                 location: 'north_village',
                 locationName: 'ateliê do artesão',
                 greeting: function() {
-                    return `"Ah, ${gameState.character.name}! A arte é a alma do reino. Entre e admire minhas criações!"`;
+                    return `Ah, ${gameState.character.name}! A arte é a alma do reino. Entre e admire minhas criações!`;
                 },
                 farewell: "Que a inspiração te acompanhe! Volte sempre!",
                 sleepyMessages: [
@@ -1546,10 +1546,10 @@
                 sleepingMessage: 'Isadora está dormindo na oficina. Volte durante o dia!',
                 absentMessage: 'Isadora saiu para colher plantas para tingir tecidos. Volte mais tarde!',
                 topics: [
-                    { name: '🎨 Sobre os tecidos', message: '"Cada cor vem de uma planta diferente. O azul vem das flores do lago sagrado, o vermelho das bagas da floresta..."' },
-                    { name: '🌿 Jardim de plantas', message: '"Tenho um jardim secreto atrás da oficina. Lá cultivo todas as plantas que uso para tingir."' },
-                    { name: '📜 Histórias do reino', message: '"Dizem que há um tear mágico escondido nas ruínas antigas. Quem o encontrar pode tecer a própria realidade..."' },
-                    { name: '💬 Tudo bem?', message: function() { return `"Estou bem, sim! E você, ${gameState.character.name}? A aventura tem sido boa?"`; } }
+                    { name: '🎨 Sobre os tecidos', message: 'Cada cor vem de uma planta diferente. O azul vem das flores do lago sagrado, o vermelho das bagas da floresta...' },
+                    { name: '🌿 Jardim de plantas', message: 'Tenho um jardim secreto atrás da oficina. Lá cultivo todas as plantas que uso para tingir.' },
+                    { name: '📜 Histórias do reino', message: 'Dizem que há um tear mágico escondido nas ruínas antigas. Quem o encontrar pode tecer a própria realidade...' },
+                    { name: '💬 Tudo bem?', message: function() { return `Estou bem, sim! E você, ${gameState.character.name}? A aventura tem sido boa?`; } }
                 ],
                 shopItems: [
                     { id: 'cloth', price: 25, quantity: -1 },
