@@ -1322,9 +1322,7 @@ class Game:
             trap_result = self.activate_trap(trap['card'], attacker, defender, attack_power)
             
             if trap_result:
-                # Verificar se a armadilha deve ser consumida (ir para o cemitério)
-                if trap_result.get('consume_trap', False):
-                    traps_to_remove.append(trap['index'])
+                traps_to_remove.append(trap['index'])
                 
                 if trap_result.get('type') == 'mirror_damage':
                     # Armadilha Espelho - refletir dano
