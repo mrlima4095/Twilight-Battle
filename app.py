@@ -2708,7 +2708,7 @@ class Game:
                     'type': 'pass_damage',
                     'message': f'⚡ Armadilha Cheat! O dano do ataque será passado para o próximo jogador!'
                 })
-                broadcast_system_message(self.game_id, f'⚡ Armadilha Cheat ativada! O dano foi transferido para {next_player_name}!')
+                
                 return {
                     'type': 'cheat_pass_damage',
                     'cancel_attack': True,  # Cancela o dano no defensor atual
