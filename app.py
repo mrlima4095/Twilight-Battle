@@ -1316,11 +1316,16 @@ class Game:
         
         # Processar armadilhas
         trap_effects = []
-        
+        traps_to_remove = []  # Lista para armazenar índices das armadilhas a remover
+
         for trap in trap_cards:
             trap_result = self.activate_trap(trap['card'], attacker, defender, attack_power)
             
-            if trap_result and isinstance(trap_result, dict):
+            if trap_result:
+                # Verificar se a armadilha deve ser consumida (ir para o cemitério)
+                if trap_result.get('consume_trap', False):
+                    traps_to_remove.append(trap['index'])
+                
                 if trap_result.get('type') == 'mirror_damage':
                     # Armadilha Espelho - refletir dano
                     reflected_damage = trap_result.get('damage_to_reflect', attack_power)
@@ -1397,10 +1402,16 @@ class Game:
                     }
                 else:
                     # Outros efeitos de armadilha
-                    trap_effects.extend(trap_result if isinstance(trap_result, list) else [trap_result])
-                    defender['defense_bases'][trap['index']] = None
-                    self.graveyard.append(trap['card'])
-        
+                    trap_effects.extend(trap_result.get('effects', []) if isinstance(trap_result, dict) else [trap_result])
+
+        # APÓS processar todas as armadilhas, remover as que foram consumidas
+        for trap_index in traps_to_remove:
+            trap_card = defender['defense_bases'][trap_index]
+            if trap_card:
+                self.graveyard.append(trap_card)
+                defender['defense_bases'][trap_index] = None
+                broadcast_system_message(self.game_id, f'💀 Armadilha "{trap_card["name"]}" foi consumida e enviada ao cemitério!')
+
         # Se chegou aqui, não houve armadilha que cancelou/refletiu/transferiu o ataque
         # Processar dano normalmente usando apply_damage_to_player
         
@@ -2660,40 +2671,41 @@ class Game:
             damage = 0
             index = -1
             for card in attacker['attack_bases']:
-                if card['attack'] > damage:
-                    damage = card['attack']
+                if card and card.get('attack', 0) > damage:
+                    damage = card.get('attack', 0)
                     index += 1
 
-            stolen_card = attacker['attack_bases'].pop(index)
-            defender['hand'].append(stolen_card)
+            if index >= 0 and index < len(attacker['attack_bases']) and attacker['attack_bases'][index]:
+                stolen_card = attacker['attack_bases'].pop(index)
+                defender['hand'].append(stolen_card)
 
-            broadcast_system_message(self.game_id, f'🔮 Armadilha 171 ativada! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!')
-            effects.append({
-                'type': 'steal_card',
-                'stolen_card': stolen_card['name'],
-                'message': f'🔮 Armadilha 171! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!'
-            })
+                broadcast_system_message(self.game_id, f'🔮 Armadilha 171 ativada! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!')
+                effects.append({
+                    'type': 'steal_card',
+                    'stolen_card': stolen_card['name'],
+                    'message': f'🔮 Armadilha 171! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!'
+                })
+            
+            # Retornar efeito com consumo da armadilha
+            return {
+                'type': 'trap_consumed',
+                'effects': effects,
+                'consume_trap': True
+            }
         
         # Armadilha Espelho - Reverte ataques
         elif trap_id == 'armadilha_espelho':
-            # Reverter o dano total para o atacante
-            effects.append({
-                'type': 'mirror',
-                'mirror_damage': True,
-                'damage_to_reflect': attack_power,
-                'message': f'🪞 Armadilha Espelho! O dano de {attack_power} será revertido para {attacker["name"]}!'
-            })
             broadcast_system_message(self.game_id, f'🪞 Armadilha Espelho ativada! O ataque de {attack_power} foi refletido para {attacker["name"]}!')
             return {
                 'type': 'mirror_damage',
-                'cancel_attack': True,  # Cancela o dano no defensor atual
+                'cancel_attack': True,
                 'damage_to_reflect': attack_power,
-                'message': f'🪞 Armadilha Espelho! {attack_power} de dano refletido para {attacker["name"]}!'
+                'message': f'🪞 Armadilha Espelho! {attack_power} de dano refletido para {attacker["name"]}!',
+                'consume_trap': True
             }
         
         # Armadilha Cheat - Dobra ataque e passa para próximo
         elif trap_id == 'armadilha_cheat':
-            # Verificar se é noite e tem mago em campo
             is_night = (self.time_of_day == 'night')
             has_mage = False
             
@@ -2703,24 +2715,24 @@ class Game:
                     break
             
             if is_night and has_mage:
-                # Marcar que o dano deve ser passado para o próximo jogador
-                effects.append({
-                    'type': 'pass_damage',
-                    'message': f'⚡ Armadilha Cheat! O dano do ataque será passado para o próximo jogador!'
-                })
-                
+                broadcast_system_message(self.game_id, f'⚡ Armadilha Cheat ativada! O dano será transferido para o próximo jogador!')
                 return {
                     'type': 'cheat_pass_damage',
-                    'cancel_attack': True,  # Cancela o dano no defensor atual
+                    'cancel_attack': True,
                     'pass_to_next': True,
-                    'message': f'⚡ Armadilha Cheat! {attacker["name"]} passou o dano para o próximo jogador!'
+                    'message': f'⚡ Armadilha Cheat! {attacker["name"]} passou o dano para o próximo jogador!',
+                    'consume_trap': True
                 }
             else:
                 effects.append({
                     'type': 'failed',
                     'message': f'⚠️ Armadilha Cheat falhou! Precisa ser noite e ter um mago em campo.'
                 })
-                return None
+                return {
+                    'type': 'trap_failed',
+                    'effects': effects,
+                    'consume_trap': True  # Mesmo falhando, a armadilha é consumida
+                }
                 
         # Armadilha Poço Sem Fundo - Destrói todas as 3 criaturas atacantes
         elif trap_id == 'armadilha_poco':
@@ -2731,19 +2743,17 @@ class Game:
                     self.graveyard.append(card)
                     attacker['attack_bases'][i] = None
             
-            effects.append({
-                'type': 'destroy_attackers',
-                'destroyed': destroyed_attackers,
-                'message': f'🕳️ Poço Sem Fundo! As criaturas atacantes foram destruídas: {", ".join(destroyed_attackers)}'
-            })
-            
             broadcast_system_message(self.game_id, f'🕳️ Poço Sem Fundo ativado! As criaturas atacantes {", ".join(destroyed_attackers)} foram destruídas!')
-            effects.append({
-                'type': 'cancel_attack',
-                'cancel_attack': True
-            })
+            
+            return {
+                'type': 'destroy_attackers',
+                'cancel_attack': True,
+                'destroyed': destroyed_attackers,
+                'message': f'🕳️ Poço Sem Fundo! As criaturas atacantes foram destruídas: {", ".join(destroyed_attackers)}',
+                'consume_trap': True
+            }
         
-        return effects
+        return None
 
 # Rotas da aplicação
 @app.route('/')
