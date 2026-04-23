@@ -1316,16 +1316,13 @@ class Game:
         
         # Processar armadilhas
         trap_effects = []
-        traps_to_remove = []  # Lista para armazenar índices das armadilhas a remover
 
         for trap in trap_cards:
             trap_result = self.activate_trap(trap['card'], attacker, defender, attack_power)
             
             if trap_result:
-                traps_to_remove.append(trap['index'])
                 self.graveyard.append(defender['defense_bases'][trap['index']])
                 defender['defense_bases'][trap['index']] = None
-                broadcast_system_message(self.game_id, f'💀 Armadilha "{trap_card["name"]}" foi consumida e enviada ao cemitério!')
 
                 if trap_result.get('type') == 'mirror_damage':
                     # Armadilha Espelho - refletir dano
