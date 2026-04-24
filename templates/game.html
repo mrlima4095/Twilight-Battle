@@ -525,18 +525,30 @@
             saveSession();
             showSessionIndicator();
             
-            Swal.fire({
-                icon: 'success',
-                title: 'Reconectado!',
-                text: 'Sua sessão foi restaurada.',
-                timer: 2000,
-                showConfirmButton: false,
-                background: '#1a1a2e',
-                color: '#fff'
-            });
-        
-            document.getElementById('waiting-room').style.display = 'none';
-            requestGameState();
+            // Se o jogo ainda NÃO começou, mostrar waiting room
+            if (!data.game_started) {
+                console.log('Jogo não começou, mostrando waiting room');
+                document.getElementById('waiting-room').style.display = 'block';
+                document.getElementById('player-area').style.display = 'none';
+                gameStarted = false;
+                
+                // Solicitar estado para atualizar lista de jogadores
+                requestGameState();
+                
+            } else {
+                document.getElementById('waiting-room').style.display = 'none';
+                requestGameState();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Reconectado!',
+                    text: 'Sua sessão foi restaurada.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
         });
         // | (Entrou ou Saiu)
         socket.on('player_joined', function(data) {
