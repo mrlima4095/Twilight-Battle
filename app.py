@@ -917,6 +917,10 @@ class Game:
         # Remover das listas
         self.players.remove(username)
         
+        sockets_to_remove = [sid for sid, uname in self.socket_to_username.items() if uname == username]
+        for sid in sockets_to_remove:
+            del self.socket_to_username[sid]
+            
         # Se não há mais jogadores, marcar para limpeza
         if len(self.players) == 0:
             return True, was_creator, None
