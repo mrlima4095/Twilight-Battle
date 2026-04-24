@@ -2993,38 +2993,44 @@ def handle_disconnect():
 @socketio.on('join_game')
 def handle_join_game(data):
     game_id = data['game_id']
-    
-    # Obter username do token
     username = get_current_user()
     if not username:
         emit('error', {'message': 'Usuário não autenticado'})
         return
-    
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
         return
-    
     game = games[game_id]
-    
-    if game.started:
-        emit('error', {'message': 'O jogo já começou'})
+
+    # Se já começou e o usuário não está no jogo, não permite
+    if game.started and username not in game.player_data:
+        emit('error', {'message': 'Jogo já começou. Use espectador se quiser assistir.'})
         return
-    
+
+    # Caso 1: jogador já existe (reconexão)
+    if username in game.player_data:
+        result = game.reconnect_player(request.sid, username)
+        if result['success']:
+            join_room(game_id)
+            update_user_game(username, game_id)
+            # Avisa a sala que o jogador reconectou (sem duplicar na lista)
+            broadcast_system_message(game_id, f'{username} reconectou ao jogo')
+            emit('reconnect_success', result)
+        else:
+            emit('error', {'message': result['message']})
+        return
+
+    # Caso 2: novo jogador (apenas se jogo não começou)
+    if game.started:
+        emit('error', {'message': 'Jogo já começou. Use espectador se quiser assistir.'})
+        return
+
     if game.add_player(request.sid, username):
         join_room(game_id)
-        
-        # Atualizar jogo atual na conta
         update_user_game(username, game_id)
-        
-        # Lista de jogadores (usernames)
-        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
-
         broadcast_system_message(game_id, f'{username} entrou na sala')
-
-        emit('player_joined', {
-            'username': username,
-            'players': players_list
-        }, room=game_id)
+        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+        emit('player_joined', {'username': username, 'players': players_list}, room=game_id)
     else:
         emit('error', {'message': 'Não foi possível entrar no jogo'})
 
