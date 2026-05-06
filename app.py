@@ -873,7 +873,7 @@ class Game:
             'name': username,
             'username': username,
             'socket_id': socket_id,
-            'life': 5000,
+            'life': 1200,
             'hand': hand,
             'attack_bases': [None, None, None],
             'defense_bases': [None, None, None, None, None, None],
