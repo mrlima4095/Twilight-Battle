@@ -812,7 +812,7 @@ class RitualManager:
         
         return available_rituals
 class Game:
-    def __init__(self, game_id, creator):
+    def __init__(self, game_id, creator, config=None):
         self.game_id = game_id
         self.creator = creator
         self.players = []  # Lista de usernames
