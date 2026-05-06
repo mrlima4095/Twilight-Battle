@@ -816,12 +816,20 @@ class RitualManager:
         return available_rituals
 class Game:
     def __init__(self, game_id, creator, config=None):
+        # Configurações da sala
+        self.config = config or {}
+        self.max_players = self.config.get('max_players', 6)  # Padrão 6
+        self.allow_spectators = self.config.get('allow_spectators', True)
+        self.private = self.config.get('private', False)
+        self.modifiers = self.config.get('modifiers', [])  # Lista de modificadores ativos
+        self.chat_enabled = self.config.get('chat_enabled', True)
+
         self.game_id = game_id
         self.creator = creator
         self.players = []  # Lista de usernames
         self.player_data = {}  # Dict com username como chave
         self.socket_to_username = {}  # Mapeamento socket.id -> username
-        self.deck = create_deck(self.config.get('modifiers', []))
+        self.deck = create_deck(self.modifiers)
         self.graveyard = []
         self.started = False
         self.current_turn = 0  # Índice na lista players
@@ -831,13 +839,6 @@ class Game:
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
 
-        # Configurações da sala
-        self.config = config or {}
-        self.max_players = self.config.get('max_players', 6)  # Padrão 6
-        self.allow_spectators = self.config.get('allow_spectators', True)
-        self.private = self.config.get('private', False)
-        self.modifiers = self.config.get('modifiers', [])  # Lista de modificadores ativos
-        self.chat_enabled = self.config.get('chat_enabled', True)
 
         self.first_round = True
         self.players_acted = set()
