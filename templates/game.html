@@ -3495,6 +3495,24 @@
             });
         };
         // | (Profecias)
+        function getProphetUsesRemaining() {
+            if (!gameState || !gameState.players[currentUsername]) return 0;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && (card.id === 'profeta' || card.name === 'Profeta')) {
+                    const uses = card.prophet_uses || 0;
+                    if (uses >= 2) return 0;
+                    return 2 - uses;
+                }
+            }
+            
+            return 0;
+        }
         window.selectProphetTarget = function(targetPlayerId) {
             Swal.close();
             
