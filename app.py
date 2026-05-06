@@ -597,6 +597,31 @@ DISGUISE_OPTIONS = [
     }
 ]
 
+MODIFIERS = [
+    {
+        'id': 'empty_hand',
+        'name': 'Mão Vazia',
+        'description': 'Jogadores começam a partida sem nenhuma carta na mão',
+        'icon': '🃏',
+        'enabled': True
+    },
+    # Futuros modificadores podem ser adicionados aqui:
+    # {
+    #     'id': 'no_runes',
+    #     'name': 'Sem Runas',
+    #     'description': 'Runas não podem ser usadas para reviver cartas',
+    #     'icon': '🔷',
+    #     'enabled': True
+    # },
+    # {
+    #     'id': 'double_damage',
+    #     'name': 'Dano Dobrado',
+    #     'description': 'Todo dano causado é dobrado',
+    #     'icon': '💥',
+    #     'enabled': True
+    # },
+]
+
 def get_random_disguise():
     disguise = random.choice(DISGUISE_OPTIONS)
     return {
@@ -803,6 +828,14 @@ class Game:
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
 
+        # Configurações da sala
+        self.config = config or {}
+        self.max_players = self.config.get('max_players', 6)  # Padrão 6
+        self.allow_spectators = self.config.get('allow_spectators', True)
+        self.private = self.config.get('private', False)
+        self.modifiers = self.config.get('modifiers', [])  # Lista de modificadores ativos
+        self.chat_enabled = self.config.get('chat_enabled', True)
+
         self.first_round = True
         self.players_acted = set()
         self.attacks_blocked = True
@@ -831,9 +864,10 @@ class Game:
         
         # Draw 5 initial cards
         hand = []
-        for _ in range(5):
-            if self.deck:
-                hand.append(self.deck.pop())
+        if not 'empty_hand' in self.modifiers:
+            for _ in range(5):
+                if self.deck:
+                    hand.append(self.deck.pop())
         
         self.player_data[username] = {
             'name': username,
@@ -2791,11 +2825,16 @@ def spectate_game(username, game_id):
 def get_games():
     games_list = []
     for game_id, game in games.items():
+        if game.private:
+            continue
+            
         games_list.append({
             'id': game_id,
             'players': len(game.players),
             'max_players': game.max_players,
-            'started': game.started
+            'started': game.started,
+            'allow_spectators': game.allow_spectators,
+            'modifiers': game.modifiers
         })
     return jsonify(games_list)
 
@@ -2803,11 +2842,21 @@ def get_games():
 def create_game():
     username = get_current_user()
     if not username:
-        return render_template('auth.html')
-
+        return jsonify({'success': False, 'message': 'Usuário não autenticado'}), 401
+    
+    data = request.json or {}
+    config = {
+        'max_players': min(int(data.get('max_players', 6)), 12),
+        'private': data.get('private', False),
+        'allow_spectators': data.get('allow_spectators', True),
+        'chat_enabled': data.get('chat_enabled', True),
+        'modifiers': data.get('modifiers', []) 
+    }
+    
     game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    games[game_id] = Game(game_id, username)
-    return jsonify({'game_id': game_id})
+    games[game_id] = Game(game_id, username, config)
+    
+    return jsonify({'game_id': game_id, 'config': config})
 
 @app.route('/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):

@@ -143,6 +143,8 @@
             justify-content: space-between;
             align-items: center;
             border: 1px solid rgba(255, 215, 0, 0.2);
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .game-info {
@@ -231,21 +233,22 @@
 
         .tooltip .tooltiptext {
             visibility: hidden;
-            width: 120px;
-            background-color: rgba(0, 0, 0, 0.8);
+            width: 200px;
+            background-color: rgba(0, 0, 0, 0.9);
             color: #fff;
             text-align: center;
-            padding: 5px;
+            padding: 8px;
             border-radius: 5px;
             position: absolute;
             z-index: 1;
             bottom: 125%;
             left: 50%;
-            margin-left: -60px;
+            margin-left: -100px;
             opacity: 0;
             transition: opacity 0.3s;
-            font-size: 12px;
+            font-size: 11px;
             border: 1px solid #ffd700;
+            pointer-events: none;
         }
 
         .tooltip:hover .tooltiptext {
@@ -261,6 +264,116 @@
             font-size: 12px;
             margin-left: 10px;
         }
+        
+        .create-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .create-section h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .modifiers-section {
+            margin-top: 15px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            padding-top: 15px;
+        }
+        
+        .modifiers-title {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .modifiers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .modifier-item {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modifier-item:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .modifier-item.selected {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+        
+        .modifier-item input {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+        
+        .modifier-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .modifier-badge {
+            font-size: 12px;
+            background: rgba(255, 215, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        
+        .game-modifiers {
+            font-size: 11px;
+            color: #ffd700;
+            margin-top: 5px;
+        }
+        
+        .game-modifiers span {
+            background: rgba(255, 215, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-right: 5px;
+            display: inline-block;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+        
+        .checkbox-label input {
+            width: auto;
+            cursor: pointer;
+        }
+        
+        small {
+            color: #888;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -275,12 +388,11 @@
                 <input type="text" id="game-id" placeholder="Ex: ABC123">
             </div>
             <button id="join-game-btn">Entrar na sala</button>
-            <button id="create-game-btn" class="create-btn">Criar nova sala</button>
             
             <!-- Informação do usuário logado -->
             <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px;">
                 <span style="color: #ffd700;">👤 Logado como: <strong id="logged-username">Carregando...</strong></span>
-                <button id="logout-btn" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">Sair</button>
+                <button id="logout-btn" style="margin-left: 10px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; width: auto;">Sair</button>
             </div>
             
             <!-- LINK PARA REGRAS -->
@@ -289,6 +401,62 @@
                     📜 Ver Regras do Jogo
                 </a>
             </div>
+        </div>
+
+        <!-- Seção de criação de sala com configurações -->
+        <div class="create-section">
+            <h2>⚙️ Criar nova sala</h2>
+            
+            <div class="config-grid">
+                <!-- Número de jogadores -->
+                <div class="input-group">
+                    <label>👥 Máximo de jogadores</label>
+                    <input type="number" id="create-max-players" min="2" max="12" value="6" step="1">
+                    <small>(2 a 12 jogadores)</small>
+                </div>
+                
+                <!-- Sala Privada -->
+                <div class="input-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="create-private">
+                        🔒 Sala Privada
+                    </label>
+                    <small>Não aparece na lista pública, apenas por código</small>
+                </div>
+                
+                <!-- Permitir Espectadores -->
+                <div class="input-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="create-allow-spectators" checked>
+                        👁️ Permitir Espectadores
+                    </label>
+                </div>
+                
+                <!-- Chat Habilitado -->
+                <div class="input-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="create-chat-enabled" checked>
+                        💬 Chat ativo
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Modificadores (carregados dinamicamente do backend) -->
+            <div class="modifiers-section">
+                <div class="modifiers-title">
+                    ✨ Modificadores de jogo 
+                    <span class="tooltip">ⓘ
+                        <span class="tooltiptext">Modificadores alteram as regras do jogo. Carregados automaticamente do servidor.</span>
+                    </span>
+                </div>
+                <div class="modifiers-list" id="modifiers-list">
+                    <div style="color: #888; text-align: center; width: 100%; padding: 20px;">
+                        Carregando modificadores...
+                    </div>
+                </div>
+            </div>
+            
+            <button id="create-game-advanced-btn" class="create-btn" style="margin-top: 20px;">🎲 Criar Sala com estas opções</button>
         </div>
 
         <div class="games-list">
@@ -318,14 +486,77 @@
         document.addEventListener('DOMContentLoaded', function() {
             const gameIdInput = document.getElementById('game-id');
             const joinBtn = document.getElementById('join-game-btn');
-            const createBtn = document.getElementById('create-game-btn');
+            const createBtn = document.getElementById('create-game-advanced-btn');
             const refreshBtn = document.getElementById('refresh-games');
             const gamesContainer = document.getElementById('games-container');
             const loading = document.getElementById('loading');
             const loggedUsername = document.getElementById('logged-username');
             const logoutBtn = document.getElementById('logout-btn');
+            const modifiersContainer = document.getElementById('modifiers-list');
             
             let currentUsername = null;
+            let availableModifiers = []; // Armazenar modificadores disponíveis
+            
+            // Carregar modificadores do backend
+            function loadModifiers() {
+                fetch('/api/modifiers')
+                    .then(response => response.json())
+                    .then(data => {
+                        availableModifiers = data.modifiers || [];
+                        renderModifiers();
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar modificadores:', error);
+                        modifiersContainer.innerHTML = '<div style="color: #ff4444; text-align: center; width: 100%; padding: 20px;">❌ Erro ao carregar modificadores</div>';
+                    });
+            }
+            
+            // Renderizar modificadores na interface
+            function renderModifiers() {
+                if (!availableModifiers.length) {
+                    modifiersContainer.innerHTML = '<div style="color: #888; text-align: center; width: 100%; padding: 20px;">✨ Nenhum modificador disponível</div>';
+                    return;
+                }
+                
+                modifiersContainer.innerHTML = '';
+                availableModifiers.forEach(mod => {
+                    const modDiv = document.createElement('div');
+                    modDiv.className = 'modifier-item';
+                    modDiv.setAttribute('data-mod-id', mod.id);
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `mod-${mod.id}`;
+                    checkbox.value = mod.id;
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `mod-${mod.id}`;
+                    label.innerHTML = `${mod.icon || '✨'} ${mod.name}`;
+                    
+                    const tooltipSpan = document.createElement('span');
+                    tooltipSpan.className = 'tooltip';
+                    tooltipSpan.innerHTML = 'ⓘ';
+                    const tooltipText = document.createElement('span');
+                    tooltipText.className = 'tooltiptext';
+                    tooltipText.textContent = mod.description;
+                    tooltipSpan.appendChild(tooltipText);
+                    
+                    modDiv.appendChild(checkbox);
+                    modDiv.appendChild(label);
+                    modDiv.appendChild(tooltipSpan);
+                    
+                    modifiersContainer.appendChild(modDiv);
+                });
+            }
+            
+            // Obter modificadores selecionados
+            function getSelectedModifiers() {
+                const selected = [];
+                document.querySelectorAll('#modifiers-list input[type="checkbox"]:checked').forEach(cb => {
+                    selected.push(cb.value);
+                });
+                return selected;
+            }
             
             // Verificar autenticação ao carregar
             fetch('/api/check-auth')
@@ -342,6 +573,9 @@
                     if (data.current_game && data.game_exists) {
                         window.location.href = `/game/${data.current_game}`;
                     }
+                    
+                    // Carregar modificadores após autenticação
+                    loadModifiers();
                 })
                 .catch(() => {
                     location.reload();
@@ -372,12 +606,24 @@
                             
                             const isFull = game.players >= game.max_players;
                             
+                            // Mostrar modificadores da sala
+                            let modifiersHtml = '';
+                            if (game.modifiers && game.modifiers.length > 0) {
+                                const modNames = game.modifiers.map(m => {
+                                    const modInfo = availableModifiers.find(am => am.id === m);
+                                    return modInfo ? modInfo.name : m;
+                                }).join(', ');
+                                modifiersHtml = `<div class="game-modifiers">✨ Mods: ${modNames}</div>`;
+                            }
+                            
                             gameElement.innerHTML = `
                                 <div class="game-info">
                                     <strong>Sala: ${game.id}</strong>
                                     ${isFull ? '<span class="game-full-badge">🔴 Lotada</span>' : ''}
                                     <br>
                                     Jogadores: ${game.players}/${game.max_players}
+                                    ${!game.allow_spectators ? '<br><small>🔒 Sem espectadores</small>' : ''}
+                                    ${modifiersHtml}
                                 </div>
                                 <span class="game-status ${game.started ? 'status-playing' : 'status-waiting'}">
                                     ${game.started ? '⚔️ Em andamento' : '⏳ Aguardando'}
@@ -389,6 +635,10 @@
                             
                             gamesContainer.appendChild(gameElement);
                         });
+                    })
+                    .catch(error => {
+                        console.error('Erro ao carregar jogos:', error);
+                        gamesContainer.innerHTML = '<div class="game-item">❌ Erro ao carregar salas</div>';
                     });
             }
             
@@ -398,14 +648,25 @@
                 
                 // Se o jogo estiver em andamento
                 if (game.started) {
-                    return `
-                        <div class="tooltip">
-                            <button class="join-game-btn spectate-btn" onclick="spectateGame('${game.id}')">
-                                👁️ Espectar
-                            </button>
-                            <span class="tooltiptext">Assistir à partida em andamento</span>
-                        </div>
-                    `;
+                    if (game.allow_spectators) {
+                        return `
+                            <div class="tooltip">
+                                <button class="join-game-btn spectate-btn" onclick="spectateGame('${game.id}')">
+                                    👁️ Espectar
+                                </button>
+                                <span class="tooltiptext">Assistir à partida em andamento</span>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="tooltip">
+                                <button class="join-game-btn" disabled style="opacity: 0.5; background: #888;">
+                                    🔒 Sem espectadores
+                                </button>
+                                <span class="tooltiptext">Esta sala não permite espectadores</span>
+                            </div>
+                        `;
+                    }
                 }
                 
                 // Se o jogo estiver aguardando jogadores
@@ -449,32 +710,60 @@
                 window.location.href = `/spectate/${gameId}`;
             };
             
+            // Criar sala com configurações
             createBtn.addEventListener('click', function() {
                 if (!currentUsername) {
                     alert('Usuário não autenticado');
                     return;
                 }
                 
+                const maxPlayers = parseInt(document.getElementById('create-max-players').value);
+                const isPrivate = document.getElementById('create-private').checked;
+                const allowSpectators = document.getElementById('create-allow-spectators').checked;
+                const chatEnabled = document.getElementById('create-chat-enabled').checked;
+                const modifiers = getSelectedModifiers();
+                
+                // Validações
+                if (maxPlayers < 2 || maxPlayers > 12) {
+                    alert('Máximo de jogadores deve ser entre 2 e 12');
+                    return;
+                }
+                
+                const config = {
+                    max_players: maxPlayers,
+                    private: isPrivate,
+                    allow_spectators: allowSpectators,
+                    chat_enabled: chatEnabled,
+                    modifiers: modifiers
+                };
+                
                 loading.classList.add('active');
                 
-                fetch('/api/create-game', { method: 'POST' })
-                    .then(response => response.json())
-                    .then(data => {
-                        loading.classList.remove('active');
-                        gameIdInput.value = data.game_id;
+                fetch('/api/create-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    loading.classList.remove('active');
+                    if (data.game_id) {
                         window.location.href = `/game/${data.game_id}`;
-                    })
-                    .catch(error => {
-                        loading.classList.remove('active');
-                        alert('Erro ao criar sala');
-                    });
-                    
+                    } else {
+                        alert('Erro ao criar sala: ' + (data.message || 'Erro desconhecido'));
+                    }
+                })
+                .catch(error => {
+                    loading.classList.remove('active');
+                    console.error('Erro:', error);
+                    alert('Erro ao criar sala');
+                });
             });
             
             refreshBtn.addEventListener('click', loadGames);
             
             joinBtn.addEventListener('click', function() {
-                const gameId = gameIdInput.value.trim();
+                const gameId = gameIdInput.value.trim().toUpperCase();
                 
                 if (!currentUsername) {
                     alert('Usuário não autenticado');
@@ -493,36 +782,52 @@
                         const game = games.find(g => g.id === gameId);
                         
                         if (!game) {
-                            alert('Sala não encontrada!');
+                            // Pode ser uma sala privada - tentar entrar diretamente
+                            window.location.href = `/game/${gameId}`;
                             return;
                         }
                         
                         if (game.started) {
                             // Se já começou, perguntar se quer espectar
-                            Swal.fire({
-                                title: '⚔️ Jogo em andamento',
-                                html: `
-                                    <p style="color: #fff;">Esta partida já começou.</p>
-                                    <p style="color: #ffd700;">Deseja assistir como espectador?</p>
-                                `,
-                                icon: 'question',
-                                showCancelButton: true,
-                                confirmButtonColor: '#4a90e2',
-                                cancelButtonColor: '#ff4444',
-                                confirmButtonText: '👁️ Sim, assistir',
-                                cancelButtonText: 'Cancelar',
-                                background: '#1a1a2e',
-                                color: '#fff'
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    window.location.href = `/spectate/${gameId}`;
-                                }
-                            });
+                            if (game.allow_spectators) {
+                                Swal.fire({
+                                    title: '⚔️ Jogo em andamento',
+                                    html: `
+                                        <p style="color: #fff;">Esta partida já começou.</p>
+                                        <p style="color: #ffd700;">Deseja assistir como espectador?</p>
+                                    `,
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#4a90e2',
+                                    cancelButtonColor: '#ff4444',
+                                    confirmButtonText: '👁️ Sim, assistir',
+                                    cancelButtonText: 'Cancelar',
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        window.location.href = `/spectate/${gameId}`;
+                                    }
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: '⚔️ Jogo em andamento',
+                                    html: `<p style="color: #fff;">Esta partida não permite espectadores.</p>`,
+                                    icon: 'info',
+                                    confirmButtonText: 'OK',
+                                    background: '#1a1a2e',
+                                    color: '#fff'
+                                });
+                            }
                         } else if (game.players >= game.max_players) {
                             alert('Sala lotada!');
                         } else {
                             window.location.href = `/game/${gameId}`;
                         }
+                    })
+                    .catch(() => {
+                        // Se falhar, tentar entrar diretamente
+                        window.location.href = `/game/${gameId}`;
                     });
             });
 
