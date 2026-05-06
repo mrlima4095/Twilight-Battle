@@ -93,7 +93,7 @@
             color: #fff;
         }
         
-        button {
+        .btn {
             background: linear-gradient(45deg, #ffd700, #ffa500);
             color: #1a1a2e;
             border: none;
@@ -107,18 +107,23 @@
             margin-bottom: 10px;
         }
         
-        button:hover {
+        .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
         }
         
-        button:disabled {
+        .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
         
-        .create-btn {
+        .btn-primary {
             background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #9370db, #7b5fb0);
             color: white;
         }
         
@@ -265,85 +270,6 @@
             margin-left: 10px;
         }
         
-        .create-section {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-        
-        .create-section h2 {
-            color: #ffd700;
-            margin-bottom: 15px;
-        }
-        
-        .config-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-        
-        .modifiers-section {
-            margin-top: 15px;
-            border-top: 1px solid rgba(255, 215, 0, 0.3);
-            padding-top: 15px;
-        }
-        
-        .modifiers-title {
-            color: #ffd700;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .modifiers-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .modifier-item {
-            background: rgba(255, 215, 0, 0.1);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            border-radius: 8px;
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .modifier-item:hover {
-            background: rgba(255, 215, 0, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        .modifier-item.selected {
-            background: rgba(76, 175, 80, 0.3);
-            border-color: #4CAF50;
-        }
-        
-        .modifier-item input {
-            width: auto;
-            margin: 0;
-            cursor: pointer;
-        }
-        
-        .modifier-item label {
-            margin: 0;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .modifier-badge {
-            font-size: 12px;
-            background: rgba(255, 215, 0, 0.2);
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 8px;
-        }
-        
         .game-modifiers {
             font-size: 11px;
             color: #ffd700;
@@ -374,6 +300,200 @@
             color: #888;
             font-size: 12px;
         }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .action-buttons button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 2px solid #ffd700;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease;
+        }
+        
+        .modal-header {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .modal-header h2 {
+            color: #ffd700;
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #ffd700;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+        
+        .modifiers-section {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            padding-top: 20px;
+        }
+        
+        .modifiers-title {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .modifiers-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .modifier-item {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .modifier-item:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .modifier-item.selected {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+        }
+        
+        .modifier-item input {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+        
+        .modifier-item label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 215, 0, 0.3);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .modal-footer button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Scrollbar personalizada */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #ffd700;
+            border-radius: 10px;
+        }
+        
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #ffa500;
+        }
     </style>
 </head>
 <body>
@@ -387,7 +507,13 @@
                 <label for="game-id">Código da sala</label>
                 <input type="text" id="game-id" placeholder="Ex: ABC123">
             </div>
-            <button id="join-game-btn">Entrar na sala</button>
+            <button class="btn" id="join-game-btn">Entrar na sala</button>
+            
+            <!-- Botões de ação -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="create-room-btn">🎲 Criar Nova Sala</button>
+                <button class="btn btn-secondary" id="story-mode-btn">📖 Modo História</button>
+            </div>
             
             <!-- Informação do usuário logado -->
             <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(255,215,0,0.1); border-radius: 8px;">
@@ -403,62 +529,6 @@
             </div>
         </div>
 
-        <!-- Seção de criação de sala com configurações -->
-        <div class="create-section">
-            <h2>⚙️ Criar nova sala</h2>
-            
-            <div class="config-grid">
-                <!-- Número de jogadores -->
-                <div class="input-group">
-                    <label>👥 Máximo de jogadores</label>
-                    <input type="number" id="create-max-players" min="2" max="12" value="6" step="1">
-                    <small>(2 a 12 jogadores)</small>
-                </div>
-                
-                <!-- Sala Privada -->
-                <div class="input-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="create-private">
-                        🔒 Sala Privada
-                    </label>
-                    <small>Não aparece na lista pública, apenas por código</small>
-                </div>
-                
-                <!-- Permitir Espectadores -->
-                <div class="input-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="create-allow-spectators" checked>
-                        👁️ Permitir Espectadores
-                    </label>
-                </div>
-                
-                <!-- Chat Habilitado -->
-                <div class="input-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="create-chat-enabled" checked>
-                        💬 Chat ativo
-                    </label>
-                </div>
-            </div>
-            
-            <!-- Modificadores (carregados dinamicamente do backend) -->
-            <div class="modifiers-section">
-                <div class="modifiers-title">
-                    ✨ Modificadores de jogo 
-                    <span class="tooltip">ⓘ
-                        <span class="tooltiptext">Modificadores alteram as regras do jogo. Carregados automaticamente do servidor.</span>
-                    </span>
-                </div>
-                <div class="modifiers-list" id="modifiers-list">
-                    <div style="color: #888; text-align: center; width: 100%; padding: 20px;">
-                        Carregando modificadores...
-                    </div>
-                </div>
-            </div>
-            
-            <button id="create-game-advanced-btn" class="create-btn" style="margin-top: 20px;">🎲 Criar Sala com estas opções</button>
-        </div>
-
         <div class="games-list">
             <h2>Salas disponíveis</h2>
             <div id="games-container">
@@ -466,14 +536,7 @@
                     <div class="game-info">Carregando salas...</div>
                 </div>
             </div>
-            <button id="refresh-games">Atualizar lista</button>
-        </div>
-
-        <div style="margin-top: 20px; text-align: center;">
-            <button id="story-mode-btn" style="background: linear-gradient(45deg, #9370db, #7b5fb0); color: white; padding: 15px 30px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
-                📖 Modo História (Single Player)
-            </button>
-            <p style="color: #888; margin-top: 10px; font-size: 14px;">Jogue sozinho, explore o mundo e evolua seu personagem</p>
+            <button class="btn" id="refresh-games" style="margin-top: 10px;">Atualizar lista</button>
         </div>
         
         <div class="loading" id="loading">
@@ -482,11 +545,79 @@
         </div>
     </div>
     
+    <!-- Modal de Criação de Sala -->
+    <div id="create-room-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Criar Nova Sala</h2>
+                <button class="modal-close" id="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="config-grid">
+                    <!-- Número de jogadores -->
+                    <div class="input-group">
+                        <label>👥 Máximo de jogadores</label>
+                        <input type="number" id="create-max-players" min="2" max="12" value="6" step="1">
+                        <small>(2 a 12 jogadores)</small>
+                    </div>
+                    
+                    <!-- Sala Privada -->
+                    <div class="input-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="create-private">
+                            🔒 Sala Privada
+                        </label>
+                        <small>Não aparece na lista pública, apenas por código</small>
+                    </div>
+                    
+                    <!-- Permitir Espectadores -->
+                    <div class="input-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="create-allow-spectators" checked>
+                            👁️ Permitir Espectadores
+                        </label>
+                    </div>
+                    
+                    <!-- Chat Habilitado -->
+                    <div class="input-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="create-chat-enabled" checked>
+                            💬 Chat ativo
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Modificadores (carregados dinamicamente do backend) -->
+                <div class="modifiers-section">
+                    <div class="modifiers-title">
+                        ✨ Modificadores de jogo 
+                        <span class="tooltip">ⓘ
+                            <span class="tooltiptext">Modificadores alteram as regras do jogo. Carregados automaticamente do servidor.</span>
+                        </span>
+                    </div>
+                    <div class="modifiers-list" id="modifiers-list">
+                        <div style="color: #888; text-align: center; width: 100%; padding: 20px;">
+                            Carregando modificadores...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancel-modal-btn" style="background: linear-gradient(45deg, #666, #444);">Cancelar</button>
+                <button class="btn btn-primary" id="confirm-create-btn">🎲 Criar Sala</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const gameIdInput = document.getElementById('game-id');
             const joinBtn = document.getElementById('join-game-btn');
-            const createBtn = document.getElementById('create-game-advanced-btn');
+            const createRoomBtn = document.getElementById('create-room-btn');
+            const confirmCreateBtn = document.getElementById('confirm-create-btn');
+            const cancelModalBtn = document.getElementById('cancel-modal-btn');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const modal = document.getElementById('create-room-modal');
             const refreshBtn = document.getElementById('refresh-games');
             const gamesContainer = document.getElementById('games-container');
             const loading = document.getElementById('loading');
@@ -496,6 +627,18 @@
             
             let currentUsername = null;
             let availableModifiers = []; // Armazenar modificadores disponíveis
+            
+            // Abrir modal
+            function openModal() {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            // Fechar modal
+            function closeModal() {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
             
             // Carregar modificadores do backend
             function loadModifiers() {
@@ -556,6 +699,19 @@
                     selected.push(cb.value);
                 });
                 return selected;
+            }
+            
+            // Resetar formulário do modal
+            function resetModalForm() {
+                document.getElementById('create-max-players').value = '6';
+                document.getElementById('create-private').checked = false;
+                document.getElementById('create-allow-spectators').checked = true;
+                document.getElementById('create-chat-enabled').checked = true;
+                
+                // Desmarcar todos os modificadores
+                document.querySelectorAll('#modifiers-list input[type="checkbox"]').forEach(cb => {
+                    cb.checked = false;
+                });
             }
             
             // Verificar autenticação ao carregar
@@ -710,8 +866,29 @@
                 window.location.href = `/spectate/${gameId}`;
             };
             
-            // Criar sala com configurações
-            createBtn.addEventListener('click', function() {
+            // Abrir modal de criação
+            createRoomBtn.addEventListener('click', function() {
+                resetModalForm();
+                openModal();
+            });
+            
+            // Fechar modal
+            function handleCloseModal() {
+                closeModal();
+            }
+            
+            cancelModalBtn.addEventListener('click', handleCloseModal);
+            closeModalBtn.addEventListener('click', handleCloseModal);
+            
+            // Fechar modal clicando fora
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Criar sala
+            confirmCreateBtn.addEventListener('click', function() {
                 if (!currentUsername) {
                     alert('Usuário não autenticado');
                     return;
