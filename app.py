@@ -605,14 +605,14 @@ MODIFIERS = [
         'icon': '🃏',
         'enabled': True
     },
+    {
+        'id': 'no_runes',
+        'name': 'Sem Runas',
+        'description': 'As cartas de Runa não podem reviver do cemiterio',
+        'icon': '🔷',
+        'enabled': True
+    },
     # Futuros modificadores podem ser adicionados aqui:
-    # {
-    #     'id': 'no_runes',
-    #     'name': 'Sem Runas',
-    #     'description': 'Runas não podem ser usadas para reviver cartas',
-    #     'icon': '🔷',
-    #     'enabled': True
-    # },
     # {
     #     'id': 'double_damage',
     #     'name': 'Dano Dobrado',
@@ -637,11 +637,14 @@ def get_random_disguise():
     }
 
 
-def create_deck():
+def create_deck(modifiers=None):
     """Cria o baralho inicial baseado na quantidade de cartas"""
     deck = []
     for card_id, card_info in CARDS.items():
         for _ in range(card_info['count']):
+            if 'no_runes' in modifiers and card_info.get('type') == 'rune':
+                continue
+
             new_card = card_info.copy()
             new_card['instance_id'] = str(uuid.uuid4())[:8]
             deck.append(new_card)
@@ -1076,7 +1079,7 @@ class Game:
         return count
     def get_player_runes_count(self, username):
         player = self.player_data.get(username)
-        if not player:
+        if not player or 'no_runes' in self.modifiers:
             return 0
         
         count = 0
@@ -1957,6 +1960,9 @@ class Game:
         player = self.player_data.get(username)
         if not player:
             return {'success': False, 'message': 'Jogador não encontrado'}
+
+        if 'no_runes' in self.modifiers:
+            return {'success': False, 'message': '❌ Este jogo tem o modificador "Sem Runas" ativo. Não é possível reviver cartas do cemitério!'}
         
         runes_in_hand = []
         for card in player['hand']:
@@ -2562,8 +2568,49 @@ class Game:
             'blocked': target_card.get('blocked', False)
         }
 
+    def get_prophet_usage_count(self, username):
+        """Retorna quantas vezes o Profeta do jogador já usou a habilidade"""
+        player = self.player_data.get(username)
+        if not player:
+            return 0
+        
+        # Verificar se tem Profeta em campo
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'profeta':
+                    return card.get('prophet_uses', 0)
+        return 0
+    def has_prophet_available(self, username):
+        """Verifica se o jogador pode usar a habilidade do Profeta (máximo 2 usos)"""
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return False
+        
+        # Verificar se o jogador tem Profeta em campo
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'profeta':
+                    uses = card.get('prophet_uses', 0)
+                    if uses < 2:  # Máximo 2 usos
+                        return True
+        return False
+
+    def get_prophet_uses_remaining(self, username):
+        """Retorna quantos usos restam para o Profeta do jogador"""
+        player = self.player_data.get(username)
+        if not player:
+            return 0
+        
+        for base_type in ['attack_bases', 'defense_bases']:
+            for card in player[base_type]:
+                if card and card.get('id') == 'profeta':
+                    uses = card.get('prophet_uses', 0)
+                    if uses >= 2:
+                        return 0
+                    return 2 - uses
+        return 0
+
     def prophet_curse(self, username, target_player_id, target_card_id):
-        """Aplica a maldição do Profeta - carta morre em 2 rodadas"""
         if not self.can_act(username, 'prophet_curse'):
             return {'success': False, 'message': 'Você já usou a habilidade do Profeta neste turno'}
         
@@ -2578,16 +2625,21 @@ class Game:
         
         for base_type in ['attack_bases', 'defense_bases']:
             for i, card in enumerate(player[base_type]):
-                if card and card['id'] == 'profeta':
+                if card and card.get('id') == 'profeta':
                     has_prophet = True
                     prophet_card = card
                     prophet_location = (base_type, i)
                     break
-            if has_prophet:
-                break
+                if has_prophet:
+                    break
         
         if not has_prophet:
             return {'success': False, 'message': 'Você precisa ter um Profeta em campo'}
+        
+        # Verificar quantos usos o Profeta já teve
+        uses = prophet_card.get('prophet_uses', 0)
+        if uses >= 2:
+            return {'success': False, 'message': 'Este Profeta já usou sua habilidade 2 vezes e está esgotado'}
         
         # Encontrar a carta alvo
         target_player = self.player_data.get(target_player_id)
@@ -2622,7 +2674,7 @@ class Game:
         curse_effect = {
             'type': 'prophet_curse',
             'caster': username,
-            'turns_remaining': 2,  # 2 rodadas completas (todos jogam 2 vezes)
+            'turns_remaining': 2,
             'applied_at_turn': self.current_turn,
             'applied_at_cycle': self.time_cycle
         }
@@ -2637,14 +2689,22 @@ class Game:
             'turns_remaining': 2
         })
         
+        # Incrementar o contador de usos do Profeta
+        prophet_card['prophet_uses'] = uses + 1
+        uses_left = 2 - (uses + 1)
+        
         self.use_action(username, 'prophet_curse')
-        broadcast_system_message(self.game_id, f'🔮 {username} amaldiçoou {target_card["name"]} de {target_player["name"]} (morre em 2 rodadas)')
+        
+        uses_message = f" (usos restantes deste Profeta: {uses_left})" if uses_left > 0 else " (este Profeta está esgotado!)"
+        
+        broadcast_system_message(self.game_id, f'🔮 {username} amaldiçoou {target_card["name"]} de {target_player["name"]} (morre em 2 rodadas){uses_message}')
         
         return {
             'success': True,
-            'message': f'🔮 Maldição do Profeta aplicada! {target_card["name"]} será destruído em 2 rodadas',
+            'message': f'🔮 Maldição do Profeta aplicada! {target_card["name"]} será destruído em 2 rodadas. Usos restantes do Profeta: {uses_left}',
             'target_card': target_card['name'],
-            'target_player': target_player['name']
+            'target_player': target_player['name'],
+            'uses_remaining': uses_left
         }
     def process_prophet_curses(self):
         cards_to_destroy = []

@@ -1302,7 +1302,12 @@
                 
                 for (let card of allBases) {
                     if (card) {
-                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) { hasProphet = true; }
+                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) {
+                            const uses = card.prophet_uses || 0;
+                            if (uses < 2) {
+                                hasProphet = true;
+                            }
+                        }
                         else if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
                         else if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaur = true; }
                         else if (card.id === 'fenix') { hasFenix = true; }
@@ -3493,6 +3498,18 @@
         window.selectProphetTarget = function(targetPlayerId) {
             Swal.close();
             
+            // Mostrar loading
+            Swal.fire({
+                title: '🔮 Preparando Profecia...',
+                html: 'Aguarde enquanto as cartas do oponente são carregadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
             // Mostrar cartas do oponente para selecionar
             const targetData = gameState.players[targetPlayerId];
             const cards = [];
@@ -3502,6 +3519,8 @@
                     cards.push(card);
                 }
             }
+            
+            Swal.close();
             
             if (cards.length === 0) {
                 Swal.fire({
@@ -3514,6 +3533,8 @@
                 });
                 return;
             }
+            
+            const usesRemaining = getProphetUsesRemaining();
             
             let cardsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
             cards.forEach(card => {
@@ -3537,7 +3558,11 @@
             
             Swal.fire({
                 title: '🎯 Selecione a carta para amaldiçoar',
-                html: cardsHtml,
+                html: `<div style="margin-bottom: 15px; padding: 10px; background: rgba(128, 0, 128, 0.3); border-radius: 8px; text-align: center;">
+                            <span style="color: #ffd700;">🔮 A carta será destruída em 2 rodadas</span><br>
+                            <span style="color: #4CAF50; font-size: 12px;">⚡ Usos restantes do Profeta: ${usesRemaining}</span>
+                        </div>
+                        ${cardsHtml}`,
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
                 background: '#1a1a2e',
@@ -3550,11 +3575,21 @@
         window.selectCardForProphetCurse = function(targetPlayerId, cardInstanceId) {
             Swal.close();
             
-            // Mostrar loading
+            const usesRemaining = getProphetUsesRemaining();
+            const willBeExhausted = (usesRemaining === 1);
+            
             Swal.fire({
                 title: '🔮 Aplicando maldição...',
-                html: 'A carta será destruída em duas rodadas',
+                html: `
+                    <div style="text-align: center;">
+                        <p>A carta será destruída em <strong>2 rodadas</strong></p>
+                        ${willBeExhausted ? '<p style="color: #ffa500; margin-top: 10px;">⚠️ Este será o <strong>último uso</strong> deste Profeta!</p>' : ''}
+                        <p style="color: #4CAF50; margin-top: 10px;">Usos restantes após este: <strong>${usesRemaining - 1}</strong></p>
+                    </div>
+                `,
                 allowOutsideClick: false,
+                timer: 3500,
+                timerProgressBar: true,
                 didOpen: () => {
                     Swal.showLoading();
                 },
