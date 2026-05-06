@@ -1,7 +1,7 @@
 # app.py
 from flask import Flask, render_template, request, jsonify, make_response, url_for, redirect
 from flask_socketio import SocketIO, emit, join_room, leave_room
-import cmd, uuid, jwt, json, hashlib, hmac, secrets, random, re, string, sys, shlex, time, threading
+import cmd, uuid, jwt, json, hashlib, logging, hmac, secrets, random, re, string, sys, shlex, time, threading
 from random import shuffle
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -4680,6 +4680,17 @@ class AdminShell(cmd.Cmd):
         print("Digite 'help' para ver os comandos disponíveis")
 
 if __name__ == '__main__':
+    # Silenciar logs do Flask e Werkzeug
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
+    
+    # Silenciar logs do SocketIO
+    logging.getLogger('socketio').setLevel(logging.ERROR)
+    logging.getLogger('engineio').setLevel(logging.ERROR)
+    
+    # Silenciar logs do Flask app
+    logging.getLogger('flask').setLevel(logging.ERROR)
+
     def run():
         socketio.run(app, debug=False, port=5000)
         
