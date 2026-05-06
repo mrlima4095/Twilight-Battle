@@ -3441,7 +3441,7 @@ def handle_send_chat_message(data):
         emit('chat_error', {'message': 'Mensagem vazia'})
         return
     
-    if not game.chat_enabled:
+    if not games[game_id].chat_enabled:
         emit('chat_error', {'message': 'Chat desabilitado nesta sala'})
         return
 
