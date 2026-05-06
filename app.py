@@ -3438,6 +3438,10 @@ def handle_send_chat_message(data):
         emit('chat_error', {'message': 'Mensagem vazia'})
         return
     
+    if not game.chat_enabled:
+        emit('chat_error', {'message': 'Chat desabilitado nesta sala'})
+        return
+
     # Obter username
     username = get_current_user()
     if not username:
