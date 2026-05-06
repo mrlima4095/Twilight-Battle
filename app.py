@@ -2838,6 +2838,9 @@ def get_games():
         })
     return jsonify(games_list)
 
+@app.route('/api/modifiers')
+def get_modifiers(): return jsonify({'modifiers': MODIFIERS})
+
 @app.route('/api/create-game', methods=['POST'])
 def create_game():
     username = get_current_user()
