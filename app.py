@@ -637,7 +637,7 @@ def get_random_disguise():
     }
 
 
-def create_deck(modifiers=None):
+def create_deck(modifiers=[]):
     """Cria o baralho inicial baseado na quantidade de cartas"""
     deck = []
     for card_id, card_info in CARDS.items():
@@ -821,7 +821,7 @@ class Game:
         self.players = []  # Lista de usernames
         self.player_data = {}  # Dict com username como chave
         self.socket_to_username = {}  # Mapeamento socket.id -> username
-        self.deck = create_deck()
+        self.deck = create_deck(self.config.get('modifiers', []))
         self.graveyard = []
         self.started = False
         self.current_turn = 0  # Índice na lista players
