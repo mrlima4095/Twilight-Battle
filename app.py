@@ -522,7 +522,7 @@ CARDS = {
         "type": "trap", 
         "count": 2, 
         "description": "Reverte ataques e magia."
-    },    
+    },
     "armadilha_cheat": {
         "id": "armadilha_cheat", 
         "name": "Armadilha Cheat", 
@@ -617,6 +617,48 @@ MODIFIERS = [
         'name': 'Reviver Jogadores',
         'description': 'Adiciona um ritual que permite reviver um jogador',
         'icon': '✝️',
+        'enabled': True
+    },
+    {
+        'id': 'disable_daycicle',
+        'name': 'Desativar Ciclo de Dia/Noite',
+        'description': 'Sempre dia ou noite até um jogador alterar',
+        'icon': '☀️',
+        'enabled': True
+    },
+    {
+        'id': 'disable_traps',
+        'name': 'Desativar Armadilhas',
+        'description': 'Não haverá cartas de armadilha no jogo',
+        'icon': '🕳️',
+        'enabled': True
+    },
+    {
+        'id': 'disable_talismans'
+        'name': 'Desativar Talismas',
+        'description': 'Não haverá talismas no jogo',
+        'icon': '🧿',
+        'enabled': True
+    },
+    {
+        'id': 'chaos',
+        'name': 'Modo Caos',
+        'description': 'Eventos aleatorios acontecem durante a partida',
+        'icon': '🌪️',
+        'enabled': True
+    },
+    {
+        'id': 'chaos_v2',
+        'name': 'Caos Infinito',
+        'description': 'O Ritual do Caos do Apofis não acaba',
+        'icon': '',
+        'enabled': True
+    },
+    {
+        'id': 'blind',
+        'name': 'Cegueira',
+        'description': 'Os jogadores não podem ver as bases dos outros',
+        'icon': '👁️',
         'enabled': True
     }
     # Futuros modificadores podem ser adicionados aqui:
