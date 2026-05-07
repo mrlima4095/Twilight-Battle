@@ -634,7 +634,7 @@ MODIFIERS = [
         'enabled': True
     },
     {
-        'id': 'disable_talismans'
+        'id': 'disable_talismans',
         'name': 'Desativar Talismas',
         'description': 'Não haverá talismas no jogo',
         'icon': '🧿',
