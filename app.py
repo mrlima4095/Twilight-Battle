@@ -612,6 +612,13 @@ MODIFIERS = [
         'icon': '🔷',
         'enabled': True
     },
+    {
+        'id': 'can_revive',
+        'name': 'Reviver Jogadores',
+        'description': 'Adiciona um ritual que permite reviver um jogador',
+        'icon': '✝️',
+        'enabled': True
+    }
     # Futuros modificadores podem ser adicionados aqui:
     # {
     #     'id': 'double_damage',
