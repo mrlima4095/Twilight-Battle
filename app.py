@@ -634,31 +634,10 @@ MODIFIERS = [
         'enabled': True
     },
     {
-        'id': 'disable_talismans',
-        'name': 'Desativar Talismas',
-        'description': 'Não haverá talismas no jogo',
-        'icon': '🧿',
-        'enabled': True
-    },
-    {
         'id': 'chaos',
         'name': 'Modo Caos',
         'description': 'Eventos aleatorios acontecem durante a partida',
         'icon': '🌪️',
-        'enabled': True
-    },
-    {
-        'id': 'chaos_v2',
-        'name': 'Caos Infinito',
-        'description': 'O Ritual do Caos do Apofis não acaba',
-        'icon': '',
-        'enabled': True
-    },
-    {
-        'id': 'blind',
-        'name': 'Cegueira',
-        'description': 'Os jogadores não podem ver as bases dos outros',
-        'icon': '👁️',
         'enabled': True
     }
     # Futuros modificadores podem ser adicionados aqui:
