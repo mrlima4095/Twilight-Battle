@@ -673,6 +673,8 @@ def create_deck(modifiers=[]):
     deck = []
     for card_id, card_info in CARDS.items():
         for _ in range(card_info['count']):
+            if 'disable_traps' in modifiers and card_info.get('type') == 'trap':
+                continue
             if 'no_runes' in modifiers and card_info.get('type') == 'rune':
                 continue
 
@@ -1205,11 +1207,13 @@ class Game:
             if not self.player_data[username].get('dead', False):
                 self.turn_actions_used[username] = {}
         
-        self.time_cycle += 1
-        if self.time_cycle % 24 == 0:
-            self.time_of_day = "night" if self.time_of_day == "day" else "day"
-            if self.time_of_day == "day":
-                self.apply_day_effects()
+        if self.time_of_day == "day":
+            self.apply_day_effects()
+        if 'disable_daycicle' not in self.modifiers:
+            self.time_cycle += 1
+            if self.time_cycle % 24 == 0:
+                self.time_of_day = "night" if self.time_of_day == "day" else "day"
+
         
         current_player = self.players[self.current_turn]
         
@@ -2161,6 +2165,10 @@ class Game:
 
     def toggle_time_of_day(self, username):
         """Habilidade da Fênix: muda o ciclo de dia para noite ou vice-versa"""
+        # Verificar se o modificador disable_daycicle está ativo
+        if 'disable_daycicle' in self.modifiers:
+            return {'success': False, 'message': '❌ Modificador "Desativar Ciclo de Dia/Noite" está ativo. Não é possível alterar o ciclo!'}
+        
         if not self.can_act(username, 'toggle_time'):
             return {'success': False, 'message': 'Você já usou esta habilidade neste turno'}
         
