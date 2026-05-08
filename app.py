@@ -201,6 +201,16 @@ CARDS = {
         "count": 35,
         "description": "Espiritos Magicos da Natureza"
     },
+    "vampiro": {
+        "id": "vampiro", 
+        "name": "Vampiro", 
+        "type": "creature", 
+        "life": 512, 
+        "attack": 75, 
+        "count": 1, 
+        "description": "Criatura noturna.", 
+        "dies_daylight": True
+    },
     
     # -- Especiais
     "vampiro_wers": {
@@ -498,7 +508,7 @@ CARDS = {
         "name": "Ritual 157", 
         "type": "ritual", 
         "count": 1, 
-        "description": "Requer Apofis, Mago Negro, 6 zumbis e 2 elfos em modo de defesa. Todos os talismãs da mão do jogador escolhido são roubados."
+        "description": "Requer Apofis, Mago Negro, 2 zumbis e 2 elfos em modo de defesa. Todos os talismãs da mão do jogador escolhido são roubados."
     },
     "ritual_amor": {
         "id": "ritual_amor", 
@@ -506,6 +516,13 @@ CARDS = {
         "type": "ritual", 
         "count": 1, 
         "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."
+    },
+    "ritual_chaos": {
+        "id": "ritual_chaos",
+        "name": "Ritual do Caos",
+        "type": "ritual",
+        "count": 1,
+        "description": "Requer Apofis e o Mago Negro. Invoca o Caos."
     },
 
     # Armadilhas
@@ -613,13 +630,6 @@ MODIFIERS = [
         'enabled': True
     },
     {
-        'id': 'can_revive',
-        'name': 'Reviver Jogadores',
-        'description': 'Adiciona um ritual que permite reviver um jogador',
-        'icon': '✝️',
-        'enabled': True
-    },
-    {
         'id': 'disable_daycicle',
         'name': 'Desativar Ciclo de Dia/Noite',
         'description': 'Sempre dia ou noite até um jogador alterar',
@@ -633,13 +643,6 @@ MODIFIERS = [
         'icon': '🕳️',
         'enabled': True
     },
-    {
-        'id': 'chaos',
-        'name': 'Modo Caos',
-        'description': 'Eventos aleatorios acontecem durante a partida',
-        'icon': '🌪️',
-        'enabled': True
-    }
     # Futuros modificadores podem ser adicionados aqui:
     # {
     #     'id': 'double_damage',
