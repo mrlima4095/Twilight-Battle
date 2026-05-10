@@ -2907,39 +2907,12 @@ def get_user_save_file(username):
 @app.route('/api/save-game', methods=['POST'])
 @login_required
 def api_save_game(username):
-    """Salva o jogo do modo história na nuvem"""
     data = request.json
     save_data = data.get('save_data')
     
     if not save_data:
         return jsonify({'success': False, 'message': 'Dados de save vazios'}), 400
-    
-    # Verificar se já existe um save
-    save_file = get_user_save_file(username)
-    existing_save = None
-    
-    if os.path.exists(save_file):
-        try:
-            with open(save_file, 'r') as f:
-                existing_save = json.load(f)
-        except:
-            pass
-    
-    # Se existe save e não é o mesmo jogo (verificar por character.name ou ID)
-    if existing_save:
-        existing_char = existing_save.get('character', {}).get('name')
-        new_char = save_data.get('character', {}).get('name')
-        
-        # Se os personagens são diferentes, perguntar sobrescrita (cliente decide)
-        if existing_char != new_char:
-            return jsonify({
-                'success': False, 
-                'message': f'Já existe um save para {existing_char}. Deseja sobrescrever?',
-                'needs_confirmation': True,
-                'existing_character': existing_char
-            }), 409
-    
-    # Salvar o arquivo
+
     try:
         with open(save_file, 'w') as f:
             json.dump(save_data, f, indent=2)
@@ -3025,72 +2998,6 @@ def api_delete_save(username):
         return jsonify({'success': True, 'message': 'Save deletado com sucesso'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erro ao deletar: {str(e)}'}), 500
-
-@app.route('/api/save-info', methods=['GET'])
-@login_required
-def api_save_info(username):
-    """Retorna informações sobre o save existente"""
-    save_file = get_user_save_file(username)
-    
-    if not os.path.exists(save_file):
-        return jsonify({'success': False, 'has_save': False})
-    
-    try:
-        file_stat = os.stat(save_file)
-        last_modified = datetime.fromtimestamp(file_stat.st_mtime).isoformat()
-        
-        with open(save_file, 'r') as f:
-            save_data = json.load(f)
-        
-        character = save_data.get('character', {})
-        is_dead = save_data.get('isDead', False) or character.get('life', 0) <= 0
-        
-        return jsonify({
-            'success': True,
-            'has_save': True,
-            'character_name': character.get('name', 'Desconhecido'),
-            'character_race': character.get('race', 'desconhecida'),
-            'character_level': character.get('level', 1),
-            'character_life': character.get('life', 0),
-            'character_max_life': character.get('maxLife', 0),
-            'is_dead': is_dead,
-            'last_modified': last_modified,
-            'location': save_data.get('location', 'desconhecido'),
-            'gold': character.get('gold', 0)
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'has_save': False, 'error': str(e)})
-
-@app.route('/api/force-overwrite-save', methods=['POST'])
-@login_required
-def api_force_overwrite_save(username):
-    """Força a sobrescrita do save (usado após confirmação do usuário)"""
-    data = request.json
-    save_data = data.get('save_data')
-    
-    if not save_data:
-        return jsonify({'success': False, 'message': 'Dados de save vazios'}), 400
-    
-    save_file = get_user_save_file(username)
-    
-    try:
-        with open(save_file, 'w') as f:
-            json.dump(save_data, f, indent=2)
-        
-        accounts = load_accounts()
-        if username in accounts:
-            accounts[username]['last_save_time'] = datetime.utcnow().isoformat()
-            accounts[username]['last_save_character'] = save_data.get('character', {}).get('name')
-            save_accounts(accounts)
-        
-        return jsonify({
-            'success': True, 
-            'message': f'Jogo sobrescrito com sucesso!',
-            'saved_at': datetime.utcnow().isoformat()
-        })
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Erro ao salvar: {str(e)}'}), 500
-
 
 
 @app.route('/game/<game_id>')

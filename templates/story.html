@@ -2056,109 +2056,6 @@
         let hasMoved = false;
         const TOUCH_DELAY_MS = 1000;
 
-        // ========== Cloud API ==========
-        let cloudSaveInfo = {
-            has_save: false,
-            character_name: null,
-            is_dead: false
-        };
-
-        async function checkCloudSave() {
-            try {
-                const response = await fetch('/api/save-info');
-                const data = await response.json();
-                
-                if (data.success && data.has_save) {
-                    cloudSaveInfo.has_save = true;
-                    cloudSaveInfo.character_name = data.character_name;
-                    cloudSaveInfo.is_dead = data.is_dead;
-                    
-                    // Atualizar botão de carregar na tela inicial
-                    const loadBtn = document.querySelector('.title-btn.load');
-                    if (loadBtn) {
-                        if (data.is_dead) {
-                            loadBtn.title = `❗ Save corrompido (personagem morto)`;
-                            loadBtn.style.opacity = '0.5';
-                        } else {
-                            loadBtn.title = `📀 Save na nuvem: ${data.character_name} (Nível ${data.character_level})`;
-                        }
-                    }
-                    
-                    // Atualizar botão de continuar se existir
-                    const continueBtn = document.getElementById('continue-btn');
-                    if (continueBtn && !data.is_dead) {
-                        continueBtn.title = `📀 Continuar com ${data.character_name}`;
-                    }
-                }
-            } catch (error) {
-                console.log('Erro ao verificar save na nuvem:', error);
-            }
-        }
-
-
-        async function deleteCloudSave() {
-            const result = await Swal.fire({
-                title: '🗑️ Deletar Save?',
-                html: `<div style="text-align: center;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
-                    <p>Tem certeza que deseja deletar o save na nuvem?</p>
-                    <p><strong>Esta ação é irreversível!</strong></p>
-                    ${cloudSaveInfo.character_name ? `<p style="color: #888;">Personagem: ${cloudSaveInfo.character_name}</p>` : ''}
-                </div>`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: '🗑️ Sim, deletar',
-                cancelButtonText: 'Cancelar',
-                background: '#1a1a2e',
-                color: '#fff',
-                confirmButtonColor: '#ff4444',
-                cancelButtonColor: '#4CAF50'
-            });
-            
-            if (!result.isConfirmed) return;
-            
-            try {
-                const response = await fetch('/api/delete-save', {
-                    method: 'DELETE'
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    Swal.fire({
-                        title: '🗑️ Save Deletado',
-                        text: data.message,
-                        icon: 'success',
-                        confirmButtonText: 'OK',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                    await checkCloudSave();
-                } else {
-                    Swal.fire({
-                        title: '❌ Erro',
-                        text: data.message || 'Erro ao deletar save',
-                        icon: 'error',
-                        confirmButtonText: 'OK',
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#ffd700'
-                    });
-                }
-            } catch (error) {
-                Swal.fire({
-                    title: '❌ Erro de Conexão',
-                    text: 'Não foi possível conectar ao servidor.',
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700'
-                });
-            }
-        }
-    
         // ========== UI FUNCTIONS ==========
         // Menu Screen
         function continueGame() {
@@ -7710,9 +7607,6 @@
                         
                         try {
                             let url = '/api/save-game';
-                            if (true) {
-                                url = '/api/force-overwrite-save';
-                            }
                             
                             const response = await fetch(url, {
                                 method: 'POST',
@@ -7744,32 +7638,7 @@
                                     color: '#4CAF50'
                                 });
                                 addLog('☁️ Jogo salvo na nuvem!');
-                                await checkCloudSave();
                                 return true;
-                            } else if (result.needs_confirmation) {
-                                // Perguntar se quer sobrescrever
-                                const confirmResult = await Swal.fire({
-                                    title: '⚠️ Save Existente',
-                                    html: `<div style="text-align: center;">
-                                        <div style="font-size: 48px; margin-bottom: 10px;">📀⚠️</div>
-                                        <p>Já existe um save na nuvem para <strong>${result.existing_character}</strong>!</p>
-                                        <p>Deseja sobrescrever com o personagem atual <strong>${gameState.character.name}</strong>?</p>
-                                        <p style="color: #ffa500; font-size: 12px; margin-top: 10px;">⚠️ O save antigo será PERDIDO permanentemente!</p>
-                                    </div>`,
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonText: '✅ Sim, sobrescrever',
-                                    cancelButtonText: '❌ Cancelar',
-                                    background: '#1a1a2e',
-                                    color: '#fff',
-                                    confirmButtonColor: '#ff4444',
-                                    cancelButtonColor: '#4CAF50'
-                                });
-                                
-                                if (confirmResult.isConfirmed) {
-                                    return await saveGameToCloud(true);
-                                }
-                                return false;
                             } else {
                                 Swal.fire({
                                     title: '❌ Erro',
@@ -7786,7 +7655,7 @@
                             Swal.close();
                             Swal.fire({
                                 title: '❌ Erro de Conexão',
-                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão. ' + error,
+                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
                                 icon: 'error',
                                 confirmButtonText: 'OK',
                                 background: '#1a1a2e',
@@ -7982,7 +7851,6 @@
                                 });
                                 
                                 addLog('☁️ Jogo carregado da nuvem!');
-                                await checkCloudSave();
                                 return true;
                             } else if (result.is_dead) {
                                 Swal.fire({
@@ -8011,7 +7879,7 @@
                             Swal.close();
                             Swal.fire({
                                 title: '❌ Erro de Conexão',
-                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão. - ' + error,
+                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
                                 icon: 'error',
                                 confirmButtonText: 'OK',
                                 background: '#1a1a2e',
@@ -8025,7 +7893,6 @@
             });
         }
 
-        
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
         function openMap() {
@@ -8357,7 +8224,6 @@
             checkForContinueButton();
             startFurnaceGlobalTimer();
             startNPCUpdateTimer();
-            checkCloudSave();
 
             setInterval(() => {
                 if (gameState.character && !gameState.isDead && gameState.character.life > 0) {
