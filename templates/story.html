@@ -7552,94 +7552,376 @@
         }
 
         // ========== SAVE/LOAD ==========
-        function saveGame() {
+        async function saveGame() {
             if (gameState.isDead) {
-                alert('❌ Personagens mortos não podem ser salvos!');
-                return;
+                Swal.fire({
+                    title: '❌ Personagem Morto',
+                    text: 'Personagens mortos não podem ser salvos!',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return false;
             }
             
-            const saveData = JSON.stringify(gameState, null, 2);
-            const blob = new Blob([saveData], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `twilight_${gameState.character?.name || 'save'}.json`;
-            a.click();
-            addLog('💾 Jogo salvo!');
+            const result = await Swal.fire({
+                title: '💾 Salvar Jogo',
+                html: `<div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">💾</div>
+                    <p>Escolha onde deseja salvar:</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        <button id="save-local-btn" style="background: #4a90e2; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;">💾 Salvar Localmente</button>
+                        <button id="save-cloud-btn" style="background: #9370db; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;">☁️ Salvar na Nuvem</button>
+                    </div>
+                </div>`,
+                icon: 'info',
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff',
+                didOpen: () => {
+                    document.getElementById('save-local-btn').onclick = () => {
+                        Swal.close();
+                        
+                        const saveData = JSON.stringify(gameState, null, 2);
+                        const blob = new Blob([saveData], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `twilight_${gameState.character?.name || 'save'}.json`;
+                        a.click();
+                        addLog('💾 Jogo salvo!');
+                    };
+                    document.getElementById('save-cloud-btn').onclick = async () => {
+                        Swal.fire({
+                            title: '💾 Salvando...',
+                            text: 'Enviando para a nuvem',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        const saveData = JSON.parse(JSON.stringify(gameState));
+                        
+                        try {
+                            let url = '/api/save-game';
+                            if (forceOverwrite) {
+                                url = '/api/force-overwrite-save';
+                            }
+                            
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ save_data: saveData })
+                            });
+                            
+                            const result = await response.json();
+                            
+                            Swal.close();
+                            
+                            if (result.success) {
+                                Swal.fire({
+                                    title: '✅ Salvo na Nuvem!',
+                                    html: `<div style="text-align: center;">
+                                        <div style="font-size: 48px; margin-bottom: 10px;">☁️💾</div>
+                                        <p><strong>${result.character_name || gameState.character.name}</strong> foi salvo!</p>
+                                        <p style="color: #888; font-size: 12px;">${new Date().toLocaleString()}</p>
+                                    </div>`,
+                                    icon: 'success',
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    background: '#1a1a2e',
+                                    color: '#4CAF50'
+                                });
+                                addLog('☁️ Jogo salvo na nuvem!');
+                                await checkCloudSave();
+                                return true;
+                            } else if (result.needs_confirmation) {
+                                // Perguntar se quer sobrescrever
+                                const confirmResult = await Swal.fire({
+                                    title: '⚠️ Save Existente',
+                                    html: `<div style="text-align: center;">
+                                        <div style="font-size: 48px; margin-bottom: 10px;">📀⚠️</div>
+                                        <p>Já existe um save na nuvem para <strong>${result.existing_character}</strong>!</p>
+                                        <p>Deseja sobrescrever com o personagem atual <strong>${gameState.character.name}</strong>?</p>
+                                        <p style="color: #ffa500; font-size: 12px; margin-top: 10px;">⚠️ O save antigo será PERDIDO permanentemente!</p>
+                                    </div>`,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: '✅ Sim, sobrescrever',
+                                    cancelButtonText: '❌ Cancelar',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ff4444',
+                                    cancelButtonColor: '#4CAF50'
+                                });
+                                
+                                if (confirmResult.isConfirmed) {
+                                    return await saveGameToCloud(true);
+                                }
+                                return false;
+                            } else {
+                                Swal.fire({
+                                    title: '❌ Erro',
+                                    text: result.message || 'Erro ao salvar na nuvem',
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                                return false;
+                            }
+                        } catch (error) {
+                            Swal.close();
+                            Swal.fire({
+                                title: '❌ Erro de Conexão',
+                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                            return false;
+                        }
+                    };
+                }
+            });
         }
-        function loadGame() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const loadedState = JSON.parse(e.target.result);
-                        
-                        if (loadedState.isDead) {
-                            alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
-                            document.getElementById('title-screen').style.display = 'flex';
-                            return;
+        async function loadGame() {
+            const result = await Swal.fire({
+                title: '📀 Carregar Jogo',
+                html: `<div style="text-align: center;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">📀</div>
+                    <p>Escolha de onde carregar:</p>
+                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                        <button id="load-local-btn" style="background: #4a90e2; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;">📂 Carregar Local (arquivo)</button>
+                        <button id="load-cloud-btn" style="background: #9370db; color: white; border: none; padding: 12px; border-radius: 8px; font-size: 16px; cursor: pointer;">☁️ Carregar da Nuvem</button>
+                    </div>
+                </div>`,
+                icon: 'info',
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff',
+                didOpen: () => {
+                    document.getElementById('load-local-btn').onclick = () => {
+                        Swal.close();
+
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = '.json';
+                        input.onchange = function(e) {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                try {
+                                    const loadedState = JSON.parse(e.target.result);
+                                    
+                                    if (loadedState.isDead) {
+                                        alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
+                                        document.getElementById('title-screen').style.display = 'flex';
+                                        return;
+                                    }
+                                    
+                                    if (loadedState.character && loadedState.character.life <= 0) {
+                                        alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
+                                        document.getElementById('title-screen').style.display = 'flex';
+                                        return;
+                                    }
+                                    
+                                    // Salvar o remainingCycleTime antes de carregar
+                                    const savedRemainingTime = loadedState.remainingCycleTime;
+                                    const savedTimeOfDay = loadedState.timeOfDay;
+                                    
+                                    gameState = loadedState;
+                                    
+                                    // Garantir que o ciclo não está rodando
+                                    if (gameState.dayCycleTimer) {
+                                        clearInterval(gameState.dayCycleTimer);
+                                        gameState.dayCycleTimer = null;
+                                    }
+                                    
+                                    // Restaurar o remainingCycleTime do save se ele existir
+                                    if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
+                                        gameState.remainingCycleTime = savedRemainingTime;
+                                        gameState.cycleStartTime = Date.now();
+                                    } else {
+                                        // Se não tiver, iniciar um novo ciclo
+                                        gameState.remainingCycleTime = gameState.cycleDuration || 600;
+                                        gameState.cycleStartTime = Date.now();
+                                    }
+                                    
+                                    // Restaurar o timeOfDay do save
+                                    if (savedTimeOfDay) {
+                                        gameState.timeOfDay = savedTimeOfDay;
+                                    }
+                                    
+                                    // Resetar estados de sono
+                                    gameState.isSleeping = false;
+                                    if (gameState.sleepTimeout) {
+                                        clearInterval(gameState.sleepTimeout);
+                                        gameState.sleepTimeout = null;
+                                    }
+                                    
+                                    document.getElementById('character-creation-modal').classList.remove('active');
+                                    document.getElementById('death-overlay').classList.remove('active');
+                                    document.getElementById('title-screen').style.display = 'none';
+                                    document.getElementById('game-ui').style.display = 'block';
+                                    
+                                    updateUI();
+                                    startCycleTimer(); 
+                                } catch (err) {
+                                    alert('Erro ao carregar arquivo!');
+                                    document.getElementById('title-screen').style.display = 'flex';
+                                }
+                            };
+                            reader.readAsText(file);
+                        };
+                        input.click();
+                    };
+                    document.getElementById('load-cloud-btn').onclick = async() => {
+                        Swal.close();
+                        try {
+                            const response = await fetch('/api/load-game');
+                            const result = await response.json();
+                            
+                            Swal.close();
+                            
+                            if (result.success) {
+                                const loadedState = result.save_data;
+                                
+                                if (loadedState.isDead) {
+                                    Swal.fire({
+                                        title: '💀 Save Corrompido',
+                                        text: 'Este save é de um personagem MORTO e não pode ser carregado!',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        confirmButtonColor: '#ffd700'
+                                    });
+                                    return false;
+                                }
+                                
+                                if (loadedState.character && loadedState.character.life <= 0) {
+                                    Swal.fire({
+                                        title: '💀 Personagem Morto',
+                                        text: 'Este personagem está com vida zero e não pode ser carregado!',
+                                        icon: 'error',
+                                        confirmButtonText: 'OK',
+                                        background: '#1a1a2e',
+                                        color: '#fff',
+                                        confirmButtonColor: '#ffd700'
+                                    });
+                                    return false;
+                                }
+                                
+                                // Salvar o remainingCycleTime antes de carregar
+                                const savedRemainingTime = loadedState.remainingCycleTime;
+                                const savedTimeOfDay = loadedState.timeOfDay;
+                                
+                                gameState = loadedState;
+                                
+                                // Garantir que o ciclo não está rodando
+                                if (gameState.dayCycleTimer) {
+                                    clearInterval(gameState.dayCycleTimer);
+                                    gameState.dayCycleTimer = null;
+                                }
+                                
+                                // Restaurar o remainingCycleTime do save
+                                if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
+                                    gameState.remainingCycleTime = savedRemainingTime;
+                                    gameState.cycleStartTime = Date.now();
+                                } else {
+                                    gameState.remainingCycleTime = gameState.cycleDuration || 600;
+                                    gameState.cycleStartTime = Date.now();
+                                }
+                                
+                                if (savedTimeOfDay) {
+                                    gameState.timeOfDay = savedTimeOfDay;
+                                }
+                                
+                                // Resetar estados de sono
+                                gameState.isSleeping = false;
+                                if (gameState.sleepTimeout) {
+                                    clearInterval(gameState.sleepTimeout);
+                                    gameState.sleepTimeout = null;
+                                }
+                                
+                                document.getElementById('character-creation-modal').classList.remove('active');
+                                document.getElementById('death-overlay').classList.remove('active');
+                                document.getElementById('title-screen').style.display = 'none';
+                                document.getElementById('game-ui').style.display = 'block';
+                                
+                                updateUI();
+                                startCycleTimer();
+                                
+                                Swal.fire({
+                                    title: '📀 Jogo Carregado!',
+                                    html: `<div style="text-align: center;">
+                                        <div style="font-size: 48px; margin-bottom: 10px;">☁️📖</div>
+                                        <p><strong>${loadedState.character.name}</strong> foi carregado da nuvem!</p>
+                                        <p style="color: #888; font-size: 12px;">Carregado em: ${new Date().toLocaleString()}</p>
+                                    </div>`,
+                                    icon: 'success',
+                                    confirmButtonText: 'Continuar Jornada',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#4CAF50'
+                                });
+                                
+                                addLog('☁️ Jogo carregado da nuvem!');
+                                await checkCloudSave();
+                                return true;
+                            } else if (result.is_dead) {
+                                Swal.fire({
+                                    title: '💀 Save Inválido',
+                                    text: result.message,
+                                    icon: 'error',
+                                    confirmButtonText: 'OK',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                                return false;
+                            } else {
+                                Swal.fire({
+                                    title: '📭 Nenhum Save',
+                                    text: result.message || 'Não há nenhum save na nuvem para carregar.',
+                                    icon: 'info',
+                                    confirmButtonText: 'OK',
+                                    background: '#1a1a2e',
+                                    color: '#fff',
+                                    confirmButtonColor: '#ffd700'
+                                });
+                                return false;
+                            }
+                        } catch (error) {
+                            Swal.close();
+                            Swal.fire({
+                                title: '❌ Erro de Conexão',
+                                text: 'Não foi possível conectar ao servidor. Verifique sua conexão.',
+                                icon: 'error',
+                                confirmButtonText: 'OK',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                            return false;
                         }
-                        
-                        if (loadedState.character && loadedState.character.life <= 0) {
-                            alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
-                            document.getElementById('title-screen').style.display = 'flex';
-                            return;
-                        }
-                        
-                        // Salvar o remainingCycleTime antes de carregar
-                        const savedRemainingTime = loadedState.remainingCycleTime;
-                        const savedTimeOfDay = loadedState.timeOfDay;
-                        
-                        gameState = loadedState;
-                        
-                        // Garantir que o ciclo não está rodando
-                        if (gameState.dayCycleTimer) {
-                            clearInterval(gameState.dayCycleTimer);
-                            gameState.dayCycleTimer = null;
-                        }
-                        
-                        // Restaurar o remainingCycleTime do save se ele existir
-                        if (savedRemainingTime !== undefined && savedRemainingTime !== null) {
-                            gameState.remainingCycleTime = savedRemainingTime;
-                            gameState.cycleStartTime = Date.now();
-                        } else {
-                            // Se não tiver, iniciar um novo ciclo
-                            gameState.remainingCycleTime = gameState.cycleDuration || 600;
-                            gameState.cycleStartTime = Date.now();
-                        }
-                        
-                        // Restaurar o timeOfDay do save
-                        if (savedTimeOfDay) {
-                            gameState.timeOfDay = savedTimeOfDay;
-                        }
-                        
-                        // Resetar estados de sono
-                        gameState.isSleeping = false;
-                        if (gameState.sleepTimeout) {
-                            clearInterval(gameState.sleepTimeout);
-                            gameState.sleepTimeout = null;
-                        }
-                        
-                        document.getElementById('character-creation-modal').classList.remove('active');
-                        document.getElementById('death-overlay').classList.remove('active');
-                        document.getElementById('title-screen').style.display = 'none';
-                        document.getElementById('game-ui').style.display = 'block';
-                        
-                        updateUI();
-                        startCycleTimer(); 
-                    } catch (err) {
-                        alert('Erro ao carregar arquivo!');
-                        document.getElementById('title-screen').style.display = 'flex';
-                    }
-                };
-                reader.readAsText(file);
-            };
-            input.click();
+                    };
+                }
+            });
         }
+
         
         // ========== INITIALIZE ==========
         function give(item, amount) { addItemToInventory(item, amount); }
