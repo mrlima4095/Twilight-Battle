@@ -2907,12 +2907,16 @@ def get_user_save_file(username):
 @app.route('/api/save-game', methods=['POST'])
 @login_required
 def api_save_game(username):
+    """Salva o jogo do modo história na nuvem"""
     data = request.json
     save_data = data.get('save_data')
     
     if not save_data:
         return jsonify({'success': False, 'message': 'Dados de save vazios'}), 400
-
+    
+    # Verificar se já existe um save
+    save_file = get_user_save_file(username)
+    
     try:
         with open(save_file, 'w') as f:
             json.dump(save_data, f, indent=2)
@@ -2998,6 +3002,7 @@ def api_delete_save(username):
         return jsonify({'success': True, 'message': 'Save deletado com sucesso'})
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erro ao deletar: {str(e)}'}), 500
+
 
 
 @app.route('/game/<game_id>')
