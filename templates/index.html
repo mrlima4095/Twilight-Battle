@@ -336,7 +336,7 @@
             background: linear-gradient(135deg, #1a1a2e, #16213e);
             border-radius: 20px;
             width: 90%;
-            max-width: 600px;
+            max-width: 650px;
             max-height: 85vh;
             overflow-y: auto;
             border: 2px solid #ffd700;
@@ -453,11 +453,105 @@
             border-top: 1px solid rgba(255, 215, 0, 0.3);
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         .modal-footer button {
             flex: 1;
             margin-bottom: 0;
+            min-width: 120px;
+        }
+        
+        /* Estilos dos botões de predefinição */
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            flex: 1;
+            background: linear-gradient(45deg, #2c3e66, #1a2a4a);
+            color: #ffd700;
+            font-size: 14px;
+            padding: 10px;
+            margin-bottom: 0;
+        }
+        
+        .preset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+        }
+        
+        .json-input-area {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px dashed rgba(255, 215, 0, 0.3);
+            display: none;
+        }
+        
+        .json-input-area.active {
+            display: block;
+        }
+        
+        .json-textarea {
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffd700;
+            font-family: monospace;
+            font-size: 12px;
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .file-input-label {
+            background: linear-gradient(45deg, #4a90e2, #357abd);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(74, 144, 226, 0.4);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .import-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .small-btn {
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+        
+        .preset-name-input {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .preset-name-input input {
+            flex: 2;
+        }
+        
+        .preset-name-input button {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
         }
         
         @keyframes fadeIn {
@@ -553,6 +647,35 @@
                 <button class="modal-close" id="close-modal-btn">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Botões de predefinição -->
+                <div class="preset-buttons">
+                    <button class="btn preset-btn" id="export-preset-btn" style="background: linear-gradient(45deg, #2e7d32, #1b5e20);">
+                        💾 Exportar Config
+                    </button>
+                    <button class="btn preset-btn" id="import-preset-btn" style="background: linear-gradient(45deg, #e65100, #bf360c);">
+                        📂 Importar JSON
+                    </button>
+                </div>
+                
+                <!-- Área de importação JSON -->
+                <div id="json-import-area" class="json-input-area">
+                    <label for="json-file-input" class="file-input-label">📁 Escolher arquivo JSON</label>
+                    <input type="file" id="json-file-input" class="file-input" accept=".json">
+                    <div class="import-actions">
+                        <textarea id="json-text-input" class="json-textarea" placeholder="Cole o JSON aqui..."></textarea>
+                    </div>
+                    <div class="import-actions">
+                        <button id="apply-json-btn" class="small-btn btn-primary" style="padding: 8px;">✓ Aplicar Configuração</button>
+                        <button id="cancel-json-btn" class="small-btn" style="background: #666;">✗ Cancelar</button>
+                    </div>
+                </div>
+                
+                <!-- Nome da predefinição para salvar -->
+                <div class="preset-name-input" id="preset-name-section" style="display: none;">
+                    <input type="text" id="preset-name" placeholder="Nome da predefinição (ex: Rápido, Competitivo, Hardcore)">
+                    <button id="save-preset-btn" class="btn-primary" style="background: #4CAF50;">💾 Salvar Predefinição</button>
+                </div>
+                
                 <div class="config-grid">
                     <!-- Número de jogadores -->
                     <div class="input-group">
@@ -625,19 +748,305 @@
             const logoutBtn = document.getElementById('logout-btn');
             const modifiersContainer = document.getElementById('modifiers-list');
             
+            // Novos elementos de predefinição
+            const exportPresetBtn = document.getElementById('export-preset-btn');
+            const importPresetBtn = document.getElementById('import-preset-btn');
+            const jsonImportArea = document.getElementById('json-import-area');
+            const jsonFileInput = document.getElementById('json-file-input');
+            const jsonTextInput = document.getElementById('json-text-input');
+            const applyJsonBtn = document.getElementById('apply-json-btn');
+            const cancelJsonBtn = document.getElementById('cancel-json-btn');
+            const presetNameSection = document.getElementById('preset-name-section');
+            const presetNameInput = document.getElementById('preset-name');
+            const savePresetBtn = document.getElementById('save-preset-btn');
+            
             let currentUsername = null;
             let availableModifiers = []; // Armazenar modificadores disponíveis
+            let savedPresets = []; // Predefinições salvas localmente
+            
+            // Carregar predefinições do localStorage
+            function loadPresets() {
+                const stored = localStorage.getItem('twilight_battle_presets');
+                if (stored) {
+                    try {
+                        savedPresets = JSON.parse(stored);
+                    } catch(e) {
+                        savedPresets = [];
+                    }
+                }
+            }
+            
+            // Salvar predefinições no localStorage
+            function savePresetsToStorage() {
+                localStorage.setItem('twilight_battle_presets', JSON.stringify(savedPresets));
+            }
+            
+            // Salvar predefinição atual
+            function saveCurrentPreset() {
+                const name = presetNameInput.value.trim();
+                if (!name) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Nome necessário',
+                        text: 'Digite um nome para a predefinição',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    return;
+                }
+                
+                const config = getCurrentConfig();
+                const preset = {
+                    id: Date.now(),
+                    name: name,
+                    config: config,
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Verificar se já existe uma com mesmo nome
+                const existingIndex = savedPresets.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+                if (existingIndex !== -1) {
+                    Swal.fire({
+                        title: 'Sobrescrever?',
+                        text: `Já existe uma predefinição com o nome "${name}". Deseja sobrescrever?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sim, sobrescrever',
+                        cancelButtonText: 'Cancelar',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            savedPresets[existingIndex] = preset;
+                            savePresetsToStorage();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Predefinição salva!',
+                                text: `"${name}" foi salva com sucesso.`,
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
+                        }
+                    });
+                } else {
+                    savedPresets.push(preset);
+                    savePresetsToStorage();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Predefinição salva!',
+                        text: `"${name}" foi salva com sucesso.`,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+                
+                presetNameSection.style.display = 'none';
+                presetNameInput.value = '';
+            }
+            
+            // Obter configuração atual do formulário
+            function getCurrentConfig() {
+                const maxPlayers = parseInt(document.getElementById('create-max-players').value);
+                const isPrivate = document.getElementById('create-private').checked;
+                const allowSpectators = document.getElementById('create-allow-spectators').checked;
+                const chatEnabled = document.getElementById('create-chat-enabled').checked;
+                const modifiers = getSelectedModifiers();
+                
+                // Obter nomes dos modificadores selecionados
+                const modifierNames = modifiers.map(modId => {
+                    const mod = availableModifiers.find(m => m.id === modId);
+                    return mod ? mod.name : modId;
+                });
+                
+                return {
+                    max_players: maxPlayers,
+                    private: isPrivate,
+                    allow_spectators: allowSpectators,
+                    chat_enabled: chatEnabled,
+                    modifiers: modifiers,
+                    modifier_names: modifierNames
+                };
+            }
+            
+            // Aplicar configuração do JSON
+            function applyConfig(config) {
+                // Validar configuração
+                if (!config || typeof config !== 'object') {
+                    throw new Error('Configuração inválida');
+                }
+                
+                // Aplicar max_players
+                if (config.max_players && config.max_players >= 2 && config.max_players <= 12) {
+                    document.getElementById('create-max-players').value = config.max_players;
+                }
+                
+                // Aplicar private
+                if (typeof config.private === 'boolean') {
+                    document.getElementById('create-private').checked = config.private;
+                }
+                
+                // Aplicar allow_spectators
+                if (typeof config.allow_spectators === 'boolean') {
+                    document.getElementById('create-allow-spectators').checked = config.allow_spectators;
+                }
+                
+                // Aplicar chat_enabled
+                if (typeof config.chat_enabled === 'boolean') {
+                    document.getElementById('create-chat-enabled').checked = config.chat_enabled;
+                }
+                
+                // Aplicar modifiers
+                if (config.modifiers && Array.isArray(config.modifiers)) {
+                    // Desmarcar todos primeiro
+                    document.querySelectorAll('#modifiers-list input[type="checkbox"]').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    
+                    // Marcar os selecionados
+                    config.modifiers.forEach(modId => {
+                        const checkbox = document.querySelector(`#modifiers-list input[type="checkbox"][value="${modId}"]`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            }
+            
+            // Exportar configuração como JSON
+            function exportConfig() {
+                const config = getCurrentConfig();
+                const exportData = {
+                    version: "1.0",
+                    name: "Minha configuração",
+                    config: config,
+                    exportedAt: new Date().toISOString()
+                };
+                
+                const jsonStr = JSON.stringify(exportData, null, 2);
+                
+                // Criar e baixar arquivo
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `twilight_config_${new Date().toISOString().slice(0,19)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Configuração exportada!',
+                    text: 'O arquivo JSON foi salvo.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+            
+            // Importar configuração de arquivo
+            function importFromFile(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        let config = data;
+                        
+                        // Verificar se está no formato wrapper ou direto
+                        if (data.config && typeof data.config === 'object') {
+                            config = data.config;
+                        }
+                        
+                        applyConfig(config);
+                        jsonImportArea.classList.remove('active');
+                        jsonTextInput.value = '';
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Configuração importada!',
+                            text: 'Os valores foram aplicados ao formulário.',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } catch (error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro ao importar',
+                            text: 'Arquivo JSON inválido: ' + error.message,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                    }
+                };
+                reader.readAsText(file);
+            }
+            
+            // Importar de texto JSON
+            function importFromText(jsonText) {
+                try {
+                    const data = JSON.parse(jsonText);
+                    let config = data;
+                    
+                    if (data.config && typeof data.config === 'object') {
+                        config = data.config;
+                    }
+                    
+                    applyConfig(config);
+                    jsonImportArea.classList.remove('active');
+                    jsonTextInput.value = '';
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Configuração importada!',
+                        text: 'Os valores foram aplicados ao formulário.',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } catch (error) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro ao importar',
+                        text: 'JSON inválido: ' + error.message,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            }
+            
+            // Mostrar área de predefinição para salvar
+            function showPresetSaveArea() {
+                presetNameSection.style.display = 'flex';
+                presetNameInput.focus();
+            }
             
             // Abrir modal
             function openModal() {
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                loadPresets();
             }
             
             // Fechar modal
             function closeModal() {
                 modal.classList.remove('active');
                 document.body.style.overflow = '';
+                jsonImportArea.classList.remove('active');
+                presetNameSection.style.display = 'none';
+                presetNameInput.value = '';
+                jsonTextInput.value = '';
             }
             
             // Carregar modificadores do backend
@@ -879,6 +1288,48 @@
                 
                 window.location.href = `/spectate/${gameId}`;
             };
+            
+            // Eventos de predefinição
+            exportPresetBtn.addEventListener('click', function() {
+                exportConfig();
+            });
+            
+            importPresetBtn.addEventListener('click', function() {
+                jsonImportArea.classList.toggle('active');
+                if (jsonImportArea.classList.contains('active')) {
+                    jsonTextInput.focus();
+                }
+            });
+            
+            cancelJsonBtn.addEventListener('click', function() {
+                jsonImportArea.classList.remove('active');
+                jsonTextInput.value = '';
+            });
+            
+            applyJsonBtn.addEventListener('click', function() {
+                const jsonText = jsonTextInput.value.trim();
+                if (jsonText) {
+                    importFromText(jsonText);
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Nada para importar',
+                        text: 'Cole um JSON ou selecione um arquivo primeiro.',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                }
+            });
+            
+            jsonFileInput.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    importFromFile(e.target.files[0]);
+                    jsonFileInput.value = '';
+                }
+            });
+            
+            savePresetBtn.addEventListener('click', saveCurrentPreset);
             
             // Abrir modal de criação
             createRoomBtn.addEventListener('click', function() {
