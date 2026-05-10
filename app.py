@@ -2980,29 +2980,6 @@ def api_load_game(username):
     except Exception as e:
         return jsonify({'success': False, 'message': f'Erro ao carregar: {str(e)}'}), 500
 
-@app.route('/api/delete-save', methods=['DELETE'])
-@login_required
-def api_delete_save(username):
-    """Deleta o save do usuário na nuvem"""
-    save_file = get_user_save_file(username)
-    
-    if not os.path.exists(save_file):
-        return jsonify({'success': False, 'message': 'Nenhum save encontrado'}), 404
-    
-    try:
-        os.remove(save_file)
-        
-        # Limpar metadados
-        accounts = load_accounts()
-        if username in accounts:
-            accounts[username].pop('last_save_time', None)
-            accounts[username].pop('last_save_character', None)
-            save_accounts(accounts)
-        
-        return jsonify({'success': True, 'message': 'Save deletado com sucesso'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': f'Erro ao deletar: {str(e)}'}), 500
-
 
 
 @app.route('/game/<game_id>')
