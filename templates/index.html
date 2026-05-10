@@ -850,7 +850,14 @@
             
             window.joinGame = function(gameId) {
                 if (!currentUsername) {
-                    alert('Usuário não autenticado');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro de autenticação',
+                        text: 'Usuário não autenticado',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
@@ -859,7 +866,14 @@
             
             window.spectateGame = function(gameId) {
                 if (!currentUsername) {
-                    alert('Usuário não autenticado');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro de autenticação',
+                        text: 'Usuário não autenticado',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
@@ -890,7 +904,14 @@
             // Criar sala
             confirmCreateBtn.addEventListener('click', function() {
                 if (!currentUsername) {
-                    alert('Usuário não autenticado');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro de autenticação',
+                        text: 'Usuário não autenticado',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
@@ -902,7 +923,14 @@
                 
                 // Validações
                 if (maxPlayers < 2 || maxPlayers > 12) {
-                    alert('Máximo de jogadores deve ser entre 2 e 12');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Valor inválido',
+                        text: 'Máximo de jogadores deve ser entre 2 e 12',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
@@ -927,13 +955,27 @@
                     if (data.game_id) {
                         window.location.href = `/game/${data.game_id}`;
                     } else {
-                        alert('Erro ao criar sala: ' + (data.message || 'Erro desconhecido'));
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro ao criar sala',
+                            text: data.message || 'Erro desconhecido',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
                     }
                 })
                 .catch(error => {
                     loading.classList.remove('active');
                     console.error('Erro:', error);
-                    alert('Erro ao criar sala');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro ao criar sala',
+                        text: 'Erro de conexão com o servidor',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                 });
             });
             
@@ -943,12 +985,26 @@
                 const gameId = gameIdInput.value.trim().toUpperCase();
                 
                 if (!currentUsername) {
-                    alert('Usuário não autenticado');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro de autenticação',
+                        text: 'Usuário não autenticado',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
                 if (!gameId) {
-                    alert('Digite o código da sala!');
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campo vazio',
+                        text: 'Digite o código da sala!',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 
@@ -997,7 +1053,14 @@
                                 });
                             }
                         } else if (game.players >= game.max_players) {
-                            alert('Sala lotada!');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Sala lotada',
+                                text: 'Esta sala já está cheia!',
+                                background: '#1a1a2e',
+                                color: '#fff',
+                                confirmButtonColor: '#ffd700'
+                            });
                         } else {
                             window.location.href = `/game/${gameId}`;
                         }
@@ -1010,7 +1073,14 @@
 
             document.getElementById('story-mode-btn').addEventListener('click', function() {
                 if (!currentUsername) {
-                    alert('Faça login primeiro!');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro de autenticação',
+                        text: 'Faça login primeiro!',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
                     return;
                 }
                 window.location.href = '/story';
