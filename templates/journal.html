@@ -426,9 +426,6 @@
         <div class="nav">
             <div class="nav-item active" data-nav="journal"><i class="fas fa-scroll"></i> <span>Atualizações</span></div>
             <div class="nav-item" onclick="window.location.href='/'"><i class="fas fa-dice-d20"></i> <span>Batalha</span></div>
-            <div class="nav-item" onclick="window.location.href='/investigator'"><i class="fas fa-eye"></i> <span>Investigador</span></div>
-            <div class="nav-item" onclick="window.location.href='/cloud'"><i class="fas fa-cloud-moon"></i> <span>Nuvem</span></div>
-            <div class="nav-item" onclick="window.location.href='/notes'"><i class="fas fa-feather-alt"></i> <span>Notas</span></div>
         </div>
         <div class="sidebar-footer">
             <div class="user-card" id="userCard">
@@ -488,7 +485,7 @@
         try {
             const res = await fetch('/api/auth/status');
             const data = await res.json();
-            if (!data.logged_in) { window.location.href = '/login?redirect=/journal'; return; }
+            if (!data.logged_in) { window.location.href = '/'; return; }
             currentUser = data.user;
             isAdmin = currentUser?.level >= 4;
             document.getElementById('userName').innerText = currentUser.realname || currentUser.username;
@@ -496,7 +493,7 @@
             document.getElementById('userAvatar').innerText = (currentUser.realname?.[0] || currentUser.username[0]).toUpperCase();
             if (isAdmin) document.getElementById('adminBar').style.display = 'flex';
             await loadEntries();
-        } catch(e) { window.location.href = '/login'; }
+        } catch(e) { window.location.href = '/'; }
     }
 
     async function deleteEntryById(id) {
@@ -685,7 +682,7 @@
     function showError(msg) { Swal.fire({ icon: 'error', title: 'Erro', text: msg, background: '#1a1a2e', color: '#e2e2f0', confirmButtonColor: '#d4af37' }); }
 
     // events
-    document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login'; });
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/login'; });
     document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
     document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
     const mobileToggle = document.getElementById('mobileToggle');
