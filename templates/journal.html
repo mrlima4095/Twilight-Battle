@@ -21,7 +21,6 @@
             overflow-x: hidden;
         }
 
-        /* Container principal - estilo game */
         .journal-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -29,7 +28,6 @@
             width: 100%;
         }
 
-        /* Header igual ao game */
         .game-header {
             background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
@@ -106,7 +104,6 @@
             box-shadow: 0 5px 15px rgba(255, 68, 68, 0.4);
         }
 
-        /* Stats cards estilo jogo */
         .stats-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -149,7 +146,6 @@
             letter-spacing: 1px;
         }
 
-        /* Botões estilo ação */
         .action-bar {
             display: flex;
             justify-content: flex-end;
@@ -182,7 +178,6 @@
             color: white;
         }
 
-        /* Lista de entries - estilo cards do jogo */
         .chronicle {
             display: flex;
             flex-direction: column;
@@ -248,7 +243,6 @@
             margin-bottom: 20px;
         }
 
-        /* Grid de features igual cartas */
         .features-tome {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -293,7 +287,6 @@
             color: #bbb;
         }
 
-        /* Listas de correções */
         .fix-list {
             list-style: none;
             margin: 15px 0;
@@ -317,7 +310,6 @@
             width: 22px;
         }
 
-        /* Badges */
         .badge-group {
             display: flex;
             flex-wrap: wrap;
@@ -339,7 +331,6 @@
             border: 1px solid #ffd700;
         }
 
-        /* Admin actions */
         .admin-actions {
             display: flex;
             justify-content: flex-end;
@@ -373,7 +364,6 @@
             background: rgba(255, 107, 107, 0.2);
         }
 
-        /* Empty state */
         .empty-chronicle {
             text-align: center;
             padding: 60px 20px;
@@ -388,7 +378,6 @@
             color: #ffd700;
         }
 
-        /* Modal customizada estilo jogo */
         .tw-form {
             display: flex;
             flex-direction: column;
@@ -466,7 +455,6 @@
             background: rgba(255, 215, 0, 0.3);
         }
 
-        /* Responsividade */
         @media (max-width: 768px) {
             .journal-container {
                 padding: 12px;
@@ -487,7 +475,6 @@
             }
         }
 
-        /* Animações */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -500,7 +487,6 @@
 </head>
 <body>
 <div class="journal-container">
-    <!-- Header no estilo do game -->
     <div class="game-header">
         <div class="game-title">
             <i class="fas fa-scroll"></i>
@@ -520,7 +506,6 @@
         </div>
     </div>
 
-    <!-- Barra de ações (admin) -->
     <div class="action-bar" id="adminBar" style="display: none;">
         <button class="action-btn" id="newChronicleBtn">
             <i class="fas fa-quill"></i> Nova Atualização
@@ -530,7 +515,6 @@
         </button>
     </div>
 
-    <!-- Cards de estatísticas -->
     <div class="stats-row">
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-code-branch"></i></div>
@@ -554,18 +538,15 @@
         </div>
     </div>
 
-    <!-- Lista de atualizações -->
     <div id="chronicleContainer" class="chronicle"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ==================== GLOBALS ====================
     let currentUser = null;
     let isAdmin = false;
     let entries = [];
 
-    // ==================== HELPERS ====================
     const formatDate = (iso) => {
         let d = new Date(iso);
         return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -581,7 +562,6 @@
         });
     };
 
-    // ==================== API ====================
     async function loadEntries() {
         try {
             const res = await fetch('/api/journal/entries');
@@ -610,7 +590,6 @@
             currentUser = data.user;
             isAdmin = currentUser?.level >= 4;
             
-            // Atualizar UI do usuário
             const displayName = currentUser.realname || currentUser.username;
             document.getElementById('userName').innerText = displayName;
             document.getElementById('userAvatar').innerText = (displayName[0] || 'T').toUpperCase();
@@ -668,7 +647,6 @@
         }
     }
 
-    // ==================== RENDER ====================
     function updateStats() {
         let totalVersions = entries.length;
         let totalFeatures = 0;
@@ -699,7 +677,6 @@
         }
         
         container.innerHTML = entries.map(entry => {
-            // Features
             const featuresHtml = entry.features?.length ? `
                 <div class="features-tome">
                     ${entry.features.map(f => `
@@ -714,27 +691,23 @@
                 </div>
             ` : '';
             
-            // Melhorias
             const improvementsHtml = entry.improvements?.length ? `
                 <ul class="fix-list">
                     ${entry.improvements.map(imp => `<li><i class="fas fa-check-circle"></i> ${escapeHtml(imp)}</li>`).join('')}
                 </ul>
             ` : '';
             
-            // Bugfixes
             const bugfixesHtml = entry.bugfixes?.length ? `
                 <ul class="fix-list">
                     ${entry.bugfixes.map(fix => `<li><i class="fas fa-bug"></i> ${escapeHtml(fix)}</li>`).join('')}
                 </ul>
             ` : '';
             
-            // Tipo badge
             let typeBadge = '';
             if (entry.type === 'major') typeBadge = '<span class="badge badge-major">⚡ Major Release</span>';
             else if (entry.type === 'minor') typeBadge = '<span class="badge">📦 Minor Update</span>';
             else typeBadge = '<span class="badge">🔧 Patch</span>';
             
-            // Tags
             const tagsHtml = entry.tags?.length ? `
                 <div class="badge-group">
                     ${entry.tags.map(t => `<span class="badge">#${escapeHtml(t)}</span>`).join('')}
@@ -742,7 +715,6 @@
                 </div>
             ` : `<div class="badge-group">${typeBadge}</div>`;
             
-            // Admin buttons
             const adminBtns = isAdmin ? `
                 <div class="admin-actions">
                     <button class="small-btn" data-edit="${entry.id}"><i class="fas fa-pen-fancy"></i> Editar</button>
@@ -767,7 +739,6 @@
             `;
         }).join('');
         
-        // Bind admin events
         if (isAdmin) {
             document.querySelectorAll('[data-edit]').forEach(btn => {
                 btn.addEventListener('click', (e) => {
@@ -784,190 +755,251 @@
         }
     }
 
-    // ==================== MODAL DINÂMICA (criação/edição) ====================
-    let featArr = [], imprArr = [], bugArr = [], tagArr = [];
-    
-    function resetArrays() {
-        featArr = [];
-        imprArr = [];
-        bugArr = [];
-        tagArr = [];
-    }
-    
-    function renderDynamicModalHTML() {
+    // ==================== MODAL CORRIGIDA (preserva dados) ====================
+    let currentModalData = {
+        features: [],
+        improvements: [],
+        bugfixes: [],
+        tags: []
+    };
+
+    function renderFeatureRow(f, idx) {
         return `
-        <div class="tw-form">
-            <div class="tw-field">
-                <label>📜 VERSÃO</label>
-                <input id="modalVersion" placeholder="Ex: v1.4.0">
+            <div class="dynamic-row" data-feat-idx="${idx}">
+                <input type="text" class="feat-title" placeholder="Título" value="${escapeHtml(f.title || '')}">
+                <input type="text" class="feat-desc" placeholder="Descrição" value="${escapeHtml(f.description || '')}">
+                <input type="text" class="feat-icon" placeholder="Ícone (fa-*)" value="${escapeHtml(f.icon || 'fas fa-star')}">
+                <button class="remove-row remove-feat" data-idx="${idx}">🗑️</button>
             </div>
-            <div class="tw-field">
-                <label>🏷️ TÍTULO</label>
-                <input id="modalTitle" placeholder="O Despertar das Sombras">
-            </div>
-            <div class="tw-field">
-                <label>⚡ TIPO</label>
-                <select id="modalType">
-                    <option value="minor">Minor Update</option>
-                    <option value="major">Major Release</option>
-                    <option value="patch">Patch</option>
-                </select>
-            </div>
-            <div class="tw-field">
-                <label>📖 DESCRIÇÃO GERAL</label>
-                <textarea id="modalDesc" rows="2" placeholder="O que esta atualização traz ao reino..."></textarea>
-            </div>
-            <div>
-                <label>✨ NOVAS HABILIDADES / FEATURES</label>
-                <div id="featuresDynamic"></div>
-                <button type="button" id="addFeatureDynamic" class="add-btn">+ Adicionar encantamento</button>
-            </div>
-            <div>
-                <label>🛠️ MELHORIAS</label>
-                <div id="improveDynamic"></div>
-                <button type="button" id="addImproveDynamic" class="add-btn">+ Adicionar melhoria</button>
-            </div>
-            <div>
-                <label>🐛 CORREÇÕES</label>
-                <div id="bugDynamic"></div>
-                <button type="button" id="addBugDynamic" class="add-btn">+ Corrigir fenda arcana</button>
-            </div>
-            <div>
-                <label>🏷️ MARCAS (TAGS)</label>
-                <div id="tagsDynamic"></div>
-                <button type="button" id="addTagDynamic" class="add-btn">+ Tag</button>
-            </div>
-        </div>`;
+        `;
     }
-    
-    function refreshDynamicModal() {
-        const featuresDiv = document.getElementById('featuresDynamic');
-        if (featuresDiv) {
-            featuresDiv.innerHTML = featArr.map((f, idx) => `
-                <div class="dynamic-row">
-                    <input placeholder="Título" class="feat-title-${idx}" value="${escapeHtml(f.title || '')}">
-                    <input placeholder="Descrição" class="feat-desc-${idx}" value="${escapeHtml(f.description || '')}">
-                    <input placeholder="Ícone (fa-*)" class="feat-icon-${idx}" value="${escapeHtml(f.icon || 'fas fa-star')}">
-                    <button class="remove-row" data-idx="${idx}" data-type="feat">🗑️</button>
-                </div>
-            `).join('');
-        }
-        
-        const impDiv = document.getElementById('improveDynamic');
-        if (impDiv) {
-            impDiv.innerHTML = imprArr.map((imp, idx) => `
-                <div class="dynamic-row">
-                    <input class="imp-${idx}" value="${escapeHtml(imp)}" placeholder="Melhoria...">
-                    <button class="remove-row" data-idx="${idx}" data-type="imp">🗑️</button>
-                </div>
-            `).join('');
-        }
-        
-        const bugDiv = document.getElementById('bugDynamic');
-        if (bugDiv) {
-            bugDiv.innerHTML = bugArr.map((bug, idx) => `
-                <div class="dynamic-row">
-                    <input class="bug-${idx}" value="${escapeHtml(bug)}" placeholder="Correção...">
-                    <button class="remove-row" data-idx="${idx}" data-type="bug">🗑️</button>
-                </div>
-            `).join('');
-        }
-        
-        const tagDiv = document.getElementById('tagsDynamic');
-        if (tagDiv) {
-            tagDiv.innerHTML = tagArr.map((tg, idx) => `
-                <div class="dynamic-row">
-                    <input class="tag-${idx}" value="${escapeHtml(tg)}" placeholder="tag">
-                    <button class="remove-row" data-idx="${idx}" data-type="tag">🗑️</button>
-                </div>
-            `).join('');
-        }
-        
-        // Bind remove buttons
-        document.querySelectorAll('.remove-row').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                let idx = parseInt(btn.getAttribute('data-idx'));
-                let type = btn.getAttribute('data-type');
-                if (type === 'feat') featArr.splice(idx, 1);
-                else if (type === 'imp') imprArr.splice(idx, 1);
-                else if (type === 'bug') bugArr.splice(idx, 1);
-                else if (type === 'tag') tagArr.splice(idx, 1);
-                refreshDynamicModal();
-            });
-        });
+
+    function renderImprovementRow(imp, idx) {
+        return `
+            <div class="dynamic-row" data-imp-idx="${idx}">
+                <input type="text" class="imp-text" placeholder="Melhoria..." value="${escapeHtml(imp)}">
+                <button class="remove-row remove-imp" data-idx="${idx}">🗑️</button>
+            </div>
+        `;
     }
-    
-    function collectDynamicData() {
-        let newFeats = [];
-        for (let i = 0; i < featArr.length; i++) {
-            let title = document.querySelector(`.feat-title-${i}`)?.value.trim();
-            if (title) {
-                newFeats.push({
-                    title: title,
-                    description: document.querySelector(`.feat-desc-${i}`)?.value.trim() || '',
-                    icon: document.querySelector(`.feat-icon-${i}`)?.value.trim() || 'fas fa-star'
+
+    function renderBugfixRow(bug, idx) {
+        return `
+            <div class="dynamic-row" data-bug-idx="${idx}">
+                <input type="text" class="bug-text" placeholder="Correção..." value="${escapeHtml(bug)}">
+                <button class="remove-row remove-bug" data-idx="${idx}">🗑️</button>
+            </div>
+        `;
+    }
+
+    function renderTagRow(tag, idx) {
+        return `
+            <div class="dynamic-row" data-tag-idx="${idx}">
+                <input type="text" class="tag-text" placeholder="tag" value="${escapeHtml(tag)}">
+                <button class="remove-row remove-tag" data-idx="${idx}">🗑️</button>
+            </div>
+        `;
+    }
+
+    function refreshModalDisplays() {
+        const featuresContainer = document.getElementById('featuresContainer');
+        const improvementsContainer = document.getElementById('improvementsContainer');
+        const bugfixesContainer = document.getElementById('bugfixesContainer');
+        const tagsContainer = document.getElementById('tagsContainer');
+        
+        if (featuresContainer) {
+            featuresContainer.innerHTML = currentModalData.features.map((f, idx) => renderFeatureRow(f, idx)).join('');
+            featuresContainer.querySelectorAll('.remove-feat').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    currentModalData.features.splice(idx, 1);
+                    refreshModalDisplays();
                 });
-            }
+            });
+            featuresContainer.querySelectorAll('.feat-title, .feat-desc, .feat-icon').forEach((input, i) => {
+                const rowIdx = Math.floor(i / 3);
+                input.addEventListener('input', (e) => {
+                    const field = e.target.classList.contains('feat-title') ? 'title' : 
+                                   (e.target.classList.contains('feat-desc') ? 'description' : 'icon');
+                    if (currentModalData.features[rowIdx]) {
+                        currentModalData.features[rowIdx][field] = e.target.value;
+                    }
+                });
+            });
         }
-        let newImpr = [];
-        for (let i = 0; i < imprArr.length; i++) {
-            let v = document.querySelector(`.imp-${i}`)?.value.trim();
-            if (v) newImpr.push(v);
+        
+        if (improvementsContainer) {
+            improvementsContainer.innerHTML = currentModalData.improvements.map((imp, idx) => renderImprovementRow(imp, idx)).join('');
+            improvementsContainer.querySelectorAll('.remove-imp').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    currentModalData.improvements.splice(idx, 1);
+                    refreshModalDisplays();
+                });
+            });
+            improvementsContainer.querySelectorAll('.imp-text').forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    if (currentModalData.improvements[idx] !== undefined) {
+                        currentModalData.improvements[idx] = e.target.value;
+                    }
+                });
+            });
         }
-        let newBug = [];
-        for (let i = 0; i < bugArr.length; i++) {
-            let v = document.querySelector(`.bug-${i}`)?.value.trim();
-            if (v) newBug.push(v);
+        
+        if (bugfixesContainer) {
+            bugfixesContainer.innerHTML = currentModalData.bugfixes.map((bug, idx) => renderBugfixRow(bug, idx)).join('');
+            bugfixesContainer.querySelectorAll('.remove-bug').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    currentModalData.bugfixes.splice(idx, 1);
+                    refreshModalDisplays();
+                });
+            });
+            bugfixesContainer.querySelectorAll('.bug-text').forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    if (currentModalData.bugfixes[idx] !== undefined) {
+                        currentModalData.bugfixes[idx] = e.target.value;
+                    }
+                });
+            });
         }
-        let newTag = [];
-        for (let i = 0; i < tagArr.length; i++) {
-            let v = document.querySelector(`.tag-${i}`)?.value.trim();
-            if (v) newTag.push(v.toLowerCase());
+        
+        if (tagsContainer) {
+            tagsContainer.innerHTML = currentModalData.tags.map((tag, idx) => renderTagRow(tag, idx)).join('');
+            tagsContainer.querySelectorAll('.remove-tag').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = parseInt(btn.getAttribute('data-idx'));
+                    currentModalData.tags.splice(idx, 1);
+                    refreshModalDisplays();
+                });
+            });
+            tagsContainer.querySelectorAll('.tag-text').forEach((input, idx) => {
+                input.addEventListener('input', (e) => {
+                    if (currentModalData.tags[idx] !== undefined) {
+                        currentModalData.tags[idx] = e.target.value;
+                    }
+                });
+            });
         }
-        return { features: newFeats, improvements: newImpr, bugfixes: newBug, tags: newTag };
     }
-    
+
+    function getModalFormData() {
+        return {
+            version: document.getElementById('modalVersion')?.value.trim() || '',
+            title: document.getElementById('modalTitle')?.value.trim() || '',
+            type: document.getElementById('modalType')?.value || 'minor',
+            description: document.getElementById('modalDesc')?.value.trim() || '',
+            features: currentModalData.features.filter(f => f.title && f.title.trim()),
+            improvements: currentModalData.improvements.filter(i => i && i.trim()),
+            bugfixes: currentModalData.bugfixes.filter(b => b && b.trim()),
+            tags: currentModalData.tags.filter(t => t && t.trim())
+        };
+    }
+
+    function resetModalData(entry = null) {
+        if (entry) {
+            currentModalData = {
+                features: (entry.features || []).map(f => ({ 
+                    title: f.title || '', 
+                    description: f.description || '', 
+                    icon: f.icon || 'fas fa-star' 
+                })),
+                improvements: [...(entry.improvements || [])],
+                bugfixes: [...(entry.bugfixes || [])],
+                tags: [...(entry.tags || [])]
+            };
+        } else {
+            currentModalData = {
+                features: [],
+                improvements: [],
+                bugfixes: [],
+                tags: []
+            };
+        }
+    }
+
     async function openNewModal() {
-        resetArrays();
-        const swal = await Swal.fire({
+        resetModalData(null);
+        
+        const result = await Swal.fire({
             title: '🖋️ Escrever Nova Atualização',
-            html: renderDynamicModalHTML(),
-            width: '800px',
+            html: `
+                <div class="tw-form">
+                    <div class="tw-field">
+                        <label>📜 VERSÃO</label>
+                        <input id="modalVersion" placeholder="Ex: v1.4.0">
+                    </div>
+                    <div class="tw-field">
+                        <label>🏷️ TÍTULO</label>
+                        <input id="modalTitle" placeholder="O Despertar das Sombras">
+                    </div>
+                    <div class="tw-field">
+                        <label>⚡ TIPO</label>
+                        <select id="modalType">
+                            <option value="minor">Minor Update</option>
+                            <option value="major">Major Release</option>
+                            <option value="patch">Patch</option>
+                        </select>
+                    </div>
+                    <div class="tw-field">
+                        <label>📖 DESCRIÇÃO GERAL</label>
+                        <textarea id="modalDesc" rows="2" placeholder="O que esta atualização traz ao reino..."></textarea>
+                    </div>
+                    <div>
+                        <label>✨ NOVAS HABILIDADES / FEATURES</label>
+                        <div id="featuresContainer"></div>
+                        <button type="button" id="addFeatureBtn" class="add-btn">+ Adicionar encantamento</button>
+                    </div>
+                    <div>
+                        <label>🛠️ MELHORIAS</label>
+                        <div id="improvementsContainer"></div>
+                        <button type="button" id="addImprovementBtn" class="add-btn">+ Adicionar melhoria</button>
+                    </div>
+                    <div>
+                        <label>🐛 CORREÇÕES</label>
+                        <div id="bugfixesContainer"></div>
+                        <button type="button" id="addBugfixBtn" class="add-btn">+ Corrigir fenda arcana</button>
+                    </div>
+                    <div>
+                        <label>🏷️ MARCAS (TAGS)</label>
+                        <div id="tagsContainer"></div>
+                        <button type="button" id="addTagBtn" class="add-btn">+ Tag</button>
+                    </div>
+                </div>
+            `,
+            width: '850px',
             showCancelButton: true,
             confirmButtonText: 'Publicar Pergaminho',
             cancelButtonText: 'Cancelar',
             background: '#1a1a2e',
             color: '#fff',
             didOpen: () => {
-                refreshDynamicModal();
-                document.getElementById('addFeatureDynamic')?.addEventListener('click', () => {
-                    featArr.push({ title: '', description: '', icon: 'fas fa-star' });
-                    refreshDynamicModal();
+                refreshModalDisplays();
+                
+                document.getElementById('addFeatureBtn')?.addEventListener('click', () => {
+                    currentModalData.features.push({ title: '', description: '', icon: 'fas fa-star' });
+                    refreshModalDisplays();
                 });
-                document.getElementById('addImproveDynamic')?.addEventListener('click', () => {
-                    imprArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addImprovementBtn')?.addEventListener('click', () => {
+                    currentModalData.improvements.push('');
+                    refreshModalDisplays();
                 });
-                document.getElementById('addBugDynamic')?.addEventListener('click', () => {
-                    bugArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addBugfixBtn')?.addEventListener('click', () => {
+                    currentModalData.bugfixes.push('');
+                    refreshModalDisplays();
                 });
-                document.getElementById('addTagDynamic')?.addEventListener('click', () => {
-                    tagArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addTagBtn')?.addEventListener('click', () => {
+                    currentModalData.tags.push('');
+                    refreshModalDisplays();
                 });
             },
             preConfirm: async () => {
-                let version = document.getElementById('modalVersion')?.value.trim();
-                let title = document.getElementById('modalTitle')?.value.trim();
-                let type = document.getElementById('modalType')?.value;
-                let desc = document.getElementById('modalDesc')?.value.trim();
-                if (!version || !title) {
+                const formData = getModalFormData();
+                if (!formData.version || !formData.title) {
                     Swal.showValidationMessage('Versão e título são obrigatórios');
                     return false;
                 }
-                let { features, improvements, bugfixes, tags } = collectDynamicData();
-                let res = await saveNewEntry({ version, title, description: desc, type, features, improvements, bugfixes, tags });
+                const res = await saveNewEntry(formData);
                 if (!res.success) {
                     Swal.showValidationMessage(res.message || 'Erro arcano ao salvar');
                     return false;
@@ -975,64 +1007,98 @@
                 return res;
             }
         });
-        if (swal.isConfirmed) {
+        
+        if (result.isConfirmed) {
             Swal.fire({ icon: 'success', title: 'Crônica atualizada!', toast: true, timer: 1500, showConfirmButton: false });
             loadEntries();
         }
     }
-    
+
     async function openEditDialog(id) {
         const entry = entries.find(e => e.id === id);
         if (!entry) return;
-        resetArrays();
-        featArr = (entry.features || []).map(f => ({ title: f.title, description: f.description, icon: f.icon || 'fas fa-star' }));
-        imprArr = [...(entry.improvements || [])];
-        bugArr = [...(entry.bugfixes || [])];
-        tagArr = [...(entry.tags || [])];
         
-        const swal = await Swal.fire({
+        resetModalData(entry);
+        
+        const result = await Swal.fire({
             title: '✒️ Editar Pergaminho',
-            html: renderDynamicModalHTML(),
-            width: '800px',
+            html: `
+                <div class="tw-form">
+                    <div class="tw-field">
+                        <label>📜 VERSÃO</label>
+                        <input id="modalVersion" placeholder="Ex: v1.4.0" value="${escapeHtml(entry.version)}">
+                    </div>
+                    <div class="tw-field">
+                        <label>🏷️ TÍTULO</label>
+                        <input id="modalTitle" placeholder="O Despertar das Sombras" value="${escapeHtml(entry.title)}">
+                    </div>
+                    <div class="tw-field">
+                        <label>⚡ TIPO</label>
+                        <select id="modalType">
+                            <option value="minor" ${entry.type === 'minor' ? 'selected' : ''}>Minor Update</option>
+                            <option value="major" ${entry.type === 'major' ? 'selected' : ''}>Major Release</option>
+                            <option value="patch" ${entry.type === 'patch' ? 'selected' : ''}>Patch</option>
+                        </select>
+                    </div>
+                    <div class="tw-field">
+                        <label>📖 DESCRIÇÃO GERAL</label>
+                        <textarea id="modalDesc" rows="2">${escapeHtml(entry.description || '')}</textarea>
+                    </div>
+                    <div>
+                        <label>✨ NOVAS HABILIDADES / FEATURES</label>
+                        <div id="featuresContainer"></div>
+                        <button type="button" id="addFeatureBtn" class="add-btn">+ Adicionar encantamento</button>
+                    </div>
+                    <div>
+                        <label>🛠️ MELHORIAS</label>
+                        <div id="improvementsContainer"></div>
+                        <button type="button" id="addImprovementBtn" class="add-btn">+ Adicionar melhoria</button>
+                    </div>
+                    <div>
+                        <label>🐛 CORREÇÕES</label>
+                        <div id="bugfixesContainer"></div>
+                        <button type="button" id="addBugfixBtn" class="add-btn">+ Corrigir fenda arcana</button>
+                    </div>
+                    <div>
+                        <label>🏷️ MARCAS (TAGS)</label>
+                        <div id="tagsContainer"></div>
+                        <button type="button" id="addTagBtn" class="add-btn">+ Tag</button>
+                    </div>
+                </div>
+            `,
+            width: '850px',
             showCancelButton: true,
             confirmButtonText: 'Salvar Alterações',
             cancelButtonText: 'Cancelar',
             background: '#1a1a2e',
             color: '#fff',
             didOpen: () => {
-                document.getElementById('modalVersion').value = entry.version;
-                document.getElementById('modalTitle').value = entry.title;
-                document.getElementById('modalType').value = entry.type || 'minor';
-                document.getElementById('modalDesc').value = entry.description || '';
-                refreshDynamicModal();
-                document.getElementById('addFeatureDynamic')?.addEventListener('click', () => {
-                    featArr.push({ title: '', description: '', icon: 'fas fa-star' });
-                    refreshDynamicModal();
+                refreshModalDisplays();
+                
+                document.getElementById('addFeatureBtn')?.addEventListener('click', () => {
+                    currentModalData.features.push({ title: '', description: '', icon: 'fas fa-star' });
+                    refreshModalDisplays();
                 });
-                document.getElementById('addImproveDynamic')?.addEventListener('click', () => {
-                    imprArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addImprovementBtn')?.addEventListener('click', () => {
+                    currentModalData.improvements.push('');
+                    refreshModalDisplays();
                 });
-                document.getElementById('addBugDynamic')?.addEventListener('click', () => {
-                    bugArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addBugfixBtn')?.addEventListener('click', () => {
+                    currentModalData.bugfixes.push('');
+                    refreshModalDisplays();
                 });
-                document.getElementById('addTagDynamic')?.addEventListener('click', () => {
-                    tagArr.push('');
-                    refreshDynamicModal();
+                document.getElementById('addTagBtn')?.addEventListener('click', () => {
+                    currentModalData.tags.push('');
+                    refreshModalDisplays();
                 });
             },
             preConfirm: async () => {
-                let version = document.getElementById('modalVersion')?.value.trim();
-                let title = document.getElementById('modalTitle')?.value.trim();
-                let type = document.getElementById('modalType')?.value;
-                let desc = document.getElementById('modalDesc')?.value.trim();
-                if (!version || !title) {
-                    Swal.showValidationMessage('Versão e título obrigatórios');
+                const formData = getModalFormData();
+                if (!formData.version || !formData.title) {
+                    Swal.showValidationMessage('Versão e título são obrigatórios');
                     return false;
                 }
-                let { features, improvements, bugfixes, tags } = collectDynamicData();
-                let res = await updateEntryById(id, { version, title, description: desc, type, features, improvements, bugfixes, tags });
+                const res = await updateEntryById(id, formData);
                 if (!res.success) {
                     Swal.showValidationMessage(res.message || 'Erro ao atualizar');
                     return false;
@@ -1040,12 +1106,13 @@
                 return res;
             }
         });
-        if (swal.isConfirmed) {
+        
+        if (result.isConfirmed) {
             Swal.fire({ icon: 'success', title: 'Atualizado!', toast: true, timer: 1500, showConfirmButton: false });
             loadEntries();
         }
     }
-    
+
     function showError(msg) {
         Swal.fire({
             icon: 'error',
@@ -1056,8 +1123,7 @@
             confirmButtonColor: '#ffd700'
         });
     }
-    
-    // ==================== EVENTOS ====================
+
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         await fetch('/api/logout', { method: 'POST' });
         window.location.href = '/login';
@@ -1065,7 +1131,6 @@
     document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
     document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
     
-    // Inicializar
     checkAuth();
 </script>
 </body>
