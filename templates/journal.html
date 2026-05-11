@@ -1126,7 +1126,7 @@
 
     document.getElementById('logoutBtn')?.addEventListener('click', async () => {
         await fetch('/api/logout', { method: 'POST' });
-        window.location.href = '/login';
+        window.location.href = '/';
     });
     document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
     document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
