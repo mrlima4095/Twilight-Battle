@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Twilight Battle — Jornal de Atualizações</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --twilight-bg: #0f0f1a;
+            --twilight-card: #1a1a2e;
+            --twilight-border: #2a2a4a;
+            --twilight-gold: #d4af37;
+            --twilight-gold-dim: #b8922e;
+            --twilight-red: #c73d3d;
+            --twilight-text: #e2e2f0;
+            --twilight-text-muted: #9a9ac0;
+            --twilight-sidebar: #12121f;
+            --twilight-hover: rgba(212, 175, 55, 0.12);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--twilight-bg);
+            color: var(--twilight-text);
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, .logo, .version-badge, .btn {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Layout */
+        .tw-app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar estilo grimório */
+        .sidebar {
+            width: 280px;
+            background: var(--twilight-sidebar);
+            border-right: 2px solid var(--twilight-border);
+            position: fixed;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s ease;
+            z-index: 100;
+            backdrop-filter: blur(2px);
+        }
+
+        .sidebar-header {
+            padding: 32px 20px;
+            border-bottom: 1px solid var(--twilight-border);
+            text-align: center;
+        }
+
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--twilight-gold);
+        }
+
+        .logo i {
+            font-size: 2.5rem;
+            text-shadow: 0 0 6px rgba(212, 175, 55, 0.5);
+        }
+
+        .logo span {
+            letter-spacing: 2px;
+        }
+
+        .nav {
+            flex: 1;
+            padding: 24px 16px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 18px;
+            border-radius: 16px;
+            color: var(--twilight-text-muted);
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-item i { width: 24px; font-size: 1.2rem; }
+        .nav-item:hover { background: var(--twilight-hover); color: var(--twilight-gold); }
+        .nav-item.active { background: rgba(212, 175, 55, 0.15); color: var(--twilight-gold); border-left: 3px solid var(--twilight-gold); }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--twilight-border);
+        }
+
+        .user-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .avatar {
+            width: 46px;
+            height: 46px;
+            background: linear-gradient(145deg, var(--twilight-gold), #8b691b);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #12121f;
+            font-family: 'Cinzel';
+        }
+
+        .user-name { font-weight: 600; color: var(--twilight-text); }
+        .user-handle { font-size: 0.7rem; color: var(--twilight-text-muted); }
+
+        .logout-btn {
+            width: 100%;
+            background: rgba(199, 61, 61, 0.15);
+            border: 1px solid var(--twilight-red);
+            border-radius: 40px;
+            padding: 10px;
+            color: #e0a0a0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: 0.2s;
+        }
+        .logout-btn:hover { background: rgba(199, 61, 61, 0.3); color: #ffbaba; }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 32px 32px;
+        }
+
+        /* Header */
+        .hero {
+            margin-bottom: 40px;
+            border-left: 4px solid var(--twilight-gold);
+            padding-left: 24px;
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            color: var(--twilight-gold);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .hero p { color: var(--twilight-text-muted); margin-top: 8px; letter-spacing: 0.3px; }
+
+        .admin-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, var(--twilight-gold), #b8860b);
+            border: none;
+            padding: 10px 24px;
+            border-radius: 40px;
+            font-weight: 600;
+            color: #12121f;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .btn-gold:hover { transform: translateY(-2px); filter: brightness(1.05); }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--twilight-gold);
+            color: var(--twilight-gold);
+        }
+
+        /* Stats cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 48px;
+        }
+        .stat-card {
+            background: var(--twilight-card);
+            border: 1px solid var(--twilight-border);
+            border-radius: 28px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(2px);
+            transition: 0.2s;
+        }
+        .stat-card:hover { border-color: var(--twilight-gold); box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateY(-3px); }
+        .stat-icon { font-size: 2rem; color: var(--twilight-gold); margin-bottom: 8px; }
+        .stat-number { font-size: 2rem; font-weight: 800; font-family: 'Cinzel';}
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--twilight-text-muted);}
+
+        /* Journal entries */
+        .chronicle {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        .chronicle-entry {
+            background: var(--twilight-card);
+            border: 1px solid var(--twilight-border);
+            border-radius: 32px;
+            padding: 28px;
+            transition: 0.2s;
+        }
+        .chronicle-entry:hover { border-color: var(--twilight-gold-dim); box-shadow: 0 12px 28px rgba(0,0,0,0.5); }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .version-tag {
+            background: linear-gradient(145deg, #2a2a4a, #1e1e36);
+            border-radius: 60px;
+            padding: 6px 18px;
+            font-weight: 700;
+            font-family: 'Cinzel';
+            color: var(--twilight-gold);
+            border: 1px solid var(--twilight-gold);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .entry-date {
+            color: var(--twilight-text-muted);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .entry-title {
+            font-size: 1.8rem;
+            font-family: 'Cinzel';
+            font-weight: 700;
+            margin: 12px 0 12px 0;
+            color: #f0e6c5;
+        }
+        .entry-desc { color: var(--twilight-text-muted); line-height: 1.5; margin-bottom: 28px; }
+
+        /* Features grid like spell cards */
+        .features-tome {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+            margin: 20px 0;
+        }
+        .feature-arcane {
+            background: rgba(26, 26, 46, 0.7);
+            border: 1px solid var(--twilight-border);
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            gap: 12px;
+            transition: 0.2s;
+        }
+        .feature-arcane:hover { background: var(--twilight-hover); border-color: var(--twilight-gold);}
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            background: rgba(212, 175, 55, 0.15);
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: var(--twilight-gold);
+        }
+        .feature-text h4 { font-weight: 700; margin-bottom: 4px; color: #e8dbbd; }
+        .feature-text p { font-size: 0.8rem; color: var(--twilight-text-muted); }
+
+        .fix-list {
+            list-style: none;
+            margin: 18px 0;
+        }
+        .fix-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--twilight-border);
+        }
+        .fix-list li i.fa-check-circle { color: #2ecc71; width: 22px; }
+        .fix-list li i.fa-bug { color: var(--twilight-red); width: 22px; }
+
+        .badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 24px;
+        }
+        .badge {
+            background: #23233b;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #b9b9e0;
+        }
+        .badge-major { background: rgba(212,175,55,0.25); color: var(--twilight-gold); border: 1px solid var(--twilight-gold);}
+        
+        .admin-actions-entry {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+        .small-btn {
+            background: transparent;
+            border: 1px solid var(--twilight-border);
+            border-radius: 40px;
+            padding: 6px 14px;
+            color: var(--twilight-text);
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .small-btn.danger { border-color: var(--twilight-red); color: #f0a0a0; }
+        
+        .empty-chronicle {
+            text-align: center;
+            padding: 70px 20px;
+            background: var(--twilight-card);
+            border-radius: 48px;
+            border: 1px dashed var(--twilight-gold);
+        }
+
+        /* Dynamic form */
+        .tw-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .tw-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .tw-field label { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--twilight-gold);}
+        .tw-field input, .tw-field textarea, .tw-field select {
+            background: #0c0c18;
+            border: 1px solid var(--twilight-border);
+            border-radius: 20px;
+            padding: 12px 16px;
+            color: var(--twilight-text);
+            font-family: 'Inter';
+        }
+        .dynamic-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .dynamic-row input { flex: 1; }
+        .remove-row {
+            background: #3a1e1e;
+            border: none;
+            border-radius: 40px;
+            padding: 8px 14px;
+            color: #ffa0a0;
+            cursor: pointer;
+        }
+        .add-btn {
+            background: rgba(212, 175, 55, 0.2);
+            border: 1px dashed var(--twilight-gold);
+            border-radius: 40px;
+            padding: 8px;
+            width: 100%;
+            cursor: pointer;
+            color: var(--twilight-gold);
+            margin-top: 4px;
+        }
+
+        @media (max-width: 760px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main { margin-left: 0; padding: 20px; }
+            .hero h1 { font-size: 1.8rem; }
+            .features-tome { grid-template-columns: 1fr; }
+            .mobile-toggle { display: flex; position: fixed; bottom: 20px; right: 20px; background: var(--twilight-gold); width: 52px; height: 52px; border-radius: 60px; align-items: center; justify-content: center; z-index: 200; cursor: pointer; border: none; color: #12121f; font-size: 1.5rem; box-shadow: 0 4px 14px black; }
+        }
+        .mobile-toggle { display: none; }
+    </style>
+</head>
+<body>
+<div class="tw-app">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <i class="fas fa-moon"></i>
+                <span>TWILIGHT BATTLE</span>
+                <small style="font-size: 0.7rem;">JORNAL ÉPICO</small>
+            </div>
+        </div>
+        <div class="nav">
+            <div class="nav-item active" data-nav="journal"><i class="fas fa-scroll"></i> <span>Atualizações</span></div>
+            <div class="nav-item" onclick="window.location.href='/'"><i class="fas fa-dice-d20"></i> <span>Batalha</span></div>
+            <div class="nav-item" onclick="window.location.href='/investigator'"><i class="fas fa-eye"></i> <span>Investigador</span></div>
+            <div class="nav-item" onclick="window.location.href='/cloud'"><i class="fas fa-cloud-moon"></i> <span>Nuvem</span></div>
+            <div class="nav-item" onclick="window.location.href='/notes'"><i class="fas fa-feather-alt"></i> <span>Notas</span></div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-card" id="userCard">
+                <div class="avatar" id="userAvatar">T</div>
+                <div><div class="user-name" id="userName">Carregando...</div><div class="user-handle" id="userHandle">@guerreiro</div></div>
+            </div>
+            <button class="logout-btn" id="logoutBtn"><i class="fas fa-door-open"></i> Sair da Crônica</button>
+        </div>
+    </aside>
+
+    <main class="main">
+        <div class="hero">
+            <h1><i class="fas fa-journal-whills"></i> Jornal da Aurora</h1>
+            <p>📜 Registro das lendas, melhorias e feitiços que moldam o reino.</p>
+        </div>
+        <div class="admin-bar" id="adminBar" style="display: none;">
+            <button class="btn-gold" id="newChronicleBtn"><i class="fas fa-quill"></i> Nova Atualização</button>
+            <button class="btn-gold btn-outline" id="refreshBtn"><i class="fas fa-sync-alt"></i> Atualizar</button>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-code-branch"></i></div><div class="stat-number" id="statVersions">0</div><div class="stat-label">Versões</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-gem"></i></div><div class="stat-number" id="statFeatures">0</div><div class="stat-label">Novos encantos</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-hammer"></i></div><div class="stat-number" id="statImprovements">0</div><div class="stat-label">Melhorias</div></div>
+            <div class="stat-card"><div class="stat-icon"><i class="fas fa-hourglass-half"></i></div><div class="stat-number" id="statLatest">-</div><div class="stat-label">último pergaminho</div></div>
+        </div>
+
+        <!-- Lista de atualizações -->
+        <div id="chronicleContainer" class="chronicle"></div>
+    </main>
+</div>
+<button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // ~~~~~~~~~~ GLOBALS ~~~~~~~~~~
+    let currentUser = null;
+    let isAdmin = false;
+    let entries = [];
+
+    // helpers
+    const formatDate = (iso) => { let d = new Date(iso); return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'long', year:'numeric' }); };
+    const esc = (s) => s ? s.replace(/[&<>]/g, function(m) { if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m; }) : '';
+
+    // API
+    async function loadEntries() {
+        try {
+            const res = await fetch('/api/journal/entries');
+            const data = await res.json();
+            if (data.success) { entries = data.entries || []; renderChronicle(); updateStats(); }
+            else showError('Falha ao carregar crônicas');
+        } catch(e) { console.error(e); showError('Falha na conexão com o arquivo-mestre'); }
+    }
+
+    async function checkTwilightAuth() {
+        try {
+            const res = await fetch('/api/auth/status');
+            const data = await res.json();
+            if (!data.logged_in) { window.location.href = '/login?redirect=/journal'; return; }
+            currentUser = data.user;
+            isAdmin = currentUser?.level >= 4;
+            document.getElementById('userName').innerText = currentUser.realname || currentUser.username;
+            document.getElementById('userHandle').innerText = `@${currentUser.username}`;
+            document.getElementById('userAvatar').innerText = (currentUser.realname?.[0] || currentUser.username[0]).toUpperCase();
+            if (isAdmin) document.getElementById('adminBar').style.display = 'flex';
+            await loadEntries();
+        } catch(e) { window.location.href = '/login'; }
+    }
+
+    async function deleteEntryById(id) {
+        const confirm = await Swal.fire({ title: '⚔️ Excluir registro?', text: 'Este pergaminho será perdido para sempre.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#c73d3d', background: '#1a1a2e', color: '#e2e2f0' });
+        if (!confirm.isConfirmed) return;
+        const res = await fetch(`/api/journal/delete/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) { Swal.fire({ icon: 'success', title: 'Apagado!', toast: true, timer: 1500, showConfirmButton: false }); loadEntries(); } 
+        else showError('Não foi possível deletar');
+    }
+
+    async function saveNewEntry(payload) {
+        const res = await fetch('/api/journal/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        return await res.json();
+    }
+    async function updateEntryById(id, payload) {
+        const res = await fetch(`/api/journal/update/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        return await res.json();
+    }
+
+    // render
+    function updateStats() {
+        let totalVersions = entries.length;
+        let totalFeatures = 0, totalImprovements = 0;
+        entries.forEach(e => { totalFeatures += (e.features?.length || 0); totalImprovements += (e.improvements?.length || 0) + (e.bugfixes?.length || 0); });
+        document.getElementById('statVersions').innerText = totalVersions;
+        document.getElementById('statFeatures').innerText = totalFeatures;
+        document.getElementById('statImprovements').innerText = totalImprovements;
+        document.getElementById('statLatest').innerText = entries.length ? entries[0].version : '-';
+    }
+
+    function renderChronicle() {
+        const container = document.getElementById('chronicleContainer');
+        if (!entries.length) {
+            container.innerHTML = `<div class="empty-chronicle"><i class="fas fa-scroll" style="font-size: 3rem; opacity:0.5;"></i><p style="margin-top: 20px;">O grimório de atualizações ainda está em branco.</p>${isAdmin ? '<p style="margin-top:8px;">Toque em "Nova Atualização" para escrever o primeiro capítulo.</p>' : ''}</div>`;
+            return;
+        }
+        container.innerHTML = entries.map(entry => {
+            const featuresHtml = entry.features?.length ? `<div class="features-tome">${entry.features.map(f => `<div class="feature-arcane"><div class="feature-icon"><i class="${f.icon || 'fas fa-star'}"></i></div><div class="feature-text"><h4>${esc(f.title)}</h4><p>${esc(f.description)}</p></div></div>`).join('')}</div>` : '';
+            const improvementsHtml = entry.improvements?.length ? `<ul class="fix-list">${entry.improvements.map(imp => `<li><i class="fas fa-check-circle"></i> ${esc(imp)}</li>`).join('')}</ul>` : '';
+            const bugfixesHtml = entry.bugfixes?.length ? `<ul class="fix-list">${entry.bugfixes.map(fix => `<li><i class="fas fa-bug"></i> ${esc(fix)}</li>`).join('')}</ul>` : '';
+            let typeBadge = '';
+            if (entry.type === 'major') typeBadge = '<span class="badge badge-major">⚡ Major Release</span>';
+            else if (entry.type === 'minor') typeBadge = '<span class="badge">📦 Minor Update</span>';
+            else typeBadge = '<span class="badge">🔧 Patch</span>';
+            const tagsHtml = entry.tags?.length ? `<div class="badge-group">${entry.tags.map(t => `<span class="badge">#${esc(t)}</span>`).join('')}${typeBadge}</div>` : `<div class="badge-group">${typeBadge}</div>`;
+            const adminBtns = isAdmin ? `<div class="admin-actions-entry"><button class="small-btn" data-edit="${entry.id}"><i class="fas fa-pen-fancy"></i> Editar</button><button class="small-btn danger" data-delete="${entry.id}"><i class="fas fa-trash-alt"></i> Excluir</button></div>` : '';
+            return `
+                <div class="chronicle-entry" data-entry-id="${entry.id}">
+                    <div class="entry-header">
+                        <div class="version-tag"><i class="fas fa-tag"></i> ${esc(entry.version)}</div>
+                        <div class="entry-date"><i class="far fa-calendar-alt"></i> ${formatDate(entry.date)}</div>
+                    </div>
+                    <div class="entry-title">${esc(entry.title)}</div>
+                    <div class="entry-desc">${esc(entry.description || 'Sem descrição adicional.')}</div>
+                    ${featuresHtml}
+                    ${improvementsHtml}
+                    ${bugfixesHtml}
+                    ${tagsHtml}
+                    ${adminBtns}
+                </div>
+            `;
+        }).join('');
+        if (isAdmin) {
+            document.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-edit'); openEditDialog(id); }));
+            document.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-delete'); deleteEntryById(id); }));
+        }
+    }
+
+    // Dynamic form helpers
+    let featArr = [], imprArr = [], bugArr = [], tagArr = [];
+    function resetArrays() { featArr = []; imprArr = []; bugArr = []; tagArr = []; }
+    function renderDynamicModal() {
+        return `
+        <div class="tw-form">
+            <div class="tw-field"><label>📜 Versão</label><input id="modalVersion" placeholder="v1.3.0"></div>
+            <div class="tw-field"><label>🏷️ Título</label><input id="modalTitle" placeholder="A Sombra e a Lâmina"></div>
+            <div class="tw-field"><label>⚡ Tipo</label><select id="modalType"><option value="minor">Minor Update</option><option value="major">Major Release</option><option value="patch">Patch</option></select></div>
+            <div class="tw-field"><label>📖 Descrição geral</label><textarea id="modalDesc" rows="2"></textarea></div>
+            <div><label>✨ Novas habilidades/features</label><div id="featuresDynamic"></div><button type="button" id="addFeatureDynamic" class="add-btn">+ Adicionar encantamento</button></div>
+            <div><label>🛠️ Melhorias</label><div id="improveDynamic"></div><button type="button" id="addImproveDynamic" class="add-btn">+ Adicionar melhoria</button></div>
+            <div><label>🐛 Correções</label><div id="bugDynamic"></div><button type="button" id="addBugDynamic" class="add-btn">+ Corrigir fenda arcana</button></div>
+            <div><label>🏷️ Marcas (tags)</label><div id="tagsDynamic"></div><button type="button" id="addTagDynamic" class="add-btn">+ Tag</button></div>
+        </div>`;
+    }
+    function refreshDynamic() {
+        const featuresDiv = document.getElementById('featuresDynamic');
+        if(featuresDiv) featuresDiv.innerHTML = featArr.map((f, idx) => `<div class="dynamic-row"><input placeholder="Título" class="feat-title-${idx}" value="${esc(f.title)}"><input placeholder="Descrição" class="feat-desc-${idx}" value="${esc(f.description)}"><input placeholder="Ícone (fa-*)" class="feat-icon-${idx}" value="${esc(f.icon || 'fas fa-star')}"><button class="remove-row" data-idx="${idx}" data-type="feat">🗑️</button></div>`).join('');
+        const impDiv = document.getElementById('improveDynamic');
+        if(impDiv) impDiv.innerHTML = imprArr.map((imp, idx) => `<div class="dynamic-row"><input class="imp-${idx}" value="${esc(imp)}" placeholder="Melhoria..."><button class="remove-row" data-idx="${idx}" data-type="imp">🗑️</button></div>`).join('');
+        const bugDiv = document.getElementById('bugDynamic');
+        if(bugDiv) bugDiv.innerHTML = bugArr.map((bug, idx) => `<div class="dynamic-row"><input class="bug-${idx}" value="${esc(bug)}" placeholder="correção..."><button class="remove-row" data-idx="${idx}" data-type="bug">🗑️</button></div>`).join('');
+        const tagDiv = document.getElementById('tagsDynamic');
+        if(tagDiv) tagDiv.innerHTML = tagArr.map((tg, idx) => `<div class="dynamic-row"><input class="tag-${idx}" value="${esc(tg)}" placeholder="tag"><button class="remove-row" data-idx="${idx}" data-type="tag">🗑️</button></div>`).join('');
+        document.querySelectorAll('.remove-row').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                let idx = parseInt(btn.getAttribute('data-idx')), type = btn.getAttribute('data-type');
+                if(type==='feat') featArr.splice(idx,1);
+                else if(type==='imp') imprArr.splice(idx,1);
+                else if(type==='bug') bugArr.splice(idx,1);
+                else if(type==='tag') tagArr.splice(idx,1);
+                refreshDynamic();
+            });
+        });
+    }
+    function collectDynamic() {
+        let newFeats = [];
+        for(let i=0;i<featArr.length;i++) {
+            let title = document.querySelector(`.feat-title-${i}`)?.value.trim();
+            if(title) newFeats.push({ title, description: document.querySelector(`.feat-desc-${i}`)?.value.trim() || '', icon: document.querySelector(`.feat-icon-${i}`)?.value.trim() || 'fas fa-star' });
+        }
+        let newImpr = [];
+        for(let i=0;i<imprArr.length;i++) { let v = document.querySelector(`.imp-${i}`)?.value.trim(); if(v) newImpr.push(v); }
+        let newBug = [];
+        for(let i=0;i<bugArr.length;i++) { let v = document.querySelector(`.bug-${i}`)?.value.trim(); if(v) newBug.push(v); }
+        let newTag = [];
+        for(let i=0;i<tagArr.length;i++) { let v = document.querySelector(`.tag-${i}`)?.value.trim(); if(v) newTag.push(v.toLowerCase()); }
+        return { features: newFeats, improvements: newImpr, bugfixes: newBug, tags: newTag };
+    }
+
+    async function openNewModal() {
+        resetArrays();
+        const swal = await Swal.fire({
+            title: '🖋️ Escrever Nova Atualização',
+            html: renderDynamicModal(),
+            width: '750px',
+            showCancelButton: true,
+            confirmButtonText: 'Publicar Pergaminho',
+            cancelButtonText: 'Cancelar',
+            didOpen: () => {
+                refreshDynamic();
+                document.getElementById('addFeatureDynamic')?.addEventListener('click', () => { featArr.push({title:'', description:'', icon:'fas fa-star'}); refreshDynamic(); });
+                document.getElementById('addImproveDynamic')?.addEventListener('click', () => { imprArr.push(''); refreshDynamic(); });
+                document.getElementById('addBugDynamic')?.addEventListener('click', () => { bugArr.push(''); refreshDynamic(); });
+                document.getElementById('addTagDynamic')?.addEventListener('click', () => { tagArr.push(''); refreshDynamic(); });
+            },
+            preConfirm: async () => {
+                let version = document.getElementById('modalVersion')?.value.trim(), title = document.getElementById('modalTitle')?.value.trim(), type = document.getElementById('modalType')?.value, desc = document.getElementById('modalDesc')?.value.trim();
+                if (!version || !title) { Swal.showValidationMessage('Versão e título são obrigatórios'); return false; }
+                let { features, improvements, bugfixes, tags } = collectDynamic();
+                let res = await saveNewEntry({ version, title, description: desc, type, features, improvements, bugfixes, tags });
+                if (!res.success) { Swal.showValidationMessage(res.message || 'Erro arcano'); return false; }
+                return res;
+            }
+        });
+        if (swal.isConfirmed) { Swal.fire({ icon: 'success', title: 'Crônica atualizada!', toast: true, timer: 1600, showConfirmButton: false}); loadEntries(); }
+    }
+
+    async function openEditDialog(id) {
+        const entry = entries.find(e => e.id === id);
+        if (!entry) return;
+        resetArrays();
+        featArr = (entry.features || []).map(f => ({ title: f.title, description: f.description, icon: f.icon || 'fas fa-star' }));
+        imprArr = [...(entry.improvements || [])];
+        bugArr = [...(entry.bugfixes || [])];
+        tagArr = [...(entry.tags || [])];
+        const swal = await Swal.fire({
+            title: '✒️ Editar Pergaminho',
+            html: renderDynamicModal(),
+            width: '750px',
+            showCancelButton: true,
+            confirmButtonText: 'Salvar Alterações',
+            didOpen: () => {
+                document.getElementById('modalVersion').value = entry.version;
+                document.getElementById('modalTitle').value = entry.title;
+                document.getElementById('modalType').value = entry.type || 'minor';
+                document.getElementById('modalDesc').value = entry.description || '';
+                refreshDynamic();
+                document.getElementById('addFeatureDynamic')?.addEventListener('click', () => { featArr.push({title:'', description:'', icon:'fas fa-star'}); refreshDynamic(); });
+                document.getElementById('addImproveDynamic')?.addEventListener('click', () => { imprArr.push(''); refreshDynamic(); });
+                document.getElementById('addBugDynamic')?.addEventListener('click', () => { bugArr.push(''); refreshDynamic(); });
+                document.getElementById('addTagDynamic')?.addEventListener('click', () => { tagArr.push(''); refreshDynamic(); });
+            },
+            preConfirm: async () => {
+                let version = document.getElementById('modalVersion')?.value.trim(), title = document.getElementById('modalTitle')?.value.trim(), type = document.getElementById('modalType')?.value, desc = document.getElementById('modalDesc')?.value.trim();
+                if (!version || !title) { Swal.showValidationMessage('Versão e título obrigatórios'); return false; }
+                let { features, improvements, bugfixes, tags } = collectDynamic();
+                let res = await updateEntryById(id, { version, title, description: desc, type, features, improvements, bugfixes, tags });
+                if (!res.success) { Swal.showValidationMessage(res.message); return false; }
+                return res;
+            }
+        });
+        if (swal.isConfirmed) { Swal.fire({ icon: 'success', title: 'Atualizado!', toast: true, timer: 1500 }); loadEntries(); }
+    }
+
+    function showError(msg) { Swal.fire({ icon: 'error', title: 'Erro', text: msg, background: '#1a1a2e', color: '#e2e2f0', confirmButtonColor: '#d4af37' }); }
+
+    // events
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('/api/auth/logout', { method: 'POST' }); window.location.href = '/login'; });
+    document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
+    document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
+    const mobileToggle = document.getElementById('mobileToggle');
+    if(mobileToggle) mobileToggle.addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+
+    checkTwilightAuth();
+</script>
+</body>
+</html>
