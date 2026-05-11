@@ -682,7 +682,7 @@
     function showError(msg) { Swal.fire({ icon: 'error', title: 'Erro', text: msg, background: '#1a1a2e', color: '#e2e2f0', confirmButtonColor: '#d4af37' }); }
 
     // events
-    document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/login'; });
+    document.getElementById('logoutBtn')?.addEventListener('click', async () => { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/'; });
     document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
     document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
     const mobileToggle = document.getElementById('mobileToggle');
