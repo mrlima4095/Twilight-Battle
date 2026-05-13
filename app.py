@@ -92,7 +92,6 @@ waiting_players = []
 chat_messages = {}  # game_id -> list of messages
 MAX_CHAT_MESSAGES = 200
 
-# Lista de palavras censuradas (mini censura)
 PROFANITY_LIST = [
     'porra', 'caralho', 'krl', 'krlh', 'puta', 'merda', 'foda', 
     'bosta', 'cacete', 'desgraça', 'pqp', 'fdp', 'vsf', 'vtnc',
