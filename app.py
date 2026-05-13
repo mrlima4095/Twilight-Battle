@@ -3357,8 +3357,6 @@ def api_journal_delete(username, entry_id):
     
     return jsonify({'success': True, 'removed': removed})
 
-
-
 # Socket.IO events
 @socketio.on('connect')
 def handle_connect(): pass
