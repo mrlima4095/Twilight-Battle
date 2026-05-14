@@ -1267,7 +1267,8 @@
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
 
             bone: { name: 'Osso', type: 'material', consumable: true, description: 'Osso antigo, pode ter algum uso.' },
-
+            bone_meal: { name: 'Farinha de Osso', type: 'material', consumable: true, description: 'Pó de algo que já viveu.' },
+            
             wooden_scissors: { name: 'Tesoura de Madeira', type: 'tool', slot: 'mainhand', attack: 5, defense: 0, durability: 30, maxDurability: 30, description: 'Tesoura rústica de madeira, útil para cortar tecidos e ervas.' },
             wooden_spoon: { name: 'Colher de Madeira', type: 'tool', slot: 'mainhand', attack: 3, defense: 0, durability: 40, maxDurability: 40, description: 'Colher de madeira para cozinhar e servir alimentos.' },
             wooden_fork: { name: 'Garfo de Madeira', type: 'tool', slot: 'mainhand', attack: 4, defense: 0, durability: 35, maxDurability: 35, description: 'Garfo rústico de madeira, ideal para refeições camponesas.' },
@@ -1405,6 +1406,17 @@
                 quantity: 1,
                 station: 'mill',
                 millTime: 4,
+                requires_learn: false
+            },
+
+            bone_meal: {
+                name: '🦴 Farinha de Osso',
+                description: 'Transforma osso em pó.',
+                materials: [ { id: 'bone', quantity: 1 } ],
+                result: 'bone_meal',
+                quantity: 1,
+                station: 'mill',
+                millTime: 7,
                 requires_learn: false
             },
         
