@@ -2879,6 +2879,774 @@ class Game:
         
         return None
 
+class TwilightBot:
+    def __init__(self, game_id, bot_name, difficulty="normal", admin_shell=None):
+        """
+        Inicializa um bot para uma sala específica
+        difficulty: easy, normal, hard
+        """
+        self.game_id = game_id
+        self.bot_name = bot_name.lower()
+        self.difficulty = difficulty
+        self.admin_shell = admin_shell
+        self.running = True
+        self.turn_check_interval = 2  # segundos
+        self.last_action_time = 0
+        
+        # Estratégias por dificuldade
+        self.strategies = {
+            'easy': self.easy_strategy,
+            'normal': self.normal_strategy,
+            'hard': self.hard_strategy
+        }
+        
+        # Cache do estado do jogo
+        self.current_state = None
+        self.my_player_data = None
+        
+        # Estatísticas
+        self.stats = {
+            'cards_played': 0,
+            'attacks_made': 0,
+            'spells_cast': 0,
+            'cards_drawn': 0,
+            'turns_taken': 0,
+            'damage_dealt': 0
+        }
+        
+        # Memória de ações (para aprendizado simples)
+        self.action_memory = []
+        
+    def start(self):
+        """Inicia o bot em uma thread separada"""
+        self.bot_thread = threading.Thread(target=self._bot_loop, daemon=True)
+        self.bot_thread.start()
+        return self
+    
+    def stop(self):
+        """Para o bot"""
+        self.running = False
+        
+    def _bot_loop(self):
+        """Loop principal do bot"""
+        import time as t
+        while self.running:
+            try:
+                # Verificar se é o turno do bot
+                if self._is_my_turn():
+                    # Processar turno
+                    self._process_turn()
+                else:
+                    # Aguardar um pouco antes de verificar novamente
+                    t.sleep(self.turn_check_interval)
+            except Exception as e:
+                if self.admin_shell:
+                    print(f"⚠️ Bot {self.bot_name} erro: {e}")
+                t.sleep(3)
+    
+    def _is_my_turn(self):
+        """Verifica se é o turno do bot"""
+        if not self.admin_shell:
+            return False
+        
+        # Obter estado atual do jogo
+        game = self.admin_shell.games.get(self.game_id)
+        if not game or not game.started:
+            return False
+        
+        if not game.players or game.current_turn >= len(game.players):
+            return False
+        
+        current_player = game.players[game.current_turn]
+        
+        # Verificar se o bot está no jogo e não está morto
+        if self.bot_name not in game.player_data:
+            return False
+        
+        if game.player_data[self.bot_name].get('dead', False):
+            return False
+        
+        # Atualizar estado
+        self.current_state = game
+        self.my_player_data = game.player_data[self.bot_name]
+        
+        return current_player == self.bot_name
+    
+    def _process_turn(self):
+        """Processa um turno completo do bot"""
+        import time as t
+        
+        # Pequeno delay para parecer mais natural
+        t.sleep(random.uniform(0.5, 2.0))
+        
+        # Escolher estratégia baseada na dificuldade
+        strategy_func = self.strategies.get(self.difficulty, self.normal_strategy)
+        
+        # Executar ações do turno
+        actions_taken = strategy_func()
+        
+        if actions_taken > 0:
+            self.stats['turns_taken'] += 1
+        
+        # Finalizar turno
+        self._end_turn()
+    
+    def _safe_emit(self, action, params):
+        """Emite uma ação para o jogo com segurança"""
+        if not self.admin_shell:
+            return False
+        
+        # Simular o evento do socket
+        event_data = {
+            'game_id': self.game_id,
+            'action': action,
+            'params': params
+        }
+        
+        # Chamar diretamente o handler do jogo
+        try:
+            # Usar o método do admin_shell para executar ações
+            from flask_socketio import emit
+            # Armazenar o socket atual para o handler
+            original_sid = self.admin_shell._current_sid if hasattr(self.admin_shell, '_current_sid') else None
+            self.admin_shell._current_sid = f"bot_{self.bot_name}"
+            
+            # Executar ação
+            self.admin_shell.handle_player_action(event_data)
+            
+            if original_sid:
+                self.admin_shell._current_sid = original_sid
+                
+            return True
+        except Exception as e:
+            if self.admin_shell:
+                print(f"⚠️ Bot {self.bot_name} erro ao executar {action}: {e}")
+            return False
+    
+    def _end_turn(self):
+        """Finaliza o turno do bot"""
+        self._safe_emit('end_turn', {})
+    
+    def _draw_card(self):
+        """Compra uma carta se possível"""
+        if self._can_act('draw'):
+            self._safe_emit('draw', {})
+            self.stats['cards_drawn'] += 1
+            return True
+        return False
+    
+    def _can_act(self, action_type):
+        """Verifica se pode realizar uma ação"""
+        if not self.my_player_data:
+            return False
+        
+        # Verificar ações usadas no turno
+        current_turn_actions = self.current_state.turn_actions_used.get(self.bot_name, {})
+        max_actions = self.current_state.get_max_actions(self.bot_name)
+        
+        used = current_turn_actions.get(action_type, 0)
+        max_allowed = max_actions.get(action_type, 1)
+        
+        return used < max_allowed
+    
+    def _play_best_card(self):
+        """Joga a melhor carta da mão baseado na estratégia"""
+        if not self._can_act('play'):
+            return False
+        
+        hand = self.my_player_data.get('hand', [])
+        if not hand:
+            return False
+        
+        # Priorizar tipos de carta baseado na dificuldade e situação
+        priority_order = self._get_card_priority()
+        
+        # Ordenar cartas por prioridade
+        scored_cards = []
+        for card in hand:
+            score = self._score_card(card, priority_order)
+            scored_cards.append((score, card))
+        
+        scored_cards.sort(key=lambda x: x[0], reverse=True)
+        
+        # Tentar jogar a melhor carta
+        for score, card in scored_cards[:3]:  # Tentar top 3
+            # Determinar onde jogar a carta
+            position = self._get_best_position_for_card(card)
+            if position:
+                self._safe_emit('play_card', {
+                    'card_id': card['instance_id'],
+                    'position_type': position['type'],
+                    'position_index': position['index']
+                })
+                self.stats['cards_played'] += 1
+                return True
+        
+        return False
+    
+    def _get_card_priority(self):
+        """Retorna prioridade de tipos de carta"""
+        # Prioridade varia por dificuldade
+        if self.difficulty == 'easy':
+            return ['creature', 'weapon', 'armor', 'spell', 'trap', 'rune', 'talisman']
+        elif self.difficulty == 'normal':
+            return ['creature', 'spell', 'weapon', 'armor', 'trap', 'talisman', 'rune']
+        else:  # hard
+            # Prioriza feitiços e talismãs em situações específicas
+            return self._get_advanced_priority()
+    
+    def _get_advanced_priority(self):
+        """Prioridade avançada baseada no estado do jogo"""
+        priority = []
+        
+        # Se vida baixa, priorizar cura e defesa
+        if self.my_player_data and self.my_player_data.get('life', 1200) < 500:
+            priority = ['spell', 'creature', 'armor', 'weapon', 'trap', 'talisman', 'rune']
+        # Se tem muitas criaturas, priorizar feitiços de buff
+        elif self._count_creatures_in_field() >= 3:
+            priority = ['spell', 'creature', 'weapon', 'armor', 'trap', 'talisman', 'rune']
+        else:
+            priority = ['creature', 'spell', 'weapon', 'armor', 'trap', 'talisman', 'rune']
+        
+        return priority
+    
+    def _score_card(self, card, priority_order):
+        """Calcula um score para a carta"""
+        score = 0
+        
+        # Prioridade por tipo
+        card_type = card.get('type', 'unknown')
+        try:
+            score += (len(priority_order) - priority_order.index(card_type)) * 10
+        except ValueError:
+            pass
+        
+        # Bônus por atributos
+        if card_type == 'creature':
+            attack = card.get('attack', 0)
+            life = card.get('life', 0)
+            score += (attack + life) / 100
+            
+            # Bônus para criaturas especiais no modo hard
+            if self.difficulty == 'hard':
+                special_creatures = ['dragao', 'fenix', 'leviatan', 'apofis', 'rei_mago', 'mago_negro']
+                if card.get('id') in special_creatures:
+                    score += 50
+        
+        elif card_type == 'spell':
+            spell_id = card.get('id', '')
+            # Bônus para feitiços úteis
+            useful_spells = ['feitico_cura', 'feitico_cortes', 'feitico_duro_matar']
+            if spell_id in useful_spells:
+                score += 30
+            
+            if self.my_player_data and self.my_player_data.get('life', 1200) < 800:
+                if spell_id == 'feitico_cura':
+                    score += 50
+        
+        elif card_type == 'trap':
+            trap_id = card.get('id', '')
+            # Armadilhas úteis
+            useful_traps = ['armadilha_espelho', 'armadilha_poco']
+            if trap_id in useful_traps:
+                score += 25
+        
+        elif card_type == 'talisman':
+            talisman_id = card.get('id', '')
+            # Talismãs valiosos
+            valuable_talismans = ['talisma_imortalidade', 'talisma_sabedoria', 'talisma_guerreiro']
+            if talisman_id in valuable_talismans:
+                score += 40
+        
+        return score
+    
+    def _get_best_position_for_card(self, card):
+        """Determina a melhor posição para jogar uma carta"""
+        card_type = card.get('type', 'unknown')
+        
+        if card_type == 'creature':
+            # Verificar posições de ataque vazias primeiro (para atacar)
+            for i, slot in enumerate(self.my_player_data['attack_bases']):
+                if slot is None:
+                    return {'type': 'attack', 'index': i}
+            
+            # Se todas ataque ocupadas, usar defesa
+            for i, slot in enumerate(self.my_player_data['defense_bases']):
+                if slot is None:
+                    return {'type': 'defense', 'index': i}
+        
+        elif card_type in ['weapon', 'armor']:
+            # Equipamentos vão para a criatura mais forte
+            best_creature = self._get_strongest_creature()
+            if best_creature:
+                # Para equipar em criatura, precisamos do ID da criatura
+                # Por enquanto, equipa no jogador
+                equipment_slots = ['weapon', 'helmet', 'armor', 'boots']
+                for slot in equipment_slots:
+                    if self.my_player_data['equipment'][slot] is None:
+                        return {'type': 'equipment', 'index': slot}
+        
+        elif card_type == 'spell':
+            # Feitiços são jogados via ação especial, não via play_card
+            return None
+        
+        elif card_type == 'trap':
+            # Armadilhas vão para defesa
+            for i, slot in enumerate(self.my_player_data['defense_bases']):
+                if slot is None:
+                    return {'type': 'defense', 'index': i}
+        
+        return None
+    
+    def _get_strongest_creature(self):
+        """Retorna a criatura mais forte do jogador"""
+        strongest = None
+        highest_power = 0
+        
+        for base in ['attack_bases', 'defense_bases']:
+            for card in self.my_player_data[base]:
+                if card and card.get('type') == 'creature':
+                    power = card.get('attack', 0) + card.get('life', 0)
+                    if power > highest_power:
+                        highest_power = power
+                        strongest = card
+        
+        return strongest
+    
+    def _count_creatures_in_field(self):
+        """Conta criaturas em campo"""
+        count = 0
+        for base in ['attack_bases', 'defense_bases']:
+            for card in self.my_player_data[base]:
+                if card and card.get('type') == 'creature':
+                    count += 1
+        return count
+    
+    def _attack_best_target(self):
+        """Ataca o melhor alvo disponível"""
+        if not self._can_act('attack'):
+            return False
+        
+        # Verificar se tem criaturas para atacar
+        has_attackers = any(c for c in self.my_player_data['attack_bases'] 
+                           if c and c.get('type') == 'creature')
+        
+        if not has_attackers:
+            return False
+        
+        # Escolher alvo baseado na dificuldade
+        targets = []
+        for player in self.current_state.players:
+            if player != self.bot_name and not self.current_state.player_data[player].get('dead', False):
+                target_data = self.current_state.player_data[player]
+                targets.append({
+                    'name': player,
+                    'life': target_data['life'],
+                    'has_valuable_cards': self._has_valuable_cards(target_data)
+                })
+        
+        if not targets:
+            return False
+        
+        if self.difficulty == 'easy':
+            # Atacar aleatoriamente
+            target = random.choice(targets)
+        elif self.difficulty == 'normal':
+            # Atacar quem tem menos vida
+            targets.sort(key=lambda x: x['life'])
+            target = targets[0]
+        else:  # hard
+            # Atacar priorizando quem tem cartas valiosas ou menos vida
+            targets.sort(key=lambda x: (x['has_valuable_cards'], x['life']), reverse=True)
+            target = targets[0]
+        
+        self._safe_emit('attack', {'target_id': target['name']})
+        self.stats['attacks_made'] += 1
+        self.stats['damage_dealt'] += self._calculate_attack_power()
+        
+        return True
+    
+    def _calculate_attack_power(self):
+        """Calcula o poder de ataque atual"""
+        power = 0
+        for card in self.my_player_data['attack_bases']:
+            if card and card.get('type') == 'creature':
+                power += card.get('attack', 0)
+        
+        if self.my_player_data['equipment']['weapon']:
+            power += self.my_player_data['equipment']['weapon'].get('attack', 0)
+        
+        # Verificar Talismã Guerreiro
+        for card in self.my_player_data['hand']:
+            if card and card.get('id') == 'talisma_guerreiro':
+                power += 1024
+        
+        return power
+    
+    def _has_valuable_cards(self, player_data):
+        """Verifica se um jogador tem cartas valiosas"""
+        # Verificar talismãs valiosos
+        valuable_talismans = ['talisma_imortalidade', 'talisma_sabedoria', 'talisma_guerreiro']
+        for card in player_data['hand']:
+            if card.get('type') == 'talisman' and card.get('id') in valuable_talismans:
+                return True
+        
+        # Verificar criaturas fortes
+        for base in ['attack_bases', 'defense_bases']:
+            for card in player_data[base]:
+                if card and card.get('type') == 'creature':
+                    if card.get('attack', 0) > 200 or card.get('life', 0) > 1000:
+                        return True
+        
+        return False
+    
+    def _use_best_spell(self):
+        """Usa o melhor feitiço disponível"""
+        if not self._can_act('spell'):
+            return False
+        
+        # Obter feitiços disponíveis
+        spells_data = self.current_state.get_available_spells(self.bot_name)
+        
+        if not spells_data.get('has_mage', False):
+            return False
+        
+        spells = spells_data.get('spells', [])
+        if not spells:
+            return False
+        
+        # Priorizar feitiços
+        if self.difficulty == 'hard':
+            # Verificar se pode curar
+            if self.my_player_data.get('life', 1200) < 600:
+                for spell in spells:
+                    if spell.get('id') == 'feitico_cura':
+                        self._safe_emit('cast_spell', {
+                            'spell_id': spell['id'],
+                            'target_player_id': self.bot_name
+                        })
+                        self.stats['spells_cast'] += 1
+                        return True
+            
+            # Verificar se pode dar buff
+            if self._count_creatures_in_field() > 0:
+                for spell in spells:
+                    if spell.get('id') == 'feitico_cortes':
+                        # Encontrar melhor criatura para buff
+                        best_creature = self._get_strongest_creature()
+                        if best_creature:
+                            self._safe_emit('cast_spell', {
+                                'spell_id': spell['id'],
+                                'target_card_id': best_creature['instance_id']
+                            })
+                            self.stats['spells_cast'] += 1
+                            return True
+        
+        # Normal: usar qualquer feitiço disponível
+        for spell in spells:
+            if spell.get('type') == 'spell':
+                self._safe_emit('cast_spell', {
+                    'spell_id': spell['id'],
+                    'target_player_id': self.bot_name
+                })
+                self.stats['spells_cast'] += 1
+                return True
+        
+        return False
+    
+    def _swap_cards_if_needed(self):
+        """Troca cartas de posição se benefício"""
+        if not self._can_act('swap'):
+            return False
+        
+        # Verificar se há cartas de defesa fortes que poderiam atacar
+        for i, card in enumerate(self.my_player_data['defense_bases']):
+            if card and card.get('type') == 'creature':
+                attack = card.get('attack', 0)
+                # Se a carta tem ataque alto, mover para ataque
+                if attack > 100:
+                    for j, attack_slot in enumerate(self.my_player_data['attack_bases']):
+                        if attack_slot is None:
+                            self._safe_emit('swap_positions', {
+                                'pos1_type': 'defense',
+                                'pos1_index': i,
+                                'pos2_type': 'attack',
+                                'pos2_index': j
+                            })
+                            return True
+        
+        return False
+    
+    def _count_runes(self):
+        """Conta runas na mão"""
+        count = 0
+        for card in self.my_player_data.get('hand', []):
+            if card and (card.get('type') == 'rune' or card.get('id') == 'runa'):
+                count += 1
+        return count
+    
+    def _revive_if_possible(self):
+        """Tenta reviver uma carta do cemitério se tiver runas"""
+        if 'no_runes' in self.current_state.modifiers:
+            return False
+        
+        if self._count_runes() >= 4:
+            # Verificar se tem cartas boas no cemitério
+            graveyard = self.current_state.graveyard
+            good_cards = [c for c in graveyard if c.get('type') == 'creature' 
+                         and (c.get('attack', 0) > 200 or c.get('id') in ['dragao', 'fenix', 'leviatan'])]
+            
+            if good_cards:
+                best_card = max(good_cards, key=lambda x: x.get('attack', 0) + x.get('life', 0))
+                self._safe_emit('revive', {'card_id': best_card['instance_id']})
+                return True
+        
+        return False
+    
+    def _handle_special_abilities(self):
+        """Usa habilidades especiais (Super Centauro, Fênix, etc)"""
+        if self.difficulty != 'hard':
+            return False
+        
+        # Verificar Super Centauro
+        if self.current_state.has_call_centaurs_available(self.bot_name):
+            self._safe_emit('call_centaurs', {})
+            return True
+        
+        # Verificar Fênix
+        if self.current_state.has_toggle_time_available(self.bot_name):
+            # Mudar ciclo se for dia (para proteger vampiros/zumbis)
+            if self.current_state.time_of_day == 'day':
+                self._safe_emit('toggle_time', {})
+                return True
+        
+        # Verificar rituais
+        rituals = self.current_state.get_available_rituals(self.bot_name)
+        if rituals:
+            for ritual in rituals:
+                if ritual.get('conditions_met', False):
+                    # Encontrar um alvo
+                    for player in self.current_state.players:
+                        if player != self.bot_name and not self.current_state.player_data[player].get('dead', False):
+                            self._safe_emit('ritual', {
+                                'ritual_id': ritual['id'],
+                                'target_player_id': player
+                            })
+                            return True
+        
+        return False
+    
+    def easy_strategy(self):
+        """Estratégia fácil - ações básicas e aleatórias"""
+        actions = 0
+        
+        # Tentar comprar carta
+        if random.random() < 0.7:  # 70% chance de comprar
+            if self._draw_card():
+                actions += 1
+        
+        # Tentar jogar carta
+        if random.random() < 0.5:
+            if self._play_best_card():
+                actions += 1
+        
+        # Tentar atacar
+        if random.random() < 0.6 and self.current_state.attacks_blocked is False:
+            if self._attack_best_target():
+                actions += 1
+        
+        return actions
+    
+    def normal_strategy(self):
+        """Estratégia normal - equilibrada"""
+        actions = 0
+        
+        # Sempre comprar se puder e tiver menos de 7 cartas
+        if len(self.my_player_data.get('hand', [])) < 7:
+            if self._draw_card():
+                actions += 1
+        
+        # Tentar reviver se tiver runas
+        if self._revive_if_possible():
+            actions += 1
+        
+        # Tentar jogar carta
+        if self._play_best_card():
+            actions += 1
+        
+        # Usar feitiço se disponível
+        if self._use_best_spell():
+            actions += 1
+        
+        # Atacar se puder e não for primeira rodada
+        if not self.current_state.attacks_blocked:
+            if self._attack_best_target():
+                actions += 1
+        
+        # Trocar posições se benéfico
+        if self._swap_cards_if_needed():
+            actions += 1
+        
+        return actions
+    
+    def hard_strategy(self):
+        """Estratégia difícil - otimizada"""
+        actions = 0
+        hand_size = len(self.my_player_data.get('hand', []))
+        
+        # Comprar apenas se necessário
+        if hand_size < 5:
+            if self._draw_card():
+                actions += 1
+        
+        # Habilidades especiais primeiro
+        if self._handle_special_abilities():
+            actions += 1
+        
+        # Reviver se tiver runas e carta boa
+        if self._revive_if_possible():
+            actions += 1
+        
+        # Usar feitiços estrategicamente
+        if self._use_best_spell():
+            actions += 1
+        
+        # Jogar carta
+        if self._play_best_card():
+            actions += 1
+        
+        # Atacar
+        if not self.current_state.attacks_blocked:
+            # Verificar se é vantajoso atacar
+            my_power = self._calculate_attack_power()
+            if my_power > 0:
+                if self._attack_best_target():
+                    actions += 1
+        
+        # Trocar posições
+        if self._swap_cards_if_needed():
+            actions += 1
+        
+        return actions
+    
+    def get_stats(self):
+        """Retorna estatísticas do bot"""
+        return {
+            'name': self.bot_name,
+            'difficulty': self.difficulty,
+            'game_id': self.game_id,
+            'stats': self.stats
+        }
+class BotManager:
+    """Gerencia todos os bots ativos"""
+    
+    def __init__(self, admin_shell):
+        self.admin_shell = admin_shell
+        self.active_bots = {}  # bot_name -> Bot instance
+        self.bot_threads = {}
+    
+    def create_bot(self, game_id, bot_name, difficulty="normal"):
+        """Cria um novo bot em uma sala"""
+        # Verificar se jogo existe
+        if game_id not in self.admin_shell.games:
+            return False, f"Jogo {game_id} não encontrado"
+        
+        game = self.admin_shell.games[game_id]
+        
+        # Verificar se nome é válido
+        bot_name = bot_name.lower()
+        if bot_name in self.active_bots:
+            return False, f"Bot {bot_name} já existe"
+        
+        if bot_name in game.players:
+            return False, f"Jogador {bot_name} já está na sala"
+        
+        if len(game.players) >= game.max_players:
+            return False, "Sala cheia"
+        
+        if game.started:
+            return False, "Jogo já começou"
+        
+        # Verificar dificuldade
+        if difficulty not in ['easy', 'normal', 'hard']:
+            difficulty = 'normal'
+        
+        # Adicionar bot como jogador
+        from flask_socketio import emit
+        import uuid
+        
+        # Simular entrada do bot
+        bot_socket_id = f"bot_{bot_name}_{uuid.uuid4().hex[:8]}"
+        
+        if game.add_player(bot_socket_id, bot_name):
+            # Criar instância do bot
+            bot = TwilightBot(game_id, bot_name, difficulty, self.admin_shell)
+            self.active_bots[bot_name] = bot
+            
+            # Iniciar bot
+            bot.start()
+            
+            # Notificar sala
+            emit('player_joined', {
+                'username': bot_name,
+                'players': [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+            }, room=game_id)
+            
+            return True, f"Bot {bot_name} (dificuldade: {difficulty}) criado com sucesso"
+        
+        return False, "Falha ao adicionar bot"
+    
+    def remove_bot(self, bot_name):
+        """Remove um bot da sala"""
+        if bot_name not in self.active_bots:
+            return False, f"Bot {bot_name} não encontrado"
+        
+        bot = self.active_bots[bot_name]
+        bot.stop()
+        
+        # Remover do jogo
+        if bot.game_id in self.admin_shell.games:
+            game = self.admin_shell.games[bot.game_id]
+            if bot_name in game.players:
+                game.remove_player(bot_name)
+                
+                from flask_socketio import emit
+                emit('player_left', {
+                    'username': bot_name,
+                    'message': f'{bot_name} (bot) saiu do jogo'
+                }, room=bot.game_id)
+        
+        del self.active_bots[bot_name]
+        return True, f"Bot {bot_name} removido"
+    
+    def list_bots(self):
+        """Lista todos os bots ativos"""
+        if not self.active_bots:
+            return "Nenhum bot ativo"
+        
+        result = [f"\n🤖 BOTS ATIVOS ({len(self.active_bots)}):"]
+        for name, bot in self.active_bots.items():
+            stats = bot.get_stats()
+            result.append(f"  • {name} - {stats['difficulty']} - Sala: {bot.game_id}")
+            result.append(f"    📊 Turnos: {stats['stats']['turns_taken']} | Ataques: {stats['stats']['attacks_made']} | Cartas: {stats['stats']['cards_played']}")
+        
+        return "\n".join(result)
+    
+    def get_bot_stats(self, bot_name):
+        """Retorna estatísticas de um bot específico"""
+        if bot_name not in self.active_bots:
+            return None
+        
+        return self.active_bots[bot_name].get_stats()
+    
+    def stop_all_bots(self):
+        """Para todos os bots"""
+        for bot_name, bot in list(self.active_bots.items()):
+            bot.stop()
+            del self.active_bots[bot_name]
+        return "Todos os bots foram parados"
+
+
 # Rotas da aplicação
 @app.route('/')
 def index():
@@ -4082,9 +4850,11 @@ def handle_player_action(data):
         })
 
 
+
 class AdminShell(cmd.Cmd):
     intro = """╔══════════════════════════════════════════════════════════════╗\n║                 TWILIGHT BATTLE - ADMIN SHELL                ║\n╠══════════════════════════════════════════════════════════════╣\n║ Comandos disponíveis:                                        ║\n║  give [jogador] [id_carta] [quantidade] - Dar cartas         ║\n║  take [jogador] [id_carta] [quantidade] - Remover cartas     ║\n║  info [jogador] - Info do jogador                            ║\n║  info game [game_id] - Info do jogo                          ║\n║  damage [jogador] [quantidade] - Causar dano                 ║\n║  heal [jogador] [quantidade] - Curar                         ║\n║  list games - Listar todos os jogos                          ║\n║  list players - Listar todos os jogadores online             ║\n║  kill [jogador] - Mata um jogador                            ║\n║  revive [jogador] - Revive um jogador                        ║\n║  addcard [jogador] [id_carta] [quantidade] - Adicionar carta ║\n║  removecard [jogador] [id_carta] [quantidade] - Remover carta║\n║  reset - Resetar todos os jogos                              ║\n║  exit/sair - Sair do admin shell                             ║\n╚══════════════════════════════════════════════════════════════╝\n"""
     prompt = '⚔️ admin> '
+    self.bot_manager = BotManager(admin_shell)
     
     def get_player_game(self, username):
         """Retorna o jogo atual de um jogador"""
@@ -5009,6 +5779,59 @@ class AdminShell(cmd.Cmd):
         """sair - Sair do admin shell"""
         return self.do_exit(arg)
     
+    def do_bot(self, arg):
+        """bot [room] [name] [easy|normal|hard] - Cria um bot em uma sala"""
+        import shlex
+        args = shlex.split(arg)
+        
+        if len(args) < 2:
+            print("❌ Uso: bot [room] [name] [difficulty]")
+            print("   difficulty: easy, normal, hard (padrão: normal)")
+            return
+        
+        game_id = args[0]
+        bot_name = args[1]
+        difficulty = args[2] if len(args) > 2 else "normal"
+        
+        success, message = self.bot_manager.create_bot(game_id, bot_name, difficulty)
+        print(f"{'✅' if success else '❌'} {message}")
+    
+    def do_bots(self, arg):
+        """bots - Lista todos os bots ativos"""
+        print(self.bot_manager.list_bots())
+    
+    def do_remove_bot(self, arg):
+        """remove_bot [name] - Remove um bot"""
+        name = arg.strip()
+        if not name:
+            print("❌ Uso: remove_bot [name]")
+            return
+        
+        success, message = self.bot_manager.remove_bot(name)
+        print(f"{'✅' if success else '❌'} {message}")
+    
+    def do_bot_stats(self, arg):
+        """bot_stats [name] - Mostra estatísticas de um bot"""
+        name = arg.strip()
+        if not name:
+            print("❌ Uso: bot_stats [name]")
+            return
+        
+        stats = self.bot_manager.get_bot_stats(name)
+        if stats:
+            print(f"\n🤖 ESTATÍSTICAS DO BOT: {name}")
+            print(f"   Dificuldade: {stats['difficulty']}")
+            print(f"   Sala: {stats['game_id']}")
+            print(f"\n   📊 Ações realizadas:")
+            for action, count in stats['stats'].items():
+                print(f"      {action}: {count}")
+        else:
+            print(f"❌ Bot {name} não encontrado")
+    
+    def do_stop_all_bots(self, arg):
+        """stop_all_bots - Para todos os bots"""
+        print(self.bot_manager.stop_all_bots())
+
     def default(self, line):
         print(f"❌ Comando desconhecido: {line}")
         print("Digite 'help' para ver os comandos disponíveis")
