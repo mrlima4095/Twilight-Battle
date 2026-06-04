@@ -54,12 +54,18 @@
             color: white;
         }
         
+        .badge.admin {
+            background: #4caf50;
+            color: white;
+        }
+        
         .nav-tabs {
             display: flex;
             gap: 0.5rem;
             padding: 1rem 2rem;
             background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid #333;
+            flex-wrap: wrap;
         }
         
         .tab-btn {
@@ -200,6 +206,15 @@
             background: #388e3c;
         }
         
+        .btn-info {
+            background: #00bcd4;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #0097a7;
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -218,16 +233,18 @@
             border-radius: 10px;
             padding: 2rem;
             min-width: 300px;
-            max-width: 500px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
             border: 1px solid #ffd700;
         }
         
-        .modal-content h3 {
+        .modal-content h3, .modal-content h4 {
             margin-bottom: 1rem;
             color: #ffd700;
         }
         
-        .modal-content select, .modal-content input {
+        .modal-content select, .modal-content input, .modal-content textarea {
             width: 100%;
             padding: 0.5rem;
             margin: 0.5rem 0;
@@ -265,6 +282,7 @@
             border-radius: 5px;
             cursor: pointer;
             margin-bottom: 1rem;
+            margin-right: 0.5rem;
         }
         
         .refresh-btn:hover {
@@ -303,7 +321,7 @@
             }
         }
         
-        .game-card {
+        .game-card, .player-card {
             background: rgba(0, 0, 0, 0.4);
             border-radius: 10px;
             padding: 1rem;
@@ -311,7 +329,7 @@
             border: 1px solid #333;
         }
         
-        .game-card h4 {
+        .game-card h4, .player-card h4 {
             color: #ffd700;
             margin-bottom: 0.5rem;
         }
@@ -325,8 +343,107 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.25rem 0;
+            padding: 0.5rem;
             border-bottom: 1px solid #333;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .player-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .card-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            border: 1px solid #444;
+            transition: all 0.2s;
+        }
+        
+        .card-item:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
+        }
+        
+        .card-item.selected {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+        }
+        
+        .card-name {
+            font-weight: bold;
+        }
+        
+        .card-type {
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+        
+        .hand-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .hand-card {
+            background: #2a2a3e;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border: 1px solid #555;
+        }
+        
+        .hand-card:hover {
+            background: #ff9800;
+            color: #1a1a2e;
+        }
+        
+        .position-slot {
+            display: inline-block;
+            background: #2a2a3e;
+            padding: 0.25rem 0.5rem;
+            margin: 0.1rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        
+        .position-slot.empty {
+            background: #1a1a2e;
+            color: #666;
+        }
+        
+        .position-slot:hover {
+            background: #ff9800;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.25rem;
+            color: #aaa;
+        }
+        
+        .flex-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            align-items: center;
         }
         
         @media (max-width: 768px) {
@@ -353,7 +470,7 @@
             {% if is_super %}
             <span class="badge super">SUPER ADMIN</span>
             {% else %}
-            <span class="badge">ADMIN</span>
+            <span class="badge admin">ADMIN</span>
             {% endif %}
             <a href="/" style="color: #ffd700; text-decoration: none;">← Voltar ao Jogo</a>
         </div>
@@ -363,6 +480,8 @@
         <button class="tab-btn active" data-tab="dashboard">📊 Dashboard</button>
         <button class="tab-btn" data-tab="users">👥 Usuários</button>
         <button class="tab-btn" data-tab="games">🎮 Jogos Ativos</button>
+        <button class="tab-btn" data-tab="game-control">🎮 Controle de Jogo</button>
+        <button class="tab-btn" data-tab="cards">📚 Catálogo de Cartas</button>
     </div>
     
     <div id="dashboard" class="tab-content active">
@@ -384,7 +503,6 @@
                 <div class="value" id="spectators">-</div>
             </div>
         </div>
-        
         <button class="refresh-btn" onclick="loadDashboard()">🔄 Atualizar</button>
     </div>
     
@@ -396,18 +514,9 @@
         <div style="overflow-x: auto;">
             <table id="users-table">
                 <thead>
-                    <tr>
-                        <th>Usuário</th>
-                        <th>Criado em</th>
-                        <th>Admin Level</th>
-                        <th>Jogo Atual</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
+                    <tr><th>Usuário</th><th>Criado em</th><th>Admin Level</th><th>Jogo Atual</th><th>Status</th><th>Ações</th></tr>
                 </thead>
-                <tbody id="users-tbody">
-                    <tr><td colspan="6">Carregando...</td></tr>
-                </tbody>
+                <tbody id="users-tbody"><tr><td colspan="6">Carregando...</td></tr></tbody>
             </table>
         </div>
     </div>
@@ -417,47 +526,107 @@
         <div id="games-list"></div>
     </div>
     
-    <div id="level-modal" class="modal">
-        <div class="modal-content">
-            <h3>Alterar Nível de Admin</h3>
-            <p>Usuário: <strong id="level-username"></strong></p>
-            <select id="level-select">
-                <option value="0">0 - Usuário normal</option>
-                <option value="1">1 - Admin (acesso ao painel)</option>
-                <option value="2">2 - Moderador</option>
-                <option value="3">3 - Gerente</option>
-                <option value="4">4 - Super Admin</option>
-                <option value="5">5 - Root</option>
+    <div id="game-control" class="tab-content">
+        <div class="flex-row">
+            <select id="control-game-select" onchange="loadGameControlState()">
+                <option value="">Selecione um jogo</option>
             </select>
-            <div class="modal-buttons">
-                <button class="btn btn-primary" onclick="saveAdminLevel()">Salvar</button>
-                <button class="btn btn-danger" onclick="closeModal('level-modal')">Cancelar</button>
+            <button class="btn btn-primary" onclick="loadGameControlState()">Carregar Jogo</button>
+            <button class="btn btn-success" onclick="syncCurrentGame()">🔄 Sincronizar</button>
+        </div>
+        
+        <div id="game-control-panel" style="margin-top: 1rem; display: none;">
+            <div class="game-card">
+                <h4 id="control-game-title">Jogo: -</h4>
+                <div class="flex-row">
+                    <span id="control-game-status"></span>
+                    <span id="control-game-time"></span>
+                    <span id="control-game-turn"></span>
+                </div>
             </div>
+            
+            <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="stat-card">
+                    <h3>Deck</h3>
+                    <div class="value" id="control-deck-count">-</div>
+                    <button class="btn btn-info btn-sm" onclick="peekDeck()">👁️ Ver próximas</button>
+                    <button class="btn btn-warning btn-sm" onclick="shuffleDeck()">🃏 Embaralhar</button>
+                </div>
+                <div class="stat-card">
+                    <h3>Cemitério</h3>
+                    <div class="value" id="control-graveyard-count">-</div>
+                    <button class="btn btn-info btn-sm" onclick="showGraveyard()">💀 Ver cartas</button>
+                </div>
+            </div>
+            
+            <div class="flex-row" style="margin-bottom: 1rem;">
+                <button class="btn btn-warning" onclick="setGameTime('day')">☀️ Forçar Dia</button>
+                <button class="btn btn-info" onclick="setGameTime('night')">🌙 Forçar Noite</button>
+                <button class="btn btn-primary" onclick="openSetTurnModal()">👑 Alterar Turno</button>
+            </div>
+            
+            <h3>👥 Jogadores</h3>
+            <div id="control-players-list"></div>
         </div>
     </div>
+    
+    <div id="cards" class="tab-content">
+        <div class="search-box">
+            <input type="text" id="card-search" placeholder="Buscar carta..." onkeyup="filterCards()">
+            <select id="card-type-filter" onchange="filterCards()">
+                <option value="">Todos os tipos</option>
+                <option value="creature">Criaturas</option>
+                <option value="spell">Feitiços</option>
+                <option value="weapon">Armas</option>
+                <option value="armor">Armaduras</option>
+                <option value="trap">Armadilhas</option>
+                <option value="talisman">Talismãs</option>
+                <option value="ritual">Rituais</option>
+                <option value="rune">Runas</option>
+            </select>
+        </div>
+        <button class="refresh-btn" onclick="loadCards()">🔄 Carregar Cartas</button>
+        <div id="cards-grid" class="card-grid" style="margin-top: 1rem;"></div>
+    </div>
+    
+    <!-- Modais -->
+    <div id="level-modal" class="modal"><div class="modal-content"><h3>Alterar Nível de Admin</h3><p>Usuário: <strong id="level-username"></strong></p><select id="level-select"><option value="0">0 - Usuário normal</option><option value="1">1 - Admin</option><option value="2">2 - Moderador</option><option value="3">3 - Gerente</option><option value="4">4 - Super Admin</option><option value="5">5 - Root</option></select><div class="modal-buttons"><button class="btn btn-primary" onclick="saveAdminLevel()">Salvar</button><button class="btn btn-danger" onclick="closeModal('level-modal')">Cancelar</button></div></div></div>
+    
+    <div id="give-card-modal" class="modal"><div class="modal-content"><h3>Dar Carta</h3><p>Jogador: <strong id="give-card-player"></strong></p><p>Jogo: <strong id="give-card-game"></strong></p><div class="form-group"><label>Selecionar Carta:</label><select id="give-card-select" style="width: 100%;"></select></div><div class="form-group"><label>Quantidade:</label><input type="number" id="give-card-quantity" value="1" min="1" max="10"></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitGiveCard()">Dar</button><button class="btn btn-danger" onclick="closeModal('give-card-modal')">Cancelar</button></div></div></div>
+    
+    <div id="modify-life-modal" class="modal"><div class="modal-content"><h3>Modificar Vida</h3><p>Jogador: <strong id="modify-life-player"></strong></p><div class="form-group"><label>Valor (positivo = cura, negativo = dano):</label><input type="number" id="modify-life-delta" value="0" step="100"></div><div class="form-group"><label>Ou definir vida exata:</label><input type="number" id="modify-life-exact" placeholder="Deixe em branco para usar delta"></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitModifyLife()">Aplicar</button><button class="btn btn-danger" onclick="closeModal('modify-life-modal')">Cancelar</button></div></div></div>
+    
+    <div id="remove-card-modal" class="modal"><div class="modal-content"><h3>Remover Carta</h3><p>Jogador: <strong id="remove-card-player"></strong></p><div class="form-group"><label>Selecionar carta da mão:</label><select id="remove-card-select" style="width: 100%;"></select></div><div class="modal-buttons"><button class="btn btn-danger" onclick="submitRemoveCard()">Remover</button><button class="btn btn-primary" onclick="closeModal('remove-card-modal')">Cancelar</button></div></div></div>
+    
+    <div id="field-modal" class="modal"><div class="modal-content"><h3>Modificar Campo</h3><p>Jogador: <strong id="field-player"></strong></p><div class="form-group"><label>Posição:</label><select id="field-position-type"><option value="attack">Ataque (0-2)</option><option value="defense">Defesa (0-5)</option></select></div><div class="form-group"><label>Índice:</label><input type="number" id="field-position-index" value="0" min="0" max="5"></div><div class="form-group"><label>Ação:</label><select id="field-action"><option value="set">Colocar carta</option><option value="remove">Remover carta</option></select></div><div class="form-group" id="field-card-group"><label>Carta:</label><select id="field-card-select" style="width: 100%;"></select></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitFieldModify()">Aplicar</button><button class="btn btn-danger" onclick="closeModal('field-modal')">Cancelar</button></div></div></div>
+    
+    <div id="peek-deck-modal" class="modal"><div class="modal-content"><h3>Próximas cartas do deck</h3><div id="peek-deck-content"></div><div class="modal-buttons"><button class="btn btn-primary" onclick="closeModal('peek-deck-modal')">Fechar</button></div></div></div>
+    
+    <div id="graveyard-modal" class="modal"><div class="modal-content"><h3>Cemitério</h3><div id="graveyard-content"></div><div class="modal-buttons"><button class="btn btn-primary" onclick="closeModal('graveyard-modal')">Fechar</button></div></div></div>
+    
+    <div id="set-turn-modal" class="modal"><div class="modal-content"><h3>Alterar Turno</h3><select id="set-turn-select" style="width: 100%;"></select><div class="modal-buttons"><button class="btn btn-success" onclick="submitSetTurn()">Alterar</button><button class="btn btn-danger" onclick="closeModal('set-turn-modal')">Cancelar</button></div></div></div>
     
     <div id="message" style="display: none;"></div>
     
     <script>
-        let currentUser = null;
+        let currentGameId = null;
+        let currentGameState = null;
+        let allCards = [];
+        let currentTargetPlayer = null;
         
         function showMessage(message, isError = false) {
             const msgDiv = document.getElementById('message');
             msgDiv.className = `alert alert-${isError ? 'error' : 'success'}`;
             msgDiv.textContent = message;
             msgDiv.style.display = 'block';
-            setTimeout(() => {
-                msgDiv.style.display = 'none';
-            }, 3000);
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
         }
         
         async function fetchAPI(url, options = {}) {
             try {
                 const response = await fetch(url, options);
                 const data = await response.json();
-                if (!data.success) {
-                    throw new Error(data.message || 'Erro na requisição');
-                }
+                if (!data.success) throw new Error(data.message || 'Erro na requisição');
                 return data;
             } catch (error) {
                 showMessage(error.message, true);
@@ -465,237 +634,148 @@
             }
         }
         
+        // Dashboard
         async function loadDashboard() {
             try {
-                const [usersData, gamesData] = await Promise.all([
-                    fetchAPI('/api/admin/users'),
-                    fetchAPI('/api/admin/games')
-                ]);
-                
-                const users = usersData.users || [];
-                const games = gamesData.games || [];
-                
-                let onlinePlayers = 0;
-                let spectators = 0;
-                
-                games.forEach(game => {
-                    onlinePlayers += game.players?.length || 0;
-                    spectators += game.spectators?.length || 0;
-                });
-                
+                const [usersData, gamesData] = await Promise.all([fetchAPI('/api/admin/users'), fetchAPI('/api/admin/games')]);
+                const users = usersData.users || [], games = gamesData.games || [];
+                let onlinePlayers = 0, spectators = 0;
+                games.forEach(game => { onlinePlayers += game.players?.length || 0; spectators += game.spectators?.length || 0; });
                 document.getElementById('total-users').textContent = users.length;
                 document.getElementById('active-games').textContent = games.length;
                 document.getElementById('online-players').textContent = onlinePlayers;
                 document.getElementById('spectators').textContent = spectators;
-            } catch (error) {
-                console.error('Erro ao carregar dashboard:', error);
-            }
+            } catch (error) { console.error(error); }
         }
         
+        // Usuários
         async function loadUsers() {
             try {
                 const data = await fetchAPI('/api/admin/users');
                 const users = data.users || [];
                 const tbody = document.getElementById('users-tbody');
-                
-                if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6">Nenhum usuário encontrado</td></tr>';
-                    return;
-                }
-                
+                if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="6">Nenhum usuário encontrado</td></tr>'; return; }
                 tbody.innerHTML = users.map(user => `
                     <tr data-username="${user.username}">
                         <td><strong>${user.username}</strong></td>
                         <td>${new Date(user.created_at).toLocaleDateString()}</td>
-                        <td>
-                            <span class="badge ${user.admin_level >= 4 ? 'super' : ''}" style="background: ${user.admin_level >= 1 ? '#ffd700' : '#666'}">
-                                Lvl ${user.admin_level}
-                            </span>
-                        </td>
-                        <td>${user.current_game ? user.current_game : '-'}</td>
-                        <td class="${user.game_info?.is_dead ? 'status-dead' : 'status-alive'}">
-                            ${user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline'}
-                        </td>
-                        <td>
-                            ${user.admin_level < 4 ? `
-                                <button class="btn btn-primary btn-sm" onclick="openLevelModal('${user.username}', ${user.admin_level})">👑 Nível</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">🗑️ Deletar</button>
-                            ` : ''}
-                        </td>
+                        <td><span class="badge" style="background: ${user.admin_level >= 1 ? '#ffd700' : '#666'}">Lvl ${user.admin_level}</span></td>
+                        <td>${user.current_game || '-'}</td>
+                        <td class="${user.game_info?.is_dead ? 'status-dead' : 'status-alive'}">${user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline'}</td>
+                        <td>${user.admin_level < 4 ? `<button class="btn btn-primary btn-sm" onclick="openLevelModal('${user.username}', ${user.admin_level})">👑 Nível</button><button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')">🗑️</button>` : ''}</td>
                     </tr>
                 `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
-            }
+            } catch (error) { console.error(error); }
         }
         
+        function filterUsers() { const search = document.getElementById('user-search').value.toLowerCase(); document.querySelectorAll('#users-tbody tr').forEach(row => { row.style.display = row.getAttribute('data-username')?.toLowerCase().includes(search) ? '' : 'none'; }); }
+        
+        function openLevelModal(username, level) { pendingUser = username; document.getElementById('level-username').textContent = username; document.getElementById('level-select').value = level; document.getElementById('level-modal').style.display = 'flex'; }
+        async function saveAdminLevel() { try { await fetchAPI(`/api/admin/user/${pendingUser}/admin-level`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: parseInt(document.getElementById('level-select').value) })}); showMessage(`Nível alterado`); closeModal('level-modal'); loadUsers(); } catch(error) { console.error(error); } }
+        async function deleteUser(username) { if (!confirm(`Deletar "${username}"?`)) return; await fetchAPI(`/api/admin/user/${username}`, { method: 'DELETE' }); showMessage(`Usuário deletado`); loadUsers(); loadDashboard(); }
+        
+        // Jogos
         async function loadGames() {
             try {
                 const data = await fetchAPI('/api/admin/games');
                 const games = data.games || [];
                 const container = document.getElementById('games-list');
-                
-                if (games.length === 0) {
-                    container.innerHTML = '<p style="text-align: center; padding: 2rem;">Nenhum jogo ativo no momento</p>';
-                    return;
-                }
-                
+                const select = document.getElementById('control-game-select');
+                if (games.length === 0) { container.innerHTML = '<p style="text-align: center;">Nenhum jogo ativo</p>'; select.innerHTML = '<option value="">Nenhum jogo</option>'; return; }
                 container.innerHTML = games.map(game => `
                     <div class="game-card">
-                        <h4>🎮 ${game.id} ${game.private ? '🔒 Privado' : '🌐 Público'}</h4>
-                        <p><strong>Criador:</strong> ${game.creator}</p>
-                        <p><strong>Status:</strong> ${game.started ? '▶️ Em andamento' : '⏸️ Aguardando'} | 
-                           <strong>Ciclo:</strong> ${game.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite'} | 
-                           <strong>Turno:</strong> ${game.current_turn || '-'}</p>
-                        <p><strong>Jogadores:</strong> ${game.player_count}/${game.max_players} | 
-                           <strong>Deck:</strong> ${game.deck_count} cartas | 
-                           <strong>Cemitério:</strong> ${game.graveyard_count} cartas</p>
-                        ${game.modifiers?.length ? `<p><strong>Modificadores:</strong> ${game.modifiers.join(', ')}</p>` : ''}
-                        <div class="player-list">
-                            <strong>👥 Jogadores:</strong>
-                            ${game.players.map(p => `
-                                <div class="player-item">
-                                    <span>${p.username} (${p.name})</span>
-                                    <span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀 Morto' : `${p.life}❤️`}</span>
-                                    <span>📚 ${p.hand_count} cartas</span>
-                                    <button class="btn btn-warning btn-sm" onclick="kickPlayer('${game.id}', '${p.username}')">🚪 Expulsar</button>
-                                </div>
-                            `).join('')}
-                            ${game.spectators?.length ? `
-                                <div class="player-item" style="margin-top: 0.5rem;">
-                                    <strong>👁️ Espectadores:</strong> ${game.spectators.join(', ')}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
-                            <button class="btn btn-primary btn-sm" onclick="syncGame('${game.id}')">🔄 Sincronizar</button>
-                            <button class="btn btn-danger btn-sm" onclick="forceEndGame('${game.id}')">⛔ Encerrar Jogo</button>
-                        </div>
+                        <h4>🎮 ${game.id} ${game.private ? '🔒' : '🌐'}</h4>
+                        <p>Criador: ${game.creator} | ${game.started ? '▶️' : '⏸️'} | ${game.time_of_day === 'day' ? '☀️' : '🌙'} | Turno: ${game.current_turn || '-'}</p>
+                        <p>Jogadores: ${game.player_count}/${game.max_players} | Deck: ${game.deck_count} | Cemitério: ${game.graveyard_count}</p>
+                        <div class="player-list">${game.players.map(p => `<div class="player-item"><span>${p.username}</span><span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀' : `${p.life}❤️`}</span><span>📚 ${p.hand_count}</span></div>`).join('')}</div>
+                        <div class="flex-row"><button class="btn btn-primary btn-sm" onclick="selectGameForControl('${game.id}')">🎮 Controlar</button><button class="btn btn-warning btn-sm" onclick="syncGame('${game.id}')">🔄 Sincronizar</button><button class="btn btn-danger btn-sm" onclick="forceEndGame('${game.id}')">⛔ Encerrar</button></div>
                     </div>
                 `).join('');
-            } catch (error) {
-                console.error('Erro ao carregar jogos:', error);
-            }
+                select.innerHTML = '<option value="">Selecione um jogo</option>' + games.map(g => `<option value="${g.id}">${g.id} (${g.player_count} jogadores)</option>`).join('');
+            } catch (error) { console.error(error); }
         }
         
-        function filterUsers() {
-            const search = document.getElementById('user-search').value.toLowerCase();
-            const rows = document.querySelectorAll('#users-tbody tr');
-            
-            rows.forEach(row => {
-                const username = row.getAttribute('data-username') || '';
-                if (username.toLowerCase().includes(search)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
+        async function syncGame(gameId) { const data = await fetchAPI(`/api/admin/game/${gameId}/sync`); showMessage(`Sincronizado: ${data.synced} jogadores`); }
+        async function forceEndGame(gameId) { if (!confirm(`Encerrar ${gameId}?`)) return; await fetchAPI(`/api/admin/game/${gameId}/force-end`, { method: 'POST' }); showMessage(`Jogo encerrado`); loadGames(); loadDashboard(); }
         
-        let pendingUser = null;
-        
-        function openLevelModal(username, currentLevel) {
-            pendingUser = username;
-            document.getElementById('level-username').textContent = username;
-            document.getElementById('level-select').value = currentLevel;
-            document.getElementById('level-modal').style.display = 'flex';
-        }
-        
-        async function saveAdminLevel() {
-            const level = document.getElementById('level-select').value;
-            if (!pendingUser) return;
-            
+        // Controle de Jogo
+        async function loadGameControlState() {
+            currentGameId = document.getElementById('control-game-select').value;
+            if (!currentGameId) { document.getElementById('game-control-panel').style.display = 'none'; return; }
             try {
-                await fetchAPI(`/api/admin/user/${pendingUser}/admin-level`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ level: parseInt(level) })
-                });
-                showMessage(`Nível de admin de ${pendingUser} alterado para ${level}`);
-                closeModal('level-modal');
-                loadUsers();
-            } catch (error) {
-                console.error('Erro ao alterar nível:', error);
-            }
-        }
-        
-        async function deleteUser(username) {
-            if (!confirm(`Tem certeza que deseja DELETAR o usuário "${username}"? Esta ação é irreversível!`)) return;
-            
-            try {
-                await fetchAPI(`/api/admin/user/${username}`, { method: 'DELETE' });
-                showMessage(`Usuário ${username} deletado`);
-                loadUsers();
-                loadDashboard();
-            } catch (error) {
-                console.error('Erro ao deletar usuário:', error);
-            }
-        }
-        
-        async function syncGame(gameId) {
-            try {
-                const data = await fetchAPI(`/api/admin/game/${gameId}/sync`);
-                showMessage(`Jogo ${gameId} sincronizado: ${data.synced} jogadores`);
-            } catch (error) {
-                console.error('Erro ao sincronizar jogo:', error);
-            }
-        }
-        
-        async function forceEndGame(gameId) {
-            if (!confirm(`Tem certeza que deseja ENCERRAR o jogo ${gameId}? Todos os jogadores serão desconectados.`)) return;
-            
-            try {
-                await fetchAPI(`/api/admin/game/${gameId}/force-end`, { method: 'POST' });
-                showMessage(`Jogo ${gameId} encerrado`);
-                loadGames();
-                loadDashboard();
-            } catch (error) {
-                console.error('Erro ao encerrar jogo:', error);
-            }
-        }
-        
-        async function kickPlayer(gameId, username) {
-            if (!confirm(`Remover o jogador "${username}" do jogo ${gameId}?`)) return;
-            
-            try {
-                await fetchAPI(`/api/admin/game/${gameId}/kick/${username}`, { method: 'POST' });
-                showMessage(`Jogador ${username} removido do jogo ${gameId}`);
-                loadGames();
-                loadDashboard();
-            } catch (error) {
-                console.error('Erro ao remover jogador:', error);
-            }
-        }
-        
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            pendingUser = null;
-        }
-        
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.getAttribute('data-tab');
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById(tab).classList.add('active');
+                const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`);
+                currentGameState = data.game;
+                document.getElementById('game-control-panel').style.display = 'block';
+                document.getElementById('control-game-title').innerHTML = `🎮 Jogo: ${currentGameId}`;
+                document.getElementById('control-game-status').innerHTML = currentGameState.started ? '▶️ Em andamento' : '⏸️ Aguardando';
+                document.getElementById('control-game-time').innerHTML = currentGameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+                document.getElementById('control-game-turn').innerHTML = `👑 Turno: ${currentGameState.current_turn || '?'}`;
+                document.getElementById('control-deck-count').innerHTML = currentGameState.deck_count;
+                document.getElementById('control-graveyard-count').innerHTML = currentGameState.graveyard_count;
                 
-                if (tab === 'dashboard') loadDashboard();
-                if (tab === 'users') loadUsers();
-                if (tab === 'games') loadGames();
-            });
-        });
-        
-        // Close modal on click outside
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = 'none';
-                pendingUser = null;
-            }
+                const playersDiv = document.getElementById('control-players-list');
+                playersDiv.innerHTML = Object.entries(currentGameState.player_data).map(([uname, p]) => `
+                    <div class="player-card">
+                        <h4>${p.name} (${uname}) <span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀 MORTO' : `❤️ ${p.life}`}</span></h4>
+                        <div class="flex-row" style="margin-bottom: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" onclick="openGiveCardModal('${uname}')">📦 Dar Carta</button>
+                            <button class="btn btn-warning btn-sm" onclick="openModifyLifeModal('${uname}')">❤️ Modificar Vida</button>
+                            <button class="btn btn-danger btn-sm" onclick="openRemoveCardModal('${uname}', ${JSON.stringify(p.hand).replace(/"/g, '&quot;')})">🗑️ Remover Carta</button>
+                            <button class="btn btn-info btn-sm" onclick="openFieldModal('${uname}')">🏟️ Campo</button>
+                            ${p.dead ? `<button class="btn btn-success btn-sm" onclick="revivePlayer('${uname}')">✨ Reviver</button>` : `<button class="btn btn-danger btn-sm" onclick="killPlayer('${uname}')">💀 Matar</button>`}
+                        </div>
+                        <div><strong>📚 Mão (${p.hand.length}):</strong> <div class="hand-cards">${p.hand.map(c => `<span class="hand-card" onclick="selectHandCard('${uname}', '${c.instance_id}', '${c.name}')">${c.name}</span>`).join('') || '(vazia)'}</div></div>
+                        <div><strong>⚔️ Ataque:</strong> ${p.attack_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'attack', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
+                        <div><strong>🛡️ Defesa:</strong> ${p.defense_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'defense', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
+                    </div>
+                `).join('');
+            } catch (error) { console.error(error); }
         }
         
-        // Initial load
+        function selectGameForControl(gameId) { document.getElementById('control-game-select').value = gameId; loadGameControlState(); document.querySelector('[data-tab="game-control"]').click(); }
+        async function syncCurrentGame() { if (currentGameId) await syncGame(currentGameId); loadGameControlState(); }
+        async function setGameTime(time) { await fetchAPI(`/api/admin/game/${currentGameId}/set-time`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_of_day: time }) }); showMessage(`Ciclo alterado para ${time}`); loadGameControlState(); }
+        async function shuffleDeck() { await fetchAPI(`/api/admin/game/${currentGameId}/deck/shuffle`, { method: 'POST' }); showMessage(`Deck embaralhado`); loadGameControlState(); }
+        async function peekDeck() { const data = await fetchAPI(`/api/admin/game/${currentGameId}/deck/peek?quantity=10`); document.getElementById('peek-deck-content').innerHTML = `<div class="card-grid">${data.cards.map(c => `<div class="card-item"><div class="card-name">${c.name}</div><div class="card-type">${c.type} | ⚔️${c.attack || '?'} | ❤️${c.life || '?'}</div></div>`).join('')}</div>`; openModal('peek-deck-modal'); }
+        async function showGraveyard() { const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`); const graveyard = data.game.graveyard || []; document.getElementById('graveyard-content').innerHTML = `<div class="card-grid">${graveyard.map((c, i) => `<div class="card-item"><div class="card-name">${c.name}</div><div class="card-type">${c.type}</div><button class="btn btn-success btn-sm" onclick="reviveCard(${i})">✨ Reviver</button></div>`).join('') || '<p>Cemitério vazio</p>'}</div>`; openModal('graveyard-modal'); }
+        async function reviveCard(index) { const target = prompt('Para qual jogador?'); if (!target) return; await fetchAPI(`/api/admin/game/${currentGameId}/graveyard/revive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target, card_index: index }) }); showMessage(`Carta revivida`); closeModal('graveyard-modal'); loadGameControlState(); }
+        async function killPlayer(username) { if (!confirm(`Matar ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/kill`, { method: 'POST' }); showMessage(`${username} morto`); loadGameControlState(); }
+        async function revivePlayer(username) { await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/revive`, { method: 'POST' }); showMessage(`${username} revivido`); loadGameControlState(); }
+        
+        function openSetTurnModal() { const select = document.getElementById('set-turn-select'); select.innerHTML = currentGameState.players.map(p => `<option value="${p}">${p}</option>`).join(''); openModal('set-turn-modal'); }
+        async function submitSetTurn() { const target = document.getElementById('set-turn-select').value; await fetchAPI(`/api/admin/game/${currentGameId}/set-turn`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target }) }); showMessage(`Turno alterado para ${target}`); closeModal('set-turn-modal'); loadGameControlState(); }
+        
+        // Cartas
+        async function loadCards() { const data = await fetchAPI('/api/admin/cards/list'); allCards = data.cards; renderCards(); }
+        function renderCards() { const search = document.getElementById('card-search').value.toLowerCase(); const typeFilter = document.getElementById('card-type-filter').value; const filtered = allCards.filter(c => c.name.toLowerCase().includes(search) && (!typeFilter || c.type === typeFilter)); document.getElementById('cards-grid').innerHTML = filtered.map(c => `<div class="card-item" onclick="selectCardForGive('${c.id}', '${c.name}')"><div class="card-name">${c.name}</div><div class="card-type">${c.type} | ⚔️${c.attack || '-'} | ❤️${c.life || '-'}</div><div class="card-type" style="font-size:0.6rem">${c.id}</div></div>`).join(''); }
+        function filterCards() { renderCards(); }
+        function selectCardForGive(cardId, cardName) { if (currentGivePlayer) { document.getElementById('give-card-select').value = cardId; document.getElementById('give-card-select').dispatchEvent(new Event('change')); closeModal('cards-modal'); } }
+        
+        // Ações de jogador
+        let currentGivePlayer = null;
+        async function openGiveCardModal(username) { currentGivePlayer = username; document.getElementById('give-card-player').textContent = username; document.getElementById('give-card-game').textContent = currentGameId; if (allCards.length === 0) await loadCards(); const select = document.getElementById('give-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name} (${c.type})</option>`).join(''); openModal('give-card-modal'); }
+        async function submitGiveCard() { const cardId = document.getElementById('give-card-select').value; const quantity = parseInt(document.getElementById('give-card-quantity').value); if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentGivePlayer}/give-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_id: cardId, quantity: quantity }) }); showMessage(`${quantity}x carta(s) dada(s)`); closeModal('give-card-modal'); loadGameControlState(); }
+        
+        function openModifyLifeModal(username) { currentTargetPlayer = username; document.getElementById('modify-life-player').textContent = username; document.getElementById('modify-life-delta').value = 0; document.getElementById('modify-life-exact').value = ''; openModal('modify-life-modal'); }
+        async function submitModifyLife() { const delta = parseInt(document.getElementById('modify-life-delta').value) || 0; const exact = document.getElementById('modify-life-exact').value; const body = exact ? { new_life: parseInt(exact) } : { delta: delta }; await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/modify-life`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); showMessage(`Vida modificada`); closeModal('modify-life-modal'); loadGameControlState(); }
+        
+        function openRemoveCardModal(username, hand) { currentTargetPlayer = username; const select = document.getElementById('remove-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + (hand || []).map(c => `<option value="${c.instance_id}">${c.name}</option>`).join(''); if ((hand || []).length === 0) select.innerHTML = '<option value="">Mão vazia</option>'; openModal('remove-card-modal'); }
+        async function submitRemoveCard() { const cardId = document.getElementById('remove-card-select').value; if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/remove-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_instance_id: cardId }) }); showMessage(`Carta removida`); closeModal('remove-card-modal'); loadGameControlState(); }
+        
+        function openFieldModal(username) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; if (allCards.length === 0) loadCards(); const select = document.getElementById('field-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); document.getElementById('field-action').onchange = function() { document.getElementById('field-card-group').style.display = this.value === 'set' ? 'block' : 'none'; }; document.getElementById('field-action').dispatchEvent(new Event('change')); openModal('field-modal'); }
+        async function submitFieldModify() { const action = document.getElementById('field-action').value; const positionType = document.getElementById('field-position-type').value; const positionIndex = parseInt(document.getElementById('field-position-index').value); const cardId = action === 'set' ? document.getElementById('field-card-select').value : null; if (action === 'set' && !cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/field`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: action, position_type: positionType, position_index: positionIndex, card_id: cardId }) }); showMessage(`Campo modificado`); closeModal('field-modal'); loadGameControlState(); }
+        
+        function editFieldSlot(username, type, index) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; document.getElementById('field-position-type').value = type; document.getElementById('field-position-index').value = index; document.getElementById('field-action').value = 'set'; document.getElementById('field-action').dispatchEvent(new Event('change')); if (allCards.length === 0) loadCards(); openModal('field-modal'); }
+        
+        function selectHandCard(username, instanceId, cardName) { if (confirm(`Remover "${cardName}" de ${username}?`)) { fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/remove-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_instance_id: instanceId }) }).then(() => { showMessage(`"${cardName}" removida`); loadGameControlState(); }).catch(console.error); } }
+        
+        // Utilitários
+        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = 'none'; }
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => { const tab = btn.getAttribute('data-tab'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); btn.classList.add('active'); document.getElementById(tab).classList.add('active'); if (tab === 'dashboard') loadDashboard(); if (tab === 'users') loadUsers(); if (tab === 'games') loadGames(); if (tab === 'cards') loadCards(); }); });
+        
         loadDashboard();
     </script>
 </body>
