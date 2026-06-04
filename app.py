@@ -4082,959 +4082,313 @@ def handle_player_action(data):
         })
 
 
+# ==================== ADMIN PANEL ====================
+ADMIN_LEVEL_FILE = 'admin_levels.json'
 
-class AdminShell(cmd.Cmd):
-    intro = """╔══════════════════════════════════════════════════════════════╗\n║                 TWILIGHT BATTLE - ADMIN SHELL                ║\n╠══════════════════════════════════════════════════════════════╣\n║ Comandos disponíveis:                                        ║\n║  give [jogador] [id_carta] [quantidade] - Dar cartas         ║\n║  take [jogador] [id_carta] [quantidade] - Remover cartas     ║\n║  info [jogador] - Info do jogador                            ║\n║  info game [game_id] - Info do jogo                          ║\n║  damage [jogador] [quantidade] - Causar dano                 ║\n║  heal [jogador] [quantidade] - Curar                         ║\n║  list games - Listar todos os jogos                          ║\n║  list players - Listar todos os jogadores online             ║\n║  kill [jogador] - Mata um jogador                            ║\n║  revive [jogador] - Revive um jogador                        ║\n║  addcard [jogador] [id_carta] [quantidade] - Adicionar carta ║\n║  removecard [jogador] [id_carta] [quantidade] - Remover carta║\n║  reset - Resetar todos os jogos                              ║\n║  exit/sair - Sair do admin shell                             ║\n╚══════════════════════════════════════════════════════════════╝\n"""
-    prompt = '⚔️ admin> '
-    self.bot_manager = BotManager(self)
-    
-    def get_player_game(self, username):
-        """Retorna o jogo atual de um jogador"""
-        accounts = load_accounts()
-        if username not in accounts:
-            return None, "Jogador não encontrado no accounts.json"
-        
-        game_id = accounts[username].get('current_game')
-        if not game_id:
-            return None, f"Jogador {username} não está em nenhum jogo"
-        
-        if game_id not in games:
-            # Limpar referência inválida
-            accounts[username]['current_game'] = None
-            save_accounts(accounts)
-            return None, f"Jogo {game_id} não existe mais (referência removida)"
-        
-        return games[game_id], None
-    
-    def find_card_by_id(self, card_id):
-        """Encontra uma carta pelo ID"""
-        for cid, card_info in CARDS.items():
-            if cid == card_id or card_info['name'].lower() == card_id.lower():
-                return cid, card_info
-        return None, None
-    
-    def do_give(self, arg):
-        """give [jogador] [id_carta] [quantidade] - Dar cartas para um jogador"""
-        args = shlex.split(arg)
-        if len(args) < 2:
-            print("❌ Uso: give [jogador] [id_carta] [quantidade]")
-            return
-        
-        username = args[0].lower()
-        card_id = args[1].lower()
-        quantidade = int(args[2]) if len(args) > 2 else 1
-        
-        # Verificar se carta existe
-        cid, card_info = self.find_card_by_id(card_id)
-        if not cid:
-            print(f"❌ Carta '{card_id}' não encontrada")
-            return
-        
-        # Encontrar jogo do jogador
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        # Adicionar cartas
-        player = game.player_data[username]
-        cards_added = []
-        
-        for i in range(quantidade):
-            new_card = card_info.copy()
-            new_card['instance_id'] = str(uuid.uuid4())[:8]
-            player['hand'].append(new_card)
-            cards_added.append(new_card['name'])
-        
-        print(f"✅ {quantidade}x {card_info['name']} adicionada(s) à mão de {username}")
-        
-        # Notificar jogador via socket
-        socketio.emit('admin_action', {
-            'type': 'cards_added',
-            'cards': cards_added,
-            'message': f'Admin adicionou {quantidade}x {card_info["name"]} à sua mão'
-        }, room=game.game_id)
-    
-    def do_take(self, arg):
-        """take [jogador] [id_carta] [quantidade] - Remover cartas de um jogador"""
-        args = shlex.split(arg)
-        if len(args) < 2:
-            print("❌ Uso: take [jogador] [id_carta] [quantidade]")
-            return
-        
-        username = args[0].lower()
-        card_id = args[1].lower()
-        quantidade = int(args[2]) if len(args) > 2 else 1
-        
-        # Encontrar jogo do jogador
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        cards_removed = []
-        cards_to_remove = []
-        
-        # Encontrar cartas para remover
-        for card in player['hand']:
-            if card['id'] == card_id or card['name'].lower() == card_id.lower():
-                cards_to_remove.append(card)
-                if len(cards_to_remove) >= quantidade:
-                    break
-        
-        if not cards_to_remove:
-            print(f"❌ Nenhuma carta '{card_id}' encontrada na mão de {username}")
-            return
-        
-        # Remover cartas
-        for card in cards_to_remove:
-            player['hand'].remove(card)
-            cards_removed.append(card['name'])
-        
-        print(f"✅ {len(cards_removed)}x {card_id} removida(s) de {username}")
-        
-        # Notificar jogador
-        socketio.emit('admin_action', {
-            'type': 'cards_removed',
-            'cards': cards_removed,
-            'message': f'Admin removeu {len(cards_removed)}x {card_id} da sua mão'
-        }, room=game.game_id)
-    
-    def do_info(self, arg):
-        """info [jogador] - Info do jogador | info game [game_id] - Info do jogo"""
-        args = shlex.split(arg)
-        if not args:
-            print("❌ Uso: info [jogador] ou info game [game_id]")
-            return
-        
-        if args[0] == 'game' and len(args) > 1:
-            # Info do jogo
-            game_id = args[1]
-            if game_id not in games:
-                print(f"❌ Jogo {game_id} não encontrado")
-                return
-            
-            game = games[game_id]
-            print(f"\n📊 JOGO: {game_id}")
-            print(f"   Status: {'Em andamento' if game.started else 'Aguardando'}")
-            print(f"   Turno: {game.time_of_day.upper()} (ciclo {game.time_cycle})")
-            print(f"   Jogador da vez: {game.players[game.current_turn] if game.players else 'Nenhum'}")
-            print(f"   Jogadores: {len(game.players)}/{game.max_players}")
-            print(f"   Cartas no monte: {len(game.deck)}")
-            print(f"   Cartas no cemitério: {len(game.graveyard)}")
-            print("\n   👥 Jogadores:")
-            
-            for username in game.players:
-                player = game.player_data[username]
-                status = "💀 MORTO" if player.get('dead') else "✨ VIVO"
-                print(f"     • {username} - {player['name']} [{status}]")
-                print(f"        Vida: {player['life']} | Mão: {len(player['hand'])} cartas")
-                print(f"        Ataque: {sum(1 for c in player['attack_bases'] if c)} criaturas")
-                print(f"        Defesa: {sum(1 for c in player['defense_bases'] if c)} criaturas")
-        else:
-            # Info do jogador
-            username = args[0].lower()
-            
-            # Verificar accounts
-            accounts = load_accounts()
-            if username not in accounts:
-                print(f"❌ Jogador {username} não encontrado no accounts.json")
-                return
-            
-            print(f"\n👤 JOGADOR: {username}")
-            print(f"   Conta criada: {accounts[username].get('created_at', 'Desconhecida')}")
-            
-            # Verificar jogo atual
-            game_id = accounts[username].get('current_game')
-            if game_id:
-                print(f"   Jogo atual: {game_id}")
-                
-                if game_id in games:
-                    game = games[game_id]
-                    if username in game.player_data:
-                        player = game.player_data[username]
-                        status = "💀 MORTO" if player.get('dead') else "✨ VIVO"
-                        print(f"   Status no jogo: {status}")
-                        print(f"   Vida: {player['life']}")
-                        print(f"   Cartas na mão: {len(player['hand'])}")
-                        
-                        if player['hand']:
-                            print("\n   📚 MÃO:")
-                            for card in player['hand']:
-                                card_type = card.get('type', 'desconhecido')
-                                card_atk = card.get('attack', '')
-                                card_life = card.get('life', '')
-                                stats = f" [{card_atk}⚔️/{card_life}❤️]" if card_atk and card_life else ""
-                                print(f"     • {card['name']} ({card_type}){stats}")
-                        
-                        print("\n   ⚔️ ATAQUE:")
-                        for i, card in enumerate(player['attack_bases']):
-                            if card:
-                                print(f"     [{i}] {card['name']} - {card.get('attack', 0)}⚔️")
-                            else:
-                                print(f"     [{i}] ⬜ Vazio")
-                        
-                        print("\n   🛡️ DEFESA:")
-                        for i, card in enumerate(player['defense_bases']):
-                            if card:
-                                print(f"     [{i}] {card['name']} - {card.get('life', 0)}❤️")
-                            else:
-                                print(f"     [{i}] ⬜ Vazio")
-                    else:
-                        print(f"   ⚠️ Jogador não está na partida {game_id}")
-                else:
-                    print(f"   ⚠️ Jogo {game_id} não existe mais")
-            else:
-                print(f"   ⚠️ Jogador não está em nenhum jogo")
-    
-    def do_damage(self, arg):
-        """damage [jogador] [quantidade] - Causar dano a um jogador"""
-        args = shlex.split(arg)
-        if len(args) < 2:
-            print("❌ Uso: damage [jogador] [quantidade]")
-            return
-        
-        username = args[0].lower()
-        try:
-            dano = int(args[1])
-        except ValueError:
-            print("❌ Quantidade deve ser um número")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        vida_antiga = player['life']
-        player['life'] = max(0, player['life'] - dano)
-        
-        if player['life'] <= 0:
-            game.process_player_death(username)
-            print(f"💀 {username} MORREU com {dano} de dano!")
-        else:
-            print(f"💔 {username} perdeu {dano} de vida: {vida_antiga} → {player['life']}")
-        
-        # Notificar todos
-        socketio.emit('admin_action', {
-            'type': 'damage',
-            'target': username,
-            'damage': dano,
-            'new_life': player['life']
-        }, room=game.game_id)
-    
-    def do_heal(self, arg):
-        """heal [jogador] [quantidade] - Curar um jogador"""
-        args = shlex.split(arg)
-        if len(args) < 2:
-            print("❌ Uso: heal [jogador] [quantidade]")
-            return
-        
-        username = args[0].lower()
-        try:
-            cura = int(args[1])
-        except ValueError:
-            print("❌ Quantidade deve ser um número")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        vida_antiga = player['life']
-        player['life'] += cura
-        
-        print(f"💚 {username} recebeu {cura} de cura: {vida_antiga} → {player['life']}")
-        
-        socketio.emit('admin_action', {
-            'type': 'heal',
-            'target': username,
-            'heal': cura,
-            'new_life': player['life']
-        }, room=game.game_id)
-    
-    def do_kill(self, arg):
-        """kill [jogador] - Mata um jogador instantaneamente"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: kill [jogador]")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        game.process_player_death(username)
-        print(f"💀 {username} foi morto pelo admin!")
-        
-        socketio.emit('admin_action', {
-            'type': 'kill',
-            'target': username,
-            'message': f'☠️ Admin matou {username}!'
-        }, room=game.game_id)
-    
-    def do_revive(self, arg):
-        """revive [jogador] - Revive um jogador morto"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: revive [jogador]")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        if not player.get('dead', False):
-            print(f"⚠️ {username} não está morto")
-            return
-        
-        player['dead'] = False
-        player['observer'] = False
-        player['life'] = 5000
-        
-        print(f"✨ {username} foi revivido pelo admin!")
-        
-        socketio.emit('admin_action', {
-            'type': 'revive',
-            'target': username,
-            'message': f'✨ Admin reviveu {username}!'
-        }, room=game.game_id)
-    
-    def do_addcard(self, arg):
-        """addcard [jogador] [id_carta] [quantidade] - Adicionar carta à mão"""
-        self.do_give(arg)
-    
-    def do_removecard(self, arg):
-        """removecard [jogador] [id_carta] [quantidade] - Remover carta da mão"""
-        self.do_take(arg)
-    
-    def do_toggle_time(self, arg):
-        """toggle-time [game-id] - Muda o ciclo de dia/noite do jogo"""
-        args = shlex.split(arg)
-        if not args:
-            print("❌ Uso: toggle-time [game-id]")
-            return
-        
-        game_id = args[0]
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        # Alternar o ciclo
-        old_time = game.time_of_day
-        game.time_of_day = "night" if game.time_of_day == "day" else "day"
-        
-        print(f"🌓 Jogo {game_id}: {old_time.upper()} → {game.time_of_day.upper()}")
-        
-        # Aplicar efeitos do dia se mudou para dia
-        if game.time_of_day == "day":
-            game.apply_day_effects()
-            print("   ⚰️ Efeitos do dia aplicados (zumbis e vampiros morreram)")
-        
-        # Notificar todos os jogadores
-        socketio.emit('time_changed', {
-            'type': 'time_change',
-            'new_time': game.time_of_day,
-            'old_time': old_time,
-            'message': f'🌓 Admin alterou o ciclo: {old_time.upper()} → {game.time_of_day.upper()}'
-        }, room=game_id)
-        
-        print(f"   ✅ Jogadores notificados")
+def load_admin_levels():
+    """Carrega os níveis de admin dos usuários"""
+    try:
+        with open(ADMIN_LEVEL_FILE, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
-    def do_peek_deck(self, arg):
-        """peek_deck [game-id] [quantidade] - Ver as próximas N cartas do deck"""
-        args = shlex.split(arg)
-        if len(args) < 1:
-            print("❌ Uso: peek_deck [game-id] [quantidade=5]")
-            return
-        
-        game_id = args[0]
-        quantidade = int(args[1]) if len(args) > 1 else 5
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        if not game.deck:
-            print("📭 O deck está vazio!")
-            return
-        
-        print(f"\n📚 PRÓXIMAS {min(quantidade, len(game.deck))} CARTAS DO DECK - Jogo {game_id}:")
-        print("=" * 60)
-        
-        for i in range(min(quantidade, len(game.deck))):
-            card = game.deck[i]
-            card_type = card.get('type', 'desconhecido')
-            atk = card.get('attack', '')
-            life = card.get('life', '')
-            stats = f" [{atk}⚔️/{life}❤️]" if atk and life else ""
-            print(f"  {i+1:2d}. {card['name']} ({card_type}){stats}")
-            if card.get('description'):
-                print(f"      📝 {card['description'][:60]}...")
-        
-        print("=" * 60)
+def save_admin_levels(levels):
+    with open(ADMIN_LEVEL_FILE, 'w') as f:
+        json.dump(levels, f, indent=4)
 
-    def do_deck_swap(self, arg):
-        """deck_swap [game-id] [pos1] [pos2] - Trocar posições de cartas no deck"""
-        args = shlex.split(arg)
-        if len(args) < 3:
-            print("❌ Uso: deck_swap [game-id] [pos1] [pos2]")
-            return
-        
-        game_id = args[0]
-        pos1 = int(args[1])
-        pos2 = int(args[2])
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        if pos1 < 0 or pos1 >= len(game.deck) or pos2 < 0 or pos2 >= len(game.deck):
-            print(f"❌ Posições inválidas. Deck tem {len(game.deck)} cartas")
-            return
-        
-        # Trocar as cartas
-        card1 = game.deck[pos1]
-        card2 = game.deck[pos2]
-        
-        game.deck[pos1] = card2
-        game.deck[pos2] = card1
-        
-        print(f"✅ Trocadas: pos {pos1} ({card1['name']}) ↔ pos {pos2} ({card2['name']})")
+def is_admin(username):
+    """Verifica se um usuário é admin (level >= 1)"""
+    if not username:
+        return False
+    accounts = load_accounts()
+    if username not in accounts:
+        return False
+    # Admin level 1+ tem acesso ao painel
+    return accounts[username].get('admin_level', 0) >= 1
 
-    def do_deck_shuffle(self, arg):
-        """deck_shuffle [game-id] - Embaralhar o deck"""
-        args = shlex.split(arg)
-        if len(args) < 1:
-            print("❌ Uso: deck_shuffle [game-id]")
-            return
-        
-        game_id = args[0]
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        random.shuffle(game.deck)
-        
-        print(f"✅ Deck do jogo {game_id} foi embaralhado")
+def is_super_admin(username):
+    """Verifica se é super admin (level >= 4)"""
+    if not username:
+        return False
+    accounts = load_accounts()
+    return accounts[username].get('admin_level', 0) >= 4
 
-    def do_hand(self, arg):
-        """hand [jogador] - Ver a mão de um jogador detalhadamente"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: hand [jogador]")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        
-        print(f"\n📚 MÃO DE {username.upper()} ({len(player['hand'])} cartas):")
-        print("=" * 70)
-        
-        if not player['hand']:
-            print("  (vazia)")
-        else:
-            for i, card in enumerate(player['hand']):
-                card_type = card.get('type', 'desconhecido')
-                atk = card.get('attack', '')
-                life = card.get('life', '')
-                protection = card.get('protection', '')
-                
-                stats = []
-                if atk:
-                    stats.append(f"⚔️{atk}")
-                if life:
-                    stats.append(f"❤️{life}")
-                if protection:
-                    stats.append(f"🛡️{protection}")
-                
-                stats_str = f" [{', '.join(stats)}]" if stats else ""
-                
-                print(f"  [{i:2d}] {card['name']} ({card_type}){stats_str}")
-                if card.get('description'):
-                    desc = card['description'][:50] + "..." if len(card['description']) > 50 else card['description']
-                    print(f"       📝 {desc}")
-        
-        print("=" * 70)
-        
-        # Mostrar talismãs na mão
-        talismans = [c for c in player['hand'] if c.get('type') == 'talisman']
-        if talismans:
-            print(f"\n🔮 TALISMÃS na mão: {', '.join([t['name'] for t in talismans])}")
-        
-        # Mostrar runas na mão
-        runes = [c for c in player['hand'] if c.get('type') == 'rune' or c.get('id') == 'runa']
-        if runes:
-            print(f"🪨 RUNAS na mão: {len(runes)}")
-        
-        # Mostrar feitiços na mão
-        spells = [c for c in player['hand'] if c.get('type') == 'spell']
-        if spells:
-            print(f"✨ FEITIÇOS na mão: {', '.join([s['name'] for s in spells])}")
+def admin_required(f):
+    """Decorator para rotas que exigem admin"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        username = get_current_user()
+        if not username or not is_admin(username):
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        return f(username, *args, **kwargs)
+    return decorated_function
 
-    def do_field(self, arg):
-        """field [jogador] - Ver o campo completo de um jogador"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: field [jogador]")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        
-        print(f"\n🏟️ CAMPO DE {username.upper()}")
-        print("=" * 70)
-        print(f"❤️ VIDA: {player['life']} | {'💀 MORTO' if player.get('dead') else '✨ VIVO'}")
-        
-        print("\n⚔️ POSIÇÕES DE ATAQUE (3 slots):")
-        for i, card in enumerate(player['attack_bases']):
-            if card:
-                atk = card.get('attack', 0)
-                life = card.get('life', 0)
-                blocked = " [BLOQUEADO]" if card.get('blocked') else ""
-                print(f"  [{i}] {card['name']} - {atk}⚔️ / {life}❤️{blocked}")
-                if card.get('equipped_items'):
-                    items = [f"{eq['name']}" for eq in card['equipped_items']]
-                    print(f"      🎒 Equipado: {', '.join(items)}")
-            else:
-                print(f"  [{i}] ⬜ Vazio")
-        
-        print("\n🛡️ POSIÇÕES DE DEFESA (6 slots):")
-        for i, card in enumerate(player['defense_bases']):
-            if card:
-                atk = card.get('attack', 0)
-                life = card.get('life', 0)
-                blocked = " [BLOQUEADO]" if card.get('blocked') else ""
-                print(f"  [{i}] {card['name']} - {atk}⚔️ / {life}❤️{blocked}")
-                if card.get('equipped_items'):
-                    items = [f"{eq['name']}" for eq in card['equipped_items']]
-                    print(f"      🎒 Equipado: {', '.join(items)}")
-            else:
-                print(f"  [{i}] ⬜ Vazio")
-        
-        print("\n🎒 EQUIPAMENTOS DO JOGADOR:")
-        eq = player['equipment']
-        print(f"  Arma: {eq['weapon']['name'] if eq['weapon'] else 'Nenhuma'}")
-        print(f"  Capacete: {eq['helmet']['name'] if eq['helmet'] else 'Nenhum'}")
-        print(f"  Armadura: {eq['armor']['name'] if eq['armor'] else 'Nenhuma'}")
-        print(f"  Botas: {eq['boots']['name'] if eq['boots'] else 'Nenhuma'}")
-        print(f"  Montaria: {eq['mount']['name'] if eq['mount'] else 'Nenhuma'}")
-        
-        if player['talismans']:
-            print(f"\n🔮 TALISMÃS: {', '.join([t['name'] for t in player['talismans']])}")
-        
-        if player.get('active_effects'):
-            print(f"\n✨ EFEITOS ATIVOS: {len(player['active_effects'])}")
-            for effect in player['active_effects']:
-                print(f"  • {effect.get('type', 'desconhecido')}: {effect.get('duration', 'permanente')} rodadas")
-        
-        print("=" * 70)
+@app.route('/admin')
+@login_required
+def admin_panel(username):
+    """Painel administrativo web"""
+    if not is_admin(username):
+        return redirect('/')
+    return render_template('admin.html', username=username, is_super=is_super_admin(username))
 
-    def do_graveyard_list(self, arg):
-        """graveyard_list [game-id] - Ver todas as cartas no cemitério"""
-        args = shlex.split(arg)
-        if len(args) < 1:
-            print("❌ Uso: graveyard_list [game-id]")
-            return
-        
-        game_id = args[0]
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        print(f"\n💀 CEMITÉRIO - Jogo {game_id} ({len(game.graveyard)} cartas):")
-        print("=" * 70)
-        
-        if not game.graveyard:
-            print("  (vazio)")
-        else:
-            # Agrupar por tipo
-            by_type = {}
-            for card in game.graveyard:
-                card_type = card.get('type', 'outro')
-                if card_type not in by_type:
-                    by_type[card_type] = []
-                by_type[card_type].append(card)
-            
-            for card_type, cards in by_type.items():
-                print(f"\n📁 {card_type.upper()} ({len(cards)}):")
-                for i, card in enumerate(cards):
-                    print(f"  [{i}] {card['name']}")
-                    if card.get('description'):
-                        print(f"      📝 {card['description'][:60]}...")
-        
-        print("=" * 70)
-
-    def do_graveyard_revive(self, arg):
-        """graveyard_revive [game-id] [jogador] [índice] - Reviver carta do cemitério para mão de jogador"""
-        args = shlex.split(arg)
-        if len(args) < 3:
-            print("❌ Uso: graveyard_revive [game-id] [jogador] [índice]")
-            print("   Use 'graveyard_list' para ver os índices")
-            return
-        
-        game_id = args[0]
-        username = args[1].lower()
-        try:
-            idx = int(args[2])
-        except ValueError:
-            print("❌ Índice deve ser um número")
-            return
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        if idx < 0 or idx >= len(game.graveyard):
-            print(f"❌ Índice inválido. Cemitério tem {len(game.graveyard)} cartas")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não encontrado no jogo")
-            return
-        
-        card = game.graveyard.pop(idx)
-        game.player_data[username]['hand'].append(card)
-        
-        print(f"✅ Carta '{card['name']}' foi revivida do cemitério para {username}")
-        
-        socketio.emit('admin_action', {
-            'type': 'graveyard_revive',
-            'target': username,
-            'card': card['name'],
-            'message': f'Admin reviveu "{card["name"]}" do cemitério para sua mão'
-        }, room=game.game_id)
-
-    def do_destroy_card(self, arg):
-        """destroy_card [jogador] [posição] [tipo] - Destruir uma carta em campo do jogador"""
-        args = shlex.split(arg)
-        if len(args) < 3:
-            print("❌ Uso: destroy_card [jogador] [posição] [tipo]")
-            print("   tipo: 'attack' ou 'defense'")
-            print("   posição: índice da posição (0-2 para attack, 0-5 para defense)")
-            return
-        
-        username = args[0].lower()
-        posicao = int(args[1])
-        tipo = args[2].lower()
-        
-        if tipo not in ['attack', 'defense']:
-            print("❌ Tipo deve ser 'attack' ou 'defense'")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        
-        if tipo == 'attack':
-            if posicao < 0 or posicao >= len(player['attack_bases']):
-                print(f"❌ Posição inválida para ataque (0-{len(player['attack_bases'])-1})")
-                return
-            card = player['attack_bases'][posicao]
-            if card:
-                player['attack_bases'][posicao] = None
-                game.graveyard.append(card)
-                print(f"💀 Carta '{card['name']}' destruída (posição {posicao} de ataque)")
-            else:
-                print(f"⚠️ Nenhuma carta na posição {posicao} de ataque")
-        
-        else:  # defense
-            if posicao < 0 or posicao >= len(player['defense_bases']):
-                print(f"❌ Posição inválida para defesa (0-{len(player['defense_bases'])-1})")
-                return
-            card = player['defense_bases'][posicao]
-            if card:
-                player['defense_bases'][posicao] = None
-                game.graveyard.append(card)
-                print(f"💀 Carta '{card['name']}' destruída (posição {posicao} de defesa)")
-            else:
-                print(f"⚠️ Nenhuma carta na posição {posicao} de defesa")
-
-    def do_all_hands(self, arg):
-        """all_hands [game-id] - Ver a mão de todos os jogadores do jogo"""
-        args = shlex.split(arg)
-        if len(args) < 1:
-            print("❌ Uso: all_hands [game-id]")
-            return
-        
-        game_id = args[0]
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        print(f"\n📚 MÃOS DE TODOS OS JOGADORES - Jogo {game_id}")
-        print("=" * 70)
-        
-        for username in game.players:
-            player = game.player_data[username]
-            status = "💀 MORTO" if player.get('dead') else "✨ VIVO"
-            print(f"\n👤 {username} [{status}] - {len(player['hand'])} cartas:")
-            
-            if player['hand']:
-                cards_str = []
-                for i, card in enumerate(player['hand']):
-                    cards_str.append(f"[{i}]{card['name']}")
-                print(f"   {', '.join(cards_str)}")
-            else:
-                print("   (vazia)")
-        
-        print("\n👁️ ESPECTADORES:")
-        for username, player in game.player_data.items():
-            if player.get('spectator', False):
-                print(f"   👁️ {username} (espectador)")
-        
-        print("=" * 70)
-
-    def do_reset_centaur(self, arg):
-        """reset_centaur [jogador] - Reseta a habilidade do Super Centauro de um jogador"""
-        username = arg.strip().lower()
-        if not username:
-            print("❌ Uso: reset_centaur [jogador]")
-            return
-        
-        game, error = self.get_player_game(username)
-        if error:
-            print(f"❌ {error}")
-            return
-        
-        if username not in game.player_data:
-            print(f"❌ Jogador {username} não está neste jogo")
-            return
-        
-        player = game.player_data[username]
-        
-        reset_count = 0
-        for base_type in ['attack_bases', 'defense_bases']:
-            for card in player[base_type]:
-                if card and card.get('id') == 'super_centauro':
-                    if card.get('call_centaurs_used', False):
-                        card['call_centaurs_used'] = False
-                        reset_count += 1
-        
-        if reset_count > 0:
-            print(f"✅ Resetada habilidade de {reset_count} Super Centauro(s) de {username}")
-        else:
-            print(f"⚠️ Nenhum Super Centauro com habilidade usada encontrado para {username}")
-
-    def do_list(self, arg):
-        """list games - Listar jogos | list players - Listar jogadores online"""
-        args = shlex.split(arg)
-        if not args:
-            print("❌ Uso: list games ou list players")
-            return
-        
-        if args[0] == 'games':
-            if not games:
-                print("📭 Nenhum jogo ativo no momento")
-                return
-            
-            print(f"\n🎮 JOGOS ATIVOS ({len(games)}):")
-            for game_id, game in games.items():
-                status = "▶️ EM ANDAMENTO" if game.started else "⏸️ AGUARDANDO"
-                turno = f" | Turno: {game.players[game.current_turn]}" if game.players and game.started else ""
-                print(f"  • {game_id}: {status} | {len(game.players)}/{game.max_players} jogadores{turno}")
-        
-        elif args[0] == 'players':
-            accounts = load_accounts()
-            online_players = []
-            
-            for username, data in accounts.items():
-                game_id = data.get('current_game')
-                if game_id and game_id in games:
-                    online_players.append((username, game_id))
-            
-            if not online_players:
-                print("📭 Nenhum jogador online no momento")
-                return
-            
-            print(f"\n👥 JOGADORES ONLINE ({len(online_players)}):")
-            for username, game_id in online_players:
-                game = games[game_id]
-                if username in game.player_data:
-                    player = game.player_data[username]
-                    status = "💀 MORTO" if player.get('dead') else "✨ VIVO"
-                    vida = player['life']
-                    print(f"  • {username} - Jogo: {game_id} [{status}] {vida}❤️")
-                else:
-                    print(f"  • {username} - Jogo: {game_id} [⚠️ não na partida]")
+@app.route('/api/admin/users')
+@admin_required
+def api_admin_users(username):
+    """Lista todos os usuários cadastrados"""
+    accounts = load_accounts()
+    users = []
     
-    def do_sync(self, arg):
-        """sync [game-id] - Força sincronização do jogo para todos os jogadores na sala"""
-        args = shlex.split(arg)
-        if not args:
-            print("❌ Uso: sync [game-id]")
-            return
-        
-        game_id = args[0]
-        
-        if game_id not in games:
-            print(f"❌ Jogo {game_id} não encontrado")
-            return
-        
-        game = games[game_id]
-        
-        # Enviar estado atualizado para cada jogador na sala
-        players_updated = 0
-        for username in game.players:
-            socket_id = game.get_socket_id(username)
-            if socket_id and username in game.player_data:
-                # Construir estado específico para cada jogador
-                current_turn_username = None
-                if game.players and game.current_turn < len(game.players):
-                    current_turn_username = game.players[game.current_turn]
-                
-                state = {
-                    'game_id': game_id,
+    for uname, data in accounts.items():
+        # Encontrar jogo atual
+        current_game = data.get('current_game')
+        game_info = None
+        if current_game and current_game in games:
+            game = games[current_game]
+            if uname in game.player_data:
+                player = game.player_data[uname]
+                game_info = {
+                    'game_id': current_game,
                     'started': game.started,
-                    'time_of_day': game.time_of_day,
-                    'time_cycle': game.time_cycle,
-                    'current_turn': current_turn_username,
-                    'players': {},
-                    'deck_count': len(game.deck),
-                    'graveyard_count': len(game.graveyard),
-                    'current_player_dead': game.player_data[username].get('dead', False)
+                    'is_dead': player.get('dead', False),
+                    'life': player.get('life', 0),
+                    'hand_count': len(player.get('hand', []))
                 }
-                
-                # Informações de todos os jogadores
-                for uname in game.players:
-                    if uname in game.player_data:
-                        player_info = {
-                            'name': game.player_data[uname]['name'],
-                            'username': uname,
-                            'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
-                            'attack_bases': game.player_data[uname]['attack_bases'],
-                            'defense_bases': game.player_data[uname]['defense_bases'],
-                            'talisman_count': len(game.player_data[uname]['talismans']),
-                            'runes': game.player_data[uname]['runes'],
-                            'dead': game.player_data[uname].get('dead', False),
-                            'observer': game.player_data[uname].get('observer', False)
-                        }
-                        
-                        # Informações privadas apenas para o próprio jogador
-                        if uname == username and not player_info.get('dead', False):
-                            player_info['hand'] = game.player_data[uname]['hand']
-                            player_info['equipment'] = game.player_data[uname]['equipment']
-                            player_info['talismans'] = game.player_data[uname]['talismans']
-                        
-                        state['players'][uname] = player_info
-                
-                # Enviar estado para o jogador específico
-                socketio.emit('game_state', state, room=socket_id)
-                players_updated += 1
         
-        print(f"✅ Sincronização forçada para {players_updated} jogadores no jogo {game_id}")
+        users.append({
+            'username': uname,
+            'created_at': data.get('created_at', 'Desconhecido'),
+            'admin_level': data.get('admin_level', 0),
+            'current_game': current_game,
+            'game_info': game_info
+        })
+    
+    return jsonify({'success': True, 'users': users})
 
-    def do_reset(self, arg):
-        """reset - Resetar todos os jogos (CUIDADO!)"""
-        confirm = input("⚠️ Tem certeza que quer resetar TODOS os jogos? (s/N): ")
-        if confirm.lower() == 's':
-            games.clear()
-            print("✅ Todos os jogos foram resetados")
+@app.route('/api/admin/user/<target_username>', methods=['DELETE'])
+@admin_required
+def api_admin_delete_user(admin_username, target_username):
+    """Deleta um usuário (super admin only)"""
+    if not is_super_admin(admin_username):
+        return jsonify({'success': False, 'message': 'Apenas super admin pode deletar usuários'}), 403
     
-    def do_exit(self, arg):
-        """exit - Sair do admin shell"""
-        print("👋 Até mais!")
-        return True
+    if target_username == admin_username:
+        return jsonify({'success': False, 'message': 'Não pode deletar a si mesmo'}), 400
     
-    def do_sair(self, arg):
-        """sair - Sair do admin shell"""
-        return self.do_exit(arg)
+    accounts = load_accounts()
+    if target_username not in accounts:
+        return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
     
-    def default(self, line):
-        print(f"❌ Comando desconhecido: {line}")
-        print("Digite 'help' para ver os comandos disponíveis")
+    # Remover usuário de qualquer jogo ativo
+    game_id = accounts[target_username].get('current_game')
+    if game_id and game_id in games:
+        game = games[game_id]
+        if target_username in game.player_data:
+            game.remove_player(target_username)
+    
+    # Deletar arquivo de save se existir
+    save_file = get_user_save_file(target_username)
+    if os.path.exists(save_file):
+        os.remove(save_file)
+    
+    del accounts[target_username]
+    save_accounts(accounts)
+    
+    return jsonify({'success': True, 'message': f'Usuário {target_username} deletado'})
+
+@app.route('/api/admin/user/<target_username>/admin-level', methods=['PUT'])
+@admin_required
+def api_admin_set_level(admin_username, target_username):
+    """Define nível de admin de um usuário (super admin only)"""
+    if not is_super_admin(admin_username):
+        return jsonify({'success': False, 'message': 'Apenas super admin pode definir níveis de admin'}), 403
+    
+    data = request.json
+    level = data.get('level', 0)
+    
+    if not isinstance(level, int) or level < 0 or level > 5:
+        return jsonify({'success': False, 'message': 'Nível inválido (0-5)'}), 400
+    
+    accounts = load_accounts()
+    if target_username not in accounts:
+        return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
+    
+    accounts[target_username]['admin_level'] = level
+    save_accounts(accounts)
+    
+    return jsonify({'success': True, 'message': f'Nível de admin de {target_username} alterado para {level}'})
+
+@app.route('/api/admin/games')
+@admin_required
+def api_admin_games(username):
+    """Lista todos os jogos ativos"""
+    games_list = []
+    for game_id, game in games.items():
+        players_info = []
+        for p in game.players:
+            if p in game.player_data:
+                player = game.player_data[p]
+                players_info.append({
+                    'username': p,
+                    'name': player.get('name', p),
+                    'life': player.get('life', 0),
+                    'dead': player.get('dead', False),
+                    'hand_count': len(player.get('hand', []))
+                })
+        
+        spectators = [uname for uname, data in game.player_data.items() if data.get('spectator', False)]
+        
+        games_list.append({
+            'id': game_id,
+            'creator': game.creator,
+            'started': game.started,
+            'players': players_info,
+            'player_count': len(game.players),
+            'max_players': game.max_players,
+            'spectators': spectators,
+            'time_of_day': game.time_of_day,
+            'current_turn': game.players[game.current_turn] if game.players else None,
+            'deck_count': len(game.deck),
+            'graveyard_count': len(game.graveyard),
+            'private': game.private,
+            'modifiers': game.modifiers
+        })
+    
+    return jsonify({'success': True, 'games': games_list})
+
+@app.route('/api/admin/game/<game_id>/force-end', methods=['POST'])
+@admin_required
+def api_admin_force_end(admin_username, game_id):
+    """Força o fim de um jogo (admin apenas)"""
+    if game_id not in games:
+        return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
+    
+    game = games[game_id]
+    
+    # Notificar todos os jogadores
+    socketio.emit('game_force_ended', {
+        'message': f'Admin {admin_username} encerrou o jogo',
+        'admin': admin_username
+    }, room=game_id)
+    
+    # Limpar referências dos jogadores
+    accounts = load_accounts()
+    for username in game.players:
+        if username in accounts and accounts[username].get('current_game') == game_id:
+            accounts[username]['current_game'] = None
+    
+    # Remover espectadores também
+    for username, data in game.player_data.items():
+        if data.get('spectator', False) and username in accounts:
+            if accounts[username].get('current_game') == game_id:
+                accounts[username]['current_game'] = None
+    
+    save_accounts(accounts)
+    
+    # Remover o jogo
+    del games[game_id]
+    
+    return jsonify({'success': True, 'message': f'Jogo {game_id} encerrado'})
+
+@app.route('/api/admin/game/<game_id>/sync')
+@admin_required
+def api_admin_sync_game(admin_username, game_id):
+    """Força sincronização de um jogo"""
+    if game_id not in games:
+        return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
+    
+    game = games[game_id]
+    synced = 0
+    
+    for username in game.players:
+        socket_id = game.get_socket_id(username)
+        if socket_id and username in game.player_data:
+            # Construir estado para cada jogador
+            current_turn_username = None
+            if game.players and game.current_turn < len(game.players):
+                current_turn_username = game.players[game.current_turn]
+            
+            state = {
+                'game_id': game_id,
+                'started': game.started,
+                'time_of_day': game.time_of_day,
+                'time_cycle': game.time_cycle,
+                'current_turn': current_turn_username,
+                'players': {},
+                'deck_count': len(game.deck),
+                'graveyard_count': len(game.graveyard),
+                'current_player_dead': game.player_data[username].get('dead', False)
+            }
+            
+            for uname in game.players:
+                if uname in game.player_data:
+                    player_info = {
+                        'name': game.player_data[uname]['name'],
+                        'username': uname,
+                        'life': game.player_data[uname]['life'] if not game.player_data[uname].get('dead', False) else 0,
+                        'attack_bases': game.player_data[uname]['attack_bases'],
+                        'defense_bases': game.player_data[uname]['defense_bases'],
+                        'talisman_count': len(game.player_data[uname]['talismans']),
+                        'runes': game.player_data[uname]['runes'],
+                        'dead': game.player_data[uname].get('dead', False),
+                        'observer': game.player_data[uname].get('observer', False)
+                    }
+                    
+                    if uname == username and not player_info.get('dead', False):
+                        player_info['hand'] = game.player_data[uname]['hand']
+                        player_info['equipment'] = game.player_data[uname]['equipment']
+                        player_info['talismans'] = game.player_data[uname]['talismans']
+                    
+                    state['players'][uname] = player_info
+            
+            socketio.emit('game_state', state, room=socket_id)
+            synced += 1
+    
+    socketio.emit('admin_sync_complete', {
+        'message': f'Admin {admin_username} forçou sincronização do jogo'
+    }, room=game_id)
+    
+    return jsonify({'success': True, 'synced': synced, 'message': f'{synced} jogadores sincronizados'})
+
+@app.route('/api/admin/game/<game_id>/kick/<target_username>', methods=['POST'])
+@admin_required
+def api_admin_kick_player(admin_username, game_id, target_username):
+    """Remove um jogador de um jogo (admin only)"""
+    if game_id not in games:
+        return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
+    
+    game = games[game_id]
+    
+    if target_username not in game.player_data:
+        return jsonify({'success': False, 'message': 'Jogador não encontrado no jogo'}), 404
+    
+    # Remover jogador
+    success, was_creator, winner = game.remove_player(target_username)
+    
+    # Limpar jogo atual da conta
+    accounts = load_accounts()
+    if target_username in accounts and accounts[target_username].get('current_game') == game_id:
+        accounts[target_username]['current_game'] = None
+        save_accounts(accounts)
+    
+    # Notificar sala
+    socketio.emit('player_kicked', {
+        'username': target_username,
+        'kicked_by': admin_username,
+        'message': f'Jogador {target_username} foi removido pelo admin {admin_username}'
+    }, room=game_id)
+    
+    if was_creator and game_id in games:
+        # Criador foi removido, fechar jogo
+        socketio.emit('room_closed', {
+            'message': f'O criador foi removido pelo admin. A sala foi fechada.'
+        }, room=game_id)
+        del games[game_id]
+        return jsonify({'success': True, 'message': f'Jogador {target_username} removido e sala fechada'})
+    
+    return jsonify({'success': True, 'message': f'Jogador {target_username} removido do jogo'})
+
 
 if __name__ == '__main__':
-    # Silenciar logs do Flask e Werkzeug
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
+    socketio.run(app, debug=False, port=5000)
     
-    # Silenciar logs do SocketIO
-    logging.getLogger('socketio').setLevel(logging.ERROR)
-    logging.getLogger('engineio').setLevel(logging.ERROR)
-    
-    # Silenciar logs do Flask app
-    logging.getLogger('flask').setLevel(logging.ERROR)
-
-    def run():
-        socketio.run(app, debug=False, port=5000)
-        
-    if len(sys.argv) > 1 and sys.argv[1] == "-x":
-        print("Running...")
-        run()
-    else:
-        thread = threading.Thread(target=run, daemon=True)
-        thread.start()
-    
-        AdminShell().cmdloop()
