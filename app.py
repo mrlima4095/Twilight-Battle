@@ -2944,13 +2944,9 @@ class TwilightBot:
                     print(f"⚠️ Bot {self.bot_name} erro: {e}")
                 t.sleep(3)
     
-    def _is_my_turn(self):
-        """Verifica se é o turno do bot"""
-        if not self.admin_shell:
-            return False
-        
+    def _is_my_turn(self):        
         # Obter estado atual do jogo
-        game = self.admin_shell.games.get(self.game_id)
+        game = self.games.get(self.game_id)
         if not game or not game.started:
             return False
         
@@ -3548,10 +3544,10 @@ class BotManager:
     def create_bot(self, game_id, bot_name, difficulty="normal"):
         """Cria um novo bot em uma sala"""
         # Verificar se jogo existe
-        if game_id not in self.admin_shell.games:
+        if game_id not in self.games:
             return False, f"Jogo {game_id} não encontrado"
         
-        game = self.admin_shell.games[game_id]
+        game = self.games[game_id]
         
         # Verificar se nome é válido
         bot_name = bot_name.lower()
@@ -3580,7 +3576,7 @@ class BotManager:
         
         if game.add_player(bot_socket_id, bot_name):
             # Criar instância do bot
-            bot = TwilightBot(game_id, bot_name, difficulty, self.admin_shell)
+            bot = TwilightBot(game_id, bot_name, difficulty)
             self.active_bots[bot_name] = bot
             
             # Iniciar bot
@@ -3605,8 +3601,8 @@ class BotManager:
         bot.stop()
         
         # Remover do jogo
-        if bot.game_id in self.admin_shell.games:
-            game = self.admin_shell.games[bot.game_id]
+        if bot.game_id in self.games:
+            game = self.games[bot.game_id]
             if bot_name in game.players:
                 game.remove_player(bot_name)
                 
