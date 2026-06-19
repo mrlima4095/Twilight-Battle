@@ -11,7 +11,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'twilight-battle-secret'
 app.config['JWT_SECRET'] = 'twilight-battle-jwt-secret-key-change-in-production'
 app.config['JWT_EXPIRATION_HOURS'] = 24
-socketio = SocketIO(app, logging=False, cors_allowed_origins="*")
+socketio = SocketIO(app, logging=False, cors_allowed_origins="*", async_mode='gevent')
 
 ACCOUNTS_FILE = 'accounts.json'
 
