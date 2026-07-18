@@ -1,0 +1,34 @@
+"""Twilight Battle — factory da aplicação Flask + SocketIO."""
+import os
+
+from twilight.config import JWT_EXPIRATION_HOURS, JWT_SECRET, SECRET_KEY, ensure_data_dirs
+from twilight.extensions import socketio
+
+# Raiz do projeto (onde ficam templates/, data/, etc.)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def create_app():
+    """Cria e configura a app Flask com rotas e sockets."""
+    from flask import Flask
+
+    from twilight.routes import register_blueprints
+    from twilight.sockets import register_socket_handlers
+
+    ensure_data_dirs()
+
+    app = Flask(
+        __name__,
+        template_folder=os.path.join(_PROJECT_ROOT, 'templates'),
+        static_folder=os.path.join(_PROJECT_ROOT, 'static'),
+        static_url_path='/static',
+    )
+    app.config['SECRET_KEY'] = SECRET_KEY
+    app.config['JWT_SECRET'] = JWT_SECRET
+    app.config['JWT_EXPIRATION_HOURS'] = JWT_EXPIRATION_HOURS
+
+    socketio.init_app(app)
+    register_blueprints(app)
+    register_socket_handlers()
+
+    return app
