@@ -25,6 +25,11 @@ def rules():
     return render_template('rules.html')
 
 
+@bp.route('/help')
+def help_page():
+    return render_template('help.html')
+
+
 @bp.route('/story')
 @login_required
 def story(username):
