@@ -164,27 +164,83 @@ body::before {
 }
 .start-btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
 
-/* ── Opponents ── */
+/* ── Opponents (horizontal, compacto) ── */
 .opponents-area {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px; margin-bottom: 16px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240,193,75,.35) transparent;
+}
+.opponents-area::-webkit-scrollbar { height: 6px; }
+.opponents-area::-webkit-scrollbar-thumb {
+  background: rgba(240,193,75,.35); border-radius: 99px;
 }
 .opponent-card {
-  background: var(--panel-2); border: 1px solid rgba(255,255,255,.08);
-  border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  flex: 0 0 auto;
+  min-width: 280px;
+  max-width: 360px;
+  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
   transition: border-color .2s;
 }
 .opponent-card:hover { border-color: rgba(255,94,200,.3); }
 .opponent-header {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 6px; gap: 8px;
 }
-.opponent-name { font-weight: 700; color: var(--text); font-size: 1rem; }
-.opponent-life { color: var(--rose); font-weight: 700; font-size: .9rem; }
-.opponent-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.opponent-name { font-weight: 700; color: var(--text); font-size: .9rem; }
+.opponent-life { color: var(--rose); font-weight: 700; font-size: .85rem; white-space: nowrap; }
+.opponent-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
 .stat-badge {
-  font-size: .75rem; padding: 4px 8px; border-radius: 999px;
+  font-size: .7rem; padding: 3px 7px; border-radius: 999px;
   background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--muted);
+}
+.opponent-card .bases-section {
+  margin-bottom: 6px;
+}
+.opponent-card .bases-section small {
+  display: block;
+  font-size: .68rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.opponent-card .bases-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  overflow-x: auto;
+}
+.opponent-card .base-slot {
+  width: 56px;
+  height: 68px;
+  min-height: 68px;
+  min-width: 56px;
+  max-width: 56px;
+  padding: 3px 2px;
+  border-radius: 10px;
+  font-size: .65rem;
+  flex-shrink: 0;
+}
+.opponent-card .base-slot .slot-emoji { font-size: 1.15rem; line-height: 1; }
+.opponent-card .base-slot .slot-name { display: none; }
+.opponent-card .base-slot .slot-stats { font-size: .6rem; line-height: 1.15; }
+.opponent-card .base-slot .equipped-items { font-size: .55rem; }
+.opponent-card .action-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  font-size: .78rem;
 }
 
 /* ── Player board ── */
@@ -210,100 +266,184 @@ body::before {
 .stat:nth-child(2) { color: var(--cyan); border-color: rgba(94,231,255,.25); }
 .stat:nth-child(3) { color: var(--violet); border-color: rgba(155,123,255,.25); }
 
-.bases-section { margin-bottom: 16px; }
+.bases-section { margin-bottom: 12px; }
 .bases-section h3 {
-  font-size: .85rem; color: var(--muted); font-weight: 600;
-  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px;
+  font-size: .8rem; color: var(--muted); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px;
 }
 .bases-row {
-  display: flex; flex-wrap: wrap; gap: 10px;
+  display: flex; flex-wrap: wrap; gap: 8px;
 }
 
+/* Slots fixos — nada vaza do retângulo */
 .base-slot {
-  width: 108px; min-height: 132px; border-radius: 14px;
+  width: 72px;
+  height: 88px;
+  min-width: 72px;
+  max-width: 72px;
+  min-height: 88px;
+  max-height: 88px;
+  border-radius: 12px;
   border: 1.5px dashed rgba(255,255,255,.12);
   background: rgba(0,0,0,.25);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 8px; cursor: pointer; transition: .2s; position: relative;
-  text-align: center; font-size: .78rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 3px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  position: relative;
+  text-align: center;
+  font-size: .7rem;
+  overflow: hidden;
+  box-sizing: border-box;
 }
-.base-slot.attack { border-color: rgba(255,77,109,.25); }
-.base-slot.defense { border-color: rgba(91,140,255,.25); }
+.base-slot.attack { border-color: rgba(255,77,109,.28); }
+.base-slot.defense { border-color: rgba(91,140,255,.28); }
 .base-slot:hover {
   border-style: solid; border-color: var(--border-strong);
-  background: rgba(240,193,75,.06); transform: translateY(-2px);
+  background: rgba(240,193,75,.08);
 }
 .base-slot.has-card {
-  border-style: solid; border-color: rgba(240,193,75,.4);
-  background: linear-gradient(160deg, rgba(40,30,70,.9), rgba(20,15,40,.95));
-  box-shadow: 0 8px 20px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06);
+  border-style: solid; border-color: rgba(240,193,75,.45);
+  background: linear-gradient(160deg, rgba(40,30,70,.95), rgba(20,15,40,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
 }
 .base-slot.selected-for-move, .base-slot.selected-for-equip {
-  border-color: var(--cyan) !important; box-shadow: 0 0 0 2px rgba(94,231,255,.35), var(--glow-cyan);
+  border-color: var(--cyan) !important; box-shadow: 0 0 0 2px rgba(94,231,255,.35);
 }
 .base-slot.creature-highlight {
-  border-color: var(--green) !important; box-shadow: 0 0 16px rgba(61,220,151,.25);
+  border-color: var(--green) !important; box-shadow: 0 0 12px rgba(61,220,151,.25);
 }
 .base-slot.damaged { animation: shake .4s ease; }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
 }
-.base-slot .card-name { font-weight: 700; color: var(--gold); font-size: .8rem; line-height: 1.2; margin-bottom: 4px; }
-.base-slot .card-stats { color: var(--muted); font-size: .72rem; }
-.base-slot .equipped-items { font-size: .65rem; color: var(--cyan); margin-top: 4px; }
+.base-slot .slot-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.base-slot .slot-name {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: .62rem;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.base-slot .slot-stats {
+  color: #d8d0eb;
+  font-size: .62rem;
+  line-height: 1.15;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.base-slot .equipped-items {
+  font-size: .55rem;
+  color: var(--cyan);
+  line-height: 1;
+}
+/* tooltip só no hover, fora do fluxo do slot */
+.base-slot .card-tooltip {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 40;
+  width: max-content;
+  max-width: 160px;
+  padding: 6px 8px;
+  background: #1a1430;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .72rem;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  white-space: normal;
+  color: var(--text);
+}
+.base-slot:hover .card-tooltip { display: block; }
 
 /* ── Hand ── */
 .hand-area {
-  margin: 16px 0; padding: 14px; border-radius: 16px;
+  margin: 12px 0; padding: 12px; border-radius: 16px;
   background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.06);
 }
 .hand-title {
-  font-size: .85rem; color: var(--muted); font-weight: 600;
-  letter-spacing: .04em; margin-bottom: 12px;
+  font-size: .82rem; color: var(--muted); font-weight: 600;
+  letter-spacing: .04em; margin-bottom: 10px;
 }
 .hand-cards {
-  display: flex; flex-wrap: wrap; gap: 10px; min-height: 100px;
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 96px;
   align-items: flex-start;
 }
 .card {
-  width: 112px; min-height: 148px; border-radius: 14px; padding: 10px;
+  width: 78px;
+  height: 100px;
+  min-width: 78px;
+  max-width: 78px;
+  min-height: 100px;
+  max-height: 100px;
+  border-radius: 12px;
+  padding: 6px 4px;
   background: linear-gradient(165deg, #2a2148 0%, #15102a 100%);
   border: 1px solid rgba(255,255,255,.1);
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
-  cursor: pointer; transition: .2s; position: relative;
-  display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.3);
+  cursor: pointer;
+  transition: .15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
+  text-align: center;
 }
 .card:hover {
-  transform: translateY(-8px) scale(1.03);
+  transform: translateY(-4px);
   border-color: var(--border-strong);
-  box-shadow: 0 16px 32px rgba(0,0,0,.45), var(--glow-gold);
+  box-shadow: 0 10px 22px rgba(0,0,0,.4), var(--glow-gold);
   z-index: 2;
 }
 .card.selected {
   border-color: var(--gold); box-shadow: 0 0 0 2px rgba(240,193,75,.4), var(--glow-gold);
-  transform: translateY(-10px);
+  transform: translateY(-5px);
 }
 .card.creature { border-top: 3px solid #ff6b8a; }
 .card.spell { border-top: 3px solid #9b7bff; }
 .card.trap { border-top: 3px solid #5ee7ff; }
 .card.weapon, .card.armor, .card.equipment { border-top: 3px solid #f0c14b; }
 .card.rune, .card.talisman { border-top: 3px solid #3ddc97; }
-.card .card-name { font-weight: 700; font-size: .8rem; color: var(--text); line-height: 1.2; }
+.card .card-emoji { font-size: 1.45rem; line-height: 1; }
+.card .card-name {
+  font-weight: 700; font-size: .62rem; color: var(--text); line-height: 1.1;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 0 2px;
+}
 .card .card-type {
-  font-size: .65rem; text-transform: uppercase; letter-spacing: .06em;
-  color: var(--muted); margin-bottom: 2px;
+  font-size: .55rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted);
 }
-.card .card-stats { font-size: .72rem; color: #cfc6e6; margin-top: auto; }
-.card .card-description {
-  font-size: .65rem; color: var(--muted); line-height: 1.3;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+.card .card-stats {
+  font-size: .62rem; color: #d8d0eb; font-weight: 600; line-height: 1.15;
+  white-space: nowrap;
 }
+.card .card-description { display: none !important; }
 .card-tooltip {
-  position: absolute; z-index: 50; max-width: 220px; padding: 10px;
+  position: absolute; z-index: 50; max-width: 180px; padding: 8px;
   background: #1a1430; border: 1px solid var(--border); border-radius: 10px;
-  font-size: .8rem; box-shadow: var(--shadow); pointer-events: none;
+  font-size: .75rem; box-shadow: var(--shadow); pointer-events: none;
 }
 
 /* ── Deck piles ── */
@@ -448,8 +588,9 @@ body::before {
 }
 
 @media (max-width: 640px) {
-  .base-slot { width: 92px; min-height: 118px; }
-  .card { width: 96px; min-height: 130px; }
+  .base-slot { width: 62px; height: 76px; min-width: 62px; max-width: 62px; min-height: 76px; max-height: 76px; }
+  .card { width: 68px; height: 88px; min-width: 68px; max-width: 68px; min-height: 88px; max-height: 88px; }
+  .opponent-card { min-width: 240px; max-width: 280px; }
   .game-header { padding: 10px 12px; }
   .chat-container { right: 8px; bottom: 8px; }
 }
@@ -1952,7 +2093,7 @@ body::before {
 
             if (equipMode) {
                 document.querySelectorAll('.base-slot.has-card').forEach(slot => {
-                    if (slot.querySelector('.card-tooltip')?.innerHTML.includes('Tipo: creature')) {
+                    if (slot.dataset.cardType === 'creature') {
                         slot.classList.add('creature-highlight');
                     }
                 });
@@ -1971,45 +2112,45 @@ body::before {
                     lifePercent = (card.life / card.original_life) * 100;
                 }
                 
+                const emoji = getCardEmoji(card);
+                const shortName = (card.name || '').split(/[\s\-–—]/)[0].substring(0, 8);
+                const stats = [
+                    card.life != null ? `❤️${card.life}` : '',
+                    card.attack != null ? `⚔️${card.attack}` : '',
+                    card.protection != null ? `🛡️${card.protection}` : ''
+                ].filter(Boolean).join(' ');
+                
                 let equippedItems = '';
                 if (card.equipped_items && card.equipped_items.length > 0) {
-                    equippedItems = `<div class="equipped-items">⚔️🛡️${card.equipped_items.length}</div>`;
+                    equippedItems = `<div class="equipped-items">⚔${card.equipped_items.length}</div>`;
                 }
                 
-                // Ícone diferente para armadilhas
-                let cardIcon = getTypeIcon(card.type);
-                if (card.type === 'trap') {
-                    cardIcon = '⚠️';
-                }
-                
+                // Tooltip só com nome + stats (sem descrição, não estoura o slot)
                 slot.innerHTML = `
-                    <div style="font-size: 16px;">${cardIcon}</div>
-                    <strong>${card.name.substring(0, 8)}</strong>
-                    ${card.life ? `<small>❤️${card.life}</small>` : ''}
-                    ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
+                    <div class="slot-emoji">${emoji}</div>
+                    <div class="slot-name" title="${escapeHtml(card.name || '')}">${escapeHtml(shortName)}</div>
+                    ${stats ? `<div class="slot-stats">${stats}</div>` : ''}
                     ${equippedItems}
                     <div class="card-tooltip">
-                        <strong>${card.name}</strong><br>
-                        Tipo: ${card.type === 'trap' ? '⚠️ Armadilha' : card.type}<br>
-                        ${card.description}<br>
-                        ${card.life ? `Vida: ${card.life}` : ''}
-                        ${card.attack ? ` | Ataque: ${card.attack}` : ''}
-                        ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
-                        ${card.type === 'trap' ? '<br><span style="color: #ffa500;">⚠️ Ativa ao ser atacada!</span>' : ''}
+                        <strong>${escapeHtml(card.name || '')}</strong>
+                        ${stats ? `<br>${stats}` : ''}
+                        ${card.type === 'trap' || card.is_disguised ? '<br>⚠️ Armadilha?' : ''}
+                        ${card.blocked ? '<br>🚫 Bloqueado' : ''}
                     </div>
                 `;
+                
+                // dado para highlight de criatura no modo equipar
+                if (card.type === 'creature') {
+                    slot.dataset.cardType = 'creature';
+                }
                 
                 if (lifePercent < 100) {
                     slot.classList.add('damaged');
                 }
             } else {
-                let placeholder = 'Vazio';
-                if (type === 'attack') placeholder = '⚔️';
-                else if (type === 'defense') placeholder = '🛡️';
-                slot.innerHTML = placeholder;
+                slot.innerHTML = type === 'attack' ? '⚔️' : (type === 'defense' ? '🛡️' : '·');
             }
             
-            // Adicionar evento de clique
             slot.onclick = () => selectBase(type, index, card);
 
             if (equipMode && card && card.type === 'creature' && !isOpponent) {
@@ -2022,34 +2163,67 @@ body::before {
         function createCardElement(card, index) {
             const div = document.createElement('div');
             div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
+            const emoji = getCardEmoji(card);
+            const shortName = (card.name || '').substring(0, 12);
+            const stats = [
+                card.life != null ? `❤️${card.life}` : '',
+                card.attack != null ? `⚔️${card.attack}` : '',
+                card.protection != null ? `🛡️${card.protection}` : ''
+            ].filter(Boolean).join(' ');
             
             div.innerHTML = `
-                <div style="font-size: 20px; text-align: center;">${getTypeIcon(card.type)}</div>
-                <div class="card-name">${card.name}</div>
-                <div class="card-type">${card.type}</div>
-                <div class="card-stats">
-                    ${card.life ? `❤️${card.life}` : ''}
-                    ${card.attack ? ` ⚔️${card.attack}` : ''}
-                    ${card.protection ? ` 🛡️${card.protection}` : ''}
-                </div>
-                <div class="card-description">${card.description.substring(0, 30)}...</div>
+                <div class="card-emoji">${emoji}</div>
+                <div class="card-name" title="${escapeHtml(card.name || '')}">${escapeHtml(shortName)}</div>
+                <div class="card-type">${escapeHtml(card.type || '')}</div>
+                ${stats ? `<div class="card-stats">${stats}</div>` : ''}
             `;
             return div;
         }
 
+        function getCardEmoji(card) {
+            if (!card) return '📦';
+            const id = (card.id || '').toLowerCase();
+            const name = (card.name || '').toLowerCase();
+            const key = id + ' ' + name;
+
+            // criaturas / cartas nomeadas
+            if (/drag[aã]o|dragon/.test(key)) return '🐉';
+            if (/zumbi|zombie/.test(key)) return '🧟';
+            if (/vampiro|vampire/.test(key)) return '🧛';
+            if (/elfo|elf/.test(key)) return '🧝';
+            if (/orc/.test(key)) return '👹';
+            if (/mago negro|mago_negro|rei mago|rei_mago|mago|mage|wizard/.test(key)) return '🧙';
+            if (/centauro|centaur/.test(key)) return '🐴';
+            if (/ninfa|nymph|fada|fairy/.test(key)) return '🧚';
+            if (/f[eê]nix|phoenix/.test(key)) return '🔥';
+            if (/leviat[aã]|leviathan/.test(key)) return '🐋';
+            if (/medusa|gorgon/.test(key)) return '🐍';
+            if (/ap[oó]fis|apophis|caos/.test(key)) return '🌑';
+            if (/profeta|prophet/.test(key)) return '🔮';
+            if (/or[aá]culo|oracle/.test(key)) return '👁️';
+            if (/lobo|wolf/.test(key)) return '🐺';
+            if (/goblin/.test(key)) return '👺';
+            if (/gigante|giant|troll/.test(key)) return '🗿';
+            if (/anjo|angel/.test(key)) return '😇';
+            if (/dem[oô]nio|demon/.test(key)) return '😈';
+            if (/esqueleto|skeleton/.test(key)) return '💀';
+            if (/super centauro/.test(key)) return '🏇';
+
+            // tipos genéricos
+            if (card.type === 'trap' || card.is_disguised) return '🕳️';
+            if (card.type === 'weapon' || /espada|blade|l[aâ]mina|sword/.test(key)) return '⚔️';
+            if (card.type === 'armor' || /capacete|armadura|helmet|boots|botas/.test(key)) return '🛡️';
+            if (card.type === 'spell' || /feiti[cç]o|spell|cura/.test(key)) return '✨';
+            if (card.type === 'talisman' || /talism[aã]/.test(key)) return '🔮';
+            if (card.type === 'rune' || id === 'runa' || /runa/.test(key)) return '🔷';
+            if (card.type === 'ritual') return '📿';
+            if (card.type === 'oracle') return '👁️';
+            if (card.type === 'creature') return '👤';
+            return '🃏';
+        }
+
         function getTypeIcon(type) {
-            const icons = {
-                'creature': '👤',
-                'weapon': '⚔️',
-                'armor': '🛡️',
-                'talisman': '🔮',
-                'spell': '✨',
-                'rune': '🔷',
-                'oracle': '👁️',
-                'ritual': '📿',
-                'trap': '⚠️'
-            };
-            return icons[type] || '📦';
+            return getCardEmoji({ type: type });
         }
 
         function selectGraveyardCard(cardId, cardName) {
