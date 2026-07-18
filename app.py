@@ -4931,5 +4931,8 @@ def api_admin_cards_list(admin_username):
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=False, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    # 0.0.0.0 é obrigatório em Docker/Coolify (senão só escuta localhost do container)
+    socketio.run(app, host='0.0.0.0', debug=False, port=port, allow_unsafe_werkzeug=True)
+
     
