@@ -19,18 +19,25 @@ def get_random_disguise():
     }
 
 
-def create_deck(modifiers=[]):
+def create_deck(modifiers=None):
+    modifiers = modifiers or []
     deck = []
     for card_id, card_info in CARDS.items():
-        for _ in range(card_info['count']):
-            if 'disable_traps' in modifiers and card_info.get('type') == 'trap':
-                continue
-            if 'no_runes' in modifiers and card_info.get('type') == 'rune':
-                continue
+        # filtros de modificador
+        if 'disable_traps' in modifiers and card_info.get('type') == 'trap':
+            continue
+        if 'no_runes' in modifiers and card_info.get('type') == 'rune':
+            continue
+        if 'no_spells' in modifiers and card_info.get('type') == 'spell':
+            continue
+        if 'no_equipment' in modifiers and card_info.get('type') in ('weapon', 'armor'):
+            continue
+        if 'no_legendaries' in modifiers and card_info.get('count', 0) == 1:
+            continue
 
+        for _ in range(card_info['count']):
             new_card = card_info.copy()
             new_card['instance_id'] = str(uuid.uuid4())[:8]
             deck.append(new_card)
     random.shuffle(deck)
     return deck
-
