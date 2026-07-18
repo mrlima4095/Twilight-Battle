@@ -3,8 +3,11 @@
 Twilight Battle — Bot multiplayer com chat e dificuldades.
 
 Uso:
-  python apps/bot.py --url https://seu-jogo.com --user bot --password senha \\
-      --room ABC123 --difficulty hard
+  python apps/bot.py --user grok --room VTI5Z2
+  # URL padrão: https://game.opentty.fun
+  # Senha pedida no terminal se omitir --password
+
+  python apps/bot.py --user grok --password *** --room VTI5Z2 --difficulty hard
 
 No terminal, digite mensagens e Enter para enviar no chat da sala.
 Comandos locais:
@@ -18,11 +21,14 @@ Comandos locais:
 from __future__ import annotations
 
 import argparse
+import getpass
 import random
 import sys
 import threading
 import time
 from typing import Any, Optional
+
+DEFAULT_URL = "https://game.opentty.fun"
 
 try:
     import requests
@@ -30,11 +36,23 @@ try:
 except ImportError:
     print(
         "Dependências faltando. Instale com:\n"
-        "  pip install python-socketio[client] requests websocket-client\n"
+        "  pip install \"python-socketio[client]\" requests websocket-client\n"
         "ou use o venv do projeto:\n"
-        "  python3 -m venv .venv && .venv/bin/pip install python-socketio[client] requests websocket-client"
+        "  python3 -m venv .venv && .venv/bin/pip install \"python-socketio[client]\" requests websocket-client"
     )
     sys.exit(1)
+
+# websocket-client é obrigatório atrás de reverse-proxy (Coolify/nginx);
+# sem ele o client só tenta polling e costuma falhar com
+# "One or more namespaces failed to connect".
+try:
+    import websocket  # noqa: F401  # package: websocket-client
+except ImportError:
+    print(
+        "[aviso] pacote websocket-client NÃO instalado.\n"
+        "  Sem ele o Socket.IO só usa polling e a conexão costuma falhar.\n"
+        "  Instale:  pip install websocket-client\n"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -784,12 +802,21 @@ class TwilightBot:
 
         self.token: Optional[str] = None
         self.session = requests.Session()
+        self.session.headers.update(
+            {
+                "User-Agent": "TwilightBattleBot/1.0",
+                "Accept": "*/*",
+            }
+        )
+        # http_session repassa cookies do login pro handshake do engine.io
         self.sio = socketio.Client(
             reconnection=True,
-            reconnection_attempts=0,
+            reconnection_attempts=10,
             reconnection_delay=1,
+            reconnection_delay_max=8,
             logger=False,
             engineio_logger=False,
+            http_session=self.session,
         )
 
         self.game_state: Optional[dict] = None
@@ -849,21 +876,86 @@ class TwilightBot:
         print(f"[ok] logado como {self.username}")
         return True
 
+    def _new_sio_client(self) -> "socketio.Client":
+        return socketio.Client(
+            reconnection=True,
+            reconnection_attempts=10,
+            reconnection_delay=1,
+            reconnection_delay_max=8,
+            logger=False,
+            engineio_logger=False,
+            http_session=self.session,
+        )
+
     def connect(self) -> bool:
-        headers = {"Cookie": f"auth_token={self.token}"}
+        headers = {
+            "Cookie": f"auth_token={self.token}",
+            "User-Agent": "TwilightBattleBot/1.0",
+        }
+        # Força cookie também na jar (domínio do host)
         try:
-            self.sio.connect(
-                self.url,
-                headers=headers,
-                transports=["websocket", "polling"],
-                wait_timeout=15,
-                socketio_path="socket.io",
+            from urllib.parse import urlparse
+
+            host = urlparse(self.url).hostname or "game.opentty.fun"
+            self.session.cookies.set("auth_token", self.token, domain=host, path="/")
+        except Exception:
+            self.session.cookies.set("auth_token", self.token, path="/")
+
+        # polling primeiro é mais estável atrás de alguns proxies;
+        # websocket puro vem em seguida se polling falhar
+        has_ws = True
+        try:
+            import websocket  # noqa: F401
+        except ImportError:
+            has_ws = False
+
+        attempts = []
+        if has_ws:
+            attempts.append({"transports": ["polling", "websocket"], "label": "polling→websocket"})
+            attempts.append({"transports": ["websocket"], "label": "websocket"})
+        attempts.append({"transports": ["polling"], "label": "polling"})
+
+        last_err: Optional[Exception] = None
+        for attempt in attempts:
+            try:
+                # client limpo a cada tentativa (estado sujo após falha)
+                try:
+                    if getattr(self, "sio", None) and self.sio.connected:
+                        self.sio.disconnect()
+                except Exception:
+                    pass
+                self.sio = self._new_sio_client()
+                self._register_handlers()
+
+                print(f"[...] socket via {attempt['label']} → {self.url}")
+                self.sio.connect(
+                    self.url,
+                    headers=headers,
+                    transports=attempt["transports"],
+                    wait_timeout=20,
+                    socketio_path="socket.io",
+                    wait=True,
+                )
+                if self.sio.connected:
+                    print(f"[ok] socket conectado ({attempt['label']}) sid={self.sio.sid}")
+                    return True
+            except Exception as e:
+                last_err = e
+                print(f"[aviso] falhou {attempt['label']}: {e}")
+                time.sleep(0.3)
+
+        print(f"[erro] socket connect: {last_err}")
+        if not has_ws:
+            print(
+                "Falta o pacote websocket-client (causa comum de 'namespaces failed'):\n"
+                "  pip install websocket-client"
             )
-        except Exception as e:
-            print(f"[erro] socket connect: {e}")
-            return False
-        print(f"[ok] socket conectado a {self.url}")
-        return True
+        else:
+            print(
+                "Dica: confira URL HTTPS e se o servidor está no ar:\n"
+                f"  {self.url}"
+            )
+        return False
 
     def join_room(self):
         print(f"[...] entrando na sala {self.room} ...")
@@ -1196,11 +1288,40 @@ class TwilightBot:
 
 
 def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="Twilight Battle multiplayer bot")
-    p.add_argument("--url", required=True, help="URL do servidor (ex: https://game.example.com)")
-    p.add_argument("--user", "--username", dest="username", required=True, help="Username da conta")
-    p.add_argument("--password", required=True, help="Senha da conta")
-    p.add_argument("--room", "--game", dest="room", required=True, help="ID da sala")
+    p = argparse.ArgumentParser(
+        description="Twilight Battle multiplayer bot",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Exemplos:\n"
+            "  python apps/bot.py --user grok --room VTI5Z2\n"
+            "  python apps/bot.py --user grok --password *** --room VTI5Z2 -d hard\n"
+            f"  (URL padrão: {DEFAULT_URL})\n"
+        ),
+    )
+    p.add_argument(
+        "--url",
+        default=DEFAULT_URL,
+        help=f"URL do servidor (default: {DEFAULT_URL})",
+    )
+    p.add_argument(
+        "--user",
+        "--username",
+        dest="username",
+        default=None,
+        help="Username da conta (pede no terminal se omitir)",
+    )
+    p.add_argument(
+        "--password",
+        default=None,
+        help="Senha da conta (se omitir, pede com input oculto)",
+    )
+    p.add_argument(
+        "--room",
+        "--game",
+        dest="room",
+        default=None,
+        help="ID da sala (pede no terminal se omitir)",
+    )
     p.add_argument(
         "--difficulty",
         "-d",
@@ -1216,8 +1337,41 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
+def _prompt_missing(args):
+    """Preenche url/user/password/room interativamente se faltarem."""
+    url = (args.url or "").strip() or DEFAULT_URL
+    if not url.startswith("http://") and not url.startswith("https://"):
+        url = "https://" + url
+    args.url = url.rstrip("/")
+
+    if not (args.username or "").strip():
+        args.username = input("Username: ").strip()
+    if not args.username:
+        print("[erro] username obrigatório")
+        sys.exit(1)
+
+    if not args.password:
+        # getpass esconde a senha; se falhar (IDE sem TTY), cai no input normal
+        try:
+            args.password = getpass.getpass(f"Senha para {args.username}: ")
+        except Exception:
+            args.password = input(f"Senha para {args.username}: ")
+    if not args.password:
+        print("[erro] senha obrigatória")
+        sys.exit(1)
+
+    if not (args.room or "").strip():
+        args.room = input("ID da sala: ").strip()
+    if not args.room:
+        print("[erro] room id obrigatório")
+        sys.exit(1)
+
+    return args
+
+
 def main(argv=None):
-    args = parse_args(argv)
+    args = _prompt_missing(parse_args(argv))
+    print(f"[cfg] url={args.url} user={args.username} room={args.room} diff={args.difficulty}")
     bot = TwilightBot(
         url=args.url,
         username=args.username,
