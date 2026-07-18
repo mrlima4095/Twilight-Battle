@@ -170,11 +170,21 @@ class Strategy:
 
     @property
     def think_delay(self) -> tuple[float, float]:
+        """Pausa ANTES de cada ação (parece humano, evita spam de alert no front)."""
         return {
-            "easy": (0.8, 2.2),
-            "normal": (0.45, 1.1),
-            "hard": (0.25, 0.65),
-        }.get(self.difficulty, (0.45, 1.1))
+            "easy": (1.0, 2.2),
+            "normal": (0.7, 1.4),
+            "hard": (0.55, 1.0),
+        }.get(self.difficulty, (0.7, 1.4))
+
+    @property
+    def action_gap(self) -> float:
+        """Pausa mínima DEPOIS de cada ação (>= 500ms)."""
+        return {
+            "easy": 0.9,
+            "normal": 0.7,
+            "hard": 0.55,
+        }.get(self.difficulty, 0.7)
 
     def maybe_blunder(self) -> bool:
         return random.random() < self.mistake_chance
@@ -1030,6 +1040,12 @@ class TwilightBot:
         def on_state(data):
             with self._lock:
                 self.game_state = data
+            if data.get("finished") or data.get("winner"):
+                if data.get("winner"):
+                    print(f"\n*** FIM (state): vencedor={data.get('winner_name') or data.get('winner')} ***\n")
+                self.auto_play = False
+                self._turn_done_for = "FINISHED"
+                return
             # não bloquear o event loop do socketio
             if (
                 self.auto_play
@@ -1058,6 +1074,11 @@ class TwilightBot:
         def on_action_error(data):
             msg = data.get("message") or str(data)
             self._last_action_error = msg
+            if data.get("game_finished"):
+                print(f"[fim] partida já terminou ({msg})")
+                self.auto_play = False
+                self._turn_done_for = "FINISHED"
+                return
             # não spammar tudo
             if data.get("player_name") == self.username or data.get("player_id") == self.username:
                 print(f"[ação falhou] {msg}")
@@ -1088,6 +1109,9 @@ class TwilightBot:
         @self.sio.on("game_over")
         def on_game_over(data):
             print(f"\n*** FIM DE JOGO: {data.get('message')} ***\n")
+            self.auto_play = False
+            self._turn_done_for = "FINISHED"
+            self._stop.set()
 
         @self.sio.on("player_died")
         def on_died(data):
@@ -1096,6 +1120,7 @@ class TwilightBot:
         @self.sio.on("room_closed")
         def on_closed(data):
             print(f"[sala fechada] {data.get('message')}")
+            self.auto_play = False
             self._stop.set()
 
         @self.sio.on("first_round_ended")
@@ -1170,7 +1195,9 @@ class TwilightBot:
 
                 self._last_action_error = ""
                 self.do_action(action, params)
-                time.sleep(0.4)
+                # gap mínimo ~500ms+ entre ações (evita flood de Swal/estado)
+                gap = max(0.5, self.strategy.action_gap)
+                time.sleep(gap + random.uniform(0.0, 0.25))
 
                 if action == "end_turn":
                     break
