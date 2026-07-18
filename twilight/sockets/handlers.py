@@ -174,7 +174,10 @@ def handle_get_game_state(data):
         'deck_count': len(game.deck),
         'graveyard_count': len(game.graveyard),
         'is_spectator': is_spectator,
-        'spectators': []
+        'spectators': [],
+        'modifiers': list(game.modifiers or []),
+        'attack_slot_count': getattr(game, 'attack_slot_count', 3),
+        'defense_slot_count': getattr(game, 'defense_slot_count', 6),
     }
     
     # Coletar lista de espectadores

@@ -36,11 +36,28 @@ class Game:
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
         self.last_spell_id = None  # para Eco do Grimório
-
+        # Ciclo dia/noite: 24 normal, 6 com fast_cycle
+        self.day_cycle_length = 6 if 'fast_cycle' in self.modifiers else 24
 
         self.first_round = True
         self.players_acted = set()
         self.attacks_blocked = True
+        if 'no_first_round' in self.modifiers:
+            self.first_round = False
+            self.attacks_blocked = False
+
+        # Tamanhos de board
+        self.attack_slot_count = 5 if 'war_front' in self.modifiers else 3
+        self.defense_slot_count = 1 if 'open_field' in self.modifiers else 6
+        # Vida inicial
+        self.starting_life = 600 if 'hardcore' in self.modifiers else 1200
+        # Mão inicial
+        if 'empty_hand' in self.modifiers:
+            self.starting_hand_size = 0
+        elif 'big_hand' in self.modifiers:
+            self.starting_hand_size = 8
+        else:
+            self.starting_hand_size = 5
     
     def get_player_by_socket(self, socket_id):
         """Retorna o username associado a um socket_id"""
@@ -64,21 +81,24 @@ class Game:
         self.players.append(username)
         self.socket_to_username[socket_id] = username
         
-        # Draw 5 initial cards
+        # Mão inicial (modificadores: empty_hand / big_hand)
         hand = []
-        if not 'empty_hand' in self.modifiers:
-            for _ in range(5):
-                if self.deck:
-                    hand.append(self.deck.pop())
+        for _ in range(getattr(self, 'starting_hand_size', 5)):
+            if self.deck:
+                hand.append(self.deck.pop())
         
+        atk_n = getattr(self, 'attack_slot_count', 3)
+        def_n = getattr(self, 'defense_slot_count', 6)
+        start_life = getattr(self, 'starting_life', 1200)
+
         self.player_data[username] = {
             'name': username,
             'username': username,
             'socket_id': socket_id,
-            'life': 1200,
+            'life': start_life,
             'hand': hand,
-            'attack_bases': [None, None, None],
-            'defense_bases': [None, None, None, None, None, None],
+            'attack_bases': [None] * atk_n,
+            'defense_bases': [None] * def_n,
             'equipment': {
                 'weapon': None,
                 'helmet': None,
@@ -96,6 +116,7 @@ class Game:
             'observer': False,
             'free_swap_used': False,
             'first_hit_reduced': False,
+            'attacked_this_turn': False,
         }
         
         return True
@@ -113,8 +134,8 @@ class Game:
             'socket_id': socket_id,
             'life': 0,
             'hand': [],
-            'attack_bases': [None, None, None],
-            'defense_bases': [None, None, None, None, None, None],
+            'attack_bases': [None] * getattr(self, 'attack_slot_count', 3),
+            'defense_bases': [None] * getattr(self, 'defense_slot_count', 6),
             'equipment': {
                 'weapon': None,
                 'helmet': None,
@@ -133,6 +154,7 @@ class Game:
             'spectator': True,
             'free_swap_used': False,
             'first_hit_reduced': False,
+            'attacked_this_turn': False,
         }
         
         return True, "Espectador adicionado com sucesso"
@@ -298,6 +320,7 @@ class Game:
         Retorna a versão apropriada da carta para o visualizador.
         - Se o visualizador é o dono, mostra a carta real
         - Se não, mostra o disfarce (se for armadilha)
+        - fog_of_war: oponentes só veem silhueta (sem nome/stats)
         """
         # Se for o dono da carta, mostrar o real
         if viewer_username == owner_username:
@@ -314,16 +337,30 @@ class Game:
             return card
         
         # Para espectadores e oponentes
+        display = None
         if card.get('is_disguised') and card.get('disguise'):
             # Retornar o disfarce (parece uma criatura normal)
             disguise = card['disguise'].copy()
             disguise['instance_id'] = card['instance_id']
             disguise['is_disguised'] = True
             disguise['is_trap'] = False  # Esconder que é armadilha
-            return disguise
-        
-        # Se não for armadilha, mostrar normal
-        return card
+            display = disguise
+        else:
+            display = card.copy() if isinstance(card, dict) else card
+
+        # Névoa de Guerra: esconde identidade e atributos do inimigo
+        if 'fog_of_war' in self.modifiers and display:
+            return {
+                'instance_id': display.get('instance_id') or card.get('instance_id'),
+                'type': 'creature' if display.get('type') in ('creature', 'trap', None) else display.get('type', 'creature'),
+                'name': '???',
+                'id': 'fog',
+                'fog': True,
+                'life': None,
+                'attack': None,
+            }
+
+        return display
 
     def use_action(self, username, action):
         """Registra que uma ação foi usada"""
@@ -334,6 +371,9 @@ class Game:
             self.turn_actions_used[username][action] = 0
         
         self.turn_actions_used[username][action] += 1
+
+        if action == 'attack' and username in self.player_data:
+            self.player_data[username]['attacked_this_turn'] = True
         
         # Log para debug
         max_actions = self.get_max_actions(username)
@@ -356,6 +396,19 @@ class Game:
         """Avança para o próximo turno, pulando jogadores mortos"""
         if not self.players:
             return
+
+        # Sangria: se o jogador atual não atacou neste turno, -20 vida
+        if 'bleed_out' in self.modifiers and self.players:
+            ending = self.players[self.current_turn]
+            pdata = self.player_data.get(ending)
+            if pdata and not pdata.get('dead') and not pdata.get('attacked_this_turn'):
+                pdata['life'] = pdata.get('life', 0) - 20
+                broadcast_system_message(
+                    self.game_id,
+                    f'🩸 Sangria: {ending} não atacou e perde 20 de vida! ({pdata["life"]}❤️)'
+                )
+                if pdata['life'] <= 0:
+                    self.process_player_death(ending)
         
         # Processar maldições do Profeta ANTES de mudar de turno
         destroyed_cards = self.process_prophet_curses()
@@ -380,12 +433,14 @@ class Game:
                 # resets por turno (armaduras com habilidade)
                 self.player_data[username]['free_swap_used'] = False
                 self.player_data[username]['first_hit_reduced'] = False
+                self.player_data[username]['attacked_this_turn'] = False
         
         if self.time_of_day == "day":
             self.apply_day_effects()
         if 'disable_daycicle' not in self.modifiers:
             self.time_cycle += 1
-            if self.time_cycle % 24 == 0:
+            cycle_len = getattr(self, 'day_cycle_length', 24) or 24
+            if self.time_cycle % cycle_len == 0:
                 self.time_of_day = "night" if self.time_of_day == "day" else "day"
                 if self.time_of_day == "day":
                     self.apply_day_effects()
@@ -983,6 +1038,16 @@ class Game:
         player['dead'] = True
         player['observer'] = True
         player['life'] = 0
+
+        # Caça ao Rei: quem matou o criador da sala ganha +300 vida
+        if 'king_hunt' in self.modifiers and username == self.creator and self.players:
+            killer = self.players[self.current_turn]
+            if killer != username and killer in self.player_data and not self.player_data[killer].get('dead'):
+                self.player_data[killer]['life'] = self.player_data[killer].get('life', 0) + 300
+                broadcast_system_message(
+                    self.game_id,
+                    f'👑 Caça ao Rei! {killer} eliminou o criador da sala e ganha +300 de vida!'
+                )
         
         # Processar cartas da mão
         hand_cards = player['hand'].copy()
@@ -2054,6 +2119,9 @@ class Game:
         return 0
 
     def prophet_curse(self, username, target_player_id, target_card_id):
+        if 'no_prophet' in self.modifiers:
+            return {'success': False, 'message': 'Modificador Sem Profecia: Profetizar está desativado'}
+
         if not self.can_act(username, 'prophet_curse'):
             return {'success': False, 'message': 'Você já usou a habilidade do Profeta neste turno'}
         
