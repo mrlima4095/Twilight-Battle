@@ -750,6 +750,9 @@ body::before {
         let isTimerRunning = false;
         let gameStarted = false;
         let isMyTurnFlag = false;
+        // evita loop de Swal "Reconectado" / "X VENCEU" após o fim
+        let gameOverHandled = false;
+        let gameFinished = false;
 
         // Verificar autenticação ao carregar
         fetch('/api/check-auth')
@@ -834,6 +837,9 @@ body::before {
         }
 
         function attemptReconnection() {
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
             if (reconnectAttempts < 5) {
                 reconnectAttempts++;
                 console.log(`Tentativa de reconexão ${reconnectAttempts}/5...`);
@@ -845,7 +851,7 @@ body::before {
                 }
                 
                 reconnectTimer = setTimeout(() => {
-                    if (!socket.connected) {
+                    if (!socket.connected && !gameOverHandled && !gameFinished) {
                         console.log('Falha na reconexão, tentando novamente...');
                         attemptReconnection();
                     }
@@ -871,6 +877,11 @@ body::before {
         socket.on('connect', function() {
             console.log('Conectado ao servidor com ID:', currentUsername);
             reconnectAttempts = 0;
+
+            // Partida já acabou nesta aba — não reconectar / reentrar em loop
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
             
             // Se temos username, tentar reconectar ou entrar
             if (currentUsername) {
@@ -921,6 +932,9 @@ body::before {
         // | (Desconectado)
         socket.on('disconnect', function(reason) {
             console.log('Desconectado do servidor:', reason);
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
             
             if (reason === 'io server disconnect' || reason === 'transport close') {
                 Swal.fire({
@@ -943,6 +957,23 @@ body::before {
         });
         socket.on('reconnect_success', function(data) {
             console.log('Reconexão bem-sucedida:', data);
+
+            // Se a partida já terminou, mostra fim de jogo e NÃO o toast de reconexão
+            if (data && (data.finished || data.winner)) {
+                gameFinished = true;
+                handleGameOver({
+                    winner: data.winner,
+                    winner_name: data.winner_name || data.winner,
+                    message: data.message || `🏆 ${(data.winner_name || data.winner)} VENCEU O JOGO!`,
+                    already_finished: true
+                });
+                return;
+            }
+
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+
             saveSession();
             showSessionIndicator();
             
@@ -1038,6 +1069,21 @@ body::before {
             const oldGameState = gameState;
             const oldTurn = oldGameState ? oldGameState.current_turn : null;
             gameState = data;
+
+            // Partida finalizada no servidor → UI de fim (sem loop)
+            if (data && (data.finished || data.winner) && !gameOverHandled) {
+                gameFinished = true;
+                handleGameOver({
+                    winner: data.winner,
+                    winner_name: data.winner_name || data.winner,
+                    message: data.message,
+                    already_finished: true
+                });
+                return;
+            }
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
             
             if (oldTurn !== data.current_turn && data.current_turn === currentUsername && data.started && !data.current_player_dead) {
                 console.log('🎲 É MEU TURNO! Mostrando alerta...');
@@ -1377,80 +1423,93 @@ body::before {
                 window.location.href = data.url || '/';
             });
         });
-        // | (Fim de Jogo)
-        socket.on('game_over', function(data) {
+        // | (Fim de Jogo) — uma vez só (sem loop com reconnect)
+        function handleGameOver(data) {
+            if (gameOverHandled) {
+                return;
+            }
+            gameOverHandled = true;
+            gameFinished = true;
+            clearSession();
+
+            // para timer / polling que reabre estado e re-dispara UI
+            try {
+                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                isTimerRunning = false;
+            } catch (e) {}
+
+            const winnerName = (data && (data.winner_name || data.winner)) || 'Alguém';
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
-                html: `<h2 style="color: #ffd700;">${data.winner_name} VENCEU!</h2>`,
+                html: `<h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>`,
                 icon: 'success',
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 confirmButtonText: 'Voltar ao início',
-                allowOutsideClick: false
+                allowOutsideClick: false,
+                allowEscapeKey: false
             }).then(() => {
-                clearSession();
                 window.location.href = '/';
             });
+        }
+        socket.on('game_over', function(data) {
+            handleGameOver(data || {});
         });
         // |
         // |
         socket.on('action_success', function(data) {
             console.log('Ação bem-sucedida:', data);
-            
-            // Verificar se a primeira rodada terminou
-            /*if (data.result && data.result.first_round_ended) {
-                Swal.fire({
-                    icon: 'success',
-                    title: '🎉 PRIMEIRA RODADA CONCLUÍDA!',
-                    html: '<p style="color: #fff;">Todos os jogadores já jogaram!<br><strong style="color: #ffd700;">Agora os ataques estão liberados!</strong></p>',
-                    background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ffd700',
-                    timer: 3000
-                });
-            }*/
-            
-            // Se a ação foi uma troca de posições, sair do modo de troca
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+
+            const actor = data.player_name || data.player_id || '';
+            const isActor = actor === currentUsername;
+
+            // Ataques: log no chat via broadcast do server (todos veem).
+            // Outros logs com broadcast próprio no engine — não duplicar aqui.
+
+            // Alerts: só o autor (evita spam pra sala inteira)
             if (data.action === 'swap_positions' && data.result && data.result.success) {
-                // Sair do modo de troca
-                if (moveMode) {
+                if (moveMode && isActor) {
                     cancelMoveMode();
                 }
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: '🔄 Posições trocadas!',
-                    text: data.result.message || 'Cartas trocadas com sucesso',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
+                if (isActor) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '🔄 Posições trocadas!',
+                        text: data.result.message || 'Cartas trocadas com sucesso',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
             }
-            else if (data.action === 'revive' && data.result) {
+            else if (data.action === 'revive' && data.result && isActor) {
                 Swal.fire({
                     icon: 'success',
                     title: '🔄 Carta Revivida!',
-                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    html: `<p style="color: #fff;">${data.result.message || ''}</p>`,
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#4CAF50',
                     timer: 3000
                 });
             }
-            else if (data.action === 'ritual' && data.result) {
+            else if (data.action === 'ritual' && data.result && isActor) {
                 Swal.fire({
                     icon: 'success',
                     title: '📿 Ritual Realizado!',
-                    html: `<p style="color: #fff;">${data.result.message}</p>`,
+                    html: `<p style="color: #fff;">${data.result.message || ''}</p>`,
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#9370db',
                     timer: 3000
                 });
             }
-            else if (data.action === 'equip_item' && data.result) {
+            else if (data.action === 'equip_item' && data.result && isActor) {
                 Swal.fire({
                     icon: 'success',
                     title: '✅ Item equipado!',
@@ -1464,27 +1523,28 @@ body::before {
             else if (data.action === 'cast_spell' && data.result && data.result.effect) {
                 if (data.result.effect.type === 'heal') {
                     createHealAnimation(data.result.effect.amount, data.result.effect.target);
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: '✨ Feitiço de Cura!',
-                        html: `<p style="color: #fff;">${data.result.effect.message}</p>`,
-                        background: '#1a1a2e',
-                        color: '#fff',
-                        confirmButtonColor: '#4CAF50',
-                        timer: 2000
-                    });
+                    if (isActor) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✨ Feitiço de Cura!',
+                            html: `<p style="color: #fff;">${data.result.effect.message || ''}</p>`,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#4CAF50',
+                            timer: 2000
+                        });
+                    }
                 }
             }
-            else if (data.action === 'call_centaurs' && data.result && data.result.success) {
+            else if (data.action === 'call_centaurs' && data.result && data.result.success && isActor) {
                 Swal.fire({
                     icon: 'success',
                     title: '🐎 Centauros Coletados!',
                     html: `
                         <div style="text-align: center;">
                             <div style="font-size: 48px; margin-bottom: 10px;">🐎</div>
-                            <p style="color: #ffd700; font-size: 18px;">${data.result.message}</p>
-                            <p style="color: #fff; margin-top: 10px;">Você coletou <strong>${data.result.centaurs_collected}</strong> centauro(s) para sua mão!</p>
+                            <p style="color: #ffd700; font-size: 18px;">${data.result.message || ''}</p>
+                            <p style="color: #fff; margin-top: 10px;">Você coletou <strong>${data.result.centaurs_collected}</strong> centauro(s)!</p>
                         </div>
                     `,
                     background: '#1a1a2e',
@@ -1492,52 +1552,41 @@ body::before {
                     confirmButtonColor: '#4CAF50',
                     timer: 3000
                 });
-                
-                requestGameState();
             }
             else if (data.action === 'toggle_time' && data.result && data.result.success) {
+                // ciclo afeta todos — toast curto
                 const oldTime = data.result.old_time;
                 const newTime = data.result.new_time;
-                
-                // Animação de transição
                 const timeIndicator = document.getElementById('time-indicator');
                 if (timeIndicator) {
                     timeIndicator.style.animation = 'fadeInOut 0.5s ease';
-                    setTimeout(() => {
-                        timeIndicator.style.animation = '';
-                    }, 500);
+                    setTimeout(() => { timeIndicator.style.animation = ''; }, 500);
                 }
-                
                 Swal.fire({
-                    icon: 'success',
-                    title: '🔥 Fênix Ativada!',
-                    html: `
-                        <div style="text-align: center;">
-                            <div style="font-size: 48px; margin-bottom: 10px;">🔥</div>
-                            <p style="color: #ff6600; font-size: 20px;">Ciclo Alterado!</p>
-                            <p style="color: #fff;">${oldTime.toUpperCase()} → ${newTime.toUpperCase()}</p>
-                            ${newTime === 'day' ? '<p style="color: #ffa500; margin-top: 10px;">☀️ Zumbis e vampiros sem proteção morreram!</p>' : '<p style="color: #4a90e2; margin-top: 10px;">🌙 A noite chegou...</p>'}
-                        </div>
-                    `,
+                    icon: 'info',
+                    title: '🔥 Ciclo alterado',
+                    text: `${(oldTime || '').toUpperCase()} → ${(newTime || '').toUpperCase()}`,
+                    timer: 1800,
+                    showConfirmButton: false,
                     background: '#1a1a2e',
-                    color: '#fff',
-                    confirmButtonColor: '#ff6600',
-                    timer: 3000
+                    color: '#fff'
                 });
-                
-                requestGameState();
             }
-            else if (data.action === 'attack' && data.result) { showAttackResult(data.result); }
-            /*else if (data.action !== 'end_turn' && gameState && gameStarted && gameState.current_turn === currentUsername) {
-                turnTimeLeft = 60;
-                const timerElement = document.getElementById('turn-timer');
-                if (timerElement && isTimerRunning) {
-                    timerElement.innerHTML = '⏱️ 1:00';
-                    timerElement.style.color = '#ffd700';
-                    timerElement.style.borderColor = '#ffd700';
-                    timerElement.style.animation = 'none';
+            else if (data.action === 'attack' && data.result) {
+                // Swal só para quem atacou e quem foi atacado
+                const r = data.result;
+                const attackerId = r.attacker || data.player_id || data.player_name;
+                const targetId = r.target || r.original_target;
+                const involved = (
+                    currentUsername === attackerId ||
+                    currentUsername === targetId ||
+                    currentUsername === r.attacker_name ||
+                    currentUsername === r.target_name
+                );
+                if (involved) {
+                    showAttackResult(r);
                 }
-            }*/
+            }
 
             if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started && !isTimerRunning) {
                 startTurnTimer();
@@ -1547,6 +1596,17 @@ body::before {
         });
         socket.on('action_error', function(data) {
             console.error('Erro na ação:', data);
+            // Partida já acabou — não spamma erro de ação
+            if (data && (data.game_finished || gameOverHandled || gameFinished)) {
+                if (data.winner && !gameOverHandled) {
+                    handleGameOver({
+                        winner: data.winner,
+                        winner_name: data.winner,
+                        already_finished: true
+                    });
+                }
+                return;
+            }
             
             Swal.fire({
                 icon: 'error',
@@ -4408,9 +4468,16 @@ body::before {
             });
         }
         // | Game Engine
-        setInterval(requestGameState, 3000);
+        setInterval(function() {
+            if (!gameOverHandled && !gameFinished) requestGameState();
+        }, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
-        setInterval(function() { if (socket.connected && currentPlayerId) { socket.emit('ping_game', { game_id: gameId, player_id: currentPlayerId }); } }, 30000);
+        setInterval(function() {
+            if (gameOverHandled || gameFinished) return;
+            if (socket.connected && currentPlayerId) {
+                socket.emit('ping_game', { game_id: gameId, player_id: currentPlayerId });
+            }
+        }, 30000);
     </script>
 </body>
 </html>
