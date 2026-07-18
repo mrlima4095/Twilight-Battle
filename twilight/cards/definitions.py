@@ -239,10 +239,102 @@ CARDS = {
     "capacete_trevas": {
         "id": "capacete_trevas", 
         "name": "Capacete das Trevas", 
-        "type": "armor", 
+        "type": "armor",
+        "slot": "helmet",
         "protection": 300, 
-        "count": 20, 
-        "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada a carta."
+        "count": 20,
+        "daylight_protect": True,
+        "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada à carta."
+    },
+    "capacete_sentinela": {
+        "id": "capacete_sentinela",
+        "name": "Capacete da Sentinela",
+        "type": "armor",
+        "slot": "helmet",
+        "protection": 180,
+        "count": 18,
+        "ability": "first_hit_reduce",
+        "first_hit_reduce": 80,
+        "description": "Proteção +180. Uma vez por turno, o primeiro dano recebido pelo jogador é reduzido em 80."
+    },
+    "peitoral_carvalho": {
+        "id": "peitoral_carvalho",
+        "name": "Peitoral de Carvalho",
+        "type": "armor",
+        "slot": "armor",
+        "protection": 350,
+        "count": 16,
+        "ability": "nature_ward",
+        "spell_resist_races": ["elfo", "ninfa", "ninfa_lorem"],
+        "description": "Proteção +350. Em Elfo ou Ninfa: a criatura fica resistente a feitiços (ignora o próximo feitiço hostil)."
+    },
+    "peitoral_ferro": {
+        "id": "peitoral_ferro",
+        "name": "Peitoral de Ferro",
+        "type": "armor",
+        "slot": "armor",
+        "protection": 220,
+        "count": 25,
+        "description": "Armadura comum. Proteção +220 na criatura equipada."
+    },
+    "calcas_marcha": {
+        "id": "calcas_marcha",
+        "name": "Calças da Marcha",
+        "type": "armor",
+        "slot": "pants",
+        "protection": 150,
+        "count": 18,
+        "ability": "damage_flat_reduce",
+        "damage_flat_reduce": 40,
+        "description": "Proteção +150. Enquanto no inventário de equipamento do jogador (calças), todo dano à vida é reduzido em 40."
+    },
+    "botas_andarilho": {
+        "id": "botas_andarilho",
+        "name": "Botas do Andarilho",
+        "type": "armor",
+        "slot": "boots",
+        "protection": 80,
+        "count": 14,
+        "ability": "free_swap",
+        "description": "Proteção +80. Com as botas no slot de botas do jogador: 1 troca grátis ataque↔defesa por turno (não gasta a ação de troca)."
+    },
+    "botas_guerra": {
+        "id": "botas_guerra",
+        "name": "Botas de Guerra",
+        "type": "armor",
+        "slot": "boots",
+        "protection": 120,
+        "count": 16,
+        "ability": "charge_bonus",
+        "attack_bonus": 40,
+        "description": "Proteção +120. Se equipada em criatura em ATAQUE, ela ganha +40 de ataque."
+    },
+    "manto_eclipse": {
+        "id": "manto_eclipse",
+        "name": "Manto do Eclipse",
+        "type": "armor",
+        "slot": "armor",
+        "protection": 200,
+        "count": 10,
+        "daylight_protect": True,
+        "ability": "eclipse_cloak",
+        "description": "Proteção +200. Impede morte/dano da luz do dia em criaturas noturnas (como o Capacete das Trevas). Pode ser equipado na criatura ou no peitoral do jogador."
+    },
+
+    # Lobisomem
+    "lobisomem_crepusculo": {
+        "id": "lobisomem_crepusculo",
+        "name": "Lobisomem do Crepúsculo",
+        "type": "creature",
+        "life": 700,
+        "attack": 40,
+        "count": 18,
+        "werewolf": True,
+        "day_life": 700,
+        "day_attack": 40,
+        "night_life": 480,
+        "night_attack": 170,
+        "description": "De dia: tanque (700❤️ / 40⚔️). De noite: predador (480❤️ / 170⚔️). Forma muda com o ciclo."
     },
     
     # Talismãs (não podem ser jogados, apenas segurados)
@@ -348,6 +440,34 @@ CARDS = {
         "type": "spell", 
         "count": 10, 
         "description": "Cura 1024 pontos de vida do jogador alvo. Pode ser usado em si mesmo ou em outros jogadores."
+    },
+    "feitico_clareira_lua": {
+        "id": "feitico_clareira_lua",
+        "name": "Feitiço - Clareira da Lua",
+        "type": "spell",
+        "count": 6,
+        "description": "Força a noite imediatamente. Lobisomens e criaturas noturnas se beneficiam."
+    },
+    "feitico_julgamento_aurora": {
+        "id": "feitico_julgamento_aurora",
+        "name": "Feitiço - Julgamento da Aurora",
+        "type": "spell",
+        "count": 5,
+        "description": "Destrói 1 criatura noturna no campo (zumbi, vampiro, lobisomem ou dies_daylight / night_creature)."
+    },
+    "feitico_eco_grimorio": {
+        "id": "feitico_eco_grimorio",
+        "name": "Feitiço - Eco do Grimório",
+        "type": "spell",
+        "count": 3,
+        "description": "Copia o efeito do último feitiço usado nesta partida (exceto o próprio Eco)."
+    },
+    "feitico_selo_silencio": {
+        "id": "feitico_selo_silencio",
+        "name": "Feitiço - Selo de Silêncio Menor",
+        "type": "spell",
+        "count": 6,
+        "description": "Seu próximo ataque não ativa armadilhas. Counter do Poço Sem Fundo e similares."
     },
     
     # Oraculo
