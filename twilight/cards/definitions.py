@@ -600,9 +600,16 @@ MODIFIERS = [
         'enabled': True
     },
     {
+        'id': 'big_hand',
+        'name': 'Mão Cheia',
+        'description': 'Jogadores começam com 8 cartas na mão (em vez de 5)',
+        'icon': '🎴',
+        'enabled': True
+    },
+    {
         'id': 'no_runes',
         'name': 'Sem Runas',
-        'description': 'As cartas de Runa não podem reviver do cemiterio',
+        'description': 'As cartas de Runa não podem reviver do cemitério',
         'icon': '🔷',
         'enabled': True
     },
@@ -614,19 +621,95 @@ MODIFIERS = [
         'enabled': True
     },
     {
+        'id': 'fast_cycle',
+        'name': 'Crepúsculo Acelerado',
+        'description': 'O ciclo dia/noite muda a cada 6 turnos (em vez de 24)',
+        'icon': '⏱️',
+        'enabled': True
+    },
+    {
         'id': 'disable_traps',
         'name': 'Desativar Armadilhas',
         'description': 'Não haverá cartas de armadilha no jogo',
         'icon': '🕳️',
         'enabled': True
     },
-    # Futuros modificadores podem ser adicionados aqui:
-    # {
-    #     'id': 'double_damage',
-    #     'name': 'Dano Dobrado',
-    #     'description': 'Todo dano causado é dobrado',
-    #     'icon': '💥',
-    #     'enabled': True
-    # },
+    {
+        'id': 'no_first_round',
+        'name': 'Sem Preparação',
+        'description': 'Ataques liberados desde o primeiro turno (sem rodada de preparação)',
+        'icon': '⚔️',
+        'enabled': True
+    },
+    {
+        'id': 'hardcore',
+        'name': 'Hardcore',
+        'description': 'Jogadores começam com apenas 600 de vida',
+        'icon': '💀',
+        'enabled': True
+    },
+    {
+        'id': 'bleed_out',
+        'name': 'Sangria',
+        'description': 'No fim do seu turno, se você não atacou, perde 20 de vida',
+        'icon': '🩸',
+        'enabled': True
+    },
+    {
+        'id': 'no_legendaries',
+        'name': 'Sem Lendas',
+        'description': 'Cartas únicas (count 1) não entram no baralho — sem Rei Mago, dragões, etc.',
+        'icon': '📜',
+        'enabled': True
+    },
+    {
+        'id': 'no_equipment',
+        'name': 'Desarmados',
+        'description': 'Armas e armaduras não entram no baralho',
+        'icon': '🚫',
+        'enabled': True
+    },
+    {
+        'id': 'no_spells',
+        'name': 'Mordaça',
+        'description': 'Feitiços não entram no baralho',
+        'icon': '🤐',
+        'enabled': True
+    },
+    {
+        'id': 'no_prophet',
+        'name': 'Sem Profecia',
+        'description': 'A habilidade Profetizar está desativada',
+        'icon': '🔮',
+        'enabled': True
+    },
+    {
+        'id': 'open_field',
+        'name': 'Campo Aberto',
+        'description': 'Apenas 1 base de defesa (em vez de 6)',
+        'icon': '🏞️',
+        'enabled': True
+    },
+    {
+        'id': 'war_front',
+        'name': 'Frente de Guerra',
+        'description': '5 bases de ataque (em vez de 3)',
+        'icon': '🏰',
+        'enabled': True
+    },
+    {
+        'id': 'fog_of_war',
+        'name': 'Névoa de Guerra',
+        'description': 'Você não vê nome, vida nem ataque das criaturas inimigas — só silhueta',
+        'icon': '🌫️',
+        'enabled': True
+    },
+    {
+        'id': 'king_hunt',
+        'name': 'Caça ao Rei',
+        'description': 'Quem eliminar o criador da sala ganha +300 de vida',
+        'icon': '👑',
+        'enabled': True
+    },
 ]
 
