@@ -21,9 +21,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Persistência: montei volume no Coolify em /app/data se quiser
-# (accounts.json, journal.json, admin_levels.json, story_saves/)
-# Por padrão o app grava no WORKDIR.
+# Persistência: no Coolify, volume em /app/data
+# data/accounts.json, data/journal.json, data/admin_levels.json, data/saves/
+RUN mkdir -p /app/data/saves
+VOLUME ["/app/data"]
 
 EXPOSE 5000
 
