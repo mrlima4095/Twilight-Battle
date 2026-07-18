@@ -2182,6 +2182,7 @@ body::before {
 
         function getCardEmoji(card) {
             if (!card) return '📦';
+            if (card.fog || card.id === 'fog' || card.name === '???') return '🌫️';
             const id = (card.id || '').toLowerCase();
             const name = (card.name || '').toLowerCase();
             const key = id + ' ' + name;
