@@ -255,7 +255,7 @@ CARDS = {
         "count": 18,
         "ability": "first_hit_reduce",
         "first_hit_reduce": 80,
-        "description": "Proteção +180. Uma vez por turno, o primeiro dano recebido pelo jogador é reduzido em 80."
+        "description": "Só vale equipado. +180 proteção. Equipado no capacete do jogador: 1× por turno o primeiro dano à vida é −80. Equipado em criatura: +180 de vida nela."
     },
     "peitoral_carvalho": {
         "id": "peitoral_carvalho",
@@ -266,7 +266,7 @@ CARDS = {
         "count": 16,
         "ability": "nature_ward",
         "spell_resist_races": ["elfo", "ninfa", "ninfa_lorem"],
-        "description": "Proteção +350. Em Elfo ou Ninfa: a criatura fica resistente a feitiços (ignora o próximo feitiço hostil)."
+        "description": "Só vale equipado. +350 proteção na criatura. Em Elfo ou Ninfa: a criatura ignora o próximo feitiço hostil."
     },
     "peitoral_ferro": {
         "id": "peitoral_ferro",
@@ -275,7 +275,7 @@ CARDS = {
         "slot": "armor",
         "protection": 220,
         "count": 25,
-        "description": "Armadura comum. Proteção +220 na criatura equipada."
+        "description": "Só vale equipado. Armadura comum: +220 vida na criatura equipada."
     },
     "calcas_marcha": {
         "id": "calcas_marcha",
@@ -286,7 +286,7 @@ CARDS = {
         "count": 18,
         "ability": "damage_flat_reduce",
         "damage_flat_reduce": 40,
-        "description": "Proteção +150. Enquanto no inventário de equipamento do jogador (calças), todo dano à vida é reduzido em 40."
+        "description": "Só vale equipado no slot Calças do jogador (não na mão). Todo dano à vida do jogador é reduzido em 40. Na criatura: +150 vida."
     },
     "botas_andarilho": {
         "id": "botas_andarilho",
@@ -296,7 +296,7 @@ CARDS = {
         "protection": 80,
         "count": 14,
         "ability": "free_swap",
-        "description": "Proteção +80. Com as botas no slot de botas do jogador: 1 troca grátis ataque↔defesa por turno (não gasta a ação de troca)."
+        "description": "Só vale equipado no slot Botas do jogador (não na mão). 1 troca grátis ataque↔defesa por turno. Na criatura: +80 vida."
     },
     "botas_guerra": {
         "id": "botas_guerra",
@@ -307,7 +307,7 @@ CARDS = {
         "count": 16,
         "ability": "charge_bonus",
         "attack_bonus": 40,
-        "description": "Proteção +120. Se equipada em criatura em ATAQUE, ela ganha +40 de ataque."
+        "description": "Só vale equipado na criatura em ATAQUE: +120 vida e +40 ataque. Na mão não faz nada."
     },
     "manto_eclipse": {
         "id": "manto_eclipse",
@@ -318,7 +318,7 @@ CARDS = {
         "count": 10,
         "daylight_protect": True,
         "ability": "eclipse_cloak",
-        "description": "Proteção +200. Impede morte/dano da luz do dia em criaturas noturnas (como o Capacete das Trevas). Pode ser equipado na criatura ou no peitoral do jogador."
+        "description": "Só vale equipado (criatura ou peitoral do jogador). +200 proteção e impede morte/dano da luz do dia em noturnos. Na mão não protege."
     },
 
     # Lobisomem
