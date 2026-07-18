@@ -35,6 +35,7 @@ class Game:
         self.max_players = 6
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
+        self.last_spell_id = None  # para Eco do Grimório
 
 
         self.first_round = True
@@ -82,6 +83,7 @@ class Game:
                 'weapon': None,
                 'helmet': None,
                 'armor': None,
+                'pants': None,
                 'boots': None,
                 'mount': None
             },
@@ -91,7 +93,9 @@ class Game:
             'profecia_alvo': None,
             'profecia_rodadas': 0,
             'dead': False,
-            'observer': False
+            'observer': False,
+            'free_swap_used': False,
+            'first_hit_reduced': False,
         }
         
         return True
@@ -115,6 +119,7 @@ class Game:
                 'weapon': None,
                 'helmet': None,
                 'armor': None,
+                'pants': None,
                 'boots': None,
                 'mount': None
             },
@@ -125,7 +130,9 @@ class Game:
             'profecia_rodadas': 0,
             'dead': False,
             'observer': True,  # Marcar como observador/espectador
-            'spectator': True
+            'spectator': True,
+            'free_swap_used': False,
+            'first_hit_reduced': False,
         }
         
         return True, "Espectador adicionado com sucesso"
@@ -370,6 +377,9 @@ class Game:
         for username in self.players:
             if not self.player_data[username].get('dead', False):
                 self.turn_actions_used[username] = {}
+                # resets por turno (armaduras com habilidade)
+                self.player_data[username]['free_swap_used'] = False
+                self.player_data[username]['first_hit_reduced'] = False
         
         if self.time_of_day == "day":
             self.apply_day_effects()
@@ -377,6 +387,10 @@ class Game:
             self.time_cycle += 1
             if self.time_cycle % 24 == 0:
                 self.time_of_day = "night" if self.time_of_day == "day" else "day"
+                if self.time_of_day == "day":
+                    self.apply_day_effects()
+                else:
+                    self.apply_werewolf_forms()
 
         
         current_player = self.players[self.current_turn]
@@ -454,19 +468,21 @@ class Game:
                 'weapon': ['weapon'],
                 'helmet': ['armor'],
                 'armor': ['armor'],
+                'pants': ['armor'],
                 'boots': ['armor'],
                 'mount': ['creature']
             }
-            
-            slot_name = position_index
+            # preferência da carta (capacete, peitoral, calças, botas)
+            preferred = card_to_play.get('slot')
+            slot_name = preferred if preferred in valid_equipment_types else position_index
             if slot_name not in valid_equipment_types:
                 return {'success': False, 'message': 'Slot de equipamento inválido'}
-            
             if card_to_play.get('type') not in valid_equipment_types[slot_name]:
                 return {'success': False, 'message': f'Esta carta não pode ser equipada em {slot_name}'}
-            
-            if player['equipment'][slot_name] is not None:
+            if player['equipment'].get(slot_name) is not None:
                 return {'success': False, 'message': f'Slot de {slot_name} já está ocupado'}
+            # guardar slot resolvido para o bloco de colocação
+            position_index = slot_name
         
         # Remover carta da mão
         player['hand'].pop(card_index)
@@ -488,6 +504,11 @@ class Game:
         
         elif position_type == 'equipment':
             player['equipment'][position_index] = card_to_play
+        
+        # Lobisomem: aplicar forma atual ao entrar em campo
+        if card_to_play.get('type') == 'creature' and card_to_play.get('werewolf'):
+            card_to_play['werewolf_form'] = None
+            self.apply_werewolf_forms()
         
         self.use_action(username, 'play')
         
@@ -545,15 +566,33 @@ class Game:
             if talisman.get('id') == 'talisma_guerreiro':
                 attack_power += 1024
         
+        # Silêncio / Selo: pular armadilhas
+        skip_traps = False
+        # Selo de Silêncio Menor (próximo ataque do atacante)
+        attacker_effects = attacker.get('active_effects') or []
+        for eff in list(attacker_effects):
+            if eff.get('type') == 'trap_silence_next_attack':
+                skip_traps = True
+                attacker_effects.remove(eff)
+                broadcast_system_message(self.game_id, f'🔇 Selo de Silêncio: o ataque de {username} não ativa armadilhas!')
+                break
+        # Feitiço Silêncio global (duration turns)
+        for uname in (username, target_username):
+            for eff in self.player_data[uname].get('active_effects') or []:
+                if eff.get('type') == 'silence' and eff.get('duration', 0) > 0:
+                    skip_traps = True
+                    break
+
         # Coletar armadilhas do defensor
         trap_cards = []
-        for i, card in enumerate(defender['defense_bases']):
-            if card and card.get('type') == 'trap':
-                trap_cards.append({
-                    'card': card,
-                    'index': i,
-                    'name': card.get('name', 'Armadilha')
-                })
+        if not skip_traps:
+            for i, card in enumerate(defender['defense_bases']):
+                if card and card.get('type') == 'trap':
+                    trap_cards.append({
+                        'card': card,
+                        'index': i,
+                        'name': card.get('name', 'Armadilha')
+                    })
         
         # Processar armadilhas
         trap_effects = []
@@ -738,6 +777,20 @@ class Game:
         damage_log = []
         cards_destroyed = []
         cards_damaged = []
+
+        # Capacete da Sentinela: 1º hit do turno -80
+        helmet = (target.get('equipment') or {}).get('helmet')
+        if helmet and helmet.get('ability') == 'first_hit_reduce' and not target.get('first_hit_reduced'):
+            reduce = helmet.get('first_hit_reduce', 80)
+            remaining_damage = max(0, remaining_damage - reduce)
+            target['first_hit_reduced'] = True
+            damage_log.append(f'🪖 Capacete da Sentinela absorveu {reduce} do primeiro golpe')
+
+        # Calças da Marcha no slot pants do jogador: -40 flat em todo dano à vida (aplicado no final)
+        pants = (target.get('equipment') or {}).get('pants')
+        pants_flat = 0
+        if pants and pants.get('ability') == 'damage_flat_reduce':
+            pants_flat = pants.get('damage_flat_reduce', 40)
         
         # ORDEM 1: Absorver dano pelas cartas de DEFESA (índice 0 → 5)
         for def_card in defense_cards:
@@ -822,7 +875,12 @@ class Game:
                         immortality_index = i
                         break
             
-            # Aplicar dano ao jogador
+            # Aplicar dano ao jogador (Calças da Marcha reduzem dano final)
+            if pants_flat and remaining_damage > 0:
+                before = remaining_damage
+                remaining_damage = max(0, remaining_damage - pants_flat)
+                damage_log.append(f'👖 Calças da Marcha reduziram {before - remaining_damage} de dano')
+            damage_to_player = remaining_damage
             old_life = target['life']
             target['life'] -= remaining_damage
             damage_log.append(f"⚔️ {target['name']} recebeu {remaining_damage} de dano direto{reflected_text} (vida: {old_life} → {target['life']})")
@@ -960,6 +1018,70 @@ class Game:
             return alive_players[0]
         return None
     
+    def has_daylight_protection(self, player, card=None):
+        """Capacete das Trevas, Manto do Eclipse (jogador ou equipado na criatura)."""
+        equip = player.get('equipment') or {}
+        for slot in ('helmet', 'armor', 'pants', 'boots', 'weapon'):
+            item = equip.get(slot)
+            if item and (item.get('daylight_protect') or item.get('id') in ('capacete_trevas', 'manto_eclipse')):
+                return True
+        if card:
+            for eq in (card.get('equipped_items') or []):
+                if eq.get('daylight_protect') or eq.get('id') in ('capacete_trevas', 'manto_eclipse'):
+                    return True
+        return False
+
+    def apply_werewolf_forms(self):
+        """Ajusta stats do Lobisomem do Crepúsculo conforme dia/noite."""
+        is_night = self.time_of_day == 'night'
+        for username in self.players:
+            player = self.player_data[username]
+            for base in ('attack_bases', 'defense_bases'):
+                for card in player[base]:
+                    if not card or not card.get('werewolf'):
+                        continue
+                    # stats base da forma
+                    if is_night:
+                        target_atk = card.get('night_attack', card.get('attack', 0))
+                        target_life_cap = card.get('night_life', card.get('life', 0))
+                        form = 'night'
+                    else:
+                        target_atk = card.get('day_attack', card.get('attack', 0))
+                        target_life_cap = card.get('day_life', card.get('life', 0))
+                        form = 'day'
+                    old_form = card.get('werewolf_form')
+                    # preservar bônus de equipamento em attack: recompute base + gear
+                    gear_atk = sum((eq.get('attack') or 0) for eq in (card.get('equipped_items') or []))
+                    gear_hp = sum((eq.get('protection') or 0) + (eq.get('life') or 0) for eq in (card.get('equipped_items') or []))
+                    # Botas de Guerra: +atk se em ataque
+                    if base == 'attack_bases':
+                        for eq in (card.get('equipped_items') or []):
+                            if eq.get('ability') == 'charge_bonus':
+                                gear_atk += eq.get('attack_bonus', 0)
+                    card['attack'] = target_atk + gear_atk
+                    # vida: se mudou de forma, ajusta pro cap da forma (+ gear)
+                    new_cap = target_life_cap + gear_hp
+                    if old_form != form:
+                        # ao trocar forma, preenche até o cap da nova forma (sem curar além)
+                        card['life'] = min(card.get('life', new_cap), new_cap) if old_form else new_cap
+                        if old_form is None or card.get('life', 0) <= 0:
+                            card['life'] = new_cap
+                        # se entrou na forma noturna, set life to night cap scaled
+                        if form == 'night':
+                            card['life'] = new_cap
+                        else:
+                            # dia: tanque — sobe vida se estava menor que day cap
+                            card['life'] = max(card.get('life', 0), min(new_cap, target_life_cap + gear_hp))
+                            card['life'] = new_cap
+                        card['werewolf_form'] = form
+                        broadcast_system_message(
+                            self.game_id,
+                            f'🐺 {card["name"]} de {username} assume forma de {"NOITE" if is_night else "DIA"} '
+                            f'({card["life"]}❤️ / {card["attack"]}⚔️)!'
+                        )
+                    else:
+                        card['attack'] = target_atk + gear_atk
+
     def apply_day_effects(self):
         for username in self.players:
             player = self.player_data[username]
@@ -969,17 +1091,15 @@ class Game:
                 if card:
                     # Verificar se morre durante o dia (zumbis, vampiros)
                     if card.get('dies_daylight'):
-                        has_protection = False
-                        if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                            has_protection = True
-                        
-                        if not has_protection:
+                        if not self.has_daylight_protection(player, card):
                             self.graveyard.append(card)
                             player['defense_bases'][i] = None
                             broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
                     
                     # Criaturas noturnas tomam 10 de dano
                     elif card.get('night_creature', False):
+                        if self.has_daylight_protection(player, card):
+                            continue
                         card_life = card.get('life', 0)
                         if card_life > 0:
                             new_life = max(0, card_life - 10)
@@ -995,17 +1115,15 @@ class Game:
                 if card:
                     # Verificar se morre durante o dia (zumbis, vampiros)
                     if card.get('dies_daylight'):
-                        has_protection = False
-                        if player['equipment']['helmet'] and player['equipment']['helmet']['id'] == 'capacete_trevas':
-                            has_protection = True
-                        
-                        if not has_protection:
+                        if not self.has_daylight_protection(player, card):
                             self.graveyard.append(card)
                             player['attack_bases'][i] = None
                             broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
                     
                     # Criaturas noturnas tomam 10 de dano
                     elif card.get('night_creature', False):
+                        if self.has_daylight_protection(player, card):
+                            continue
                         card_life = card.get('life', 0)
                         if card_life > 0:
                             new_life = max(0, card_life - 10)
@@ -1015,13 +1133,18 @@ class Game:
                                 self.graveyard.append(card)
                                 player['attack_bases'][i] = None
                                 broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
+        # lobisomem troca forma no ciclo (também à noite via toggle)
+        self.apply_werewolf_forms()
 
     def swap_positions(self, username, pos1_type, pos1_index, pos2_type, pos2_index):
         """Troca duas cartas de posição"""
-        if not self.can_act(username, 'swap'):
-            return {'success': False, 'message': 'Você já realizou uma troca neste turno'}
-        
         player = self.player_data[username]
+        free_swap = False
+        boots = (player.get('equipment') or {}).get('boots')
+        if boots and boots.get('ability') == 'free_swap' and not player.get('free_swap_used'):
+            free_swap = True
+        elif not self.can_act(username, 'swap'):
+            return {'success': False, 'message': 'Você já realizou uma troca neste turno'}
         
         positions = {
             'attack': player['attack_bases'],
@@ -1043,12 +1166,18 @@ class Game:
         positions[pos1_type][pos1_index] = card2
         positions[pos2_type][pos2_index] = card1
         
-        self.use_action(username, 'swap')
+        if free_swap:
+            player['free_swap_used'] = True
+            msg = 'Cartas trocadas (Botas do Andarilho — troca grátis)!'
+        else:
+            self.use_action(username, 'swap')
+            msg = 'Cartas trocadas com sucesso'
         
         return {
             'success': True,
             'swapped': True,
-            'message': 'Cartas trocadas com sucesso'
+            'free_swap': free_swap,
+            'message': msg
         }
     
     def equip_item_to_creature(self, username, item_card_id, creature_card_id):
@@ -1123,10 +1252,24 @@ class Game:
         
         if item_card.get('attack'):
             target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
+        if item_card.get('attack_bonus') and item_card.get('ability') == 'charge_bonus':
+            # Botas de Guerra: bônus só em ataque
+            if creature_location and creature_location[0] == 'attack_bases':
+                target_creature['attack'] = target_creature.get('attack', 0) + item_card.get('attack_bonus', 0)
         if item_card.get('protection'):
             target_creature['life'] = target_creature.get('life', 0) + item_card['protection']
         if item_card.get('life'):
             target_creature['life'] = target_creature.get('life', 0) + item_card['life']
+
+        # Peitoral de Carvalho: ward em elfo/ninfa
+        if item_card.get('ability') == 'nature_ward':
+            cid = target_creature.get('id') or ''
+            if cid in (item_card.get('spell_resist_races') or []) or 'elfo' in cid or 'ninfa' in cid:
+                target_creature['spell_resist_charges'] = target_creature.get('spell_resist_charges', 0) + 1
+                broadcast_system_message(
+                    self.game_id,
+                    f'🌳 Peitoral de Carvalho: {target_creature["name"]} resiste ao próximo feitiço hostil!'
+                )
         
         broadcast_system_message(self.game_id, f'🔧 {username} equipou {item_card["name"]} em {target_creature["name"]}')
 
@@ -1362,9 +1505,11 @@ class Game:
         old_time = self.time_of_day
         self.time_of_day = "night" if self.time_of_day == "day" else "day"
         
-        # Aplicar efeitos do dia se mudou para dia
+        # Aplicar efeitos do dia se mudou para dia; sempre atualiza lobisomens
         if self.time_of_day == "day":
             self.apply_day_effects()
+        else:
+            self.apply_werewolf_forms()
         
         self.use_action(username, 'toggle_time')
         
@@ -1550,6 +1695,10 @@ class Game:
         
         # Aplicar efeito do feitiço
         result = self.apply_spell_effect(spell_card, username, target_username, target_card_id, caster_type)
+
+        # Registrar último feitiço (Eco do Grimório não sobrescreve com ele mesmo se falhou)
+        if spell_card.get('id') != 'feitico_eco_grimorio' and result.get('type') not in ('error', 'need_target', 'unknown'):
+            self.last_spell_id = spell_card.get('id')
         
         # Feitiço volta para o deck (embaixo)
         self.deck.append(spell_card)
@@ -1565,6 +1714,22 @@ class Game:
             'effect': result,
             'caster_type': caster_type
         }
+
+    def _find_card_on_field(self, instance_id):
+        for uname in self.players:
+            for base in ('attack_bases', 'defense_bases'):
+                for idx, card in enumerate(self.player_data[uname][base]):
+                    if card and card.get('instance_id') == instance_id:
+                        return uname, base, idx, card
+        return None
+
+    def _try_spell_resist(self, target_card):
+        """Peitoral de Carvalho: gasta 1 carga de resist."""
+        if target_card and target_card.get('spell_resist_charges', 0) > 0:
+            target_card['spell_resist_charges'] -= 1
+            return True
+        return False
+
     def apply_spell_effect(self, spell, caster_username, target_username=None, target_card_id=None, caster_type=None):
         """Aplica o efeito específico do feitiço"""
         spell_id = spell['id']
@@ -1573,19 +1738,20 @@ class Game:
         # Se for Rei Mago ou Mago Negro e não tiver alvo definido para alguns feitiços
         if caster_type in ['rei_mago', 'mago_negro'] and not target_username:
             # Para feitiços que precisam de alvo, retornar erro
-            if spell_id in ['feitico_cortes', 'feitico_troca', 'feitico_capitalista', 'feitico_cura']:
+            if spell_id in ['feitico_cortes', 'feitico_troca', 'feitico_capitalista', 'feitico_cura', 'feitico_julgamento_aurora']:
                 return {'type': 'need_target', 'message': 'Este feitiço requer um alvo'}
         
         # Aplicar efeitos específicos
         if spell_id == 'feitico_cortes':
             # Aumenta ataque de um monstro
             if target_card_id:
-                for player_uname in self.players:
-                    for base in ['attack_bases', 'defense_bases']:
-                        for card in self.player_data[player_uname][base]:
-                            if card and card['instance_id'] == target_card_id:
-                                card['attack'] = card.get('attack', 0) + 1024
-                                return {'type': 'buff', 'target': card['name'], 'effect': '+1024 ataque'}
+                found = self._find_card_on_field(target_card_id)
+                if found:
+                    uname, base, idx, card = found
+                    if self._try_spell_resist(card):
+                        return {'type': 'resisted', 'target': card['name'], 'message': f'{card["name"]} resistiu ao feitiço!'}
+                    card['attack'] = card.get('attack', 0) + 1024
+                    return {'type': 'buff', 'target': card['name'], 'effect': '+1024 ataque'}
             return {'type': 'error', 'message': 'Alvo não encontrado'}
         
         elif spell_id == 'feitico_duro_matar':
@@ -1681,6 +1847,79 @@ class Game:
                     'amount': heal_amount,
                     'message': f'{self.player_data[caster_username]["name"]} recebeu {heal_amount} de cura!'
                 }
+
+        elif spell_id == 'feitico_clareira_lua':
+            self.time_of_day = 'night'
+            self.apply_werewolf_forms()
+            broadcast_system_message(self.game_id, '🌙 Clareira da Lua! A noite cai sobre o campo!')
+            return {'type': 'force_night', 'time_of_day': 'night', 'message': 'Ciclo forçado para NOITE'}
+
+        elif spell_id == 'feitico_julgamento_aurora':
+            # Destrói 1 criatura noturna (target_card_id ou primeira encontrada do alvo)
+            def is_nocturnal(c):
+                if not c:
+                    return False
+                if c.get('dies_daylight') or c.get('night_creature') or c.get('werewolf'):
+                    return True
+                cid = (c.get('id') or '') + ' ' + (c.get('name') or '')
+                cid = cid.lower()
+                return any(x in cid for x in ('zumbi', 'vampiro', 'lobisomem'))
+
+            if target_card_id:
+                found = self._find_card_on_field(target_card_id)
+                if found:
+                    uname, base, idx, card = found
+                    if uname == caster_username:
+                        return {'type': 'error', 'message': 'Escolha uma criatura inimiga'}
+                    if not is_nocturnal(card):
+                        return {'type': 'error', 'message': 'O alvo não é uma criatura noturna'}
+                    if self._try_spell_resist(card):
+                        return {'type': 'resisted', 'target': card['name'], 'message': f'{card["name"]} resistiu!'}
+                    self.graveyard.append(card)
+                    self.player_data[uname][base][idx] = None
+                    broadcast_system_message(self.game_id, f'☀️ Julgamento da Aurora destruiu {card["name"]} de {uname}!')
+                    return {'type': 'destroy', 'target': card['name'], 'owner': uname}
+                return {'type': 'error', 'message': 'Carta alvo não encontrada'}
+            # sem card id: pega do target_username
+            if target_username and target_username in self.player_data:
+                target = self.player_data[target_username]
+                for base in ('attack_bases', 'defense_bases'):
+                    for idx, card in enumerate(target[base]):
+                        if is_nocturnal(card):
+                            if self._try_spell_resist(card):
+                                return {'type': 'resisted', 'target': card['name']}
+                            name = card['name']
+                            self.graveyard.append(card)
+                            target[base][idx] = None
+                            broadcast_system_message(self.game_id, f'☀️ Julgamento da Aurora destruiu {name} de {target_username}!')
+                            return {'type': 'destroy', 'target': name, 'owner': target_username}
+                return {'type': 'error', 'message': 'Nenhuma criatura noturna no alvo'}
+            return {'type': 'error', 'message': 'Alvo não especificado'}
+
+        elif spell_id == 'feitico_selo_silencio':
+            caster['active_effects'].append({
+                'type': 'trap_silence_next_attack',
+                'duration': 1
+            })
+            return {
+                'type': 'trap_silence',
+                'message': 'Próximo ataque não ativa armadilhas'
+            }
+
+        elif spell_id == 'feitico_eco_grimorio':
+            if not self.last_spell_id or self.last_spell_id == 'feitico_eco_grimorio':
+                return {'type': 'error', 'message': 'Nenhum feitiço anterior para copiar'}
+            if self.last_spell_id not in CARDS:
+                return {'type': 'error', 'message': 'Feitiço ecoado inválido'}
+            echo = CARDS[self.last_spell_id].copy()
+            echo['instance_id'] = str(uuid.uuid4())[:8]
+            # reentrada: aplica o efeito copiado (sem registrar eco de novo no last se for eco)
+            saved = self.last_spell_id
+            result = self.apply_spell_effect(echo, caster_username, target_username, target_card_id, caster_type)
+            self.last_spell_id = saved  # mantém o original copiado
+            result['echo_of'] = saved
+            result['message'] = f'Eco copiou {echo.get("name")}!'
+            return result
 
         return {'type': 'unknown', 'message': 'Efeito desconhecido'}
         
