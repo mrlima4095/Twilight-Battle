@@ -470,7 +470,7 @@
                 }
                 
                 // Verificar se é criador após entrar
-                setTimeout(checkIfCreator, 1000);
+                setTimeout(checkIfCanStart, 1000);
             }
             
             // Solicitar estado após conectar
@@ -563,19 +563,24 @@
             checkIfCanStart();
         });
         socket.on('player_left', function(data) {
-            if (data.username !== currentUsername) {
+            // Você saiu → volta ao menu
+            if (data.username === currentUsername) {
+                clearSession();
                 window.location.href = "/";
-            } else {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Jogador saiu',
-                    text: data.message || `${data.username} saiu do jogo`,
-                    timer: 2000,
-                    showConfirmButton: false,
-                    background: '#1a1a2e',
-                    color: '#fff'
-                });
+                return;
             }
+            // Outro jogador saiu → só atualiza a sala
+            Swal.fire({
+                icon: 'info',
+                title: 'Jogador saiu',
+                text: data.message || `${data.username} saiu do jogo`,
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            requestGameState();
+            checkIfCanStart();
         });
         // |
         // | Game Chat
@@ -652,8 +657,9 @@
                 gameStarted = true;
             }
             
-            // Verificar se o jogador ainda está no jogo
-            if (currentUsername && !gameState.players[currentUsername]) {
+            // Só expulsa se o jogo já começou e o jogador sumiu do estado
+            // (antes do start a lista pode chegar vazia por race com o join)
+            if (currentUsername && gameState.started && !gameState.players[currentUsername]) {
                 console.log('Jogador não encontrado no estado do jogo');
                 clearSession();
                 

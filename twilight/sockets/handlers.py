@@ -5,7 +5,7 @@ from datetime import datetime
 from flask import request
 from flask_socketio import emit, join_room, leave_room
 
-from twilight.auth.service import get_current_user, load_accounts, update_user_game
+from twilight.auth.service import get_current_user, load_accounts, save_accounts, update_user_game
 from twilight.extensions import socketio
 from twilight.game.chat import add_chat_message, broadcast_system_message, censor_text
 from twilight.game.engine import Game

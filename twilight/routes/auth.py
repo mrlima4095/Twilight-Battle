@@ -12,6 +12,7 @@ from twilight.auth.service import (
     verify_password,
 )
 from twilight.config import JWT_EXPIRATION_HOURS
+from twilight.state import games
 
 bp = Blueprint('auth', __name__)
 
