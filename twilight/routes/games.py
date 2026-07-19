@@ -21,8 +21,8 @@ def get_games():
     for game_id, game in games.items():
         if game.private:
             continue
-        # Não listar partidas já encerradas (fantasma no lobby)
-        if getattr(game, 'finished', False):
+        # Não listar só se finished sem ter resetado (estado inválido)
+        if getattr(game, 'finished', False) and game.started:
             continue
             
         games_list.append({
@@ -79,9 +79,20 @@ def start_game(game_id):
     # Verificar se o usuário é o criador
     if game.creator != username:
         return jsonify({'success': False, 'message': 'Apenas o criador da sala pode iniciar o jogo'}), 401
+
+    # Se ainda estiver "finished" por algum motivo, reabre lobby
+    if getattr(game, 'finished', False):
+        game.reset_to_lobby(last_winner=getattr(game, 'winner', None))
+
+    if game.started:
+        return jsonify({'success': False, 'message': 'O jogo já está em andamento'}), 400
     
     if len(game.players) >= 2:  # Mínimo 2 jogadores
         game.started = True
+        game.finished = False
+        game.finished_at = None
+        game.winner = None
+        game._game_over_emitted = False
         broadcast_system_message(game_id, f'🎮 O jogo começou! Que comece a batalha! ⚔️')
         socketio.emit('game_started', {'game_id': game_id}, room=game_id)
         return jsonify({'success': True})
