@@ -1,7 +1,7 @@
 """Chat da partida e filtro de palavrões."""
 import re
-from datetime import datetime
 
+from twilight.config import now_sp_str
 from twilight.extensions import socketio
 from twilight.state import chat_messages, games
 
@@ -34,7 +34,7 @@ def add_chat_message(game_id, username, message, is_system=False):
     chat_messages[game_id].append({
         'username': username,
         'message': final_message,
-        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'timestamp': now_sp_str('%H:%M:%S'),
         'is_system': is_system
     })
 
@@ -53,6 +53,6 @@ def broadcast_system_message(game_id, message):
     socketio.emit('chat_message', {
         'username': 'Sistema',
         'message': message,
-        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'timestamp': now_sp_str('%H:%M:%S'),
         'is_system': True
     }, room=game_id)
