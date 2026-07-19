@@ -75,6 +75,39 @@ def update_user_game(username, game_id):
         accounts[username]['current_game'] = game_id
         save_accounts(accounts)
 
+def clear_user_game(username, game_id=None):
+    """Remove current_game da conta (opcionalmente só se for o game_id)."""
+    accounts = load_accounts()
+    if username not in accounts:
+        return
+    current = accounts[username].get('current_game')
+    if game_id is None or current == game_id:
+        accounts[username]['current_game'] = None
+        save_accounts(accounts)
+
+def clear_game_from_all_accounts(game_id, usernames=None):
+    """
+    Limpa current_game de todos os jogadores da sala.
+    Evita loop: fim de jogo → / → check-auth redireciona de volta pro game.
+    """
+    if not game_id:
+        return
+    accounts = load_accounts()
+    changed = False
+    if usernames is None:
+        # limpa qualquer conta apontando para essa sala
+        for uname, data in accounts.items():
+            if data.get('current_game') == game_id:
+                accounts[uname]['current_game'] = None
+                changed = True
+    else:
+        for uname in usernames:
+            if uname in accounts and accounts[uname].get('current_game') == game_id:
+                accounts[uname]['current_game'] = None
+                changed = True
+    if changed:
+        save_accounts(accounts)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
