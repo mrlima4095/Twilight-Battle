@@ -29,6 +29,8 @@ class Game:
         self.deck = create_deck(self.modifiers)
         self.graveyard = []
         self.started = False
+        self.finished = False  # True quando há vencedor — trava ações
+        self.winner = None
         self.current_turn = 0  # Índice na lista players
         self.time_of_day = "day"
         self.time_cycle = 0
@@ -192,6 +194,8 @@ class Game:
         # Verificar se há um vencedor
         alive_players = [p for p in self.players if not self.player_data[p].get('dead', False)]
         if len(alive_players) == 1:
+            self.finished = True
+            self.winner = alive_players[0]
             return True, was_creator, alive_players[0]
         
         # Se era o turno do jogador que saiu, passar para o próximo
@@ -1073,15 +1077,35 @@ class Game:
         random.shuffle(self.deck)
  
     def check_winner(self):
-        """Verifica se há um vencedor"""
+        """Verifica se há um vencedor. Marca finished na primeira vez."""
+        if self.finished and self.winner:
+            return self.winner
+
         alive_players = []
         for username in self.players:
-            if self.player_data[username]['life'] > 0 and not self.player_data[username].get('dead', False):
+            pdata = self.player_data.get(username) or {}
+            if pdata.get('life', 0) > 0 and not pdata.get('dead', False):
                 alive_players.append(username)
-        
+
         if len(alive_players) == 1:
-            return alive_players[0]
+            self.finished = True
+            self.winner = alive_players[0]
+            return self.winner
+        if len(alive_players) == 0 and self.players:
+            # empate técnico — ninguém vivo
+            self.finished = True
+            self.winner = None
+            return None
         return None
+
+    def end_game(self, winner_username=None):
+        """Finaliza a partida explicitamente (admin / leave)."""
+        if winner_username and winner_username in self.player_data:
+            self.winner = winner_username
+        elif not self.winner:
+            self.check_winner()
+        self.finished = True
+        return self.winner
     
     def has_daylight_protection(self, player, card=None):
         """Capacete das Trevas, Manto do Eclipse (jogador ou equipado na criatura)."""
