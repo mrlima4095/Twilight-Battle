@@ -1,11 +1,11 @@
 """API do journal / diário do reino."""
 import time
 import uuid
-from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
 from twilight.auth.service import load_accounts, login_required
+from twilight.config import now_sp_iso
 from twilight.storage.journal import load_journal, save_journal
 
 bp = Blueprint('journal', __name__)
@@ -49,7 +49,7 @@ def api_journal_create(username):
         'version': data['version'],
         'title': data['title'],
         'description': data.get('description', ''),
-        'date': datetime.utcnow().isoformat() + 'Z',
+        'date': now_sp_iso(),
         'type': data.get('type', 'minor'),
         'features': data.get('features', []),
         'improvements': data.get('improvements', []),
