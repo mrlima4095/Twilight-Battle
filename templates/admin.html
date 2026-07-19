@@ -721,7 +721,20 @@ input:focus, select:focus, textarea:focus {
         async function syncCurrentGame() { if (currentGameId) await syncGame(currentGameId); loadGameControlState(); }
         async function setGameTime(time) { await fetchAPI(`/api/admin/game/${currentGameId}/set-time`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_of_day: time }) }); showMessage(`Ciclo alterado para ${time}`); loadGameControlState(); }
         async function shuffleDeck() { await fetchAPI(`/api/admin/game/${currentGameId}/deck/shuffle`, { method: 'POST' }); showMessage(`Deck embaralhado`); loadGameControlState(); }
-        async function peekDeck() { const data = await fetchAPI(`/api/admin/game/${currentGameId}/deck/peek?quantity=10`); document.getElementById('peek-deck-content').innerHTML = `<div class="card-grid">${data.cards.map(c => `<div class="card-item"><div class="card-name">${c.name}</div><div class="card-type">${c.type} | ⚔️${c.attack || '?'} | ❤️${c.life || '?'}</div></div>`).join('')}</div>`; openModal('peek-deck-modal'); }
+        async function peekDeck() {
+            const data = await fetchAPI(`/api/admin/game/${currentGameId}/deck/peek?quantity=10`);
+            const cards = data.cards || [];
+            document.getElementById('peek-deck-content').innerHTML = cards.length
+                ? `<p style="color:var(--muted);margin-bottom:12px;font-size:.85rem">Ordem real de compra (1 = próxima). Deck: ${data.deck_count} cartas.</p>
+                   <div class="card-grid">${cards.map(c => `
+                    <div class="card-item">
+                        <div class="card-name">#${c.position} · ${c.name || '?'}</div>
+                        <div class="card-type">${c.type || '?'} · ⚔️${c.attack ?? '-'} · ❤️${c.life ?? '-'}</div>
+                        <div class="card-type" style="font-size:.65rem;opacity:.7">${c.id || ''} ${c.instance_id ? '· ' + c.instance_id : ''}</div>
+                    </div>`).join('')}</div>`
+                : '<p class="empty-hint">Deck vazio</p>';
+            openModal('peek-deck-modal');
+        }
         async function showGraveyard() { const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`); const graveyard = data.game.graveyard || []; document.getElementById('graveyard-content').innerHTML = `<div class="card-grid">${graveyard.map((c, i) => `<div class="card-item"><div class="card-name">${c.name}</div><div class="card-type">${c.type}</div><button class="btn btn-success btn-sm" onclick="reviveCard(${i})" type="button">✨ Reviver</button></div>`).join('') || '<p class="empty-hint">Cemitério vazio</p>'}</div>`; openModal('graveyard-modal'); }
         async function reviveCard(index) { const target = prompt('Para qual jogador?'); if (!target) return; await fetchAPI(`/api/admin/game/${currentGameId}/graveyard/revive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target, card_index: index }) }); showMessage(`Carta revivida`); closeModal('graveyard-modal'); loadGameControlState(); }
         async function killPlayer(username) { if (!confirm(`Matar ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/kill`, { method: 'POST' }); showMessage(`${username} morto`); loadGameControlState(); }
