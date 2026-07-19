@@ -309,9 +309,36 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
 
 .modifiers-section { margin-top: 8px; }
 .modifiers-title {
-  color: var(--gold); font-family: var(--font-display); margin-bottom: 12px;
-  display: flex; align-items: center; gap: 8px;
+  color: var(--gold); font-family: var(--font-display); margin-bottom: 0;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
+.modifiers-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; cursor: pointer; user-select: none;
+  padding: 10px 12px; border-radius: 12px;
+  background: rgba(240,193,75,.06); border: 1px solid rgba(240,193,75,.18);
+  transition: .2s;
+}
+.modifiers-header:hover { background: rgba(240,193,75,.1); border-color: rgba(240,193,75,.35); }
+.modifiers-toggle-btn {
+  flex-shrink: 0; border: none; border-radius: 8px; cursor: pointer;
+  padding: 6px 12px; font-size: .8rem; font-weight: 700;
+  background: rgba(255,255,255,.08); color: var(--text);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.modifiers-toggle-btn:hover { background: rgba(240,193,75,.2); color: var(--gold); }
+.modifiers-count-badge {
+  font-size: .75rem; font-weight: 700; color: var(--gold);
+  background: rgba(240,193,75,.12); border: 1px solid rgba(240,193,75,.3);
+  border-radius: 999px; padding: 2px 8px; margin-left: 4px;
+}
+.modifiers-body {
+  margin-top: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.modifiers-body.collapsed { display: none; }
 .modifiers-list { display: grid; gap: 8px; }
 .modifier-item, .modifiers-list label {
   display: flex; align-items: flex-start; gap: 10px; padding: 12px;
@@ -446,14 +473,23 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
       </div>
 
       <div class="modifiers-section">
-        <div class="modifiers-title">
-          ✨ Modificadores de jogo
-          <span class="tooltip">ⓘ
-            <span class="tooltiptext">Modificadores alteram as regras do jogo. Carregados automaticamente do servidor.</span>
-          </span>
+        <div class="modifiers-header" id="modifiers-header" role="button" tabindex="0" aria-expanded="false" title="Mostrar/ocultar modificadores">
+          <div class="modifiers-title">
+            ✨ Modificadores de jogo
+            <span class="modifiers-count-badge" id="modifiers-selected-count" hidden>0</span>
+            <span class="tooltip">ⓘ
+              <span class="tooltiptext">Modificadores alteram as regras do jogo. Clique para expandir/recolher a lista.</span>
+            </span>
+          </div>
+          <button type="button" class="modifiers-toggle-btn" id="modifiers-toggle-btn" aria-controls="modifiers-body">
+            <span id="modifiers-toggle-label">Mostrar</span>
+            <span id="modifiers-toggle-chevron">▼</span>
+          </button>
         </div>
-        <div class="modifiers-list" id="modifiers-list">
-          <div style="color:#888;text-align:center;width:100%;padding:20px">Carregando modificadores...</div>
+        <div class="modifiers-body collapsed" id="modifiers-body">
+          <div class="modifiers-list" id="modifiers-list">
+            <div style="color:#888;text-align:center;width:100%;padding:20px">Carregando modificadores...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -830,8 +866,16 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                     modDiv.appendChild(label);
                     modDiv.appendChild(tooltipSpan);
                     
+                    // clique no card marca o checkbox
+                    modDiv.addEventListener('click', (e) => {
+                        if (e.target === checkbox) return;
+                        if (e.target.closest && e.target.closest('.tooltip')) return;
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
                     modifiersContainer.appendChild(modDiv);
                 });
+                updateModifiersSelectedBadge();
             }
             
             // Obter modificadores selecionados
@@ -842,6 +886,68 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 });
                 return selected;
             }
+
+            function updateModifiersSelectedBadge() {
+                const n = getSelectedModifiers().length;
+                const badge = document.getElementById('modifiers-selected-count');
+                if (!badge) return;
+                if (n > 0) {
+                    badge.hidden = false;
+                    badge.textContent = `${n} ativo${n > 1 ? 's' : ''}`;
+                } else {
+                    badge.hidden = true;
+                    badge.textContent = '0';
+                }
+            }
+
+            // Colapsar / expandir lista de mods (modal fica compacto por padrão)
+            function setModifiersCollapsed(collapsed) {
+                const body = document.getElementById('modifiers-body');
+                const header = document.getElementById('modifiers-header');
+                const label = document.getElementById('modifiers-toggle-label');
+                const chevron = document.getElementById('modifiers-toggle-chevron');
+                if (!body) return;
+                body.classList.toggle('collapsed', collapsed);
+                if (header) header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                if (label) label.textContent = collapsed ? 'Mostrar' : 'Ocultar';
+                if (chevron) chevron.textContent = collapsed ? '▼' : '▲';
+            }
+
+            function toggleModifiersSection(e) {
+                if (e) {
+                    // não colapsar se clicou no tooltip
+                    if (e.target && e.target.closest && e.target.closest('.tooltip')) return;
+                }
+                const body = document.getElementById('modifiers-body');
+                if (!body) return;
+                setModifiersCollapsed(!body.classList.contains('collapsed'));
+            }
+
+            (function wireModifiersToggle() {
+                const header = document.getElementById('modifiers-header');
+                const btn = document.getElementById('modifiers-toggle-btn');
+                if (header) {
+                    header.addEventListener('click', toggleModifiersSection);
+                    header.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleModifiersSection(e);
+                        }
+                    });
+                }
+                if (btn) {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleModifiersSection(e);
+                    });
+                }
+                // contador ao marcar/desmarcar
+                document.addEventListener('change', (e) => {
+                    if (e.target && e.target.matches && e.target.matches('#modifiers-list input[type="checkbox"]')) {
+                        updateModifiersSelectedBadge();
+                    }
+                });
+            })();
             
             // Resetar formulário do modal
             function resetModalForm() {
@@ -854,6 +960,8 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 document.querySelectorAll('#modifiers-list input[type="checkbox"]').forEach(cb => {
                     cb.checked = false;
                 });
+                updateModifiersSelectedBadge();
+                setModifiersCollapsed(true);
             }
             
             // Verificar autenticação ao carregar
