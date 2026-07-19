@@ -20,12 +20,8 @@ def index():
         accounts = load_accounts()
         current_game = accounts.get(username, {}).get('current_game')
         if current_game and current_game in games:
-            game = games[current_game]
-            # Partida finalizada: não reabrir a tela do jogo (loop pós-vitória)
-            if getattr(game, 'finished', False):
-                clear_user_game(username, current_game)
-            else:
-                return render_template('game.html', game_id=current_game, username=username)
+            # Mesma sala (lobby ou partida) — rematch mantém o id
+            return render_template('game.html', game_id=current_game, username=username)
         elif current_game:
             # sala sumiu da memória
             clear_user_game(username, current_game)
@@ -65,12 +61,7 @@ def game(username, game_id):
         clear_user_game(username, game_id)
         return redirect("/")
 
-    game_obj = games[game_id]
-    # Partida já acabou: não regrava current_game (causa loop com /)
-    if getattr(game_obj, 'finished', False):
-        clear_user_game(username, game_id)
-        return redirect("/")
-
+    # Rematch: sala continua existindo (lobby ou partida)
     update_user_game(username, game_id)
 
     return render_template('game.html', game_id=game_id, username=username)
