@@ -1,7 +1,6 @@
 """Contas, senhas, JWT e usuário atual."""
 import hashlib
 import hmac
-import json
 import secrets
 from datetime import datetime, timedelta
 from functools import wraps
@@ -10,21 +9,13 @@ import jwt
 from flask import redirect, request
 
 from twilight.config import (
-    ACCOUNTS_FILE,
     JWT_ALGORITHM,
     JWT_EXPIRATION_HOURS,
     JWT_SECRET,
 )
+from twilight.storage.db import load_accounts, save_accounts
 
-def load_accounts():
-    try:
-        with open(ACCOUNTS_FILE, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-def save_accounts(accounts):
-    with open(ACCOUNTS_FILE, 'w') as f:
-        json.dump(accounts, f, indent=4)
+# reexport para imports legados: from twilight.auth.service import load_accounts
 def hash_password(password):
     salt = secrets.token_hex(16)
     password_hash = hashlib.pbkdf2_hmac(
