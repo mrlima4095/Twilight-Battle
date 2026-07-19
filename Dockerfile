@@ -6,14 +6,19 @@ FROM python:3.11-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=5000
+    PORT=5000 \
+    TZ=America/Sao_Paulo
 
 WORKDIR /app
 
 # Dependências de sistema mínimas (gevent/compila se precisar de wheels)
+# tzdata: fuso America/Sao_Paulo (GMT-3)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
+        tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
