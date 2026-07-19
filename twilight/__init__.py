@@ -1,7 +1,14 @@
 """Twilight Battle — factory da aplicação Flask + SocketIO."""
 import os
 
-from twilight.config import JWT_EXPIRATION_HOURS, JWT_SECRET, SECRET_KEY, ensure_data_dirs
+from twilight.config import (
+    APP_TZ,
+    JWT_EXPIRATION_HOURS,
+    JWT_SECRET,
+    SECRET_KEY,
+    TIMEZONE_NAME,
+    ensure_data_dirs,
+)
 from twilight.extensions import socketio
 
 # Raiz do projeto (onde ficam templates/, data/, etc.)
@@ -15,6 +22,15 @@ def create_app():
     from twilight.routes import register_blueprints
     from twilight.sockets import register_socket_handlers
 
+    # Fuso São Paulo (GMT-3) — reforça no processo (Docker já seta TZ)
+    os.environ.setdefault('TZ', TIMEZONE_NAME)
+    try:
+        import time as _time
+        if hasattr(_time, 'tzset'):
+            _time.tzset()
+    except Exception:
+        pass
+
     ensure_data_dirs()
 
     app = Flask(
@@ -26,6 +42,7 @@ def create_app():
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['JWT_SECRET'] = JWT_SECRET
     app.config['JWT_EXPIRATION_HOURS'] = JWT_EXPIRATION_HOURS
+    app.config['TIMEZONE'] = TIMEZONE_NAME
 
     socketio.init_app(app)
     register_blueprints(app)
