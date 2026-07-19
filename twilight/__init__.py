@@ -33,6 +33,10 @@ def create_app():
 
     ensure_data_dirs()
 
+    # SQLite: accounts + journal (migra JSON legado se existir)
+    from twilight.storage.db import init_db
+    init_db()
+
     app = Flask(
         __name__,
         template_folder=os.path.join(_PROJECT_ROOT, 'templates'),
