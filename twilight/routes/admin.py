@@ -38,7 +38,7 @@ def admin_panel(username):
     """Painel administrativo web"""
     if not is_admin(username):
         return redirect('/')
-    return render_template('admin.html', username=username, is_super=is_super_admin(username))
+    return render_template('security/admin.html', username=username, is_super=is_super_admin(username))
 
 @bp.route('/api/admin/users')
 @admin_required
