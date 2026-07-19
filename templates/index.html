@@ -976,7 +976,8 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                     currentUsername = data.username;
                     loggedUsername.textContent = currentUsername;
                     
-                    if (data.current_game && data.game_exists) {
+                    // Só redireciona se a partida ainda estiver ativa (não finished)
+                    if (data.current_game && data.game_exists && !data.game_finished) {
                         window.location.href = `/game/${data.current_game}`;
                     }
                     
