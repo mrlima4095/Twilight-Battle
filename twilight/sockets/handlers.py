@@ -5,7 +5,14 @@ from datetime import datetime
 from flask import request
 from flask_socketio import emit, join_room, leave_room
 
-from twilight.auth.service import get_current_user, load_accounts, save_accounts, update_user_game
+from twilight.auth.service import (
+    clear_game_from_all_accounts,
+    clear_user_game,
+    get_current_user,
+    load_accounts,
+    save_accounts,
+    update_user_game,
+)
 from twilight.extensions import socketio
 from twilight.game.chat import add_chat_message, broadcast_system_message, censor_text
 from twilight.game.engine import Game
@@ -53,11 +60,13 @@ def handle_join_game(data):
         result = game.reconnect_player(request.sid, username)
         if result['success']:
             join_room(game_id)
-            update_user_game(username, game_id)
             finished = bool(getattr(game, 'finished', False))
             winner = getattr(game, 'winner', None)
-            if not finished:
-                # Avisa a sala que o jogador reconectou (sem duplicar na lista)
+            if finished:
+                # Não regrava current_game — isso causa o loop pós-vitória
+                clear_user_game(username, game_id)
+            else:
+                update_user_game(username, game_id)
                 broadcast_system_message(game_id, f'{username} reconectou ao jogo')
             payload = dict(result) if isinstance(result, dict) else {'success': True}
             payload.update({
@@ -155,6 +164,10 @@ def handle_leave_game(data):
         if not already:
             game._game_over_emitted = True
             winner_name = game.player_data.get(winner, {}).get('name', winner)
+            try:
+                clear_game_from_all_accounts(game_id)
+            except Exception:
+                pass
             broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
             emit('game_over', {
                 'winner': winner,
@@ -415,18 +428,18 @@ def handle_reconnect_game(data):
     if result['success']:
         # Adicionar à sala
         join_room(game_id)
-        
-        # Atualizar jogo atual na conta
-        update_user_game(username, game_id)
-        
-        # Atualizar lista de jogadores
-        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
-        
+
         finished = bool(getattr(game, 'finished', False))
         winner = getattr(game, 'winner', None)
 
-        # Não spammar "X reconectou" se a partida já acabou
-        if not finished:
+        # Atualizar lista de jogadores
+        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+
+        # Não regrava current_game se a partida já acabou (loop / ↔ /game)
+        if finished:
+            clear_user_game(username, game_id)
+        else:
+            update_user_game(username, game_id)
             emit('player_joined', {
                 'username': username,
                 'players': players_list,
@@ -733,6 +746,16 @@ def handle_player_action(data):
             if winner and not already_emitted and getattr(game, 'finished', False):
                 game._game_over_emitted = True
                 winner_name = game.player_data[winner]['name']
+                # CRÍTICO: limpar current_game de TODOS — senão / redireciona de volta e loopa
+                try:
+                    players_list = list(game.players) + [
+                        u for u in game.player_data.keys() if u not in game.players
+                    ]
+                    clear_game_from_all_accounts(game_id, players_list)
+                    clear_game_from_all_accounts(game_id)  # qualquer conta residual
+                except Exception:
+                    import traceback
+                    traceback.print_exc()
                 broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
                 emit('game_over', {
                     'winner': winner,
