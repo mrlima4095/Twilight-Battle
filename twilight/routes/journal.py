@@ -31,7 +31,8 @@ def api_journal_entry(entry_id):
 @login_required
 def api_journal_create(username):
     accounts = load_accounts()
-    admin_level = accounts.get(username, {}).get('level', 0)
+    acc = accounts.get(username, {})
+    admin_level = acc.get('admin_level', acc.get('level', 0))
     
     if admin_level < 4:
         return jsonify({'success': False, 'message': 'Apenas administradores podem criar entradas'}), 403
@@ -68,7 +69,8 @@ def api_journal_create(username):
 @login_required
 def api_journal_update(username, entry_id):
     accounts = load_accounts()
-    admin_level = accounts.get(username, {}).get('level', 0)
+    acc = accounts.get(username, {})
+    admin_level = acc.get('admin_level', acc.get('level', 0))
     
     if admin_level < 4:
         return jsonify({'success': False, 'message': 'Apenas administradores podem editar entradas'}), 403
@@ -106,7 +108,8 @@ def api_journal_update(username, entry_id):
 @login_required
 def api_journal_delete(username, entry_id):
     accounts = load_accounts()
-    admin_level = accounts.get(username, {}).get('level', 0)
+    acc = accounts.get(username, {})
+    admin_level = acc.get('admin_level', acc.get('level', 0))
     
     if admin_level < 4:
         return jsonify({'success': False, 'message': 'Apenas administradores podem excluir entradas'}), 403
