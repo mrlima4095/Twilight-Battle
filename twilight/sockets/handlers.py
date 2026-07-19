@@ -16,8 +16,42 @@ from twilight.auth.service import (
 from twilight.extensions import socketio
 from twilight.game.chat import add_chat_message, broadcast_system_message, censor_text
 from twilight.game.engine import Game
-from twilight.game.session import schedule_close_finished_game, close_game
+from twilight.game.session import close_game, schedule_close_finished_game
 from twilight.state import chat_messages, games, players
+
+
+def _emit_game_over_and_rematch(game_id, game, winner, winner_name):
+    """Emite vitória e reabre a mesma sala em lobby (mesmo id/mods)."""
+    # limpa ponteiros só se alguém não for ficar — aqui mantemos current_game
+    broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
+    emit('game_over', {
+        'winner': winner,
+        'winner_name': winner_name,
+        'message': f'🏆 {winner_name} VENCEU O JOGO!',
+        'rematch': True,
+        'same_room': True,
+        'game_id': game_id,
+    }, room=game_id)
+
+    lobby = game.reset_to_lobby(last_winner=winner)
+    players_list = [
+        {'username': p, 'name': game.player_data[p]['name']}
+        for p in game.players
+        if p in game.player_data
+    ]
+    broadcast_system_message(
+        game_id,
+        f'🔄 Sala reaberta para nova partida! (mesmo código {game_id}) — o criador pode iniciar de novo.'
+    )
+    socketio.emit('lobby_reset', {
+        'game_id': game_id,
+        'last_winner': winner,
+        'last_winner_name': winner_name,
+        'players': players_list,
+        'modifiers': lobby.get('modifiers', []),
+        'creator': game.creator,
+        'message': 'Sala pronta para jogar de novo. Aguardando o criador iniciar.',
+    }, room=game_id)
 
 @socketio.on('connect')
 def handle_connect(): pass
@@ -56,37 +90,35 @@ def handle_join_game(data):
         emit('error', {'message': 'Jogo já começou. Use espectador se quiser assistir.'})
         return
 
-    # Caso 1: jogador já existe (reconexão)
+    # Caso 1: jogador já existe (reconexão) — também no lobby pós-rematch
     if username in game.player_data:
         result = game.reconnect_player(request.sid, username)
         if result['success']:
             join_room(game_id)
-            finished = bool(getattr(game, 'finished', False))
-            winner = getattr(game, 'winner', None)
-            if finished:
-                # Não regrava current_game — isso causa o loop pós-vitória
-                clear_user_game(username, game_id)
+            update_user_game(username, game_id)
+            if not game.started:
+                broadcast_system_message(game_id, f'{username} entrou na sala')
             else:
-                update_user_game(username, game_id)
                 broadcast_system_message(game_id, f'{username} reconectou ao jogo')
             payload = dict(result) if isinstance(result, dict) else {'success': True}
             payload.update({
                 'username': username,
                 'game_started': game.started,
-                'finished': finished,
-                'winner': winner,
-                'winner_name': (
-                    game.player_data.get(winner, {}).get('name', winner) if winner else None
-                ),
+                'finished': bool(getattr(game, 'finished', False)),
+                'winner': getattr(game, 'winner', None),
+                'winner_name': None,
             })
             emit('reconnect_success', payload)
-            if finished and winner:
-                emit('game_over', {
-                    'winner': winner,
-                    'winner_name': payload['winner_name'],
-                    'message': f'🏆 {payload["winner_name"]} VENCEU O JOGO!',
-                    'already_finished': True,
-                })
+            # avisa lista de jogadores no lobby
+            if not game.started:
+                players_list = [
+                    {'username': p, 'name': game.player_data[p]['name']}
+                    for p in game.players if p in game.player_data
+                ]
+                emit('player_joined', {
+                    'username': username,
+                    'players': players_list,
+                }, room=game_id)
         else:
             emit('error', {'message': result['message']})
         return
@@ -122,17 +154,6 @@ def handle_leave_game(data):
     
     game = games[game_id]
 
-    # Partida já acabou: limpa conta e FECHA a sala (não fica fantasma no lobby)
-    if getattr(game, 'finished', False):
-        clear_user_game(username, game_id)
-        leave_room(game_id)
-        close_game(
-            game_id,
-            message=f'Sala {game_id} encerrada após o fim da partida.',
-            notify=True,
-        )
-        return
-
     if username not in game.player_data:
         # ainda limpa ponteiro da conta se sobrou
         clear_user_game(username, game_id)
@@ -161,25 +182,19 @@ def handle_leave_game(data):
             'username': username,
             'message': f'{username} saiu do jogo'
         }, room=game_id)
-    
-        # Se result for um username, é o vencedor
+
+        # Último em pé por desistência → vitória + rematch na mesma sala
         if winner:
             already = getattr(game, '_game_over_emitted', False)
             game.end_game(winner)
             if not already:
                 game._game_over_emitted = True
                 winner_name = game.player_data.get(winner, {}).get('name', winner)
-                try:
-                    clear_game_from_all_accounts(game_id)
-                except Exception:
-                    pass
-                broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
-                emit('game_over', {
-                    'winner': winner,
-                    'winner_name': winner_name,
-                    'message': f'🏆 {winner_name} VENCEU O JOGO!'
-                }, room=game_id)
-                schedule_close_finished_game(game_id)
+                _emit_game_over_and_rematch(game_id, game, winner, winner_name)
+
+        # Sala vazia (ninguém restou) → fecha
+        if game_id in games and len(games[game_id].players) == 0:
+            close_game(game_id, message=f'Sala {game_id} vazia — fechada.', notify=False)
     
     # Remover da sala
     leave_room(game_id)
@@ -434,44 +449,51 @@ def handle_reconnect_game(data):
     if result['success']:
         # Adicionar à sala
         join_room(game_id)
+        update_user_game(username, game_id)
 
-        finished = bool(getattr(game, 'finished', False))
-        winner = getattr(game, 'winner', None)
+        players_list = [
+            {'username': p, 'name': game.player_data[p]['name']}
+            for p in game.players if p in game.player_data
+        ]
 
-        # Atualizar lista de jogadores
-        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
-
-        # Não regrava current_game se a partida já acabou (loop / ↔ /game)
-        if finished:
-            clear_user_game(username, game_id)
-        else:
-            update_user_game(username, game_id)
-            emit('player_joined', {
-                'username': username,
-                'players': players_list,
-                'reconnected': True
-            }, room=game_id)
+        emit('player_joined', {
+            'username': username,
+            'players': players_list,
+            'reconnected': True
+        }, room=game_id)
+        if game.started:
             broadcast_system_message(game_id, f'{username} reconectou ao jogo')
+        else:
+            broadcast_system_message(game_id, f'{username} entrou na sala')
         
-        # Notificar o jogador reconectado
         emit('reconnect_success', {
             'username': username,
             'game_started': game.started,
-            'finished': finished,
-            'winner': winner,
-            'winner_name': (
-                game.player_data.get(winner, {}).get('name', winner) if winner else None
-            ),
+            'finished': bool(getattr(game, 'finished', False)),
+            'winner': getattr(game, 'winner', None),
+            'winner_name': None,
         })
-        # Se já acabou, manda o fim de jogo só para este socket (sem room broadcast)
-        if finished and winner:
-            emit('game_over', {
-                'winner': winner,
-                'winner_name': game.player_data.get(winner, {}).get('name', winner),
-                'message': f'🏆 {game.player_data.get(winner, {}).get("name", winner)} VENCEU O JOGO!',
-                'already_finished': True,
-            })
     else:
+        # Se não estava na partida mas a sala está em lobby, tenta entrar
+        if not game.started and username not in game.player_data:
+            if game.add_player(request.sid, username):
+                join_room(game_id)
+                update_user_game(username, game_id)
+                players_list = [
+                    {'username': p, 'name': game.player_data[p]['name']}
+                    for p in game.players if p in game.player_data
+                ]
+                broadcast_system_message(game_id, f'{username} entrou na sala')
+                emit('player_joined', {
+                    'username': username,
+                    'players': players_list,
+                }, room=game_id)
+                emit('reconnect_success', {
+                    'username': username,
+                    'game_started': False,
+                    'finished': False,
+                })
+                return
         emit('error', {'message': result['message']})
 
 @socketio.on('ping_game')
@@ -752,24 +774,8 @@ def handle_player_action(data):
             if winner and not already_emitted and getattr(game, 'finished', False):
                 game._game_over_emitted = True
                 winner_name = game.player_data[winner]['name']
-                # CRÍTICO: limpar current_game de TODOS — senão / redireciona de volta e loopa
-                try:
-                    players_list = list(game.players) + [
-                        u for u in game.player_data.keys() if u not in game.players
-                    ]
-                    clear_game_from_all_accounts(game_id, players_list)
-                    clear_game_from_all_accounts(game_id)  # qualquer conta residual
-                except Exception:
-                    import traceback
-                    traceback.print_exc()
-                broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
-                emit('game_over', {
-                    'winner': winner,
-                    'winner_name': winner_name,
-                    'message': f'🏆 {winner_name} VENCEU O JOGO!'
-                }, room=game_id)
-                # Fecha a sala sozinha (~12s) — não fica "ativa" bugada no lobby
-                schedule_close_finished_game(game_id)
+                # Mantém a sala: modal de vitória + reset para lobby (mesmo id/mods)
+                _emit_game_over_and_rematch(game_id, game, winner, winner_name)
         else:
             error_msg = result['message'] if result else 'Ação inválida'
             emit('action_error', {
