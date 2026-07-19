@@ -72,29 +72,19 @@ class Game:
                 return socket_id
         return None
     
-    def add_player(self, socket_id, username):
-        """Adiciona um jogador ao jogo usando username como identificador"""
-        if len(self.players) >= self.max_players or self.started:
-            return False
-        
-        # Verificar se username já está no jogo
-        if username in self.players:
-            return False
-        
-        self.players.append(username)
-        self.socket_to_username[socket_id] = username
-        
-        # Mão inicial (modificadores: empty_hand / big_hand)
+    def _make_player_state(self, username, socket_id=None, deal_hand=True):
+        """Estado limpo de um jogador (lobby / rematch)."""
         hand = []
-        for _ in range(getattr(self, 'starting_hand_size', 5)):
-            if self.deck:
-                hand.append(self.deck.pop())
-        
+        if deal_hand:
+            for _ in range(getattr(self, 'starting_hand_size', 5)):
+                if self.deck:
+                    hand.append(self.deck.pop())
+
         atk_n = getattr(self, 'attack_slot_count', 3)
         def_n = getattr(self, 'defense_slot_count', 6)
         start_life = getattr(self, 'starting_life', 1200)
 
-        self.player_data[username] = {
+        return {
             'name': username,
             'username': username,
             'socket_id': socket_id,
@@ -117,12 +107,108 @@ class Game:
             'profecia_rodadas': 0,
             'dead': False,
             'observer': False,
+            'spectator': False,
             'free_swap_used': False,
             'first_hit_reduced': False,
             'attacked_this_turn': False,
         }
+
+    def add_player(self, socket_id, username):
+        """Adiciona um jogador ao jogo usando username como identificador"""
+        # Lobby (ou pós-rematch): started False permite entrar
+        if len(self.players) >= self.max_players or self.started:
+            return False
+        
+        # Verificar se username já está no jogo
+        if username in self.players:
+            return False
+        
+        self.players.append(username)
+        self.socket_to_username[socket_id] = username
+        self.player_data[username] = self._make_player_state(username, socket_id, deal_hand=True)
         
         return True
+
+    def reset_to_lobby(self, last_winner=None):
+        """
+        Após o fim da partida: volta a sala para o lobby (mesma id, mods, creator).
+        Mantém jogadores e sockets; recria baralho e estados.
+        """
+        last_winner = last_winner or self.winner
+        # preserva espectadores
+        spectators = {
+            u: dict(d)
+            for u, d in (self.player_data or {}).items()
+            if d and d.get('spectator')
+        }
+        # quem ainda está na lista de jogadores
+        active = list(self.players)
+        sockets = dict(self.socket_to_username)
+
+        self.started = False
+        self.finished = False
+        self.finished_at = None
+        self.winner = None
+        self.last_winner = last_winner
+        self._game_over_emitted = False
+        self.deck = create_deck(self.modifiers)
+        self.graveyard = []
+        self.current_turn = 0
+        self.time_of_day = "day"
+        self.time_cycle = 0
+        self.turn_actions_used = {}
+        self.turn_extra_actions = {}
+        self.last_spell_id = None
+
+        self.first_round = True
+        self.players_acted = set()
+        self.attacks_blocked = True
+        if 'no_first_round' in self.modifiers:
+            self.first_round = False
+            self.attacks_blocked = False
+
+        self.player_data = {}
+        self.socket_to_username = {}
+
+        for username in active:
+            # recupera socket se ainda mapeado
+            sock = None
+            for sid, uname in sockets.items():
+                if uname == username:
+                    sock = sid
+                    break
+            if sock is not None:
+                self.socket_to_username[sock] = username
+            self.player_data[username] = self._make_player_state(
+                username, sock, deal_hand=True
+            )
+
+        # reanexa espectadores
+        for uname, data in spectators.items():
+            if uname in self.player_data:
+                continue
+            sock = None
+            for sid, u in sockets.items():
+                if u == uname:
+                    sock = sid
+                    break
+            if sock is not None:
+                self.socket_to_username[sock] = uname
+            data = dict(data)
+            data['socket_id'] = sock
+            data['spectator'] = True
+            self.player_data[uname] = data
+
+        self.players = [p for p in active if p in self.player_data]
+        return {
+            'last_winner': last_winner,
+            'players': list(self.players),
+            'started': self.started,
+            'finished': self.finished,
+            'modifiers': list(self.modifiers or []),
+            'game_id': self.game_id,
+            'creator': self.creator,
+        }
     def add_spectator(self, socket_id, username):
         """Adiciona um espectador ao jogo"""
         if username in self.players or username in self.player_data:
