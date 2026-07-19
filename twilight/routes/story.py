@@ -1,11 +1,11 @@
 """API de saves do modo história."""
 import json
 import os
-from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
 from twilight.auth.service import load_accounts, login_required, save_accounts
+from twilight.config import now_sp_iso
 from twilight.storage.story_saves import get_user_save_file
 
 bp = Blueprint('story', __name__)
@@ -31,14 +31,14 @@ def api_save_game(username):
         # Adicionar metadados da conta
         accounts = load_accounts()
         if username in accounts:
-            accounts[username]['last_save_time'] = datetime.utcnow().isoformat()
+            accounts[username]['last_save_time'] = now_sp_iso()
             accounts[username]['last_save_character'] = save_data.get('character', {}).get('name')
             save_accounts(accounts)
         
         return jsonify({
             'success': True, 
             'message': f'Jogo salvo na nuvem!',
-            'saved_at': datetime.utcnow().isoformat(),
+            'saved_at': now_sp_iso(),
             'character_name': save_data.get('character', {}).get('name')
         })
     except Exception as e:
@@ -77,13 +77,13 @@ def api_load_game(username):
         # Atualizar metadados da conta
         accounts = load_accounts()
         if username in accounts:
-            accounts[username]['last_load_time'] = datetime.utcnow().isoformat()
+            accounts[username]['last_load_time'] = now_sp_iso()
             save_accounts(accounts)
         
         return jsonify({
             'success': True, 
             'save_data': save_data,
-            'loaded_at': datetime.utcnow().isoformat(),
+            'loaded_at': now_sp_iso(),
             'character_name': save_data.get('character', {}).get('name')
         })
     except Exception as e:
