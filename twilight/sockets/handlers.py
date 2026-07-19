@@ -16,6 +16,7 @@ from twilight.auth.service import (
 from twilight.extensions import socketio
 from twilight.game.chat import add_chat_message, broadcast_system_message, censor_text
 from twilight.game.engine import Game
+from twilight.game.session import schedule_close_finished_game, close_game
 from twilight.state import chat_messages, games, players
 
 @socketio.on('connect')
@@ -120,8 +121,21 @@ def handle_leave_game(data):
         return
     
     game = games[game_id]
-    
+
+    # Partida já acabou: limpa conta e FECHA a sala (não fica fantasma no lobby)
+    if getattr(game, 'finished', False):
+        clear_user_game(username, game_id)
+        leave_room(game_id)
+        close_game(
+            game_id,
+            message=f'Sala {game_id} encerrada após o fim da partida.',
+            notify=True,
+        )
+        return
+
     if username not in game.player_data:
+        # ainda limpa ponteiro da conta se sobrou
+        clear_user_game(username, game_id)
         emit('error', {'message': 'Jogador não encontrado'})
         return
     
@@ -130,50 +144,42 @@ def handle_leave_game(data):
     broadcast_system_message(game_id, f'{username} saiu da sala')
     
     # Limpar jogo atual da conta do usuário
-    accounts = load_accounts()
-    if username in accounts and accounts[username].get('current_game') == game_id:
-        accounts[username]['current_game'] = None
-        save_accounts(accounts)
+    clear_user_game(username, game_id)
     
     if was_creator:
-        # Criador saiu - fechar a sala e notificar todos
-        emit('room_closed', {
-            'message': f'O criador da sala saiu. A sala {game_id} foi fechada.'
-        }, room=game_id)
-        
-        # Remover o jogo
-        del games[game_id]
-        
-        # Notificar todos para voltar ao menu
+        close_game(
+            game_id,
+            message=f'O criador da sala saiu. A sala {game_id} foi fechada.',
+            notify=True,
+        )
         emit('force_redirect', {
             'url': '/',
             'message': 'A sala foi fechada porque o criador saiu.'
         }, room=game_id)
     else:
-        # Apenas notificar que um jogador saiu
         emit('player_left', {
             'username': username,
             'message': f'{username} saiu do jogo'
         }, room=game_id)
     
-    # Se result for um username, é o vencedor
-    if winner and not was_creator:
-        # remove_player já pode ter marcado finished; emite game_over uma vez
-        already = getattr(game, '_game_over_emitted', False)
-        game.end_game(winner)
-        if not already:
-            game._game_over_emitted = True
-            winner_name = game.player_data.get(winner, {}).get('name', winner)
-            try:
-                clear_game_from_all_accounts(game_id)
-            except Exception:
-                pass
-            broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
-            emit('game_over', {
-                'winner': winner,
-                'winner_name': winner_name,
-                'message': f'🏆 {winner_name} VENCEU O JOGO!'
-            }, room=game_id)
+        # Se result for um username, é o vencedor
+        if winner:
+            already = getattr(game, '_game_over_emitted', False)
+            game.end_game(winner)
+            if not already:
+                game._game_over_emitted = True
+                winner_name = game.player_data.get(winner, {}).get('name', winner)
+                try:
+                    clear_game_from_all_accounts(game_id)
+                except Exception:
+                    pass
+                broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
+                emit('game_over', {
+                    'winner': winner,
+                    'winner_name': winner_name,
+                    'message': f'🏆 {winner_name} VENCEU O JOGO!'
+                }, room=game_id)
+                schedule_close_finished_game(game_id)
     
     # Remover da sala
     leave_room(game_id)
@@ -762,6 +768,8 @@ def handle_player_action(data):
                     'winner_name': winner_name,
                     'message': f'🏆 {winner_name} VENCEU O JOGO!'
                 }, room=game_id)
+                # Fecha a sala sozinha (~12s) — não fica "ativa" bugada no lobby
+                schedule_close_finished_game(game_id)
         else:
             error_msg = result['message'] if result else 'Ação inválida'
             emit('action_error', {
