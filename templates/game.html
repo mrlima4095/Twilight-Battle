@@ -918,6 +918,14 @@ body::before {
             document.getElementById('waiting-room').style.display = 'none';
             document.getElementById('player-area').style.display = 'block';
             gameStarted = true;
+            gameFinished = false;
+            gameOverHandled = false;
+            saveSession();
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Começar jogo';
+            }
             requestGameState();
             
             Swal.fire({
@@ -926,7 +934,9 @@ body::before {
                 text: 'Que comece a batalha!',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#ffd700'
+                confirmButtonColor: '#ffd700',
+                timer: 2000,
+                showConfirmButton: true
             });
         });
         // | (Desconectado)
@@ -1423,57 +1433,103 @@ body::before {
                 window.location.href = data.url || '/';
             });
         });
-        // | (Fim de Jogo) — uma vez só (sem loop com reconnect)
+        // | (Fim de Jogo) — modal + volta pro lobby da MESMA sala (rematch)
+        function showWaitingLobbyUI(players) {
+            gameStarted = false;
+            gameFinished = false;
+            gameOverHandled = false;
+            try {
+                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                isTimerRunning = false;
+            } catch (e) {}
+            const waiting = document.getElementById('waiting-room');
+            const playerArea = document.getElementById('player-area');
+            const opponents = document.getElementById('opponents-area');
+            if (waiting) waiting.style.display = 'block';
+            if (playerArea) playerArea.style.display = 'none';
+            if (opponents) opponents.innerHTML = '';
+            if (players) {
+                updatePlayersList(players);
+            }
+            saveSession();
+            setTimeout(checkIfCanStart, 300);
+            requestGameState();
+        }
+
         function handleGameOver(data) {
             if (gameOverHandled) {
                 return;
             }
             gameOverHandled = true;
             gameFinished = true;
-            clearSession();
 
-            // para timer / polling que reabre estado e re-dispara UI
             try {
                 if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
                 isTimerRunning = false;
             } catch (e) {}
 
-            // Limpa current_game no servidor
-            try {
-                fetch('/api/clear-current-game', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ game_id: gameId })
-                }).catch(() => {});
-            } catch (e) {}
-
             const winnerName = (data && (data.winner_name || data.winner)) || 'Alguém';
+            const rematch = !data || data.rematch !== false; // padrão: mesma sala
+
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
-                html: `<h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>`,
+                html: `
+                    <h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>
+                    <p style="color:#ccc;margin-top:12px;">A sala <strong style="color:#ffd700;">${gameId}</strong> continua aberta com os mesmos modificadores.</p>
+                `,
                 icon: 'success',
                 background: '#1a1a2e',
                 color: '#fff',
-                confirmButtonColor: '#ffd700',
-                confirmButtonText: 'Voltar ao início',
+                showDenyButton: true,
+                confirmButtonColor: '#4CAF50',
+                denyButtonColor: '#666',
+                confirmButtonText: rematch ? '🔄 Continuar na sala' : 'OK',
+                denyButtonText: '🚪 Sair da sala',
                 allowOutsideClick: false,
                 allowEscapeKey: false
-            }).then(() => {
-                // Avisa o server que saímos da sala finished → fecha a sala morta
-                try {
-                    if (socket && socket.connected) {
-                        socket.emit('leave_game', { game_id: gameId });
-                    }
-                } catch (e) {}
-                // força menu limpo (sem current_game reabrindo a sala)
-                setTimeout(function() {
-                    window.location.replace('/?from=game_over');
-                }, 150);
+            }).then((result) => {
+                if (result.isDenied) {
+                    clearSession();
+                    try {
+                        fetch('/api/clear-current-game', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ game_id: gameId })
+                        }).catch(() => {});
+                        if (socket && socket.connected) {
+                            socket.emit('leave_game', { game_id: gameId });
+                        }
+                    } catch (e) {}
+                    setTimeout(function() {
+                        window.location.replace('/');
+                    }, 150);
+                    return;
+                }
+                // Continuar na mesma sala → lobby de espera
+                showWaitingLobbyUI();
             });
         }
         socket.on('game_over', function(data) {
             handleGameOver(data || {});
+        });
+        socket.on('lobby_reset', function(data) {
+            console.log('Lobby reset (rematch):', data);
+            // servidor já reabriu a sala — UI de espera
+            if (data && data.players) {
+                showWaitingLobbyUI(data.players);
+            } else {
+                showWaitingLobbyUI();
+            }
+            // se o modal de vitória ainda não foi visto, deixa; senão só garante lobby
+            if (data && data.message) {
+                // toast leve no chat já vem do system message
+            }
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Começar jogo';
+            }
         });
         // |
         // |
