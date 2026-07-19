@@ -30,6 +30,7 @@ class Game:
         self.graveyard = []
         self.started = False
         self.finished = False  # True quando há vencedor — trava ações
+        self.finished_at = None  # timestamp do fim (para cleanup da sala)
         self.winner = None
         self.current_turn = 0  # Índice na lista players
         self.time_of_day = "day"
@@ -195,6 +196,9 @@ class Game:
         alive_players = [p for p in self.players if not self.player_data[p].get('dead', False)]
         if len(alive_players) == 1:
             self.finished = True
+            if not getattr(self, 'finished_at', None):
+                import time as _time
+                self.finished_at = _time.time()
             self.winner = alive_players[0]
             return True, was_creator, alive_players[0]
         
@@ -1089,11 +1093,17 @@ class Game:
 
         if len(alive_players) == 1:
             self.finished = True
+            if not self.finished_at:
+                import time as _time
+                self.finished_at = _time.time()
             self.winner = alive_players[0]
             return self.winner
         if len(alive_players) == 0 and self.players:
             # empate técnico — ninguém vivo
             self.finished = True
+            if not self.finished_at:
+                import time as _time
+                self.finished_at = _time.time()
             self.winner = None
             return None
         return None
@@ -1105,6 +1115,9 @@ class Game:
         elif not self.winner:
             self.check_winner()
         self.finished = True
+        if not self.finished_at:
+            import time as _time
+            self.finished_at = _time.time()
         return self.winner
     
     def has_daylight_protection(self, player, card=None):
