@@ -111,26 +111,16 @@ def check_auth():
     accounts = load_accounts()
     current_game = accounts.get(username, {}).get('current_game')
     
-    # Verificar se o jogo ainda existe E não terminou
+    # Verificar se o jogo ainda existe (lobby pós-rematch conta como ativo)
     if current_game and current_game in games:
         game = games[current_game]
-        if getattr(game, 'finished', False):
-            # Partida acabou: limpar ponteiro (evita loop / → /game → /)
-            if username in accounts:
-                accounts[username]['current_game'] = None
-                save_accounts(accounts)
-            return jsonify({
-                'authenticated': True,
-                'username': username,
-                'current_game': None,
-                'game_exists': False,
-                'game_finished': True,
-            })
         return jsonify({
             'authenticated': True,
             'username': username,
             'current_game': current_game,
-            'game_exists': True
+            'game_exists': True,
+            'game_started': bool(getattr(game, 'started', False)),
+            'game_finished': bool(getattr(game, 'finished', False)),
         })
     else:
         # Se o jogo não existe mais, limpar da conta
