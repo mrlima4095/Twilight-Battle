@@ -54,9 +54,29 @@ def handle_join_game(data):
         if result['success']:
             join_room(game_id)
             update_user_game(username, game_id)
-            # Avisa a sala que o jogador reconectou (sem duplicar na lista)
-            broadcast_system_message(game_id, f'{username} reconectou ao jogo')
-            emit('reconnect_success', result)
+            finished = bool(getattr(game, 'finished', False))
+            winner = getattr(game, 'winner', None)
+            if not finished:
+                # Avisa a sala que o jogador reconectou (sem duplicar na lista)
+                broadcast_system_message(game_id, f'{username} reconectou ao jogo')
+            payload = dict(result) if isinstance(result, dict) else {'success': True}
+            payload.update({
+                'username': username,
+                'game_started': game.started,
+                'finished': finished,
+                'winner': winner,
+                'winner_name': (
+                    game.player_data.get(winner, {}).get('name', winner) if winner else None
+                ),
+            })
+            emit('reconnect_success', payload)
+            if finished and winner:
+                emit('game_over', {
+                    'winner': winner,
+                    'winner_name': payload['winner_name'],
+                    'message': f'🏆 {payload["winner_name"]} VENCEU O JOGO!',
+                    'already_finished': True,
+                })
         else:
             emit('error', {'message': result['message']})
         return
@@ -129,13 +149,18 @@ def handle_leave_game(data):
     
     # Se result for um username, é o vencedor
     if winner and not was_creator:
-        winner_name = game.player_data[winner]['name']
-        broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
-        emit('game_over', { 
-            'winner': winner,
-            'winner_name': winner_name,
-            'message': f'🏆 {winner_name} VENCEU O JOGO!'
-        }, room=game_id)
+        # remove_player já pode ter marcado finished; emite game_over uma vez
+        already = getattr(game, '_game_over_emitted', False)
+        game.end_game(winner)
+        if not already:
+            game._game_over_emitted = True
+            winner_name = game.player_data.get(winner, {}).get('name', winner)
+            broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
+            emit('game_over', {
+                'winner': winner,
+                'winner_name': winner_name,
+                'message': f'🏆 {winner_name} VENCEU O JOGO!'
+            }, room=game_id)
     
     # Remover da sala
     leave_room(game_id)
@@ -167,6 +192,13 @@ def handle_get_game_state(data):
     state = {
         'game_id': game_id,
         'started': game.started,
+        'finished': bool(getattr(game, 'finished', False)),
+        'winner': getattr(game, 'winner', None),
+        'winner_name': (
+            game.player_data.get(game.winner, {}).get('name')
+            if getattr(game, 'winner', None) and game.winner in game.player_data
+            else getattr(game, 'winner', None)
+        ),
         'time_of_day': game.time_of_day,
         'time_cycle': game.time_cycle,
         'current_turn': current_turn_username,
@@ -390,18 +422,36 @@ def handle_reconnect_game(data):
         # Atualizar lista de jogadores
         players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
         
-        # Notificar todos
-        emit('player_joined', {
-            'username': username,
-            'players': players_list,
-            'reconnected': True
-        }, room=game_id)
+        finished = bool(getattr(game, 'finished', False))
+        winner = getattr(game, 'winner', None)
+
+        # Não spammar "X reconectou" se a partida já acabou
+        if not finished:
+            emit('player_joined', {
+                'username': username,
+                'players': players_list,
+                'reconnected': True
+            }, room=game_id)
+            broadcast_system_message(game_id, f'{username} reconectou ao jogo')
         
         # Notificar o jogador reconectado
         emit('reconnect_success', {
             'username': username,
-            'game_started': game.started
+            'game_started': game.started,
+            'finished': finished,
+            'winner': winner,
+            'winner_name': (
+                game.player_data.get(winner, {}).get('name', winner) if winner else None
+            ),
         })
+        # Se já acabou, manda o fim de jogo só para este socket (sem room broadcast)
+        if finished and winner:
+            emit('game_over', {
+                'winner': winner,
+                'winner_name': game.player_data.get(winner, {}).get('name', winner),
+                'message': f'🏆 {game.player_data.get(winner, {}).get("name", winner)} VENCEU O JOGO!',
+                'already_finished': True,
+            })
     else:
         emit('error', {'message': result['message']})
 
@@ -505,6 +555,18 @@ def handle_player_action(data):
     if not game.started:
         emit('error', {'message': 'O jogo ainda não começou'})
         return
+
+    # Partida já acabou — não processar mais ações (evita spam de game_over)
+    if getattr(game, 'finished', False):
+        emit('action_error', {
+            'message': 'A partida já terminou.',
+            'player_name': username,
+            'action': action,
+            'timestamp': time.strftime('%H:%M:%S'),
+            'game_finished': True,
+            'winner': getattr(game, 'winner', None),
+        })
+        return
     
     if username not in game.player_data:
         emit('error', {'message': 'Jogador não encontrado'})
@@ -540,7 +602,23 @@ def handle_player_action(data):
             if result and result.get('success'):
                 target_name = result.get('target_name', 'um oponente')
                 damage = result.get('damage_to_player', 0)
-                log_message = f"⚔️ {player_name} atacou {target_name} causando {damage} de dano"
+                total = result.get('total_attack', damage)
+                life_left = result.get('target_life')
+                if result.get('attack_cancelled'):
+                    log_message = f"⚔️ {player_name} atacou {target_name}, mas o ataque foi cancelado!"
+                elif result.get('damage_reflected'):
+                    log_message = (
+                        f"🪞 {player_name} atacou {target_name} e o dano foi refletido "
+                        f"({result.get('reflected_damage', total)})!"
+                    )
+                else:
+                    life_txt = f" → ❤️{life_left}" if life_left is not None else ""
+                    log_message = (
+                        f"⚔️ {player_name} atacou {target_name} "
+                        f"(poder {total}, dano {damage}){life_txt}"
+                    )
+                # Sempre no chat da sala (todos veem sem Swal)
+                broadcast_system_message(game_id, log_message)
 
         elif action == 'equip_item':
             result = game.equip_item_to_creature(player_name, params['item_card_id'], params['creature_card_id'])
@@ -649,9 +727,13 @@ def handle_player_action(data):
                 'timestamp': timestamp
             }, room=game_id)
             
+            # Só emite game_over UMA vez por partida
+            already_emitted = getattr(game, '_game_over_emitted', False)
             winner = game.check_winner()
-            if winner:
+            if winner and not already_emitted and getattr(game, 'finished', False):
+                game._game_over_emitted = True
                 winner_name = game.player_data[winner]['name']
+                broadcast_system_message(game_id, f'🏆 {winner_name} VENCEU O JOGO! 🏆')
                 emit('game_over', {
                     'winner': winner,
                     'winner_name': winner_name,
