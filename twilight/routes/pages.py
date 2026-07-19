@@ -1,7 +1,13 @@
 """Páginas HTML principais."""
 from flask import Blueprint, redirect, render_template
 
-from twilight.auth.service import get_current_user, load_accounts, login_required, update_user_game
+from twilight.auth.service import (
+    clear_user_game,
+    get_current_user,
+    load_accounts,
+    login_required,
+    update_user_game,
+)
 from twilight.state import games
 
 bp = Blueprint('pages', __name__)
@@ -14,7 +20,15 @@ def index():
         accounts = load_accounts()
         current_game = accounts.get(username, {}).get('current_game')
         if current_game and current_game in games:
-            return render_template('game.html', game_id=current_game, username=username)
+            game = games[current_game]
+            # Partida finalizada: não reabrir a tela do jogo (loop pós-vitória)
+            if getattr(game, 'finished', False):
+                clear_user_game(username, current_game)
+            else:
+                return render_template('game.html', game_id=current_game, username=username)
+        elif current_game:
+            # sala sumiu da memória
+            clear_user_game(username, current_game)
     else:
         return render_template('auth.html')
     return render_template('index.html')
@@ -48,6 +62,13 @@ def journal():
 @login_required
 def game(username, game_id):
     if game_id not in games:
+        clear_user_game(username, game_id)
+        return redirect("/")
+
+    game_obj = games[game_id]
+    # Partida já acabou: não regrava current_game (causa loop com /)
+    if getattr(game_obj, 'finished', False):
+        clear_user_game(username, game_id)
         return redirect("/")
 
     update_user_game(username, game_id)
