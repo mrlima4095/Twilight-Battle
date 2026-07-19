@@ -1,6 +1,4 @@
 """Registro, login e sessão."""
-from datetime import datetime
-
 from flask import Blueprint, jsonify, make_response, request
 
 from twilight.auth.service import (
@@ -12,7 +10,7 @@ from twilight.auth.service import (
     save_accounts,
     verify_password,
 )
-from twilight.config import JWT_EXPIRATION_HOURS
+from twilight.config import JWT_EXPIRATION_HOURS, now_sp_iso
 from twilight.state import games
 
 bp = Blueprint('auth', __name__)
@@ -35,7 +33,7 @@ def register():
     # Criar nova conta
     accounts[username] = {
         'password': hash_password(password),
-        'created_at': datetime.utcnow().isoformat(),
+        'created_at': now_sp_iso(),
         'current_game': None  # Nenhum jogo ativo
     }
     
