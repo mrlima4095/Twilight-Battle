@@ -1438,7 +1438,7 @@ body::before {
                 isTimerRunning = false;
             } catch (e) {}
 
-            // Limpa current_game no servidor (não usar leave_game — remove jogador / fecha sala)
+            // Limpa current_game no servidor
             try {
                 fetch('/api/clear-current-game', {
                     method: 'POST',
@@ -1460,8 +1460,16 @@ body::before {
                 allowOutsideClick: false,
                 allowEscapeKey: false
             }).then(() => {
+                // Avisa o server que saímos da sala finished → fecha a sala morta
+                try {
+                    if (socket && socket.connected) {
+                        socket.emit('leave_game', { game_id: gameId });
+                    }
+                } catch (e) {}
                 // força menu limpo (sem current_game reabrindo a sala)
-                window.location.replace('/?from=game_over');
+                setTimeout(function() {
+                    window.location.replace('/?from=game_over');
+                }, 150);
             });
         }
         socket.on('game_over', function(data) {
