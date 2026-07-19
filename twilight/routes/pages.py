@@ -26,24 +26,21 @@ def index():
             # sala sumiu da memória
             clear_user_game(username, current_game)
     else:
-        return render_template('auth.html')
+        return render_template('security/auth.html')
     return render_template('index.html')
 
 
 @bp.route('/rules')
-def rules():
-    return render_template('rules.html')
-
+def rules(): return render_template('game/docs/rules.html')
 
 @bp.route('/help')
-def help_page():
-    return render_template('help.html')
+def help_page(): return render_template('game/docs/help.html')
 
 
 @bp.route('/story')
 @login_required
 def story(username):
-    return render_template('story.html')
+    return render_template('game/story.html')
 
 
 @bp.route('/journal')
@@ -51,7 +48,7 @@ def journal():
     username = get_current_user()
     if not username:
         return redirect('/')
-    return render_template('journal.html', username=username)
+    return render_template('web/journal.html', username=username)
 
 
 @bp.route('/game/<game_id>')
@@ -64,7 +61,7 @@ def game(username, game_id):
     # Rematch: sala continua existindo (lobby ou partida)
     update_user_game(username, game_id)
 
-    return render_template('game.html', game_id=game_id, username=username)
+    return render_template('game/game.html', game_id=game_id, username=username)
 
 
 @bp.route('/spectate/<game_id>')
@@ -73,4 +70,4 @@ def spectate_game(username, game_id):
     if game_id not in games:
         return redirect("/")
 
-    return render_template('spectate.html', game_id=game_id, username=username)
+    return render_template('game/spectate.html', game_id=game_id, username=username)
