@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Persistência: no Coolify, volume em /app/data
-# data/accounts.json, data/journal.json, data/admin_levels.json, data/saves/
+# data/database.db (SQLite: accounts + journal), data/saves/, JSON legado migrado auto
 RUN mkdir -p /app/data/saves
 VOLUME ["/app/data"]
 
