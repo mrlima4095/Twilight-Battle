@@ -1,0 +1,4558 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle — Sala {{ game_id }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+
+:root {
+  --bg-0: #07060f;
+  --bg-1: #0e0b1a;
+  --bg-2: #16122a;
+  --panel: rgba(18, 14, 36, 0.72);
+  --panel-solid: #141026;
+  --panel-2: rgba(28, 22, 52, 0.85);
+  --border: rgba(255, 215, 120, 0.18);
+  --border-strong: rgba(255, 215, 120, 0.42);
+  --gold: #f0c14b;
+  --gold-2: #ffb347;
+  --gold-dim: rgba(240, 193, 75, 0.15);
+  --cyan: #5ee7ff;
+  --violet: #9b7bff;
+  --magenta: #ff5ec8;
+  --rose: #ff6b8a;
+  --green: #3ddc97;
+  --red: #ff4d6d;
+  --text: #f4f0ff;
+  --muted: #a39bb8;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
+  --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(900px 500px at 50% -10%, rgba(155,123,255,.22), transparent 55%),
+    radial-gradient(700px 400px at 100% 40%, rgba(255,94,200,.08), transparent 50%),
+    radial-gradient(600px 400px at 0% 80%, rgba(94,231,255,.07), transparent 45%),
+    linear-gradient(180deg, #080612, #0c0a18 40%, #100c1c);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,.4), transparent),
+    radial-gradient(1px 1px at 75% 15%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.2px 1.2px at 55% 70%, rgba(240,193,75,.4), transparent),
+    radial-gradient(1px 1px at 30% 85%, rgba(94,231,255,.35), transparent);
+  opacity: .45;
+}
+
+.game-container {
+  position: relative; z-index: 1;
+  max-width: 1280px; margin: 0 auto;
+  padding: 14px 14px 120px;
+  min-height: 100vh;
+}
+
+/* ── Header HUD ── */
+.game-header {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  padding: 12px 16px; margin-bottom: 14px;
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+.game-title {
+  font-family: var(--font-display); font-size: 1.25rem; font-weight: 700;
+  background: linear-gradient(120deg, #fff6d0, var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.game-title a {
+  font-family: var(--font-ui); font-size: .75rem !important; margin-left: 0 !important;
+  color: var(--muted) !important; text-decoration: none !important;
+  padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1);
+  transition: .2s;
+}
+.game-title a:hover { color: var(--gold) !important; border-color: var(--border); }
+.game-info {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1;
+}
+.time-indicator, .turn-indicator, .session-indicator {
+  padding: 7px 12px; border-radius: 999px; font-size: .82rem; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.08); background: rgba(0,0,0,.3);
+}
+.time-indicator.time-day {
+  background: rgba(255, 196, 80, .12); color: #ffd27a; border-color: rgba(255,196,80,.3);
+  box-shadow: 0 0 16px rgba(255,196,80,.12);
+}
+.time-indicator.time-night {
+  background: rgba(120, 140, 255, .12); color: #b0c0ff; border-color: rgba(120,140,255,.3);
+  box-shadow: 0 0 16px rgba(120,140,255,.12);
+}
+.turn-indicator { color: var(--muted); }
+.turn-indicator.my-turn {
+  background: rgba(61,220,151,.12); color: var(--green); border-color: rgba(61,220,151,.4);
+  animation: pulse-glow 2s ease infinite;
+}
+#session-indicator {
+  background: rgba(61,220,151,.15) !important; color: var(--green) !important;
+  border: 1px solid rgba(61,220,151,.35);
+}
+.header-actions { margin-left: auto; display: flex; gap: 8px; }
+#leave-game-btn {
+  background: linear-gradient(135deg, #ff4d6d, #c9184a) !important;
+  color: #fff !important; padding: 10px 16px !important; border: none !important;
+  border-radius: 12px !important; font-weight: 700 !important; cursor: pointer !important;
+  font-family: inherit; box-shadow: 0 6px 18px rgba(255,77,109,.25);
+  transition: .2s;
+}
+#leave-game-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+/* ── Waiting room ── */
+.waiting-room {
+  text-align: center; padding: 48px 28px; margin: 40px auto; max-width: 520px;
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow);
+  animation: fade-up .5s ease;
+}
+@keyframes fade-up { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(61,220,151,.0); } 50% { box-shadow: 0 0 20px rgba(61,220,151,.25); } }
+.waiting-room h2 {
+  font-family: var(--font-display); color: var(--gold); font-size: 1.6rem; margin-bottom: 10px;
+}
+.waiting-room p { color: var(--muted); margin: 8px 0; }
+.waiting-room strong {
+  color: var(--gold); font-family: var(--font-display); letter-spacing: .12em;
+  font-size: 1.3rem; padding: 4px 12px; border-radius: 8px;
+  background: var(--gold-dim); border: 1px solid var(--border);
+}
+.players-list {
+  margin: 22px 0; padding: 16px; border-radius: 14px;
+  background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);
+  text-align: left;
+}
+.players-list p { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+#player-names { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+#player-names li {
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(155,123,255,.08); border: 1px solid rgba(155,123,255,.2);
+  color: var(--text); font-weight: 600;
+}
+.start-btn {
+  margin-top: 18px; padding: 14px 28px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; font-family: inherit; font-size: 1.05rem; font-weight: 800;
+  cursor: pointer; box-shadow: 0 10px 30px rgba(240,193,75,.3);
+  transition: .2s;
+}
+.start-btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
+
+/* ── Opponents (horizontal, compacto) ── */
+.opponents-area {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240,193,75,.35) transparent;
+}
+.opponents-area::-webkit-scrollbar { height: 6px; }
+.opponents-area::-webkit-scrollbar-thumb {
+  background: rgba(240,193,75,.35); border-radius: 99px;
+}
+.opponent-card {
+  flex: 0 0 auto;
+  min-width: 280px;
+  max-width: 360px;
+  background: var(--panel-2);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  transition: border-color .2s;
+}
+.opponent-card:hover { border-color: rgba(255,94,200,.3); }
+.opponent-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 6px; gap: 8px;
+}
+.opponent-name { font-weight: 700; color: var(--text); font-size: .9rem; }
+.opponent-life { color: var(--rose); font-weight: 700; font-size: .85rem; white-space: nowrap; }
+.opponent-stats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.stat-badge {
+  font-size: .7rem; padding: 3px 7px; border-radius: 999px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--muted);
+}
+.opponent-card .bases-section {
+  margin-bottom: 6px;
+}
+.opponent-card .bases-section small {
+  display: block;
+  font-size: .68rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.opponent-card .bases-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+  overflow-x: auto;
+}
+.opponent-card .base-slot {
+  width: 56px;
+  height: 68px;
+  min-height: 68px;
+  min-width: 56px;
+  max-width: 56px;
+  padding: 3px 2px;
+  border-radius: 10px;
+  font-size: .65rem;
+  flex-shrink: 0;
+}
+.opponent-card .base-slot .slot-emoji { font-size: 1.15rem; line-height: 1; }
+.opponent-card .base-slot .slot-name { display: none; }
+.opponent-card .base-slot .slot-stats { font-size: .6rem; line-height: 1.15; }
+.opponent-card .base-slot .equipped-items { font-size: .55rem; }
+.opponent-card .action-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  font-size: .78rem;
+}
+
+/* ── Player board ── */
+.player-area {
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 20px;
+  padding: 18px; box-shadow: var(--shadow);
+}
+.player-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 16px;
+  padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.player-header h2 {
+  font-family: var(--font-display); color: var(--gold); font-size: 1.25rem;
+}
+.player-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+.stat {
+  padding: 8px 12px; border-radius: 10px; font-size: .88rem; font-weight: 600;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.06);
+}
+.stat:nth-child(1) { color: #ff8fa3; border-color: rgba(255,77,109,.25); }
+.stat:nth-child(2) { color: var(--cyan); border-color: rgba(94,231,255,.25); }
+.stat:nth-child(3) { color: var(--violet); border-color: rgba(155,123,255,.25); }
+
+.bases-section { margin-bottom: 12px; }
+.bases-section h3 {
+  font-size: .8rem; color: var(--muted); font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px;
+}
+.bases-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+/* Slots fixos — nada vaza do retângulo */
+.base-slot {
+  width: 72px;
+  height: 88px;
+  min-width: 72px;
+  max-width: 72px;
+  min-height: 88px;
+  max-height: 88px;
+  border-radius: 12px;
+  border: 1.5px dashed rgba(255,255,255,.12);
+  background: rgba(0,0,0,.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 4px 3px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+  position: relative;
+  text-align: center;
+  font-size: .7rem;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.base-slot.attack { border-color: rgba(255,77,109,.28); }
+.base-slot.defense { border-color: rgba(91,140,255,.28); }
+.base-slot:hover {
+  border-style: solid; border-color: var(--border-strong);
+  background: rgba(240,193,75,.08);
+}
+.base-slot.has-card {
+  border-style: solid; border-color: rgba(240,193,75,.45);
+  background: linear-gradient(160deg, rgba(40,30,70,.95), rgba(20,15,40,.98));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.base-slot.selected-for-move, .base-slot.selected-for-equip {
+  border-color: var(--cyan) !important; box-shadow: 0 0 0 2px rgba(94,231,255,.35);
+}
+.base-slot.creature-highlight {
+  border-color: var(--green) !important; box-shadow: 0 0 12px rgba(61,220,151,.25);
+}
+.base-slot.damaged { animation: shake .4s ease; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+.base-slot .slot-emoji {
+  font-size: 1.35rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.base-slot .slot-name {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: .62rem;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.base-slot .slot-stats {
+  color: #d8d0eb;
+  font-size: .62rem;
+  line-height: 1.15;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.base-slot .equipped-items {
+  font-size: .55rem;
+  color: var(--cyan);
+  line-height: 1;
+}
+/* tooltip só no hover, fora do fluxo do slot */
+.base-slot .card-tooltip {
+  display: none;
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  z-index: 40;
+  width: max-content;
+  max-width: 160px;
+  padding: 6px 8px;
+  background: #1a1430;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .72rem;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  white-space: normal;
+  color: var(--text);
+}
+.base-slot:hover .card-tooltip { display: block; }
+
+/* ── Hand ── */
+.hand-area {
+  margin: 12px 0; padding: 12px; border-radius: 16px;
+  background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.06);
+}
+.hand-title {
+  font-size: .82rem; color: var(--muted); font-weight: 600;
+  letter-spacing: .04em; margin-bottom: 10px;
+}
+.hand-cards {
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 96px;
+  align-items: flex-start;
+}
+.card {
+  width: 78px;
+  height: 100px;
+  min-width: 78px;
+  max-width: 78px;
+  min-height: 100px;
+  max-height: 100px;
+  border-radius: 12px;
+  padding: 6px 4px;
+  background: linear-gradient(165deg, #2a2148 0%, #15102a 100%);
+  border: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 6px 16px rgba(0,0,0,.3);
+  cursor: pointer;
+  transition: .15s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+  box-sizing: border-box;
+  text-align: center;
+}
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 10px 22px rgba(0,0,0,.4), var(--glow-gold);
+  z-index: 2;
+}
+.card.selected {
+  border-color: var(--gold); box-shadow: 0 0 0 2px rgba(240,193,75,.4), var(--glow-gold);
+  transform: translateY(-5px);
+}
+.card.creature { border-top: 3px solid #ff6b8a; }
+.card.spell { border-top: 3px solid #9b7bff; }
+.card.trap { border-top: 3px solid #5ee7ff; }
+.card.weapon, .card.armor, .card.equipment { border-top: 3px solid #f0c14b; }
+.card.rune, .card.talisman { border-top: 3px solid #3ddc97; }
+.card .card-emoji { font-size: 1.45rem; line-height: 1; }
+.card .card-name {
+  font-weight: 700; font-size: .62rem; color: var(--text); line-height: 1.1;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 0 2px;
+}
+.card .card-type {
+  font-size: .55rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted);
+}
+.card .card-stats {
+  font-size: .62rem; color: #d8d0eb; font-weight: 600; line-height: 1.15;
+  white-space: nowrap;
+}
+.card .card-description { display: none !important; }
+.card-tooltip {
+  position: absolute; z-index: 50; max-width: 180px; padding: 8px;
+  background: #1a1430; border: 1px solid var(--border); border-radius: 10px;
+  font-size: .75rem; box-shadow: var(--shadow); pointer-events: none;
+}
+
+/* ── Deck piles ── */
+.deck-info { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+.pile {
+  flex: 1; min-width: 120px; padding: 16px; text-align: center; border-radius: 14px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer; transition: .2s; color: var(--muted); font-size: .9rem;
+}
+.pile:hover {
+  border-color: var(--border); color: var(--text);
+  background: rgba(240,193,75,.06); transform: translateY(-2px);
+}
+.pile strong { display: block; color: var(--gold); margin-bottom: 4px; font-family: var(--font-display); }
+
+/* ── Action bar ── */
+.action-buttons {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  padding: 12px; border-radius: 16px;
+  background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);
+}
+.action-btn {
+  padding: 10px 14px; border: none; border-radius: 11px; cursor: pointer;
+  font-family: inherit; font-size: .82rem; font-weight: 700;
+  background: linear-gradient(135deg, #3a3358, #2a2440); color: var(--text);
+  border: 1px solid rgba(255,255,255,.08); transition: .15s;
+}
+.action-btn:hover {
+  transform: translateY(-2px); border-color: var(--border);
+  box-shadow: 0 6px 16px rgba(0,0,0,.3);
+}
+.action-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.action-btn.spell { background: linear-gradient(135deg, #7b5cff, #5a3fd4); border-color: transparent; }
+.action-btn.ritual { background: linear-gradient(135deg, #c44dff, #8b2fc9); border-color: transparent; }
+.action-btn.centaur { background: linear-gradient(135deg, #c48a3a, #8b5e20); border-color: transparent; }
+.action-btn.equip { background: linear-gradient(135deg, #3ddc97, #1fa86a); color: #062416; border-color: transparent; }
+.action-btn.move { background: linear-gradient(135deg, #5b8cff, #3d5afe); border-color: transparent; }
+.action-btn.fenix { /* kept via inline styles too */ }
+#draw-btn { background: linear-gradient(135deg, #4a90e2, #2f6fbd); border-color: transparent; }
+#end-turn-btn {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2)); color: #1a1020;
+  border-color: transparent; box-shadow: 0 4px 14px rgba(240,193,75,.25);
+}
+
+#equip-mode-indicator, #move-mode-indicator {
+  margin-top: 12px !important; border-radius: 12px !important;
+  padding: 12px 14px !important; font-weight: 600; font-size: .9rem;
+  border: 1px solid rgba(255,255,255,.1);
+}
+#equip-mode-indicator button, #move-mode-indicator button {
+  margin-left: 10px; padding: 6px 12px; border: none; border-radius: 8px;
+  background: rgba(255,77,109,.85); color: #fff; cursor: pointer; font-weight: 700;
+}
+
+/* ── Chat ── */
+.chat-container {
+  position: fixed; right: 16px; bottom: 16px; z-index: 900;
+  width: min(340px, calc(100vw - 24px));
+  background: rgba(14, 11, 28, .92); backdrop-filter: blur(18px);
+  border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  display: flex; flex-direction: column; overflow: hidden;
+  max-height: 420px;
+}
+.chat-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; background: rgba(240,193,75,.08);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-weight: 700; font-size: .9rem; color: var(--gold); cursor: pointer;
+}
+.chat-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
+  border-radius: 999px; background: rgba(255,255,255,.08); color: var(--muted);
+  font-size: .72rem;
+}
+.chat-count.new-message {
+  background: var(--red); color: #fff; animation: pulse-glow 1s ease infinite;
+}
+.chat-minimize-btn {
+  width: 28px; height: 28px; border: none; border-radius: 8px; cursor: pointer;
+  background: rgba(255,255,255,.06); color: var(--text); font-size: 1rem;
+}
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 12px; max-height: 280px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.chat-message {
+  padding: 8px 10px; border-radius: 12px; font-size: .85rem; line-height: 1.35;
+  background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.04);
+}
+.chat-message.system {
+  background: rgba(155,123,255,.1); border-color: rgba(155,123,255,.2);
+  color: #d4c8ff; font-style: italic;
+}
+.chat-message .username { color: var(--gold); font-weight: 700; margin-right: 6px; }
+.chat-message .timestamp { color: var(--muted); font-size: .7rem; margin-left: 6px; }
+.chat-message .message { color: var(--text); }
+.chat-input-area {
+  display: flex; gap: 8px; padding: 10px 12px;
+  border-top: 1px solid rgba(255,255,255,.06); background: rgba(0,0,0,.2);
+}
+.chat-input {
+  flex: 1; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.35);
+  color: var(--text); font-family: inherit; outline: none;
+}
+.chat-input:focus { border-color: rgba(240,193,75,.45); }
+.chat-send-btn {
+  padding: 10px 14px; border: none; border-radius: 10px; cursor: pointer;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; font-weight: 800; font-family: inherit;
+}
+
+/* ── FX / misc ── */
+.damage-number {
+  position: absolute; font-weight: 900; font-size: 1.2rem; color: var(--red);
+  text-shadow: 0 2px 8px rgba(0,0,0,.6); pointer-events: none;
+  animation: dmg-float 1s ease forwards; z-index: 20;
+}
+@keyframes dmg-float {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-40px) scale(1.2); }
+}
+#turn-timer {
+  position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+  z-index: 800; padding: 10px 20px; border-radius: 999px;
+  background: rgba(14,11,28,.9); border: 1px solid var(--border);
+  color: var(--gold); font-weight: 800; font-family: var(--font-display);
+  box-shadow: var(--shadow); display: none;
+}
+#turn-message {
+  text-align: center; padding: 10px; margin: 8px 0; border-radius: 12px;
+  background: rgba(155,123,255,.1); border: 1px solid rgba(155,123,255,.2);
+  color: var(--muted);
+}
+
+/* SweetAlert tweak */
+.swal2-popup {
+  background: #16122a !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important; border-radius: 18px !important;
+}
+
+@media (max-width: 640px) {
+  .base-slot { width: 62px; height: 76px; min-width: 62px; max-width: 62px; min-height: 76px; max-height: 76px; }
+  .card { width: 68px; height: 88px; min-width: 68px; max-width: 68px; min-height: 88px; max-height: 88px; }
+  .opponent-card { min-width: 240px; max-width: 280px; }
+  .game-header { padding: 10px 12px; }
+  .chat-container { right: 8px; bottom: 8px; }
+}
+
+    </style>
+</head>
+<body>
+
+<div class="game-container" id="game-container">
+  <div class="game-header" id="game-header">
+    <div class="game-title">
+      Twilight Battle
+      <a href="/rules" target="_blank">📜 Regras</a>
+    </div>
+    <div class="game-info" id="game-info">
+      <div class="time-indicator" id="time-indicator">Carregando...</div>
+      <div class="turn-indicator" id="turn-indicator">...</div>
+      <div class="session-indicator" id="session-indicator" style="display:none">🔄 Sessão ativa</div>
+    </div>
+    <div class="header-actions">
+      <button class="action-btn" id="leave-game-btn" type="button">🚪 Sair</button>
+    </div>
+  </div>
+
+  <div class="waiting-room" id="waiting-room">
+    <h2>Aguardando jogadores...</h2>
+    <p>Código da sala</p>
+    <p><strong>{{ game_id }}</strong></p>
+    <div class="players-list" id="players-list">
+      <p>Jogadores na sala</p>
+      <ul id="player-names"></ul>
+    </div>
+    <p>Mínimo de 2 jogadores para começar</p>
+    <button class="start-btn" id="start-game-btn" style="display:none" type="button">Começar jogo</button>
+  </div>
+
+  <div id="opponents-area" class="opponents-area"></div>
+
+  <div class="player-area" id="player-area" style="display:none">
+    <div class="player-header">
+      <h2 id="player-name">Seu campo</h2>
+      <div class="player-stats">
+        <div class="stat">❤️ Vida: <span id="player-life">5000</span></div>
+        <div class="stat">🔷 Runas: <span id="player-runes">0</span></div>
+        <div class="stat">🔮 Talismãs: <span id="player-talismans">0</span></div>
+      </div>
+    </div>
+
+    <div class="bases-section">
+      <h3>⚔️ Bases de Ataque (3)</h3>
+      <div class="bases-row" id="attack-bases"></div>
+    </div>
+
+    <div class="bases-section">
+      <h3>🛡️ Bases de Defesa (6)</h3>
+      <div class="bases-row" id="defense-bases"></div>
+    </div>
+
+    <div class="hand-area">
+      <div class="hand-title">📖 Sua mão (<span id="hand-count">0</span> cartas)</div>
+      <div class="hand-cards" id="hand-cards"></div>
+    </div>
+
+    <div class="deck-info">
+      <div class="pile" id="deck-pile" onclick="drawCard()">
+        <strong>📚 Monte</strong><br>
+        <span id="deck-count">0</span> cartas
+      </div>
+      <div class="pile" id="graveyard-pile" onclick="showGraveyard()">
+        <strong>💀 Cemitério</strong><br>
+        <span id="graveyard-count">0</span> cartas
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="action-btn" id="draw-btn" type="button">📥 Comprar carta</button>
+      <button class="action-btn spell" id="spell-btn" type="button">✨ Usar Feitiço</button>
+      <button class="action-btn ritual" id="ritual-btn" type="button">📿 Realizar Ritual</button>
+      <button class="action-btn" id="prophet-curse-btn" type="button" style="background:linear-gradient(45deg,#800080,#4b0082);color:white">🔮 Profetizar</button>
+      <button class="action-btn fenix" id="toggle-time-btn" type="button" style="background:linear-gradient(45deg,#ff4444,#ff6600);color:white;display:none">🔥 Mudar Ciclo</button>
+      <button class="action-btn centaur" id="call-centaurs-btn" type="button">🐎 Chamar Centauros</button>
+      <button class="action-btn equip" id="equip-mode-btn" type="button">🔰 Modo Equipar</button>
+      <button class="action-btn move" id="move-mode-btn" type="button">🔄 Modo Troca</button>
+      <button class="action-btn" id="end-turn-btn" type="button">⏰ Finalizar turno</button>
+      <button class="action-btn" id="oracle-btn" type="button" style="display:none;visibility:hidden">👁️ Oráculo</button>
+    </div>
+
+    <div id="equip-mode-indicator" style="display:none;background:#4CAF50;color:white;padding:10px;border-radius:5px;margin:10px 0;text-align:center">
+      🔰 Modo Equipar ativo — clique em uma criatura para equipar o item selecionado
+      <button type="button" onclick="cancelEquipMode()" style="margin-left:10px;padding:5px 10px;background:#ff4444;border:none;border-radius:3px;color:white;cursor:pointer">Cancelar</button>
+    </div>
+
+    <div id="move-mode-indicator" style="display:none;background:#4a90e2;color:white;padding:10px;border-radius:5px;margin:10px 0;text-align:center">
+      🔄 Modo Troca ativo — clique em duas posições para trocar as cartas
+      <button type="button" onclick="cancelMoveMode()" style="margin-left:10px;padding:5px 10px;background:#ff4444;border:none;border-radius:3px;color:white;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="chat-container" id="chat-container">
+    <div class="chat-header" id="chat-header">
+      <span>
+        💬 Chat da Sala
+        <span class="chat-count" id="chat-count">0</span>
+      </span>
+      <button class="chat-minimize-btn" id="chat-minimize-btn" type="button">−</button>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-area" id="chat-input-area">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Digite sua mensagem..." maxlength="500">
+      <button class="chat-send-btn" id="chat-send-btn" type="button">Enviar</button>
+    </div>
+  </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const gameId = '{{ game_id }}';
+        const SESSION_KEY = `twilight_session_${gameId}`;
+
+        let savedSession = localStorage.getItem(SESSION_KEY);
+        if (savedSession) {
+            try {
+                savedSession = JSON.parse(savedSession);
+                console.log('Sessão recuperada:', savedSession);
+            } catch (e) {
+                console.log('Erro ao recuperar sessão:', e);
+                savedSession = null;
+            }
+        }
+
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+        
+        let currentPlayerId = null;
+        let currentUsername = null;
+        let gameState = null;
+        let selectedCard = null;
+        let actionMode = null;
+        let moveMode = false;
+        let firstSelection = null;
+        let equipMode = false;
+        let selectedItemForEquip = null;
+
+        let chatMessagesContainer = null;
+        let chatInput = null;
+        let chatSendBtn = null;
+        let isChatMinimized = false;
+        let unreadCount = 0;
+
+        let turnTimer = null;
+        let turnTimeLeft = 60;
+        let timerInterval = null;
+        let isTimerRunning = false;
+        let gameStarted = false;
+        let isMyTurnFlag = false;
+        // evita loop de Swal "Reconectado" / "X VENCEU" após o fim
+        let gameOverHandled = false;
+        let gameFinished = false;
+
+        // Verificar autenticação ao carregar
+        fetch('/api/check-auth')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    window.location.href = '/';
+                    return;
+                }
+                currentUsername = data.username;
+                document.getElementById('player-name').textContent = currentUsername;
+                
+                // Verificar se temos uma sessão salva
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            socket.emit('reconnect_game', { game_id: gameId });
+                        } else {
+                            localStorage.removeItem(SESSION_KEY);
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
+            })
+            .catch(() => { window.location.href = '/'; });
+
+        // Função saveSession atualizada
+        function saveSession() {
+            if (currentUsername) {
+                const session = {
+                    username: currentUsername,
+                    gameId: gameId,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                console.log('Sessão salva para', currentUsername);
+            }
+        }
+        function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
+
+        function checkIfCanStart() {
+            fetch(`/api/check-start-permission/${gameId}`, { method: 'GET' })
+                .then(response => {
+                    if (response.status === 401) {
+                        // Não tem permissão - ocultar botão
+                        const startBtn = document.getElementById('start-game-btn');
+                        if (startBtn) {
+                            startBtn.style.display = 'none';
+                        }
+                        return response.json().catch(() => ({}));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const startBtn = document.getElementById('start-game-btn');
+                    if (!startBtn) return;
+                    
+                    if (data.can_start === true) {
+                        // Tem permissão - mostrar e habilitar botão
+                        startBtn.style.display = 'inline-block';
+                        startBtn.disabled = false;
+                        startBtn.style.opacity = '1';
+                        startBtn.style.cursor = 'pointer';
+                    } else {
+                        // Não tem permissão - ocultar botão completamente
+                        startBtn.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar permissão:', error);
+                    const startBtn = document.getElementById('start-game-btn');
+                    if (startBtn) {
+                        startBtn.style.display = 'none';
+                    }
+                });
+        }
+
+        function attemptReconnection() {
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+            if (reconnectAttempts < 5) {
+                reconnectAttempts++;
+                console.log(`Tentativa de reconexão ${reconnectAttempts}/5...`);
+                
+                socket.connect();
+                
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                }
+                
+                reconnectTimer = setTimeout(() => {
+                    if (!socket.connected && !gameOverHandled && !gameFinished) {
+                        console.log('Falha na reconexão, tentando novamente...');
+                        attemptReconnection();
+                    }
+                }, 3000);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro de conexão',
+                    text: 'Não foi possível reconectar ao servidor. Recarregue a página.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    confirmButtonText: 'Recarregar'
+                }).then(() => {
+                    window.location.reload();
+                });
+            }
+        }
+
+        // SocketIO - Game Events
+        // | Entrar e sair do jogo
+        // | (Conectar)
+        socket.on('connect', function() {
+            console.log('Conectado ao servidor com ID:', currentUsername);
+            reconnectAttempts = 0;
+
+            // Partida já acabou nesta aba — não reconectar / reentrar em loop
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+            
+            // Se temos username, tentar reconectar ou entrar
+            if (currentUsername) {
+                const savedSession = localStorage.getItem(SESSION_KEY);
+                if (savedSession) {
+                    try {
+                        const session = JSON.parse(savedSession);
+                        if (session.username === currentUsername) {
+                            socket.emit('reconnect_game', { game_id: gameId });
+                        } else {
+                            socket.emit('join_game', { game_id: gameId });
+                        }
+                    } catch (e) {
+                        socket.emit('join_game', { game_id: gameId });
+                    }
+                } else {
+                    socket.emit('join_game', { game_id: gameId });
+                }
+                
+                // Verificar se é criador após entrar
+                setTimeout(checkIfCanStart, 1000);
+            }
+            
+            // Solicitar estado após conectar
+            setTimeout(requestGameState, 500);
+        });
+        socket.on('connect_error', function(error) {
+            console.error('Erro de conexão:', error);
+            attemptReconnection();
+        });
+        // | (Jogo iniciado)
+        socket.on('game_started', function(data) {
+            console.log('Jogo começou!');
+            document.getElementById('waiting-room').style.display = 'none';
+            document.getElementById('player-area').style.display = 'block';
+            gameStarted = true;
+            gameFinished = false;
+            gameOverHandled = false;
+            saveSession();
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Começar jogo';
+            }
+            requestGameState();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Jogo iniciado!',
+                text: 'Que comece a batalha!',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 2000,
+                showConfirmButton: true
+            });
+        });
+        // | (Desconectado)
+        socket.on('disconnect', function(reason) {
+            console.log('Desconectado do servidor:', reason);
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+            
+            if (reason === 'io server disconnect' || reason === 'transport close') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Desconectado',
+                    text: 'Perdeu conexão com o servidor. Tentando reconectar...',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+                
+                attemptReconnection();
+            }
+        });
+        // | (Reconectado)
+        socket.on('reconnect', function() {
+            console.log('Reconectado ao servidor');
+            requestGameState();
+        });
+        socket.on('reconnect_success', function(data) {
+            console.log('Reconexão bem-sucedida:', data);
+
+            // Se a partida já terminou, mostra fim de jogo e NÃO o toast de reconexão
+            if (data && (data.finished || data.winner)) {
+                gameFinished = true;
+                handleGameOver({
+                    winner: data.winner,
+                    winner_name: data.winner_name || data.winner,
+                    message: data.message || `🏆 ${(data.winner_name || data.winner)} VENCEU O JOGO!`,
+                    already_finished: true
+                });
+                return;
+            }
+
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+
+            saveSession();
+            showSessionIndicator();
+            
+            // Se o jogo ainda NÃO começou, mostrar waiting room
+            if (!data.game_started) {
+                console.log('Jogo não começou, mostrando waiting room');
+                document.getElementById('waiting-room').style.display = 'block';
+                document.getElementById('player-area').style.display = 'none';
+                gameStarted = false;
+                
+                // Solicitar estado para atualizar lista de jogadores
+                requestGameState();
+                
+            } else {
+                document.getElementById('waiting-room').style.display = 'none';
+                requestGameState();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Reconectado!',
+                    text: 'Sua sessão foi restaurada.',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+        });
+        // | (Entrou ou Saiu)
+        socket.on('player_joined', function(data) {
+            console.log('Jogador entrou:', data);
+            
+            // Se for o próprio jogador
+            if (data.username === currentUsername) {
+                saveSession();
+            }
+            
+            updatePlayersList(data.players);
+            checkIfCanStart();
+        });
+        socket.on('player_left', function(data) {
+            // Você saiu → volta ao menu
+            if (data.username === currentUsername) {
+                clearSession();
+                window.location.href = "/";
+                return;
+            }
+            // Outro jogador saiu → só atualiza a sala
+            Swal.fire({
+                icon: 'info',
+                title: 'Jogador saiu',
+                text: data.message || `${data.username} saiu do jogo`,
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            requestGameState();
+            checkIfCanStart();
+        });
+        // |
+        // | Game Chat
+        socket.on('chat_message', function(data) { addChatMessage(data.username, data.message, data.timestamp, data.is_system); });
+        socket.on('chat_history', function(data) {
+            if (data.messages && chatMessagesContainer) {
+                chatMessagesContainer.innerHTML = '';
+                data.messages.forEach(msg => {
+                    addChatMessage(msg.username, msg.message, msg.timestamp, msg.is_system);
+                });
+                scrollChatToBottom();
+            }
+        });
+        socket.on('chat_error', function(data) {
+            console.error('Chat error:', data.message);
+            // Mostrar erro como mensagem temporária no chat
+            if (chatMessagesContainer) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'chat-message system';
+                errorDiv.style.background = 'rgba(255, 68, 68, 0.2)';
+                errorDiv.style.borderLeftColor = '#ff4444';
+                errorDiv.innerHTML = `
+                    <span class="message">⚠️ ${escapeHtml(data.message)}</span>
+                `;
+                chatMessagesContainer.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 3000);
+            }
+        });
+        // |
+        // | Game API
+        // | (Recebeu dados do Jogo)
+        socket.on('game_state', function(data) {
+            console.log('Game state recebido:', data);
+            const oldGameState = gameState;
+            const oldTurn = oldGameState ? oldGameState.current_turn : null;
+            gameState = data;
+
+            // Partida finalizada no servidor → UI de fim (sem loop)
+            if (data && (data.finished || data.winner) && !gameOverHandled) {
+                gameFinished = true;
+                handleGameOver({
+                    winner: data.winner,
+                    winner_name: data.winner_name || data.winner,
+                    message: data.message,
+                    already_finished: true
+                });
+                return;
+            }
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+            
+            if (oldTurn !== data.current_turn && data.current_turn === currentUsername && data.started && !data.current_player_dead) {
+                console.log('🎲 É MEU TURNO! Mostrando alerta...');
+                showTurnStartAlert(currentUsername);
+                
+                // Parar timer antigo (se existir)
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                isTimerRunning = false;
+                
+                // Iniciar novo timer
+                startTurnTimer();
+            }
+            else if (oldTurn !== data.current_turn && data.current_turn !== currentUsername) {
+                console.log('Turno mudou para outro jogador, parando timer');
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                isTimerRunning = false;
+                const timerElement = document.getElementById('turn-timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
+
+                if (data.current_turn !== currentUsername && moveMode) {
+                    cancelMoveMode();
+                }
+            }
+            if (data.started && data.current_turn === currentUsername && !data.current_player_dead) {
+                if (!isTimerRunning) {
+                    startTurnTimer();
+                }
+                gameStarted = true;
+            } else if (data.started) {
+                gameStarted = true;
+            }
+            
+            // Só expulsa se o jogo já começou e o jogador sumiu do estado
+            // (antes do start a lista pode chegar vazia por race com o join)
+            if (currentUsername && gameState.started && !gameState.players[currentUsername]) {
+                console.log('Jogador não encontrado no estado do jogo');
+                clearSession();
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sessão expirada',
+                    text: 'Você foi removido do jogo. Voltando para o início...',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 3000
+                }).then(() => {
+                    window.location.href = '/';
+                });
+                return;
+            }
+            
+            updateGameUI();
+        });
+        // | (Recebeu listas)
+        socket.on('graveyard_list', function(data) {
+            console.log('Cemitério recebido:', data);
+            
+            if (!data.cards || data.cards.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '💀 Cemitério vazio',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Organizar cards por tipo
+            const creatures = data.cards.filter(c => c.type === 'creature');
+            const spells = data.cards.filter(c => c.type === 'spell');
+            const weapons = data.cards.filter(c => c.type === 'weapon');
+            const armors = data.cards.filter(c => c.type === 'armor');
+            const runes = data.cards.filter(c => c.type === 'rune' || c.id === 'runa');
+            const talismans = data.cards.filter(c => c.type === 'talisman');
+            
+            let html = `
+                <div style="max-height: 500px; overflow-y: auto; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 5px;">
+                        <span>Total: <strong style="color: #ffd700;">${data.cards.length}</strong> cartas</span>
+                        <span>👤 ${creatures.length} | ✨ ${spells.length} | ⚔️ ${weapons.length} | 🛡️ ${armors.length}</span>
+                    </div>
+            `;
+            
+            if (creatures.length > 0) {
+                html += '<h3 style="color: #ff6b6b; margin: 15px 0 5px; border-bottom: 1px solid #ff6b6b; padding-bottom: 5px;">👤 Criaturas</h3>';
+                creatures.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (spells.length > 0) {
+                html += '<h3 style="color: #9370db; margin: 15px 0 5px; border-bottom: 1px solid #9370db; padding-bottom: 5px;">✨ Feitiços</h3>';
+                spells.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (weapons.length > 0) {
+                html += '<h3 style="color: #ffa500; margin: 15px 0 5px; border-bottom: 1px solid #ffa500; padding-bottom: 5px;">⚔️ Armas</h3>';
+                weapons.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (armors.length > 0) {
+                html += '<h3 style="color: #4a90e2; margin: 15px 0 5px; border-bottom: 1px solid #4a90e2; padding-bottom: 5px;">🛡️ Armaduras</h3>';
+                armors.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (runes.length > 0) {
+                html += '<h3 style="color: #4CAF50; margin: 15px 0 5px; border-bottom: 1px solid #4CAF50; padding-bottom: 5px;">🔷 Runas</h3>';
+                runes.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (talismans.length > 0) {
+                html += '<h3 style="color: #ffd700; margin: 15px 0 5px; border-bottom: 1px solid #ffd700; padding-bottom: 5px;">🔮 Talismãs</h3>';
+                talismans.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            html += '</div>';
+            
+            Swal.fire({
+                title: '💀 Cemitério',
+                html: html,
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Fechar',
+                cancelButtonColor: '#ffd700',
+                background: '#1a1a2e',
+                color: '#fff',
+                width: '800px'
+            });
+        });
+        socket.on('spells_list', function(data) {
+            console.log('Feitiços disponíveis:', data);
+            
+            if (!data.has_mage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sem magos!',
+                    text: 'Você precisa de um mago em campo para usar feitiços',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            if (data.spells.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem feitiços',
+                    text: 'Você não tem feitiços disponíveis',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let spellsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            
+            data.spells.forEach(spell => {
+                // Determinar se precisa de alvo
+                const needsTarget = ['feitico_cortes', 'feitico_troca', 'feitico_capitalista', 'feitico_cura'].includes(spell.id);
+                
+                spellsHtml += `
+                    <div class="spell-option" onclick="selectSpell('${spell.id}', ${needsTarget})" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(74, 144, 226, 0.2); border: 2px solid #4a90e2; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(74, 144, 226, 0.4)'" 
+                        onmouseout="this.style.background='rgba(74, 144, 226, 0.2)'">
+                        <strong style="color: #4a90e2; font-size: 16px;">${spell.name}</strong><br>
+                        <span style="color: #fff;">${spell.description}</span>
+                        ${needsTarget ? '<br><small style="color: #ffd700;">🎯 Requer alvo</small>' : ''}
+                    </div>
+                `;
+            });
+            
+            spellsHtml += '</div>';
+            
+            Swal.fire({
+                title: data.has_rei_mago || data.has_mago_negro ? '✨ Todos os Feitiços (Rei Mago/Mago Negro)' : '✨ Seus Feitiços',
+                html: spellsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        });
+        socket.on('rituals_list', function(data) {
+            console.log('Rituais disponíveis:', data);
+            
+            if (data.rituals.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem rituais disponíveis',
+                    text: 'Você não tem rituais disponíveis no momento',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let ritualsHtml = '<div style="max-height: 500px; overflow-y: auto;">';
+            
+            data.rituals.forEach(ritual => {
+                const statusColor = ritual.conditions_met ? '#4CAF50' : '#ff4444';
+                const statusIcon = ritual.conditions_met ? '✅' : '❌';
+                
+                ritualsHtml += `
+                    <div class="ritual-option" onclick="${ritual.conditions_met ? `selectRitual('${ritual.id}')` : 'event.preventDefault()'}" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(147, 112, 219, 0.2); border: 2px solid ${statusColor}; border-radius: 10px; cursor: ${ritual.conditions_met ? 'pointer' : 'not-allowed'}; transition: all 0.3s;"
+                        ${ritual.conditions_met ? 'onmouseover="this.style.background=\'rgba(147, 112, 219, 0.4)\'" onmouseout="this.style.background=\'rgba(147, 112, 219, 0.2)\'"' : ''}>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <strong style="color: #ffd700; font-size: 16px;">${ritual.name}</strong>
+                            <span style="color: ${statusColor};">${statusIcon}</span>
+                        </div>
+                        <p style="color: #fff; margin: 5px 0;">${ritual.description}</p>
+                        <p style="color: ${statusColor}; font-size: 12px; margin-top: 5px;">${ritual.message}</p>
+                    </div>
+                `;
+            });
+            
+            ritualsHtml += '</div>';
+            
+            Swal.fire({
+                title: '📿 Rituais Disponíveis',
+                html: ritualsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        });
+        // | (Maldições)
+        socket.on('prophet_curses_executed', function(data) {
+            console.log('Maldições executadas:', data);
+            
+            let html = '<ul style="color: #fff; text-align: left;">';
+            data.destroyed.forEach(item => {
+                html += `<li>💀 <strong style="color: #800080;">${item.card_name}</strong> de ${item.player} foi destruída pela maldição do Profeta</li>`;
+            });
+            html += '</ul>';
+            
+            Swal.fire({
+                icon: 'info',
+                title: '🔮 Maldições do Profeta',
+                html: html,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                timer: 3000
+            });
+            
+            // Atualizar UI
+            requestGameState();
+        });
+        // | (Manipular uma morte)
+        socket.on('player_died', function(data) {
+            console.log('Jogador morreu:', data);
+            
+            Swal.fire({
+                icon: 'info',
+                title: '💀 JOGADOR MORTO',
+                html: `<p style="color: #fff;">${data.message}</p>`,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                timer: 3000
+            });
+            
+            if (data.player_id === currentUsername) {
+                setTimeout(() => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: '💀 VOCÊ MORREU',
+                        html: '<p style="color: #fff;">Suas criaturas foram para o cemitério e suas outras cartas voltaram para o monte.<br><br>Agora você é um espectador.</p>',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700',
+                        confirmButtonText: 'Entendi'
+                    });
+                }, 1000);
+            }
+            
+            requestGameState();
+        });
+        // | (Controle de conexão)
+        socket.on('room_closed', function(data) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sala Fechada',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false
+            }).then(() => {
+                window.location.href = '/';
+            });
+        });
+        socket.on('force_redirect', function(data) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Sala Fechada',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'Voltar ao Menu',
+                allowOutsideClick: false
+            }).then(() => {
+                window.location.href = data.url || '/';
+            });
+        });
+        // | (Fim de Jogo) — modal + volta pro lobby da MESMA sala (rematch)
+        function showWaitingLobbyUI(players) {
+            gameStarted = false;
+            gameFinished = false;
+            gameOverHandled = false;
+            try {
+                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                isTimerRunning = false;
+            } catch (e) {}
+            const waiting = document.getElementById('waiting-room');
+            const playerArea = document.getElementById('player-area');
+            const opponents = document.getElementById('opponents-area');
+            if (waiting) waiting.style.display = 'block';
+            if (playerArea) playerArea.style.display = 'none';
+            if (opponents) opponents.innerHTML = '';
+            if (players) {
+                updatePlayersList(players);
+            }
+            saveSession();
+            setTimeout(checkIfCanStart, 300);
+            requestGameState();
+        }
+
+        function handleGameOver(data) {
+            if (gameOverHandled) {
+                return;
+            }
+            gameOverHandled = true;
+            gameFinished = true;
+
+            try {
+                if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+                isTimerRunning = false;
+            } catch (e) {}
+
+            const winnerName = (data && (data.winner_name || data.winner)) || 'Alguém';
+            const rematch = !data || data.rematch !== false; // padrão: mesma sala
+
+            Swal.fire({
+                title: '🏆 FIM DE JOGO! 🏆',
+                html: `
+                    <h2 style="color: #ffd700;">${winnerName} VENCEU!</h2>
+                    <p style="color:#ccc;margin-top:12px;">A sala <strong style="color:#ffd700;">${gameId}</strong> continua aberta com os mesmos modificadores.</p>
+                `,
+                icon: 'success',
+                background: '#1a1a2e',
+                color: '#fff',
+                showDenyButton: true,
+                confirmButtonColor: '#4CAF50',
+                denyButtonColor: '#666',
+                confirmButtonText: rematch ? '🔄 Continuar na sala' : 'OK',
+                denyButtonText: '🚪 Sair da sala',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then((result) => {
+                if (result.isDenied) {
+                    clearSession();
+                    try {
+                        fetch('/api/clear-current-game', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'same-origin',
+                            body: JSON.stringify({ game_id: gameId })
+                        }).catch(() => {});
+                        if (socket && socket.connected) {
+                            socket.emit('leave_game', { game_id: gameId });
+                        }
+                    } catch (e) {}
+                    setTimeout(function() {
+                        window.location.replace('/');
+                    }, 150);
+                    return;
+                }
+                // Continuar na mesma sala → lobby de espera
+                showWaitingLobbyUI();
+            });
+        }
+        socket.on('game_over', function(data) {
+            handleGameOver(data || {});
+        });
+        socket.on('lobby_reset', function(data) {
+            console.log('Lobby reset (rematch):', data);
+            // servidor já reabriu a sala — UI de espera
+            if (data && data.players) {
+                showWaitingLobbyUI(data.players);
+            } else {
+                showWaitingLobbyUI();
+            }
+            // se o modal de vitória ainda não foi visto, deixa; senão só garante lobby
+            if (data && data.message) {
+                // toast leve no chat já vem do system message
+            }
+            const startBtn = document.getElementById('start-game-btn');
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Começar jogo';
+            }
+        });
+        // |
+        // |
+        socket.on('action_success', function(data) {
+            console.log('Ação bem-sucedida:', data);
+            if (gameOverHandled || gameFinished) {
+                return;
+            }
+
+            const actor = data.player_name || data.player_id || '';
+            const isActor = actor === currentUsername;
+
+            // Ataques: log no chat via broadcast do server (todos veem).
+            // Outros logs com broadcast próprio no engine — não duplicar aqui.
+
+            // Alerts: só o autor (evita spam pra sala inteira)
+            if (data.action === 'swap_positions' && data.result && data.result.success) {
+                if (moveMode && isActor) {
+                    cancelMoveMode();
+                }
+                if (isActor) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '🔄 Posições trocadas!',
+                        text: data.result.message || 'Cartas trocadas com sucesso',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+            }
+            else if (data.action === 'revive' && data.result && isActor) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🔄 Carta Revivida!',
+                    html: `<p style="color: #fff;">${data.result.message || ''}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'ritual' && data.result && isActor) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '📿 Ritual Realizado!',
+                    html: `<p style="color: #fff;">${data.result.message || ''}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#9370db',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'equip_item' && data.result && isActor) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Item equipado!',
+                    html: `<p style="color: #fff;">${data.result.message || 'Item equipado com sucesso!'}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 2000
+                });
+            }
+            else if (data.action === 'cast_spell' && data.result && data.result.effect) {
+                if (data.result.effect.type === 'heal') {
+                    createHealAnimation(data.result.effect.amount, data.result.effect.target);
+                    if (isActor) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '✨ Feitiço de Cura!',
+                            html: `<p style="color: #fff;">${data.result.effect.message || ''}</p>`,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#4CAF50',
+                            timer: 2000
+                        });
+                    }
+                }
+            }
+            else if (data.action === 'call_centaurs' && data.result && data.result.success && isActor) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '🐎 Centauros Coletados!',
+                    html: `
+                        <div style="text-align: center;">
+                            <div style="font-size: 48px; margin-bottom: 10px;">🐎</div>
+                            <p style="color: #ffd700; font-size: 18px;">${data.result.message || ''}</p>
+                            <p style="color: #fff; margin-top: 10px;">Você coletou <strong>${data.result.centaurs_collected}</strong> centauro(s)!</p>
+                        </div>
+                    `,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#4CAF50',
+                    timer: 3000
+                });
+            }
+            else if (data.action === 'toggle_time' && data.result && data.result.success) {
+                // ciclo afeta todos — toast curto
+                const oldTime = data.result.old_time;
+                const newTime = data.result.new_time;
+                const timeIndicator = document.getElementById('time-indicator');
+                if (timeIndicator) {
+                    timeIndicator.style.animation = 'fadeInOut 0.5s ease';
+                    setTimeout(() => { timeIndicator.style.animation = ''; }, 500);
+                }
+                Swal.fire({
+                    icon: 'info',
+                    title: '🔥 Ciclo alterado',
+                    text: `${(oldTime || '').toUpperCase()} → ${(newTime || '').toUpperCase()}`,
+                    timer: 1800,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            }
+            else if (data.action === 'attack' && data.result) {
+                // Swal só para quem atacou e quem foi atacado
+                const r = data.result;
+                const attackerId = r.attacker || data.player_id || data.player_name;
+                const targetId = r.target || r.original_target;
+                const involved = (
+                    currentUsername === attackerId ||
+                    currentUsername === targetId ||
+                    currentUsername === r.attacker_name ||
+                    currentUsername === r.target_name
+                );
+                if (involved) {
+                    showAttackResult(r);
+                }
+            }
+
+            if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started && !isTimerRunning) {
+                startTurnTimer();
+            }
+            
+            requestGameState();
+        });
+        socket.on('action_error', function(data) {
+            console.error('Erro na ação:', data);
+            // Partida já acabou — não spamma erro de ação
+            if (data && (data.game_finished || gameOverHandled || gameFinished)) {
+                if (data.winner && !gameOverHandled) {
+                    handleGameOver({
+                        winner: data.winner,
+                        winner_name: data.winner,
+                        already_finished: true
+                    });
+                }
+                return;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro',
+                text: data.message,
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+        });
+
+        function showAttackResult(result) {
+            let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
+            
+            // Mostrar efeitos de armadilha primeiro
+            if (result.trap_effects && result.trap_effects.length > 0) {
+                html += `<div style="background: rgba(255, 165, 0, 0.2); border-left: 4px solid #ffa500; padding: 10px; margin: 10px 0; border-radius: 5px;">`;
+                html += `<strong style="color: #ffa500;">⚠️ ARMADILHAS ATIVADAS:</strong><br>`;
+                result.trap_effects.forEach(effect => {
+                    html += `<span style="color: #fff;">• ${effect.message}</span><br>`;
+                });
+                html += `</div>`;
+            }
+            
+            if (result.attack_cancelled) {
+                html += `<p style="color: #ff4444;">🛑 O ataque foi cancelado!</p>`;
+            }
+            
+            if (result.cards_destroyed && result.cards_destroyed.length > 0) {
+                html += `<p style="color: #ff6b6b;">💀 Destruídas: ${result.cards_destroyed.join(', ')}</p>`;
+            }
+            
+            if (result.cards_damaged && result.cards_damaged.length > 0) {
+                html += `<p style="color: #ffa500;">💔 Danificadas: ${result.cards_damaged.join(', ')}</p>`;
+            }
+            
+            if (result.damage_to_player && result.damage_to_player > 0) {
+                html += `<p style="color: #ff4444;">⚔️ Dano direto: ${result.damage_to_player}</p>`;
+            }
+            
+            html += `<p>❤️ Vida restante: ${result.target_life}</p>`;
+            
+            Swal.fire({
+                title: `⚔️ Ataque de ${result.attacker_name}!`,
+                html: html,
+                icon: 'info',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
+            });
+            
+            // Criar animação de dano
+            createDamageAnimation(result.damage_to_player || 0);
+        }
+        
+        function createDamageAnimation(damage) {
+            const targetCards = document.querySelectorAll('.opponent-card .base-slot.has-card');
+            targetCards.forEach(card => {
+                const damageNum = document.createElement('div');
+                damageNum.className = 'damage-number';
+                damageNum.textContent = `-${damage}`;
+                damageNum.style.left = card.offsetLeft + 'px';
+                damageNum.style.top = card.offsetTop + 'px';
+                card.appendChild(damageNum);
+                
+                setTimeout(() => damageNum.remove(), 1000);
+            });
+        }
+
+        function requestGameState() {
+            socket.emit('get_game_state', { game_id: gameId });
+        }
+
+        function updatePlayersList(players) {
+            const list = document.getElementById('player-names');
+            list.innerHTML = '';
+            
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player.name; // name é o username
+                list.appendChild(li);
+            });
+        }
+
+        function updateGameUI() {
+            if (!gameState) return;
+            
+            console.log('Atualizando UI com gameState:', gameState);
+            console.log('Atualizando UI - Turno atual:', gameState.current_turn);
+            console.log('Meu username:', currentUsername);
+            console.log('É meu turno?', gameState.current_turn === currentUsername);
+            
+            const timeIndicator = document.getElementById('time-indicator');
+            timeIndicator.textContent = gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+            timeIndicator.className = `time-indicator time-${gameState.time_of_day}`;
+            
+            const turnIndicator = document.getElementById('turn-indicator');
+            if (gameState.current_turn) {
+                const currentPlayerData = gameState.players[gameState.current_turn];
+                const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
+                
+                if (gameState.first_round) {
+                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayerName}`;
+                    turnIndicator.style.background = '#ffa500';
+                } else {
+                    turnIndicator.textContent = `Vez de: ${currentPlayerName}`;
+                    turnIndicator.style.background = '#4CAF50';
+                }
+                
+                // Verificar se é meu turno (comparar com currentUsername)
+                const isMyTurn = gameState.current_turn === currentUsername && !gameState.current_player_dead;
+                console.log('É meu turno?', isMyTurn, 'Current turn:', gameState.current_turn, 'My username:', currentUsername);
+                
+                if (isMyTurn) {
+                    turnIndicator.classList.add('my-turn');
+                    if (!isTimerRunning && gameStarted) { startTurnTimer(); }
+                } else {
+                    turnIndicator.classList.remove('my-turn');
+                    if (isTimerRunning) { stopTurnTimer(); }
+                }
+            }
+            
+            // SÓ atualizar a área de oponentes se o jogo já começou
+            if (gameState.started) {
+                updateOpponentsArea();
+            }
+            
+            // Verificar se o jogador atual está morto
+            if (gameState.players[currentUsername] && gameState.players[currentUsername].dead) {
+                document.getElementById('player-area').style.display = 'none';
+                
+                let spectatorMsg = document.getElementById('spectator-message');
+                if (!spectatorMsg) {
+                    spectatorMsg = document.createElement('div');
+                    spectatorMsg.id = 'spectator-message';
+                    spectatorMsg.className = 'waiting-room';
+                    spectatorMsg.innerHTML = `
+                        <h2 style="color: #ff4444;">💀 VOCÊ MORREU</h2>
+                        <p style="color: #ffd700; font-size: 18px; margin: 20px 0;">Agora você é um espectador</p>
+                        <p>Suas cartas foram distribuídas:</p>
+                        <p>• Criaturas foram para o cemitério</p>
+                        <p>• Outras cartas voltaram para o monte</p>
+                        <p style="margin-top: 30px; color: #888;">Você pode acompanhar o resto da partida</p>
+                        <button class="start-btn" onclick="window.location.href='/'">🏠 Voltar ao início</button>
+                    `;
+                    document.querySelector('.game-container').insertBefore(spectatorMsg, document.getElementById('opponents-area'));
+                }
+                spectatorMsg.style.display = 'block';
+            } else if (gameState.players[currentUsername] && gameStarted) {
+                document.getElementById('player-area').style.display = 'block';
+                
+                const spectatorMsg = document.getElementById('spectator-message');
+                if (spectatorMsg) { spectatorMsg.style.display = 'none'; }
+                
+                updatePlayerArea();
+            }
+            
+            // Atualizar visibilidade dos botões de ação
+            updateActionButtons();
+        }
+        function updateActionButtons() {
+            const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
+            const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started;
+            
+            console.log('Atualizando botões - isMyTurn:', isMyTurn);
+            
+            let hasWitch = false;
+            let hasFenix = false;
+            let hasProphet = false;
+            let hasCentaur = false;
+            let hasMage = hasSpellInHand();
+            let hasRitual = hasRitualInHand();
+            let hasEquippable = hasEquippableItems();
+            
+            if (gameState && gameState.players[currentUsername]) {
+                const playerData = gameState.players[currentUsername];
+                
+                // Verificar em bases de ataque e defesa
+                const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+                
+                for (let card of allBases) {
+                    if (card) {
+                        if (card.id === 'profeta' || card.name.toLowerCase().includes('profeta')) {
+                            const uses = card.prophet_uses || 0;
+                            if (uses < 2) {
+                                hasProphet = true;
+                            }
+                        }
+                        else if (card.id === 'mago' || card.id === 'rei_mago' || card.id === 'mago_negro' || card.name.toLowerCase().includes('mago')) { hasWitch = true; }
+                        else if (card.id === 'super_centauro' && !card.call_centaurs_used) { hasCentaur = true; }
+                        else if (card.id === 'fenix') { hasFenix = true; }
+                    }
+                }
+            }
+            
+            actionButtons.forEach(btn => {
+                // Verificar cada botão específico
+                if (btn.id === 'prophet-curse-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver um profeta em campo
+                    if (isMyTurn && hasProphet) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'equip-mode-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver itens equipáveis na mão
+                    if (isMyTurn && hasEquippable) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'spell-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver um mago em campo
+                    if (isMyTurn && hasMage && hasWitch) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'ritual-btn') {
+                    // Só mostrar se for turno do jogador E ele tiver ritual na mão
+                    if (isMyTurn && hasRitual && hasRitualInHand()) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+                else if (btn.id === 'call-centaurs-btn') {
+                    btn.style.display = (isMyTurn && hasCentaur) ? 'inline-block' : 'none';
+                    btn.disabled = !(isMyTurn && hasCentaur);
+                }
+                else if (btn.id === 'toggle-time-btn') {
+                    btn.style.display = (isMyTurn && hasFenix) ? 'inline-block' : 'none';
+                    btn.disabled = !(isMyTurn && hasFenix);
+                }
+
+                else {
+                    // Para os outros botões, manter comportamento normal
+                    if (isMyTurn) {
+                        btn.style.display = 'inline-block';
+                        btn.disabled = false;
+                    } else {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    }
+                }
+            });
+            
+            // Mostrar o botão Finalizar Turno apenas no turno do jogador vivo
+            const endTurnBtn = document.getElementById('end-turn-btn');
+            if (endTurnBtn) {
+                if (isMyTurn) {
+                    endTurnBtn.style.display = 'inline-block';
+                } else {
+                    endTurnBtn.style.display = 'none';
+                }
+            }
+        }
+
+        function showSessionIndicator() {
+            const indicator = document.getElementById('session-indicator');
+            if (indicator && currentPlayerId) {
+                indicator.style.display = 'block';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 3000);
+            }
+        }
+        function showTurnMessage() {
+            const playerArea = document.getElementById('player-area');
+            const isMyTurn = gameState && gameState.current_turn === currentUsername;
+            
+            // Verificar se já existe uma mensagem de turno
+            let turnMessage = document.getElementById('turn-message');
+            
+            if (!isMyTurn && gameState && gameState.current_turn) {
+                const currentPlayerName = gameState.players[gameState.current_turn].name;
+                
+                if (!turnMessage) {
+                    turnMessage = document.createElement('div');
+                    turnMessage.id = 'turn-message';
+                    turnMessage.style.cssText = `
+                        background: rgba(255, 68, 68, 0.3);
+                        border: 2px solid #ff4444;
+                        border-radius: 10px;
+                        padding: 15px;
+                        margin: 10px 0;
+                        text-align: center;
+                        color: #fff;
+                        font-size: 16px;
+                        backdrop-filter: blur(5px);
+                    `;
+                    playerArea.insertBefore(turnMessage, playerArea.firstChild);
+                }
+                
+                turnMessage.innerHTML = `⏳ Aguardando turno de <strong style="color: #ffd700;">${currentPlayerName}</strong>`;
+                turnMessage.style.display = 'block';
+            } else if (turnMessage) {
+                turnMessage.style.display = 'none';
+            }
+        }
+
+        function showTargetSelection(spellId) {
+            const targets = [];
+            
+            // Incluir o próprio jogador como opção de alvo
+            targets.push({
+                id: currentUsername,
+                name: gameState.players[currentUsername].name + " (você)"
+            });
+            
+            // Adicionar outros jogadores
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== currentUsername && !playerData.dead) {
+                    targets.push({
+                        id: playerId,
+                        name: playerData.name
+                    });
+                }
+            }
+            
+            let targetHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            targets.forEach(target => {
+                targetHtml += `
+                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
+                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
+                        <strong style="color: #4CAF50; font-size: 16px;">${target.name}</strong>
+                    </div>
+                `;
+            });
+            targetHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione o alvo',
+                html: targetHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '500px'
+            });
+        }
+
+        function updateOpponentsArea() {
+            const opponentsArea = document.getElementById('opponents-area');
+            opponentsArea.innerHTML = '';
+            
+            // Se o jogo não começou, não mostrar oponentes
+            if (!gameState || !gameState.started) {
+                const waitingMsg = document.createElement('div');
+                waitingMsg.className = 'opponent-card';
+                waitingMsg.style.textAlign = 'center';
+                waitingMsg.style.padding = '30px';
+                waitingMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">⏳</div>
+                    <h3 style="color: #ffd700;">Aguardando início do jogo</h3>
+                    <p style="color: #fff;">Os oponentes aparecerão aqui quando o jogo começar</p>
+                    <p style="color: #888; margin-top: 20px;">Mínimo de 2 jogadores necessários</p>
+                `;
+                opponentsArea.appendChild(waitingMsg);
+                return;
+            }
+            
+            let hasAliveOpponents = false;
+            
+            for (const [playerUsername, playerData] of Object.entries(gameState.players)) {
+                // Pular o próprio jogador (comparar com currentUsername)
+                if (playerUsername === currentUsername) {
+                    console.log('Pulando próprio jogador:', playerUsername);
+                    continue;
+                }
+                
+                // Pular jogadores mortos
+                if (playerData.dead) {
+                    console.log('Pulando jogador morto:', playerUsername);
+                    continue;
+                }
+                
+                hasAliveOpponents = true;
+                const opponentCard = createOpponentCard(playerUsername, playerData);
+                opponentsArea.appendChild(opponentCard);
+            }
+            
+            // Se não houver oponentes vivos, mostrar mensagem
+            if (!hasAliveOpponents) {
+                const noOpponentsMsg = document.createElement('div');
+                noOpponentsMsg.className = 'opponent-card';
+                noOpponentsMsg.style.textAlign = 'center';
+                noOpponentsMsg.style.padding = '30px';
+                noOpponentsMsg.innerHTML = `
+                    <div style="font-size: 48px; margin-bottom: 20px;">🏆</div>
+                    <h3 style="color: #ffd700;">Parabéns!</h3>
+                    <p style="color: #fff;">Todos os oponentes foram derrotados!</p>
+                    <p style="color: #888; margin-top: 20px;">Aguardando fim do jogo...</p>
+                `;
+                opponentsArea.appendChild(noOpponentsMsg);
+            }
+        }
+        function createOpponentCard(playerId, playerData) {
+            const div = document.createElement('div');
+            div.className = 'opponent-card';
+            
+            // Se por algum motivo um jogador morto aparecer, mostrar versão "fantasma"
+            if (playerData.dead) {
+                div.innerHTML = `
+                    <div class="opponent-header">
+                        <span class="opponent-name" style="color: #888;">${playerData.name}</span>
+                        <span class="opponent-life" style="color: #666;">💀 0</span>
+                    </div>
+                    <div style="text-align: center; padding: 20px; color: #666; background: rgba(0,0,0,0.3); border-radius: 10px;">
+                        <div style="font-size: 32px; margin-bottom: 10px;">💀</div>
+                        <p>Jogador morto</p>
+                    </div>
+                `;
+                return div;
+            }
+            
+            div.innerHTML = `
+                <div class="opponent-header">
+                    <span class="opponent-name">${playerData.name}</span>
+                    <span class="opponent-life">❤️ ${playerData.life}</span>
+                </div>
+                <div class="opponent-stats">
+                    <span class="stat-badge">🔮 ${playerData.talisman_count || 0}</span>
+                    <span class="stat-badge">🔷 ${playerData.runes || 0}</span>
+                </div>
+                <div class="bases-section">
+                    <small>⚔️ Ataque</small>
+                    <div class="bases-row" id="opp-attack-${playerId}"></div>
+                </div>
+                <div class="bases-section">
+                    <small>🛡️ Defesa</small>
+                    <div class="bases-row" id="opp-defense-${playerId}"></div>
+                </div>
+                <button class="action-btn" onclick="selectTarget('${playerId}')" 
+                        ${gameState.current_turn !== currentUsername ? 'disabled' : ''}>
+                    ⚔️ Atacar
+                </button>
+            `;
+            
+            setTimeout(() => {
+                const attackRow = document.getElementById(`opp-attack-${playerId}`);
+                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
+                
+                if (attackRow) {
+                    playerData.attack_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'attack', index, true);
+                        attackRow.appendChild(slot);
+                    });
+                }
+                
+                if (defenseRow) {
+                    playerData.defense_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'defense', index, true);
+                        defenseRow.appendChild(slot);
+                    });
+                }
+            }, 0);
+            
+            return div;
+        }
+        function updatePlayerArea() {
+            console.log('Atualizando área do jogador para:', currentUsername);
+            
+            const playerData = gameState.players[currentUsername];
+            if (!playerData) {
+                console.error('Dados do jogador não encontrados para:', currentUsername);
+                return;
+            }
+            
+            console.log('Dados do jogador:', playerData);
+            
+            document.getElementById('player-name').textContent = playerData.name;
+            document.getElementById('player-life').textContent = playerData.life;
+            
+            // Contar runas na mão
+            const runes = playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0;
+            const talismans = playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0;
+            
+            document.getElementById('player-runes').textContent = runes;
+            document.getElementById('player-talismans').textContent = talismans;
+            
+            // Bases de ataque
+            const attackBases = document.getElementById('attack-bases');
+            attackBases.innerHTML = '';
+            if (playerData.attack_bases) {
+                playerData.attack_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'attack', index, false);
+                    slot.onclick = () => selectBase('attack', index, card);
+                    attackBases.appendChild(slot);
+                });
+            }
+            
+            // Bases de defesa
+            const defenseBases = document.getElementById('defense-bases');
+            defenseBases.innerHTML = '';
+            if (playerData.defense_bases) {
+                playerData.defense_bases.forEach((card, index) => {
+                    const slot = createBaseSlot(card, 'defense', index, false);
+                    slot.onclick = () => selectBase('defense', index, card);
+                    defenseBases.appendChild(slot);
+                });
+            }
+
+            // Mão
+            const handCards = document.getElementById('hand-cards');
+            handCards.innerHTML = '';
+            
+            if (playerData.hand && playerData.hand.length > 0) {
+                console.log('Renderizando mão com', playerData.hand.length, 'cartas');
+                playerData.hand.forEach((card, index) => {
+                    const cardElement = createCardElement(card, index);
+                    cardElement.onclick = () => selectCard(card, index);
+                    handCards.appendChild(cardElement);
+                });
+            } else {
+                console.log('Mão vazia');
+                // Mostrar mensagem de mão vazia
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'width: 100%; text-align: center; padding: 20px; color: #888;';
+                emptyMsg.textContent = '🃏 Mão vazia';
+                handCards.appendChild(emptyMsg);
+            }
+            
+            document.getElementById('hand-count').textContent = playerData.hand ? playerData.hand.length : 0;
+            
+            // Montes
+            document.getElementById('deck-count').textContent = gameState.deck_count || 0;
+            document.getElementById('graveyard-count').textContent = gameState.graveyard_count || 0;
+
+            if (equipMode) {
+                document.querySelectorAll('.base-slot.has-card').forEach(slot => {
+                    if (slot.dataset.cardType === 'creature') {
+                        slot.classList.add('creature-highlight');
+                    }
+                });
+            }
+        }
+
+        function createBaseSlot(card, type, index, isOpponent) {
+            const slot = document.createElement('div');
+            slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
+            slot.setAttribute('data-type', type);
+            slot.setAttribute('data-index', index);
+            
+            if (card) {
+                let lifePercent = 100;
+                if (card.original_life && card.life) {
+                    lifePercent = (card.life / card.original_life) * 100;
+                }
+                
+                const emoji = getCardEmoji(card);
+                const shortName = (card.name || '').split(/[\s\-–—]/)[0].substring(0, 8);
+                const stats = [
+                    card.life != null ? `❤️${card.life}` : '',
+                    card.attack != null ? `⚔️${card.attack}` : '',
+                    card.protection != null ? `🛡️${card.protection}` : ''
+                ].filter(Boolean).join(' ');
+                
+                let equippedItems = '';
+                if (card.equipped_items && card.equipped_items.length > 0) {
+                    equippedItems = `<div class="equipped-items">⚔${card.equipped_items.length}</div>`;
+                }
+                
+                // Tooltip só com nome + stats (sem descrição, não estoura o slot)
+                slot.innerHTML = `
+                    <div class="slot-emoji">${emoji}</div>
+                    <div class="slot-name" title="${escapeHtml(card.name || '')}">${escapeHtml(shortName)}</div>
+                    ${stats ? `<div class="slot-stats">${stats}</div>` : ''}
+                    ${equippedItems}
+                    <div class="card-tooltip">
+                        <strong>${escapeHtml(card.name || '')}</strong>
+                        ${stats ? `<br>${stats}` : ''}
+                        ${card.type === 'trap' || card.is_disguised ? '<br>⚠️ Armadilha?' : ''}
+                        ${card.blocked ? '<br>🚫 Bloqueado' : ''}
+                    </div>
+                `;
+                
+                // dado para highlight de criatura no modo equipar
+                if (card.type === 'creature') {
+                    slot.dataset.cardType = 'creature';
+                }
+                
+                if (lifePercent < 100) {
+                    slot.classList.add('damaged');
+                }
+            } else {
+                slot.innerHTML = type === 'attack' ? '⚔️' : (type === 'defense' ? '🛡️' : '·');
+            }
+            
+            slot.onclick = () => selectBase(type, index, card);
+
+            if (equipMode && card && card.type === 'creature' && !isOpponent) {
+                slot.classList.add('creature-highlight');
+            }
+            
+            return slot;
+        }
+        
+        function createCardElement(card, index) {
+            const div = document.createElement('div');
+            div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
+            const emoji = getCardEmoji(card);
+            const shortName = (card.name || '').substring(0, 12);
+            const stats = [
+                card.life != null ? `❤️${card.life}` : '',
+                card.attack != null ? `⚔️${card.attack}` : '',
+                card.protection != null ? `🛡️${card.protection}` : ''
+            ].filter(Boolean).join(' ');
+            
+            div.innerHTML = `
+                <div class="card-emoji">${emoji}</div>
+                <div class="card-name" title="${escapeHtml(card.name || '')}">${escapeHtml(shortName)}</div>
+                <div class="card-type">${escapeHtml(card.type || '')}</div>
+                ${stats ? `<div class="card-stats">${stats}</div>` : ''}
+            `;
+            return div;
+        }
+
+        function getCardEmoji(card) {
+            if (!card) return '📦';
+            if (card.fog || card.id === 'fog' || card.name === '???') return '🌫️';
+            const id = (card.id || '').toLowerCase();
+            const name = (card.name || '').toLowerCase();
+            const key = id + ' ' + name;
+
+            // criaturas / cartas nomeadas
+            if (/drag[aã]o|dragon/.test(key)) return '🐉';
+            if (/zumbi|zombie/.test(key)) return '🧟';
+            if (/vampiro|vampire/.test(key)) return '🧛';
+            if (/elfo|elf/.test(key)) return '🧝';
+            if (/orc/.test(key)) return '👹';
+            if (/mago negro|mago_negro|rei mago|rei_mago|mago|mage|wizard/.test(key)) return '🧙';
+            if (/centauro|centaur/.test(key)) return '🐴';
+            if (/ninfa|nymph|fada|fairy/.test(key)) return '🧚';
+            if (/f[eê]nix|phoenix/.test(key)) return '🔥';
+            if (/leviat[aã]|leviathan/.test(key)) return '🐋';
+            if (/medusa|gorgon/.test(key)) return '🐍';
+            if (/ap[oó]fis|apophis|caos/.test(key)) return '🌑';
+            if (/profeta|prophet/.test(key)) return '🔮';
+            if (/or[aá]culo|oracle/.test(key)) return '👁️';
+            if (/lobo|lobisomem|werewolf|wolf/.test(key)) return '🐺';
+            if (/manto|eclipse/.test(key)) return '🌑';
+            if (/peitoral|carvalho|armadura/.test(key)) return '🛡️';
+            if (/cal[cç]as|marcha/.test(key)) return '👖';
+            if (/botas|andarilho/.test(key)) return '👢';
+            if (/clareira|julgamento|selo|eco|grim[oó]rio/.test(key)) return '✨';
+            if (/goblin/.test(key)) return '👺';
+            if (/gigante|giant|troll/.test(key)) return '🗿';
+            if (/anjo|angel/.test(key)) return '😇';
+            if (/dem[oô]nio|demon/.test(key)) return '😈';
+            if (/esqueleto|skeleton/.test(key)) return '💀';
+            if (/super centauro/.test(key)) return '🏇';
+
+            // tipos genéricos
+            if (card.type === 'trap' || card.is_disguised) return '🕳️';
+            if (card.type === 'weapon' || /espada|blade|l[aâ]mina|sword/.test(key)) return '⚔️';
+            if (card.type === 'armor' || /capacete|armadura|helmet|boots|botas/.test(key)) return '🛡️';
+            if (card.type === 'spell' || /feiti[cç]o|spell|cura/.test(key)) return '✨';
+            if (card.type === 'talisman' || /talism[aã]/.test(key)) return '🔮';
+            if (card.type === 'rune' || id === 'runa' || /runa/.test(key)) return '🔷';
+            if (card.type === 'ritual') return '📿';
+            if (card.type === 'oracle') return '👁️';
+            if (card.type === 'creature') return '👤';
+            return '🃏';
+        }
+
+        function getTypeIcon(type) {
+            return getCardEmoji({ type: type });
+        }
+
+        function selectGraveyardCard(cardId, cardName) {
+            console.log('Carta do cemitério selecionada:', cardId, cardName);
+            
+            // Verificar se é o turno do jogador
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    text: 'Você só pode reviver cartas no seu turno',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se o jogador tem 4 runas
+            const playerData = gameState.players[currentUsername];
+            const runas = playerData.hand.filter(c => 
+                c && (c.type === 'rune' || c.id === 'runa' || c.name.toLowerCase().includes('runa'))
+            );
+            const runasCount = runas.length;
+            
+            if (runasCount < 4) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Runas insuficientes',
+                    html: `<p style="color: #fff;">Você precisa de <strong style="color: #ffd700;">4 runas</strong> para reviver uma carta.<br>Você tem apenas <strong style="color: #ff4444;">${runasCount}</strong> runa(s).</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Perguntar se quer reviver
+            Swal.fire({
+                title: '🔄 Reviver carta?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Deseja reviver <strong style="color: #ffd700;">${cardName}</strong>?</p>
+                        <p style="color: #4CAF50;">✨ Você tem ${runasCount} runas</p>
+                        <p style="color: #888; font-size: 12px; margin-top: 10px;">(4 runas serão consumidas)</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🔄 Sim, reviver!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Revivendo...',
+                        html: 'Aguarde enquanto a carta é revivida',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    // Enviar comando para reviver
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'revive',
+                        params: {
+                            target_card_id: cardId  // Usar target_card_id para corresponder ao backend
+                        }
+                    });
+                }
+            });
+        }
+
+        function selectBase(type, index, card) {
+            if (equipMode) {
+                // Modo equipar ativo - clicou em uma criatura
+                if (card && card.type === 'creature') {
+                    // Confirmar equipamento
+                    Swal.fire({
+                        title: 'Equipar item?',
+                        html: `
+                            <div style="color: #fff;">
+                                <p><strong>Item:</strong> ${selectedItemForEquip.name}</p>
+                                <p><strong>Criatura:</strong> ${card.name}</p>
+                                ${selectedItemForEquip.attack ? `<p>⚔️ +${selectedItemForEquip.attack} ataque</p>` : ''}
+                                ${selectedItemForEquip.protection ? `<p>🛡️ +${selectedItemForEquip.protection} proteção</p>` : ''}
+                            </div>
+                        `,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: '🔰 Equipar',
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: '#4CAF50',
+                        cancelButtonColor: '#ff4444',
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'equip_item',
+                                params: {
+                                    item_card_id: selectedItemForEquip.instance_id,
+                                    creature_card_id: card.instance_id
+                                }
+                            });
+                            
+                            // Desativar modo equipar
+                            cancelEquipMode();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Alvo inválido',
+                        text: 'Você só pode equipar itens em criaturas',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                }
+                return;
+            }
+            
+            if (moveMode) {
+                // Modo de troca ativo
+                handleMoveSelection(type, index);
+                return;
+            }
+            
+            // Modo normal (jogar carta)
+            if (!selectedCard && actionMode !== 'move') {
+                return;
+            }
+            
+            if (actionMode === 'play' && selectedCard) {
+                if (type === 'attack') {
+                    // Apenas criaturas podem atacar
+                    if (selectedCard.type === 'creature') {
+                        isValidPlacement = true;
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Carta inválida',
+                            text: 'Apenas criaturas podem ser colocadas em posições de ATAQUE',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
+                } 
+                else if (type === 'defense') {
+                    // Defesa pode receber: criaturas E armadilhas
+                    if (selectedCard.type === 'creature' || selectedCard.type === 'trap') {
+                        isValidPlacement = true;
+                        
+                        // Mensagem específica para armadilha
+                        if (selectedCard.type === 'trap') {
+                            Swal.fire({
+                                icon: 'info',
+                                title: '⚠️ Armadilha posicionada!',
+                                text: `${selectedCard.name} foi colocada em posição de defesa. Será ativada quando atacada!`,
+                                timer: 2000,
+                                showConfirmButton: false,
+                                background: '#1a1a2e',
+                                color: '#fff'
+                            });
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Carta inválida',
+                            text: `Apenas criaturas e armadilhas podem ser colocadas em posições de DEFESA (tipo: ${selectedCard.type})`,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
+                }
+                
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'play_card',
+                    params: {
+                        card_id: selectedCard.instance_id,
+                        position_type: type,
+                        position_index: index
+                    }
+                });
+                
+                selectedCard = null;
+                actionMode = null;
+            }
+        }
+        function handleMoveSelection(type, index) {
+            if (!firstSelection) {
+                // Primeira seleção
+                firstSelection = { type, index };
+                
+                // Destacar a base selecionada
+                const slot = document.querySelector(`.base-slot[data-type="${type}"][data-index="${index}"]`);
+                if (slot) {
+                    slot.classList.add('selected-for-move');
+                }
+                
+                Swal.fire({
+                    title: 'Primeira posição selecionada',
+                    text: `Agora clique na segunda posição para trocar`,
+                    icon: 'info',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+            } else {
+                // Segunda seleção - realizar troca
+                const secondSelection = { type, index };
+                
+                // Se clicou na mesma posição, cancelar
+                if (firstSelection.type === secondSelection.type && 
+                    firstSelection.index === secondSelection.index) {
+                    
+                    // Remover destaque
+                    document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                        slot.classList.remove('selected-for-move');
+                    });
+                    
+                    firstSelection = null;
+                    
+                    Swal.fire({
+                        title: 'Troca cancelada',
+                        text: 'Você selecionou a mesma posição',
+                        icon: 'info',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    return;
+                }
+                
+                // Desabilitar o botão de modo troca durante a ação
+                const moveBtn = document.getElementById('move-mode-btn');
+                if (moveBtn) moveBtn.disabled = true;
+                
+                // Realizar troca via socket
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'swap_positions',
+                    params: {
+                        pos1_type: firstSelection.type,
+                        pos1_index: firstSelection.index,
+                        pos2_type: secondSelection.type,
+                        pos2_index: secondSelection.index
+                    }
+                });
+                
+                // Remover destaque das bases
+                document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                    slot.classList.remove('selected-for-move');
+                });
+                
+                // Sair do modo de troca (será confirmado pelo action_success)
+                firstSelection = null;
+                
+                // Pequeno timeout para garantir que a ação foi processada
+                setTimeout(() => {
+                    // Só sai do modo se ainda estiver em modo de troca
+                    if (moveMode) {
+                        cancelMoveMode();
+                    }
+                }, 500);
+            }
+        }
+        
+        function selectTarget(targetUsername) {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const targetData = gameState.players[targetUsername];
+            
+            // Verificar se o alvo já está morto
+            if (targetData.dead) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Alvo inválido',
+                    text: 'Este jogador já está morto!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem cartas de ataque
+            let hasAttackCards = false;
+            const playerData = gameState.players[currentUsername];
+            for (let card of playerData.attack_bases) {
+                if (card && card.type === 'creature') {
+                    hasAttackCards = true;
+                    break;
+                }
+            }
+            
+            if (!hasAttackCards) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Sem cartas de ataque!',
+                    text: 'Você precisa de criaturas em posição de ataque',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se é a primeira rodada
+            if (gameState.first_round) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '🛡️ Primeira Rodada',
+                    text: 'Ataques estão bloqueados até que todos os jogadores tenham jogado pelo menos uma vez!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: `Atacar ${targetData.name}?`,
+                html: `
+                    <div style="color: #fff;">
+                        <p>❤️ Vida: ${targetData.life}</p>
+                        <p>🛡️ Defesas: ${targetData.defense_bases.filter(c => c).length}</p>
+                        <p>🔮 Talismãs: ${targetData.talisman_count || 0}</p>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '⚔️ Atacar!',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'attack',
+                        params: { target_id: targetUsername }
+                    });
+                }
+            });
+        }
+
+        function drawCard() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'draw',
+                params: {}
+            });
+        }
+
+        function showGraveyard() {
+            console.log('showGraveyard chamado');
+            
+            if (!gameState) {
+                console.log('gameState não definido');
+                return;
+            }
+            
+            if (gameState.graveyard_count === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '💀 Cemitério vazio',
+                    text: 'Nenhuma carta no cemitério ainda.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Mostrar loading enquanto busca
+            Swal.fire({
+                title: 'Carregando cemitério...',
+                html: 'Aguarde enquanto as cartas são carregadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('get_graveyard', { game_id: gameId });
+        }
+        
+        function createGraveyardCardHTML(card) {
+            console.log('createGraveyardCardHTML:', card);
+            
+            // Ícone baseado no tipo
+            let icon = '📦';
+            if (card.type === 'creature') icon = '👤';
+            else if (card.type === 'spell') icon = '✨';
+            else if (card.type === 'weapon') icon = '⚔️';
+            else if (card.type === 'armor') icon = '🛡️';
+            else if (card.type === 'rune' || card.id === 'runa') icon = '🔷';
+            else if (card.type === 'talisman') icon = '🔮';
+            else if (card.type === 'trap') icon = '⚠️';
+            
+            return `
+                <div onclick="selectGraveyardCard('${card.instance_id}', '${card.name.replace(/'/g, "\\'")}')" 
+                    style="padding: 15px; margin: 10px 0; background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                    onmouseover="this.style.background='rgba(255, 215, 0, 0.3)'" 
+                    onmouseout="this.style.background='rgba(255, 215, 0, 0.1)'">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">${icon}</span>
+                            <div>
+                                <strong style="color: #ffd700; font-size: 16px;">${card.name}</strong>
+                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
+                            </div>
+                        </div>
+                        <div>
+                            ${card.life ? `<span style="color: #ff6b6b; margin-right: 10px;" title="Vida">❤️ ${card.life}</span>` : ''}
+                            ${card.attack ? `<span style="color: #ffa500; margin-right: 10px;" title="Ataque">⚔️ ${card.attack}</span>` : ''}
+                            ${card.protection ? `<span style="color: #4a90e2;" title="Proteção">🛡️ ${card.protection}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="color: #ccc; font-size: 12px; margin-top: 5px; margin-left: 30px;">
+                        ${card.description || 'Sem descrição'}
+                    </div>
+                    <div style="margin-top: 8px; text-align: right;">
+                        <span style="color: #4CAF50; font-size: 12px; background: rgba(76, 175, 80, 0.2); padding: 3px 8px; border-radius: 5px;">
+                            👆 Clique para reviver
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+        function createHealAnimation(amount, targetName) {
+            // Encontrar o jogador alvo na interface
+            const playerElement = document.querySelector(`.opponent-card:contains('${targetName}')`) || 
+                                document.getElementById('player-area');
+            
+            if (playerElement) {
+                const healNum = document.createElement('div');
+                healNum.className = 'damage-number';
+                healNum.textContent = `+${amount} ❤️`;
+                healNum.style.color = '#4CAF50';
+                healNum.style.left = '50%';
+                healNum.style.top = '50%';
+                healNum.style.transform = 'translate(-50%, -50%)';
+                healNum.style.animation = 'floatUp 1s ease-out';
+                playerElement.appendChild(healNum);
+                
+                setTimeout(() => healNum.remove(), 1000);
+            }
+        }
+
+        function selectCardToRevive(cardId) {
+            console.log('Selecionando carta para reviver:', cardId);
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Revivendo...',
+                html: 'Aguarde enquanto a carta é revivida',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'revive',
+                params: { card_id: cardId }
+            });
+        }
+
+        function hasRitualInHand() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar se tem carta de ritual na mão
+            for (let card of playerData.hand) {
+                if (card && card.type === 'ritual') {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        function hasSpellInHand() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            for (let card of playerData.hand) {
+                if (card && card.type === 'spell') {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+        function hasEquippableItems() {
+            if (!gameState || !gameState.players[currentUsername]) {
+                console.log('hasEquippableItems: gameState ou player não disponível');
+                return false;
+            }
+            
+            const playerData = gameState.players[currentUsername];
+            
+            console.log('Verificando itens equipáveis na mão de', currentUsername);
+            console.log('Mão atual:', playerData.hand.map(c => c?.name));
+            
+            // Lista de tipos e IDs de cartas que são equipáveis
+            for (let card of playerData.hand) {
+                if (!card) continue;
+                
+                // Log para debug
+                console.log(`Analisando carta: ${card.name} (ID: ${card.id}, Tipo: ${card.type})`);
+                
+                // Verificar por tipo
+                if (card.type === 'weapon') {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (weapon)`);
+                    return true;
+                }
+                
+                if (card.type === 'armor') {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (armor)`);
+                    return true;
+                }
+                
+                // Verificar por IDs específicos de itens
+                const equippableIds = [
+                    'lamina_almas', 
+                    'blade_vampires', 
+                    'blade_dragons', 
+                    'capacete_trevas'
+                ];
+                
+                if (equippableIds.includes(card.id)) {
+                    console.log(`✅ Item equipável encontrado: ${card.name} (ID especial)`);
+                    return true;
+                }
+                
+                // Verificar por nome (fallback para cartas que podem não ter tipo definido)
+                const itemKeywords = ['espada', 'lâmina', 'blade', 'capacete', 'armadura', 'armor', 'weapon'];
+                const cardName = card.name.toLowerCase();
+                for (let keyword of itemKeywords) {
+                    if (cardName.includes(keyword)) {
+                        console.log(`✅ Item equipável encontrado por palavra-chave: ${card.name} (contém "${keyword}")`);
+                        return true;
+                    }
+                }
+            }
+            
+            console.log('❌ Nenhum item equipável encontrado na mão');
+            return false;
+        }
+
+        function selectCard(card, index) {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            selectedCard = card;
+            actionMode = 'play';
+            
+            // Remover seleção anterior
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+            
+            // Adicionar seleção na carta atual
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('selected');
+            } else {
+                // Se não tiver event (chamada programática), encontrar a carta pelo índice
+                const cards = document.querySelectorAll('.card');
+                if (cards[index]) {
+                    cards[index].classList.add('selected');
+                }
+            }
+            
+            let message = '';
+            let actionButtons = [];
+            
+            if (card.type === 'creature') {
+                message = 'Clique em uma base de ATAQUE (vermelha) ou DEFESA (azul) para colocar a criatura.';
+            } 
+            else if (card.type === 'spell') {
+                message = 'Use o botão "✨ Usar Feitiço" para lançá-lo.';
+            } 
+            else if (card.type === 'rune') {
+                message = 'Runas são usadas para reviver cartas (4 runas).';
+            } 
+            else if (card.type === 'weapon' || card.type === 'armor') {
+                message = 'Este item pode ser equipado em uma criatura.';
+                actionButtons.push({
+                    name: '⚔️ Equipar em criatura',
+                    callback: function() {
+                        equipToCreature(card.instance_id);
+                    }
+                });
+            }
+            else if (card.type === 'talisman') {
+                message = 'Talismãs são mantidos na mão e ativam automaticamente.';
+            }
+            
+            // Criar HTML dos botões de ação
+            let actionHtml = '';
+            if (actionButtons.length > 0) {
+                actionHtml = '<div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">';
+                actionButtons.forEach(btn => {
+                    actionHtml += `<button class="action-btn" onclick="(${btn.callback})()" style="margin: 5px; padding: 10px 20px;">${btn.name}</button>`;
+                });
+                actionHtml += '</div>';
+            }
+            
+            // Mostrar modal com as opções
+            Swal.fire({
+                title: `📌 ${card.name}`,
+                html: `
+                    <div style="color: #fff; text-align: left;">
+                        <p><strong>Tipo:</strong> ${card.type}</p>
+                        <p><strong>Descrição:</strong> ${card.description}</p>
+                        ${card.life ? `<p>❤️ Vida: ${card.life}</p>` : ''}
+                        ${card.attack ? `<p>⚔️ Ataque: ${card.attack}</p>` : ''}
+                        ${card.protection ? `<p>🛡️ Proteção: ${card.protection}</p>` : ''}
+                        <p style="margin-top: 15px; color: #ffd700;">${message}</p>
+                        ${actionHtml}
+                    </div>
+                `,
+                icon: 'info',
+                background: '#1a1a2e',
+                color: '#fff',
+                showConfirmButton: true,
+                confirmButtonText: 'Fechar',
+                confirmButtonColor: '#ffd700'
+            });
+        }
+
+        function equipToCreature(itemCardId) {
+            console.log('Tentando equipar item:', itemCardId);
+            
+            const playerData = gameState.players[currentUsername];
+            if (!playerData) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Dados do jogador não encontrados',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const creatures = [];
+            
+            // Coletar todas as criaturas em campo (ataque e defesa)
+            console.log('Bases de ataque:', playerData.attack_bases);
+            console.log('Bases de defesa:', playerData.defense_bases);
+            
+            for (let card of playerData.attack_bases) {
+                if (card && card.type === 'creature') {
+                    creatures.push(card);
+                    console.log('Criatura encontrada no ataque:', card.name);
+                }
+            }
+            for (let card of playerData.defense_bases) {
+                if (card && card.type === 'creature') {
+                    creatures.push(card);
+                    console.log('Criatura encontrada na defesa:', card.name);
+                }
+            }
+            
+            console.log('Total de criaturas disponíveis:', creatures.length);
+            
+            if (creatures.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sem criaturas',
+                    text: 'Você não tem criaturas em campo para equipar este item',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Criar HTML da lista de criaturas
+            let creaturesHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            creatures.forEach(creature => {
+                let equippedItems = '';
+                if (creature.equipped_items && creature.equipped_items.length > 0) {
+                    equippedItems = `<br><small style="color: #4a90e2;">🔰 Itens: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
+                }
+                
+                // Verificar se a criatura pode equipar baseado no tipo
+                let canEquip = true;
+                let restrictions = '';
+                
+                // Adicionar informações de restrição se necessário
+                const itemCard = playerData.hand.find(c => c.instance_id === itemCardId);
+                if (itemCard) {
+                    if (itemCard.id === 'blade_vampires' && !creature.id.includes('vampiro')) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas vampiros</small>';
+                    } else if (itemCard.id === 'blade_dragons' && !['elfo', 'vampiro_tayler', 'vampiro_wers', 'mago', 'mago_negro', 'rei_mago'].includes(creature.id)) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
+                    } else if (itemCard.id === 'lamina_almas' && !['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers'].includes(creature.id)) {
+                        canEquip = false;
+                        restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
+                    }
+                }
+                
+                creaturesHtml += `
+                    <div onclick="${canEquip ? `selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')` : 'event.preventDefault()'}" 
+                        style="padding: 15px; margin: 10px 0; background: ${canEquip ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 68, 68, 0.2)'}; border: 2px solid ${canEquip ? '#4CAF50' : '#ff4444'}; border-radius: 10px; cursor: ${canEquip ? 'pointer' : 'not-allowed'}; transition: all 0.3s;"
+                        ${canEquip ? 'onmouseover="this.style.background=\'rgba(76, 175, 80, 0.4)\'" onmouseout="this.style.background=\'rgba(76, 175, 80, 0.2)\'"' : ''}>
+                        <strong style="color: ${canEquip ? '#4CAF50' : '#ff4444'}; font-size: 16px;">${creature.name}</strong><br>
+                        <span style="color: #fff;">❤️ Vida: ${creature.life || 0} | ⚔️ Ataque: ${creature.attack || 0}</span>
+                        ${equippedItems}
+                        ${restrictions}
+                    </div>
+                `;
+            });
+            creaturesHtml += '</div>';
+            
+            Swal.fire({
+                title: '🦎 Selecione a criatura',
+                html: creaturesHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        }
+
+        function selectCreatureForEquip(itemCardId, creatureId) {
+            console.log('Equipando item', itemCardId, 'em criatura', creatureId);
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Equipando...',
+                html: 'Aguarde enquanto o item é equipado',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'equip_item',
+                params: {
+                    item_card_id: itemCardId,
+                    creature_card_id: creatureId
+                }
+            });
+        }
+
+        function showTargetSelection(spellId) {
+            const targets = [];
+            
+            // Incluir o próprio jogador como opção de alvo
+            targets.push({
+                id: currentUsername,
+                name: gameState.players[currentUsername].name + " (você)"
+            });
+            
+            // Adicionar outros jogadores
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== currentUsername && !playerData.dead) {
+                    targets.push({
+                        id: playerId,
+                        name: playerData.name
+                    });
+                }
+            }
+            
+            let targetHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            targets.forEach(target => {
+                targetHtml += `
+                    <div class="target-option" onclick="selectSpellTarget('${spellId}', '${target.id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
+                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
+                        <strong style="color: #4CAF50; font-size: 16px;">${target.name}</strong>
+                    </div>
+                `;
+            });
+            targetHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione o alvo da cura',
+                html: targetHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '500px'
+            });
+        }
+
+        function hasCallCentaurosAvailable() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && card.id === 'super_centauro') {
+                    // Verificar se a habilidade já foi usada
+                    if (!card.call_centaurs_used) {
+                        console.log('Super Centauro encontrado com habilidade disponível:', card.name);
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        function callCentaurs() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Super Centauro com habilidade disponível
+            if (!hasCallCentaurosAvailable()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Super Centauro não disponível',
+                    text: 'Você precisa ter um Super Centauro em campo que ainda não usou esta habilidade',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Confirmar ação
+            Swal.fire({
+                title: '🐎 Chamar Centauros?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Use a habilidade especial do <strong style="color: #ffd700;">Super Centauro</strong>!</p>
+                        <p>Todos os centauros em campo de <strong>TODOS OS JOGADORES</strong> serão coletados para sua mão.</p>
+                        <p style="color: #ffa500; margin-top: 15px;">⚠️ Esta habilidade só pode ser usada uma vez por Super Centauro!</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🐎 Sim, chamar centauros!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#4CAF50',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: 'Chamando centauros...',
+                        html: 'Aguarde enquanto os centauros são coletados',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    // Enviar ação
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'call_centaurs',
+                        params: {}
+                    });
+                }
+            });
+        }
+
+        function hasToggleTimeAvailable() {
+            if (!gameState || !gameState.players[currentUsername]) return false;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && card.id === 'fenix') {
+                    // Verificar se a habilidade já foi usada neste turno
+                    if (!card.toggle_time_used_turn) {
+                        console.log('Fênix encontrada com habilidade disponível:', card.name);
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        function toggleTimeOfDay() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Fênix com habilidade disponível
+            if (!hasToggleTimeAvailable()) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Fênix não disponível',
+                    text: 'Você precisa ter uma Fênix em campo que ainda não usou esta habilidade neste turno',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Confirmar ação
+            Swal.fire({
+                title: '🔥 Mudar Ciclo?',
+                html: `
+                    <div style="color: #fff; text-align: center;">
+                        <p style="font-size: 18px; margin-bottom: 15px;">Use a habilidade especial da <strong style="color: #ff6600;">Fênix</strong>!</p>
+                        <p>O ciclo de <strong style="color: #ffd700;">${gameState.time_of_day === 'day' ? 'DIA' : 'NOITE'}</strong> será alterado para <strong style="color: #ff6600;">${gameState.time_of_day === 'day' ? 'NOITE' : 'DIA'}</strong>.</p>
+                        <p style="color: #ffa500; margin-top: 15px;">⚠️ Se mudar para DIA, zumbis e vampiros sem proteção morrerão!</p>
+                        <p style="color: #888; margin-top: 10px;">⚡ Esta habilidade só pode ser usada uma vez por turno!</p>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🔥 Sim, mudar ciclo!',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ff6600',
+                cancelButtonColor: '#ff4444',
+                background: '#1a1a2e',
+                color: '#fff',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'toggle_time',
+                        params: {}
+                    });
+                }
+            });
+        }
+
+        // Chat System
+        function initChat() {
+            chatMessagesContainer = document.getElementById('chat-messages');
+            chatInput = document.getElementById('chat-input');
+            chatSendBtn = document.getElementById('chat-send-btn');
+            
+            if (!chatMessagesContainer) return;
+            
+            // Carregar histórico do chat
+            socket.emit('get_chat_history', { game_id: gameId });
+            
+            // Event listeners
+            chatSendBtn.addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
+            
+            // Minimizar/Expandir chat
+            const chatHeader = document.getElementById('chat-header');
+            const chatMinimizeBtn = document.getElementById('chat-minimize-btn');
+            
+            chatHeader.addEventListener('click', function(e) {
+                if (e.target !== chatMinimizeBtn) {
+                    toggleChatMinimize();
+                }
+            });
+            
+            chatMinimizeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleChatMinimize();
+            });
+            
+            // Verificar estado salvo do chat
+            const savedState = localStorage.getItem(`chat_minimized_${gameId}`);
+            if (savedState === 'true') {
+                toggleChatMinimize();
+            }
+        }
+
+        function toggleChatMinimize() {
+            const chatContainer = document.getElementById('chat-container');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInputArea = document.getElementById('chat-input-area');
+            const minimizeBtn = document.getElementById('chat-minimize-btn');
+            
+            isChatMinimized = !isChatMinimized;
+            
+            if (isChatMinimized) {
+                chatMessages.style.display = 'none';
+                chatInputArea.style.display = 'none';
+                minimizeBtn.textContent = '+';
+                localStorage.setItem(`chat_minimized_${gameId}`, 'true');
+            } else {
+                chatMessages.style.display = 'flex';
+                chatInputArea.style.display = 'flex';
+                minimizeBtn.textContent = '−';
+                localStorage.setItem(`chat_minimized_${gameId}`, 'false');
+                // Resetar contador de não lidas
+                unreadCount = 0;
+                updateChatCount();
+                // Scroll para última mensagem
+                setTimeout(() => scrollChatToBottom(), 100);
+            }
+        }
+
+        function sendChatMessage() {
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+            
+            socket.emit('send_chat_message', {
+                game_id: gameId,
+                message: message
+            });
+            
+            chatInput.value = '';
+            chatInput.focus();
+        }
+
+        function addChatMessage(username, message, timestamp, isSystem = false) {
+            if (!chatMessagesContainer) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isSystem ? 'system' : 'user'}`;
+            
+            if (isSystem) {
+                messageDiv.innerHTML = `
+                    <span class="message">📢 ${escapeHtml(message)}</span>
+                    <span class="timestamp">${timestamp}</span>
+                `;
+            } else {
+                const isOwnMessage = (username === currentUsername);
+                messageDiv.innerHTML = `
+                    <span class="username" style="${isOwnMessage ? 'color: #4CAF50;' : ''}">${escapeHtml(username)}</span>
+                    <span class="message">${escapeHtml(message)}</span>
+                    <span class="timestamp">${timestamp}</span>
+                `;
+            }
+            
+            chatMessagesContainer.appendChild(messageDiv);
+            
+            // Se não for mensagem própria e o chat estiver minimizado, incrementar contador
+            if (username !== currentUsername && isChatMinimized && !isSystem) {
+                unreadCount++;
+                updateChatCount();
+                
+                // Mostrar notificação visual rápida (apenas mudar cor do header)
+                const chatHeader = document.getElementById('chat-header');
+                if (chatHeader) {
+                    chatHeader.style.background = 'linear-gradient(135deg, #ff4444, #cc0000)';
+                    setTimeout(() => {
+                        if (chatHeader) chatHeader.style.background = 'linear-gradient(135deg, #ffd700, #ffa500)';
+                    }, 2000);
+                }
+            }
+            
+            // Scroll automático apenas se não estiver minimizado
+            if (!isChatMinimized) {
+                setTimeout(() => scrollChatToBottom(), 50);
+            }
+            
+            updateChatCount();
+        }
+
+        function scrollChatToBottom() {
+            if (chatMessagesContainer) {
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+            }
+        }
+
+        function updateChatCount() {
+            const count = chatMessagesContainer ? chatMessagesContainer.children.length : 0;
+            const chatCount = document.getElementById('chat-count');
+            if (chatCount) {
+                if (unreadCount > 0) {
+                    chatCount.textContent = `${count} (${unreadCount})`;
+                    chatCount.classList.add('new-message');
+                } else {
+                    chatCount.textContent = count;
+                    chatCount.classList.remove('new-message');
+                }
+            }
+        }
+                
+        function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+
+        // UI Event Listeners
+        // | (Pegar carta)
+        document.getElementById('draw-btn').addEventListener('click', drawCard);
+        // | (Mover carta)
+        document.getElementById('move-mode-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Se já estiver em modo de troca, cancelar
+            if (moveMode) {
+                cancelMoveMode();
+                return;
+            }
+            
+            // Verificar se há pelo menos duas cartas em campo para trocar
+            const playerData = gameState.players[currentUsername];
+            const cardsInField = [
+                ...playerData.attack_bases.filter(c => c),
+                ...playerData.defense_bases.filter(c => c)
+            ];
+            
+            if (cardsInField.length < 2) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem cartas suficientes',
+                    text: 'Você precisa de pelo menos 2 cartas em campo para trocar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            moveMode = true;
+            firstSelection = null;
+            document.getElementById('move-mode-indicator').style.display = 'block';
+            
+            Swal.fire({
+                title: '🔄 Modo Troca Ativado',
+                text: 'Clique em duas posições (ataque ou defesa) para trocar as cartas',
+                icon: 'info',
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        });
+        // | (Entrar ou sair do modo de equipar)
+        document.getElementById('equip-mode-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Primeiro, selecionar um item da mão
+            const playerData = gameState.players[currentUsername];
+            const equipItems = playerData.hand.filter(c => c.type === 'weapon' || c.type === 'armor');
+            
+            if (equipItems.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem itens',
+                    text: 'Você não tem itens equipáveis na mão',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let itemsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            equipItems.forEach(item => {
+                itemsHtml += `
+                    <div onclick="selectItemForEquip('${item.instance_id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(76, 175, 80, 0.4)'" 
+                        onmouseout="this.style.background='rgba(76, 175, 80, 0.2)'">
+                        <strong style="color: #4CAF50;">${item.name}</strong><br>
+                        <span style="color: #fff;">${item.description}</span><br>
+                        ${item.attack ? `<span style="color: #ffd700;">⚔️ Ataque: ${item.attack}</span>` : ''}
+                        ${item.protection ? `<span style="color: #ffd700;">🛡️ Proteção: ${item.protection}</span>` : ''}
+                    </div>
+                `;
+            });
+            itemsHtml += '</div>';
+            
+            Swal.fire({
+                title: '🔰 Selecione um item para equipar',
+                html: itemsHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        });
+        // | (Anunciar uma profecia)
+        document.getElementById('prophet-curse-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Verificar se tem Profeta em campo
+            const playerData = gameState.players[currentUsername];
+            let hasProphet = false;
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card && card.id === 'profeta') {
+                    hasProphet = true;
+                    break;
+                }
+            }
+            
+            if (!hasProphet) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Profeta não encontrado',
+                    text: 'Você precisa ter um Profeta em campo para usar esta habilidade',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Mostrar oponentes para selecionar alvo
+            const targets = [];
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== currentUsername && !playerData.dead) {
+                    targets.push({
+                        id: playerId,
+                        name: playerData.name
+                    });
+                }
+            }
+            
+            if (targets.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem alvos',
+                    text: 'Não há outros jogadores vivos',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let targetHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            targets.forEach(target => {
+                targetHtml += `
+                    <div onclick="selectProphetTarget('${target.id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(128, 0, 128, 0.4)'" 
+                        onmouseout="this.style.background='rgba(128, 0, 128, 0.2)'">
+                        <strong style="color: #800080; font-size: 16px;">${target.name}</strong>
+                    </div>
+                `;
+            });
+            targetHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione o jogador alvo',
+                html: targetHtml,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                showConfirmButton: false,
+                width: '500px'
+            });
+        });
+        // | (Usar uma profecia)
+        document.getElementById('spell-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Solicitar lista de feitiços do backend
+            socket.emit('get_spells', { game_id: gameId });
+        });
+        // | (Executar um ritual)
+        document.getElementById('ritual-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            // Solicitar lista de rituais disponíveis
+            socket.emit('get_rituals', { game_id: gameId });
+        });
+        // | (Finalizar turno)
+        document.getElementById('end-turn-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+
+            stopTurnTimer();
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'end_turn',
+                params: {}
+            });
+        });
+        // | (Executar um oraculo)
+        document.getElementById('oracle-btn').addEventListener('click', function() {
+            if (gameState.current_turn !== currentUsername) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Não é seu turno!',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const players = [];
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                if (playerId !== currentUsername) {
+                    players.push({
+                        id: playerId,
+                        name: playerData.name,
+                        hasTalisman: playerData.talisman_count > 0
+                    });
+                }
+            }
+            
+            if (players.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Nenhum alvo',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const selectOptions = players.map(p => 
+                `<option value="${p.id}">${p.name} ${p.hasTalisman ? '🔮' : ''}</option>`
+            ).join('');
+            
+            Swal.fire({
+                title: '👁️ Oráculo',
+                html: `
+                    <p>Selecione o alvo (requer elfo em defesa)</p>
+                    <select id="oracle-target" class="swal2-select">
+                        ${selectOptions}
+                    </select>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Usar Oráculo',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                preConfirm: () => {
+                    return document.getElementById('oracle-target').value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'oracle',
+                        params: { target_id: result.value }
+                    });
+                }
+            });
+        });
+        // | (Encantar Centauros)
+        document.getElementById('call-centaurs-btn').addEventListener('click', callCentaurs);
+        // | (Mudar o Ciclo de Tempo)
+        document.getElementById('toggle-time-btn').addEventListener('click', toggleTimeOfDay);
+        // | (Iniciar ou sair do jogo)
+        document.getElementById('start-game-btn').addEventListener('click', function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = 'Iniciando...';
+            
+            fetch(`/start-game/${gameId}`, { method: 'POST' })
+                .then(response => {
+                    if (response.status === 401) {
+                        throw new Error('Apenas o criador da sala pode iniciar o jogo');
+                    }
+                    if (response.status === 404) {
+                        throw new Error('Jogo não encontrado');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.message || 'Erro ao iniciar o jogo');
+                    }
+                    // Sucesso - o jogo vai começar
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Erro',
+                        text: error.message,
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    // Reabilitar botão em caso de erro
+                    btn.disabled = false;
+                    btn.textContent = 'Começar jogo';
+                    
+                    // Verificar permissão novamente
+                    checkIfCanStart();
+                });
+        });
+        document.getElementById('leave-game-btn').addEventListener('click', function() {
+            Swal.fire({
+                title: 'Sair do jogo?',
+                html: '<p style="color: #fff;">Tem certeza que deseja sair?</p>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '🚪 Sair',
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Saindo...',
+                        html: 'Processando saída do jogo',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        },
+                        background: '#1a1a2e',
+                        color: '#fff'
+                    });
+                    
+                    socket.emit('leave_game', { game_id: gameId });
+                }
+            });
+        });
+        // |
+        // | DOM do Jogo
+        document.addEventListener('DOMContentLoaded', function() {
+            initChat();
+
+            const urlParams = new 'URLSearchParams'(window.location.search);
+            if (urlParams.get('created') === 'true') {
+                const playerName = localStorage.getItem('playerName') || 'Jogador';
+                
+                // Limpar sessão anterior se existir
+                clearSession();
+                
+                // Pequeno delay para garantir que a sala foi criada
+                setTimeout(() => {
+                    socket.emit('join_game', {
+                        game_id: gameId,
+                        player_name: playerName
+                    });
+                }, 500);
+            }
+        });
+        // | Descarregar
+        window.addEventListener('beforeunload', function() { if (currentPlayerId) { saveSession(); } cleanupTurnTimer(); });
+        // |
+        // Sistema de Magia
+        // | (Feitiços)
+        window.selectSpellTarget = function(spellId, targetId) {
+            Swal.close();
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'cast_spell',
+                params: {
+                    spell_id: spellId,
+                    target_player_id: targetId
+                }
+            });
+        };
+        window.selectSpell = function(spellId) {
+            Swal.close();
+            
+            const playerData = gameState.players[currentUsername];
+            let hasReiMago = false;
+            let hasMagoNegro = false;
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card) {
+                    if (card.id === 'rei_mago') hasReiMago = true;
+                    if (card.id === 'mago_negro') hasMagoNegro = true;
+                }
+            }
+            
+            // Se for feitiço de cura, sempre mostrar seleção de alvo
+            if (spellId === 'feitico_cura') {
+                showTargetSelection(spellId);
+                return;
+            }
+            
+            // Para outros feitiços, manter comportamento original
+            if (hasReiMago || hasMagoNegro) {
+                // Para feitiços que precisam de alvo
+                if (['feitico_cortes', 'feitico_troca', 'feitico_capitalista'].includes(spellId)) {
+                    showTargetSelection(spellId);
+                } else {
+                    // Usar feitiço sem alvo
+                    socket.emit('player_action', {
+                        game_id: gameId,
+                        action: 'cast_spell',
+                        params: {
+                            spell_id: spellId
+                        }
+                    });
+                }
+            } else {
+                // Usar feitiço normal da mão
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'cast_spell',
+                    params: {
+                        spell_id: spellId
+                    }
+                });
+            }
+        };
+        // | (Rituais)
+        window.selectRitual = function(ritualId) {
+            Swal.close();
+            
+            // Se for ritual que precisa de alvo
+            if (ritualId === 'ritual_157' || ritualId === 'ritual_amor') {
+                // Listar jogadores para selecionar alvo
+                const targets = [];
+                for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                    if (playerId !== currentUsername) {
+                        targets.push({
+                            id: playerId,
+                            name: playerData.name
+                        });
+                    }
+                }
+                
+                if (targets.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Sem alvos',
+                        text: 'Não há outros jogadores para alvo',
+                        background: '#1a1a2e',
+                        color: '#fff',
+                        confirmButtonColor: '#ffd700'
+                    });
+                    return;
+                }
+                
+                let targetHtml = '';
+                targets.forEach(target => {
+                    targetHtml += `
+                        <div class="target-option" onclick="selectRitualTarget('${ritualId}', '${target.id}')" 
+                            style="padding: 15px; margin: 10px 0; background: rgba(255, 68, 68, 0.2); border: 1px solid #ff4444; border-radius: 10px; cursor: pointer;"
+                            onmouseover="this.style.background='rgba(255, 68, 68, 0.4)'" 
+                            onmouseout="this.style.background='rgba(255, 68, 68, 0.2)'">
+                            <strong style="color: #ffd700;">${target.name}</strong>
+                        </div>
+                    `;
+                });
+                
+                Swal.fire({
+                    title: 'Selecione o alvo',
+                    html: `<div style="max-height: 400px; overflow-y: auto;">${targetHtml}</div>`,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancelar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    showConfirmButton: false
+                });
+            } else {
+                // Ritual sem alvo
+                socket.emit('player_action', {
+                    game_id: gameId,
+                    action: 'ritual',
+                    params: {
+                        ritual_id: ritualId
+                    }
+                });
+            }
+        };
+        window.selectRitualTarget = function(ritualId, targetId) {
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: 'Realizando ritual...',
+                html: 'Aguarde enquanto o ritual é realizado',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'ritual',
+                params: {
+                    ritual_id: ritualId,
+                    target_player_id: targetId
+                }
+            });
+        };
+        // | (Profecias)
+        function getProphetUsesRemaining() {
+            if (!gameState || !gameState.players[currentUsername]) return 0;
+            
+            const playerData = gameState.players[currentUsername];
+            
+            // Verificar em todas as bases (ataque e defesa)
+            const allBases = [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])];
+            
+            for (let card of allBases) {
+                if (card && (card.id === 'profeta' || card.name === 'Profeta')) {
+                    const uses = card.prophet_uses || 0;
+                    if (uses >= 2) return 0;
+                    return 2 - uses;
+                }
+            }
+            
+            return 0;
+        }
+        window.selectProphetTarget = function(targetPlayerId) {
+            Swal.close();
+            
+            // Mostrar loading
+            Swal.fire({
+                title: '🔮 Preparando Profecia...',
+                html: 'Aguarde enquanto as cartas do oponente são carregadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            // Mostrar cartas do oponente para selecionar
+            const targetData = gameState.players[targetPlayerId];
+            const cards = [];
+            
+            for (let card of [...targetData.attack_bases, ...targetData.defense_bases]) {
+                if (card) {
+                    cards.push(card);
+                }
+            }
+            
+            Swal.close();
+            
+            if (cards.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sem cartas',
+                    text: 'O oponente não tem cartas em campo',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            const usesRemaining = getProphetUsesRemaining();
+            
+            let cardsHtml = '<div style="max-height: 400px; overflow-y: auto;">';
+            cards.forEach(card => {
+                let typeIcon = getTypeIcon(card.type);
+                cardsHtml += `
+                    <div onclick="selectCardForProphetCurse('${targetPlayerId}', '${card.instance_id}')" 
+                        style="padding: 15px; margin: 10px 0; background: rgba(128, 0, 128, 0.2); border: 2px solid #800080; border-radius: 10px; cursor: pointer; transition: all 0.3s;"
+                        onmouseover="this.style.background='rgba(128, 0, 128, 0.4)'" 
+                        onmouseout="this.style.background='rgba(128, 0, 128, 0.2)'">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">${typeIcon}</span>
+                            <div>
+                                <strong style="color: #800080; font-size: 16px;">${card.name}</strong><br>
+                                <span style="color: #fff;">❤️ ${card.life || 0} | ⚔️ ${card.attack || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            cardsHtml += '</div>';
+            
+            Swal.fire({
+                title: '🎯 Selecione a carta para amaldiçoar',
+                html: `<div style="margin-bottom: 15px; padding: 10px; background: rgba(128, 0, 128, 0.3); border-radius: 8px; text-align: center;">
+                            <span style="color: #ffd700;">🔮 A carta será destruída em 2 rodadas</span><br>
+                            <span style="color: #4CAF50; font-size: 12px;">⚡ Usos restantes do Profeta: ${usesRemaining}</span>
+                        </div>
+                        ${cardsHtml}`,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#800080',
+                showConfirmButton: false,
+                width: '600px'
+            });
+        };
+        window.selectCardForProphetCurse = function(targetPlayerId, cardInstanceId) {
+            Swal.close();
+            
+            const usesRemaining = getProphetUsesRemaining();
+            const willBeExhausted = (usesRemaining === 1);
+            
+            Swal.fire({
+                title: '🔮 Aplicando maldição...',
+                html: `
+                    <div style="text-align: center;">
+                        <p>A carta será destruída em <strong>2 rodadas</strong></p>
+                        ${willBeExhausted ? '<p style="color: #ffa500; margin-top: 10px;">⚠️ Este será o <strong>último uso</strong> deste Profeta!</p>' : ''}
+                        <p style="color: #4CAF50; margin-top: 10px;">Usos restantes após este: <strong>${usesRemaining - 1}</strong></p>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                timer: 3000,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'prophet_curse',
+                params: {
+                    target_player_id: targetPlayerId,
+                    target_card_id: cardInstanceId
+                }
+            });
+        };
+        // |
+        // Equipar itens
+        window.equipToCreature = function(itemCardId) {
+            // Mostrar lista de criaturas para equipar
+            const playerData = gameState.players[currentUsername];
+            const creatures = [];
+            
+            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+                if (card && card.type === 'creature') {
+                    creatures.push(card);
+                }
+            }
+            
+            if (creatures.length === 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Sem criaturas',
+                    text: 'Você não tem criaturas em campo para equipar',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            let creaturesHtml = '';
+            creatures.forEach(creature => {
+                let equippedItems = '';
+                if (creature.equipped_items && creature.equipped_items.length > 0) {
+                    equippedItems = `<br><small>Equipado: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
+                }
+                
+                creaturesHtml += `
+                    <div class="creature-option" onclick="selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; border-radius: 5px; cursor: pointer;">
+                        <strong>${creature.name}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
+                        ${equippedItems}
+                    </div>
+                `;
+            });
+            
+            Swal.fire({
+                title: 'Selecione a criatura',
+                html: `<div style="max-height: 400px; overflow-y: auto;">${creaturesHtml}</div>`,
+                showCancelButton: true,
+                cancelButtonText: 'Cancelar',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                showConfirmButton: false
+            });
+        };
+        window.selectItemForEquip = function(itemId) {
+            Swal.close();
+            
+            const playerData = gameState.players[currentUsername];
+            selectedItemForEquip = playerData.hand.find(c => c.instance_id === itemId);
+            
+            if (!selectedItemForEquip) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro',
+                    text: 'Item não encontrado',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            equipMode = true;
+            document.getElementById('equip-mode-indicator').style.display = 'block';
+            
+            Swal.fire({
+                title: `🔰 Item selecionado: ${selectedItemForEquip.name}`,
+                text: 'Agora clique em uma criatura em campo para equipar',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+        };
+        // | (Cancelar ação)
+        window.cancelEquipMode = function() {
+            equipMode = false;
+            selectedItemForEquip = null;
+            document.getElementById('equip-mode-indicator').style.display = 'none';
+            
+            // Remover destaque das criaturas
+            document.querySelectorAll('.base-slot.selected-for-equip').forEach(slot => {
+                slot.classList.remove('selected-for-equip');
+            });
+        }
+        window.cancelMoveMode = function() {
+            console.log('Cancelando modo de troca');
+            moveMode = false;
+            firstSelection = null;
+            
+            // Remover indicador visual
+            const indicator = document.getElementById('move-mode-indicator');
+            if (indicator) {
+                indicator.style.display = 'none';
+            }
+            
+            // Remover destaque de todas as bases
+            document.querySelectorAll('.base-slot.selected-for-move').forEach(slot => {
+                slot.classList.remove('selected-for-move');
+            });
+            
+            // Remover destaque de qualquer base selecionada
+            document.querySelectorAll('.base-slot').forEach(slot => {
+                slot.classList.remove('selected-for-move', 'creature-highlight');
+            });
+            
+            // Reabilitar o botão de modo troca
+            const moveBtn = document.getElementById('move-mode-btn');
+            if (moveBtn) {
+                moveBtn.disabled = false;
+            }
+            
+            console.log('Modo de troca cancelado');
+        }
+
+        // Execuções em background
+        // | 
+        function startTurnTimer() {
+            // Só iniciar timer se o jogo começou
+            if (!gameStarted) {
+                return;
+            }
+            
+            // Se o timer já estiver rodando, NÃO reiniciar
+            if (isTimerRunning && timerInterval) {
+                console.log('Timer já está rodando, não reiniciando');
+                return;
+            }
+            
+            // Limpar timer anterior se existir (apenas se realmente precisar)
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // Resetar tempo
+            turnTimeLeft = 60;
+            isTimerRunning = true;
+            
+            // Criar ou atualizar elemento do timer na UI
+            let timerElement = document.getElementById('turn-timer');
+            if (!timerElement) {
+                timerElement = document.createElement('div');
+                timerElement.id = 'turn-timer';
+                timerElement.style.cssText = `
+                    background: rgba(0, 0, 0, 0.8);
+                    border: 2px solid #ffd700;
+                    border-radius: 10px;
+                    padding: 8px 15px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    color: #ffd700;
+                    text-align: center;
+                    margin-left: 20px;
+                    display: none;
+                `;
+                const gameInfo = document.getElementById('game-info');
+                if (gameInfo) {
+                    gameInfo.appendChild(timerElement);
+                }
+            }
+            
+            // Mostrar timer apenas se jogo começou
+            if (gameStarted) {
+                timerElement.style.display = 'block';
+            }
+            
+            // Atualizar timer a cada segundo
+            timerInterval = setInterval(() => {
+                if (!isTimerRunning || !gameStarted) return;
+                
+                if (turnTimeLeft <= 0) {
+                    // Tempo acabou - finalizar turno automaticamente
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                    isTimerRunning = false;
+                    isMyTurnFlag = false;
+                    
+                    // Verificar se ainda é o turno do jogador e jogo está ativo
+                    if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
+                        console.log('⏰ Tempo esgotado! Finalizando turno automaticamente...');
+                        
+                        // Mostrar alerta
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '⏰ Tempo esgotado!',
+                            text: 'Seu turno acabou! O turno será finalizado automaticamente.',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700',
+                            timer: 2000,
+                            showConfirmButton: true
+                        }).then(() => {
+                            // Finalizar turno
+                            socket.emit('player_action', {
+                                game_id: gameId,
+                                action: 'end_turn',
+                                params: {}
+                            });
+                        });
+                        
+                        // Atualizar UI do timer
+                        const timerElement = document.getElementById('turn-timer');
+                        if (timerElement) {
+                            timerElement.innerHTML = '⏰ 0s';
+                            timerElement.style.color = '#ff4444';
+                            timerElement.style.borderColor = '#ff4444';
+                        }
+                    }
+                } else {
+                    turnTimeLeft--;
+                    
+                    // Atualizar display do timer
+                    const timerElement = document.getElementById('turn-timer');
+                    if (timerElement && gameStarted) {
+                        const minutes = Math.floor(turnTimeLeft / 60);
+                        const seconds = turnTimeLeft % 60;
+                        timerElement.innerHTML = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        
+                        // Mudar cor quando faltar pouco tempo
+                        if (turnTimeLeft <= 10) {
+                            timerElement.style.color = '#ff4444';
+                            timerElement.style.borderColor = '#ff4444';
+                            timerElement.style.animation = 'timerPulse 0.5s infinite';
+                        } else if (turnTimeLeft <= 30) {
+                            timerElement.style.color = '#ffa500';
+                            timerElement.style.borderColor = '#ffa500';
+                            timerElement.style.animation = 'none';
+                        } else {
+                            timerElement.style.color = '#ffd700';
+                            timerElement.style.borderColor = '#ffd700';
+                            timerElement.style.animation = 'none';
+                        }
+                    }
+                }
+            }, 1000);
+        }
+        function stopTurnTimer() {
+            isTimerRunning = false;
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            const timerElement = document.getElementById('turn-timer');
+            if (timerElement) {
+                timerElement.style.display = 'none';
+            }
+        }
+        function resetTurnTimer() {
+            if (!gameStarted) return;
+            
+            // Parar o timer atual
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            
+            // Iniciar novo timer se for o turno do jogador
+            if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started) {
+                startTurnTimer();
+            } else {
+                // Esconder timer se não for o turno do jogador
+                const timerElement = document.getElementById('turn-timer');
+                if (timerElement) {
+                    timerElement.style.display = 'none';
+                }
+            }
+        }
+
+        function cleanupTurnTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isTimerRunning = false;
+            gameStarted = false;
+            const timerElement = document.getElementById('turn-timer');
+            if (timerElement) {
+                timerElement.remove();
+            }
+        }
+        // |
+        function showTurnStartAlert(playerName) {
+            Swal.fire({
+                title: '🎲 SEU TURNO!',
+                html: `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 10px;">⚔️</div>
+                        <p style="color: #ffd700; font-size: 20px; margin-bottom: 10px;">${playerName}</p>
+                        <p style="color: #fff;">É a sua vez de jogar!</p>
+                        <p style="color: #888; font-size: 12px; margin-top: 10px;">Você tem 60 segundos para agir</p>
+                    </div>
+                `,
+                icon: 'success',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: '🎮 Jogar!',
+                timer: 5000,
+                timerProgressBar: true,
+                allowOutsideClick: false
+            }).then(() => {
+                // Focar no chat para facilitar ações
+                const chatInput = document.getElementById('chat-input');
+                if (chatInput) chatInput.focus();
+            });
+        }
+        // | Game Engine
+        setInterval(function() {
+            if (!gameOverHandled && !gameFinished) requestGameState();
+        }, 3000);
+        setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
+        setInterval(function() {
+            if (gameOverHandled || gameFinished) return;
+            if (socket.connected && currentPlayerId) {
+                socket.emit('ping_game', { game_id: gameId, player_id: currentPlayerId });
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
