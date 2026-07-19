@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle — Espectador {{ game_id }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    
+    <style>
+
+:root {
+  --bg-0: #07060f;
+  --bg-1: #0e0b1a;
+  --bg-2: #16122a;
+  --panel: rgba(18, 14, 36, 0.72);
+  --panel-solid: #141026;
+  --panel-2: rgba(28, 22, 52, 0.85);
+  --border: rgba(255, 215, 120, 0.18);
+  --border-strong: rgba(255, 215, 120, 0.42);
+  --gold: #f0c14b;
+  --gold-2: #ffb347;
+  --gold-dim: rgba(240, 193, 75, 0.15);
+  --cyan: #5ee7ff;
+  --violet: #9b7bff;
+  --magenta: #ff5ec8;
+  --rose: #ff6b8a;
+  --green: #3ddc97;
+  --red: #ff4d6d;
+  --text: #f4f0ff;
+  --muted: #a39bb8;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
+  --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(155,123,255,.28), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,94,200,.14), transparent 50%),
+    radial-gradient(800px 400px at 50% 100%, rgba(94,231,255,.08), transparent 50%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 40%, #120b22);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%, rgba(240,193,75,.5), transparent),
+    radial-gradient(1px 1px at 10% 70%, rgba(94,231,255,.4), transparent);
+  opacity: .5;
+}
+@keyframes fade-up { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } 50% { box-shadow: 0 0 18px rgba(61,220,151,.25); } }
+
+.swal2-popup {
+  background: #16122a !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important; border-radius: 18px !important;
+}
+
+body { padding: 0; }
+.game-container {
+  position: relative; z-index: 1;
+  max-width: 1280px; margin: 0 auto;
+  padding: 14px 14px 40px; min-height: 100vh;
+}
+.game-header {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  padding: 12px 16px; margin-bottom: 14px;
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow);
+}
+.game-title {
+  font-family: var(--font-display); font-size: 1.15rem; font-weight: 700;
+  background: linear-gradient(120deg, #fff6d0, var(--gold));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.spectator-badge {
+  font-family: var(--font-ui); font-size: .75rem; font-weight: 700;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(94,231,255,.12); color: var(--cyan);
+  border: 1px solid rgba(94,231,255,.35);
+  -webkit-text-fill-color: var(--cyan);
+}
+.game-info { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1; }
+.time-indicator, .turn-indicator {
+  padding: 7px 12px; border-radius: 999px; font-size: .82rem; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.08); background: rgba(0,0,0,.3); color: var(--muted);
+}
+.time-indicator.time-day {
+  background: rgba(255,196,80,.12); color: #ffd27a; border-color: rgba(255,196,80,.3);
+}
+.time-indicator.time-night {
+  background: rgba(120,140,255,.12); color: #b0c0ff; border-color: rgba(120,140,255,.3);
+}
+.turn-indicator.my-turn { color: var(--green); border-color: rgba(61,220,151,.4); animation: pulse-glow 2s ease infinite; }
+.exit-btn {
+  margin-left: auto; padding: 10px 16px; border: none; border-radius: 12px; cursor: pointer;
+  font-family: inherit; font-weight: 700;
+  background: linear-gradient(135deg, #ff4d6d, #c9184a); color: #fff;
+  box-shadow: 0 6px 18px rgba(255,77,109,.25); transition: .2s;
+}
+.exit-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+
+.spectators-list {
+  margin-bottom: 14px; padding: 14px 16px; border-radius: 16px;
+  background: var(--panel-2); border: 1px solid rgba(255,255,255,.06);
+}
+.spectators-list h3 {
+  font-family: var(--font-display); color: var(--cyan); font-size: 1rem; margin-bottom: 10px;
+}
+#spectators-container { display: flex; flex-wrap: wrap; gap: 8px; }
+.spectator-item {
+  padding: 6px 12px; border-radius: 999px; font-size: .85rem; font-weight: 600;
+  background: rgba(155,123,255,.12); border: 1px solid rgba(155,123,255,.28); color: #d4c8ff;
+}
+
+.opponents-area {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px; margin-bottom: 16px;
+}
+.opponent-card {
+  background: var(--panel-2); border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px; padding: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.opponent-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px; gap: 8px; flex-wrap: wrap;
+}
+.opponent-name { font-weight: 700; }
+.opponent-life { color: var(--rose); font-weight: 700; font-size: .9rem; }
+.opponent-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.stat-badge {
+  font-size: .75rem; padding: 4px 8px; border-radius: 999px;
+  background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); color: var(--muted);
+}
+.bases-section { margin-top: 8px; }
+.bases-section h4, .bases-section h3 {
+  font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+}
+.bases-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.base-slot {
+  width: 96px; min-height: 110px; border-radius: 12px; padding: 8px; text-align: center;
+  border: 1.5px dashed rgba(255,255,255,.12); background: rgba(0,0,0,.25);
+  font-size: .75rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.base-slot.has-card {
+  border-style: solid; border-color: rgba(240,193,75,.4);
+  background: linear-gradient(160deg, rgba(40,30,70,.9), rgba(20,15,40,.95));
+}
+.base-slot .card-name { font-weight: 700; color: var(--gold); font-size: .78rem; }
+.base-slot .card-stats { color: var(--muted); font-size: .7rem; }
+.base-slot .equipped-items { font-size: .62rem; color: var(--cyan); margin-top: 4px; }
+
+.graveyard-info {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;
+  padding: 16px; border-radius: 16px; margin-bottom: 14px;
+  background: var(--panel); border: 1px solid var(--border);
+}
+.graveyard-info h3 {
+  width: 100%; font-family: var(--font-display); color: var(--gold); font-size: 1rem; margin-bottom: 4px;
+}
+.pile {
+  flex: 1; min-width: 120px; padding: 16px; text-align: center; border-radius: 14px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08);
+  cursor: pointer; transition: .2s; color: var(--muted); font-size: .9rem;
+}
+.pile:hover { border-color: var(--border); color: var(--text); background: rgba(240,193,75,.06); }
+.pile strong { display: block; color: var(--gold); margin-bottom: 4px; font-family: var(--font-display); }
+
+.waiting-room {
+  text-align: center; padding: 40px 24px; margin: 30px auto; max-width: 480px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow);
+}
+.waiting-room h2 { font-family: var(--font-display); color: var(--gold); margin-bottom: 10px; }
+.waiting-room p { color: var(--muted); margin: 8px 0; }
+.waiting-room strong {
+  color: var(--gold); font-family: var(--font-display); letter-spacing: .1em;
+  padding: 4px 12px; border-radius: 8px; background: var(--gold-dim); border: 1px solid var(--border);
+}
+.players-list {
+  margin: 18px 0; padding: 14px; border-radius: 14px; text-align: left;
+  background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);
+}
+#player-names { list-style: none; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+#player-names li {
+  padding: 10px 14px; border-radius: 10px;
+  background: rgba(155,123,255,.08); border: 1px solid rgba(155,123,255,.2); font-weight: 600;
+}
+.card-tooltip {
+  position: absolute; z-index: 50; max-width: 220px; padding: 10px;
+  background: #1a1430; border: 1px solid var(--border); border-radius: 10px;
+  font-size: .8rem; box-shadow: var(--shadow); pointer-events: none;
+}
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+  <div class="game-header">
+    <div class="game-title">
+      Twilight Battle
+      <span class="spectator-badge">👁️ Espectador</span>
+    </div>
+    <div class="game-info">
+      <div class="time-indicator" id="time-indicator">Carregando...</div>
+      <div class="turn-indicator" id="turn-indicator">...</div>
+    </div>
+    <button class="exit-btn" type="button" onclick="exitSpectate()">🚪 Sair</button>
+  </div>
+
+  <div class="spectators-list" id="spectators-list">
+    <h3>👁️ Espectadores</h3>
+    <div id="spectators-container">
+      <span class="spectator-item">Carregando...</span>
+    </div>
+  </div>
+
+  <div id="opponents-area" class="opponents-area"></div>
+
+  <div class="graveyard-info">
+    <h3>💀 Informações do jogo</h3>
+    <div class="pile" id="deck-pile" onclick="showGraveyard()">
+      <strong>📚 Monte</strong><br>
+      <span id="deck-count">0</span> cartas
+    </div>
+    <div class="pile" id="graveyard-pile" onclick="showGraveyard()">
+      <strong>💀 Cemitério</strong><br>
+      <span id="graveyard-count">0</span> cartas
+    </div>
+    <p style="width:100%;margin-top:4px;color:var(--muted);font-size:.85rem">Clique no cemitério para ver as cartas</p>
+  </div>
+
+  <div class="waiting-room" id="waiting-room" style="display:none">
+    <h2>Aguardando início do jogo...</h2>
+    <p>Código da sala</p>
+    <p><strong>{{ game_id }}</strong></p>
+    <div class="players-list" id="players-list">
+      <p>Jogadores na sala</p>
+      <ul id="player-names"></ul>
+    </div>
+  </div>
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const gameId = '{{ game_id }}';
+        const currentUsername = '{{ username }}';
+        let gameState = null;
+        
+        const socket = io({
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000
+        });
+        
+        // Conectar como espectador
+        socket.on('connect', function() {
+            console.log('Conectado como espectador');
+            socket.emit('spectate_game', { game_id: gameId });
+        });
+        
+        socket.on('spectate_success', function(data) {
+            console.log('Modo espectador ativado:', data);
+            requestGameState();
+        });
+        
+        socket.on('spectator_joined', function(data) {
+            console.log('Espectador entrou:', data);
+            if (data.username === currentUsername) {
+                // Próprio espectador entrou
+            }
+        });
+        
+        socket.on('game_state', function(data) {
+            console.log('Estado do jogo recebido:', data);
+            gameState = data;
+            updateGameUI();
+        });
+        
+        socket.on('graveyard_list', function(data) {
+            console.log('Cemitério recebido:', data);
+            showGraveyardModal(data);
+        });
+        
+        socket.on('game_over', function(data) {
+            Swal.fire({
+                title: '🏆 FIM DE JOGO! 🏆',
+                html: `<h2 style="color: #ffd700;">${data.winner_name} VENCEU!</h2>`,
+                icon: 'success',
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700',
+                confirmButtonText: 'Voltar ao início'
+            }).then(() => {
+                window.location.href = '/';
+            });
+        });
+        
+        function requestGameState() {
+            socket.emit('get_game_state', { game_id: gameId });
+        }
+        
+        function updateGameUI() {
+            if (!gameState) return;
+            
+            // Atualizar indicadores
+            document.getElementById('time-indicator').textContent = 
+                gameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+            document.getElementById('time-indicator').className = 
+                `time-indicator time-${gameState.time_of_day}`;
+            
+            if (gameState.current_turn) {
+                const currentPlayerData = gameState.players[gameState.current_turn];
+                const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
+                document.getElementById('turn-indicator').textContent = `Vez de: ${currentPlayerName}`;
+            }
+            
+            // Atualizar contadores
+            document.getElementById('deck-count').textContent = gameState.deck_count || 0;
+            document.getElementById('graveyard-count').textContent = gameState.graveyard_count || 0;
+            
+            // Atualizar lista de espectadores
+            updateSpectatorsList();
+            
+            // Atualizar área de oponentes
+            updateOpponentsArea();
+            
+            // Mostrar/esconder waiting room
+            if (!gameState.started) {
+                document.getElementById('waiting-room').style.display = 'block';
+                updatePlayersList();
+            } else {
+                document.getElementById('waiting-room').style.display = 'none';
+            }
+        }
+        
+        function updateSpectatorsList() {
+            if (!gameState || !gameState.spectators) return;
+            
+            const container = document.getElementById('spectators-container');
+            
+            if (gameState.spectators.length === 0) {
+                container.innerHTML = '<span class="spectator-item">Nenhum espectador</span>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            gameState.spectators.forEach(spectator => {
+                const span = document.createElement('span');
+                span.className = 'spectator-item';
+                span.innerHTML = `👁️ ${spectator.name}`;
+                container.appendChild(span);
+            });
+        }
+        
+        function updatePlayersList() {
+            const list = document.getElementById('player-names');
+            list.innerHTML = '';
+            
+            for (const [playerId, playerData] of Object.entries(gameState.players)) {
+                const li = document.createElement('li');
+                li.textContent = playerData.name;
+                list.appendChild(li);
+            }
+        }
+        
+        function updateOpponentsArea() {
+            const opponentsArea = document.getElementById('opponents-area');
+            opponentsArea.innerHTML = '';
+            
+            if (!gameState || !gameState.started) {
+                opponentsArea.innerHTML = '<div class="opponent-card" style="text-align: center; padding: 30px;">⏳ Aguardando início do jogo...</div>';
+                return;
+            }
+            
+            for (const [playerUsername, playerData] of Object.entries(gameState.players)) {
+                const opponentCard = createOpponentCard(playerUsername, playerData);
+                opponentsArea.appendChild(opponentCard);
+            }
+        }
+        
+        function createOpponentCard(playerId, playerData) {
+            const div = document.createElement('div');
+            div.className = 'opponent-card';
+            
+            div.innerHTML = `
+                <div class="opponent-header">
+                    <span class="opponent-name">${playerData.name}</span>
+                    <span class="opponent-life">❤️ ${playerData.life}</span>
+                </div>
+                <div class="opponent-stats">
+                    <span class="stat-badge">🔮 ${playerData.talisman_count || 0}</span>
+                    <span class="stat-badge">🔷 ${playerData.runes || 0}</span>
+                </div>
+                <div class="bases-section">
+                    <small>⚔️ Ataque</small>
+                    <div class="bases-row" id="opp-attack-${playerId}"></div>
+                </div>
+                <div class="bases-section">
+                    <small>🛡️ Defesa</small>
+                    <div class="bases-row" id="opp-defense-${playerId}"></div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                const attackRow = document.getElementById(`opp-attack-${playerId}`);
+                const defenseRow = document.getElementById(`opp-defense-${playerId}`);
+                
+                if (attackRow) {
+                    playerData.attack_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'attack', index);
+                        attackRow.appendChild(slot);
+                    });
+                }
+                
+                if (defenseRow) {
+                    playerData.defense_bases.forEach((card, index) => {
+                        const slot = createBaseSlot(card, 'defense', index);
+                        defenseRow.appendChild(slot);
+                    });
+                }
+            }, 0);
+            
+            return div;
+        }
+        
+        function createBaseSlot(card, type, index) {
+            const slot = document.createElement('div');
+            slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
+            
+            if (card) {
+                let equippedItems = '';
+                if (card.equipped_items && card.equipped_items.length > 0) {
+                    equippedItems = `<div class="equipped-items">⚔️🛡️${card.equipped_items.length}</div>`;
+                }
+                
+                slot.innerHTML = `
+                    <div style="font-size: 16px;">${getTypeIcon(card.type)}</div>
+                    <strong>${card.name.substring(0, 8)}</strong>
+                    ${card.life ? `<small>❤️${card.life}</small>` : ''}
+                    ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
+                    ${equippedItems}
+                    <div class="card-tooltip">
+                        <strong>${card.name}</strong><br>
+                        Tipo: ${card.type}<br>
+                        ${card.description}<br>
+                        ${card.life ? `Vida: ${card.life}` : ''}
+                        ${card.attack ? ` | Ataque: ${card.attack}` : ''}
+                        ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
+                    </div>
+                `;
+            } else {
+                let placeholder = 'Vazio';
+                if (type === 'attack') placeholder = '⚔️';
+                else if (type === 'defense') placeholder = '🛡️';
+                slot.innerHTML = placeholder;
+            }
+            
+            return slot;
+        }
+        
+        function getTypeIcon(type) {
+            const icons = {
+                'creature': '👤',
+                'weapon': '⚔️',
+                'armor': '🛡️',
+                'talisman': '🔮',
+                'spell': '✨',
+                'rune': '🔷',
+                'oracle': '👁️',
+                'ritual': '📿',
+                'trap': '⚠️'
+            };
+            return icons[type] || '📦';
+        }
+        
+        function showGraveyard() {
+            if (!gameState || gameState.graveyard_count === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: '💀 Cemitério vazio',
+                    text: 'Nenhuma carta no cemitério ainda.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'Carregando cemitério...',
+                html: 'Aguarde enquanto as cartas são carregadas',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+            
+            socket.emit('get_graveyard', { game_id: gameId });
+        }
+        
+        function showGraveyardModal(data) {
+            let html = `
+                <div style="max-height: 500px; overflow-y: auto; padding: 10px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; background: rgba(255,215,0,0.1); padding: 10px; border-radius: 5px;">
+                        <span>Total: <strong style="color: #ffd700;">${data.cards.length}</strong> cartas</span>
+                    </div>
+            `;
+            
+            // Agrupar por tipo
+            const creatures = data.cards.filter(c => c.type === 'creature');
+            const spells = data.cards.filter(c => c.type === 'spell');
+            const weapons = data.cards.filter(c => c.type === 'weapon');
+            const armors = data.cards.filter(c => c.type === 'armor');
+            const runes = data.cards.filter(c => c.type === 'rune' || c.id === 'runa');
+            const talismans = data.cards.filter(c => c.type === 'talisman');
+            const traps = data.cards.filter(c => c.type === 'trap');
+            
+            if (creatures.length > 0) {
+                html += '<h3 style="color: #ff6b6b; margin: 15px 0 5px;">👤 Criaturas</h3>';
+                creatures.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (spells.length > 0) {
+                html += '<h3 style="color: #9370db; margin: 15px 0 5px;">✨ Feitiços</h3>';
+                spells.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (weapons.length > 0) {
+                html += '<h3 style="color: #ffa500; margin: 15px 0 5px;">⚔️ Armas</h3>';
+                weapons.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (armors.length > 0) {
+                html += '<h3 style="color: #4a90e2; margin: 15px 0 5px;">🛡️ Armaduras</h3>';
+                armors.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (runes.length > 0) {
+                html += '<h3 style="color: #4CAF50; margin: 15px 0 5px;">🔷 Runas</h3>';
+                runes.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (talismans.length > 0) {
+                html += '<h3 style="color: #ffd700; margin: 15px 0 5px;">🔮 Talismãs</h3>';
+                talismans.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            if (traps.length > 0) {
+                html += '<h3 style="color: #ff00ff; margin: 15px 0 5px;">⚠️ Armadilhas</h3>';
+                traps.forEach(card => {
+                    html += createGraveyardCardHTML(card);
+                });
+            }
+            
+            html += '</div>';
+            
+            Swal.fire({
+                title: '💀 Cemitério',
+                html: html,
+                showCancelButton: true,
+                showConfirmButton: false,
+                cancelButtonText: 'Fechar',
+                cancelButtonColor: '#ffd700',
+                background: '#1a1a2e',
+                color: '#fff',
+                width: '800px'
+            });
+        }
+        
+        function createGraveyardCardHTML(card) {
+            let icon = '📦';
+            if (card.type === 'creature') icon = '👤';
+            else if (card.type === 'spell') icon = '✨';
+            else if (card.type === 'weapon') icon = '⚔️';
+            else if (card.type === 'armor') icon = '🛡️';
+            else if (card.type === 'rune' || card.id === 'runa') icon = '🔷';
+            else if (card.type === 'talisman') icon = '🔮';
+            else if (card.type === 'trap') icon = '⚠️';
+            
+            return `
+                <div style="padding: 15px; margin: 10px 0; background: rgba(255, 215, 0, 0.1); border: 2px solid #ffd700; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">${icon}</span>
+                            <div>
+                                <strong style="color: #ffd700; font-size: 16px;">${card.name}</strong>
+                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
+                            </div>
+                        </div>
+                        <div>
+                            ${card.life ? `<span style="color: #ff6b6b; margin-right: 10px;">❤️ ${card.life}</span>` : ''}
+                            ${card.attack ? `<span style="color: #ffa500; margin-right: 10px;">⚔️ ${card.attack}</span>` : ''}
+                            ${card.protection ? `<span style="color: #4a90e2;">🛡️ ${card.protection}</span>` : ''}
+                        </div>
+                    </div>
+                    <div style="color: #ccc; font-size: 12px; margin-top: 5px; margin-left: 30px;">
+                        ${card.description || 'Sem descrição'}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function exitSpectate() {
+            Swal.fire({
+                title: 'Sair do modo espectador?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '🚪 Sair',
+                cancelButtonText: 'Continuar assistindo',
+                background: '#1a1a2e',
+                color: '#fff'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/';
+                }
+            });
+        }
+        
+        setInterval(requestGameState, 3000);
+    </script>
+</body>
+</html>
