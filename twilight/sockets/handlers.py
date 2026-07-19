@@ -1,10 +1,10 @@
 """Handlers Socket.IO da partida multiplayer."""
 import time
-from datetime import datetime
 
 from flask import request
 from flask_socketio import emit, join_room, leave_room
 
+from twilight.config import now_sp_str
 from twilight.auth.service import (
     clear_game_from_all_accounts,
     clear_user_game,
@@ -553,7 +553,7 @@ def handle_send_chat_message(data):
     emit('chat_message', {
         'username': username,
         'message': censored_message,
-        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'timestamp': now_sp_str('%H:%M:%S'),
         'is_system': False
     }, room=game_id)
 
@@ -603,7 +603,7 @@ def handle_player_action(data):
             'message': 'A partida já terminou.',
             'player_name': username,
             'action': action,
-            'timestamp': time.strftime('%H:%M:%S'),
+            'timestamp': now_sp_str('%H:%M:%S'),
             'game_finished': True,
             'winner': getattr(game, 'winner', None),
         })
@@ -623,7 +623,7 @@ def handle_player_action(data):
 
     result = None
     player_name = username
-    timestamp = time.strftime('%H:%M:%S')
+    timestamp = now_sp_str('%H:%M:%S')
     log_message = ""
     
     try:
