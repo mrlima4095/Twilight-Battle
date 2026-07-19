@@ -21,6 +21,9 @@ def get_games():
     for game_id, game in games.items():
         if game.private:
             continue
+        # Não listar partidas já encerradas (fantasma no lobby)
+        if getattr(game, 'finished', False):
+            continue
             
         games_list.append({
             'id': game_id,
@@ -119,4 +122,7 @@ def check_start_permission(game_id):
 
 @bp.route('/api/cleanup-games', methods=['POST'])
 def cleanup_games():
-    return jsonify({'success': True})
+    """Remove salas finished/vazias que ficariam eternas na memória."""
+    from twilight.game.session import cleanup_stale_games
+    result = cleanup_stale_games()
+    return jsonify({'success': True, **result})
