@@ -1438,6 +1438,16 @@ body::before {
                 isTimerRunning = false;
             } catch (e) {}
 
+            // Limpa current_game no servidor (não usar leave_game — remove jogador / fecha sala)
+            try {
+                fetch('/api/clear-current-game', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ game_id: gameId })
+                }).catch(() => {});
+            } catch (e) {}
+
             const winnerName = (data && (data.winner_name || data.winner)) || 'Alguém';
             Swal.fire({
                 title: '🏆 FIM DE JOGO! 🏆',
@@ -1450,7 +1460,8 @@ body::before {
                 allowOutsideClick: false,
                 allowEscapeKey: false
             }).then(() => {
-                window.location.href = '/';
+                // força menu limpo (sem current_game reabrindo a sala)
+                window.location.replace('/?from=game_over');
             });
         }
         socket.on('game_over', function(data) {
