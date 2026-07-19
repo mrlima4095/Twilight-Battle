@@ -17,6 +17,21 @@ from twilight.game.chat import broadcast_system_message
 
 bp = Blueprint('admin', __name__)
 
+
+def _emit_admin_private(game, target_username, payload):
+    """Avisa só o jogador-alvo (sem chat e sem broadcast da sala)."""
+    try:
+        sid = game.get_socket_id(target_username) if hasattr(game, 'get_socket_id') else None
+        if not sid:
+            for s, u in (getattr(game, 'socket_to_username', {}) or {}).items():
+                if u == target_username:
+                    sid = s
+                    break
+        if sid:
+            socketio.emit('admin_action', payload, room=sid)
+    except Exception:
+        pass
+
 @bp.route('/admin')
 @login_required
 def admin_panel(username):
@@ -373,15 +388,14 @@ def api_admin_give_card(admin_username, game_id, target_username):
         player['hand'].append(new_card)
         cards_given.append(new_card['name'])
     
-    # Notificar o jogador
-    socketio.emit('admin_action', {
+    # Silencioso: sem chat / sem aviso na sala (só o alvo, se quiser UI)
+    _emit_admin_private(game, target_username, {
         'type': 'cards_given',
         'cards': cards_given,
         'quantity': len(cards_given),
-        'message': f'Admin deu {len(cards_given)}x {card_info["name"]} para sua mão'
-    }, room=game_id)
-    
-    broadcast_system_message(game_id, f'📦 Admin deu {len(cards_given)}x {card_info["name"]} para {target_username}')
+        'silent': True,
+        'message': f'Você recebeu {len(cards_given)}x {card_info["name"]}',
+    })
     
     return jsonify({
         'success': True,
@@ -431,13 +445,13 @@ def api_admin_remove_card(admin_username, game_id, target_username):
             cards_removed.append(card)
     
     if cards_removed:
-        socketio.emit('admin_action', {
+        # Silencioso no chat / sala
+        _emit_admin_private(game, target_username, {
             'type': 'cards_removed',
             'cards': [c['name'] for c in cards_removed],
-            'message': f'Admin removeu {len(cards_removed)}x {cards_removed[0]["name"]} da sua mão'
-        }, room=game_id)
-        
-        broadcast_system_message(game_id, f'🗑️ Admin removeu {len(cards_removed)}x {cards_removed[0]["name"]} de {target_username}')
+            'silent': True,
+            'message': f'{len(cards_removed)} carta(s) removida(s) da sua mão',
+        })
     
     return jsonify({
         'success': True,
@@ -479,13 +493,15 @@ def api_admin_modify_life(admin_username, game_id, target_username):
         game.process_player_death(target_username)
         message += f' 💀 {target_username} MORREU!'
     
-    socketio.emit('admin_action', {
+    # Vida: sem chat público (só o alvo)
+    _emit_admin_private(game, target_username, {
         'type': 'life_change',
         'target': target_username,
         'old_life': old_life,
         'new_life': player['life'],
-        'message': message
-    }, room=game_id)
+        'silent': True,
+        'message': message,
+    })
     
     return jsonify({
         'success': True,
@@ -533,12 +549,13 @@ def api_admin_modify_hand(admin_username, game_id, target_username):
     else:
         return jsonify({'success': False, 'message': 'Ação inválida'}), 400
     
-    socketio.emit('admin_action', {
+    _emit_admin_private(game, target_username, {
         'type': 'hand_modified',
         'target': target_username,
         'hand_count': len(player['hand']),
-        'message': message
-    }, room=game_id)
+        'silent': True,
+        'message': message,
+    })
     
     return jsonify({
         'success': True,
@@ -605,11 +622,13 @@ def api_admin_modify_field(admin_username, game_id, target_username):
     else:
         return jsonify({'success': False, 'message': 'Ação inválida'}), 400
     
-    socketio.emit('admin_action', {
+    # Campo: sem anúncio no chat (evita denunciar buffs secretos)
+    _emit_admin_private(game, target_username, {
         'type': 'field_modified',
         'target': target_username,
-        'message': message
-    }, room=game_id)
+        'silent': True,
+        'message': message,
+    })
     
     return jsonify({'success': True, 'message': message})
 
@@ -683,37 +702,49 @@ def api_admin_shuffle_deck(admin_username, game_id):
     
     game = games[game_id]
     random.shuffle(game.deck)
-    
-    broadcast_system_message(game_id, f'🃏 Admin embaralhou o deck do jogo')
+    # Embaralhar é silencioso (não denuncia no chat)
     
     return jsonify({'success': True, 'deck_count': len(game.deck)})
 
 @bp.route('/api/admin/game/<game_id>/deck/peek', methods=['GET'])
 @admin_required
 def api_admin_peek_deck(admin_username, game_id):
-    """Vê as próximas N cartas do deck"""
+    """
+    Vê as próximas N cartas do deck na ordem real de compra.
+    draw_card usa deck.pop() → tira do FIM da lista. Próxima = deck[-1].
+    """
     quantity = int(request.args.get('quantity', 10))
     
     if game_id not in games:
         return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
     
     game = games[game_id]
-    
+    deck = game.deck or []
+    n = min(max(1, quantity), len(deck))
+
+    # Ordem de compra: último da lista primeiro (pop)
+    # deck[-1], deck[-2], ... → reversed(deck[-n:])
+    next_slice = deck[-n:] if n else []
+    draw_order = list(reversed(next_slice))
+
     peek_cards = []
-    for i in range(min(quantity, len(game.deck))):
-        card = game.deck[i]
+    for i, card in enumerate(draw_order):
         peek_cards.append({
-            'position': i,
+            'position': i + 1,  # 1 = próxima a ser comprada
+            'instance_id': card.get('instance_id'),
+            'id': card.get('id'),
             'name': card.get('name'),
             'type': card.get('type'),
             'attack': card.get('attack'),
-            'life': card.get('life')
+            'life': card.get('life'),
+            'description': (card.get('description') or '')[:120],
         })
     
     return jsonify({
         'success': True,
-        'deck_count': len(game.deck),
+        'deck_count': len(deck),
         'peek_count': len(peek_cards),
+        'draw_from': 'end',  # documenta a convenção do motor
         'cards': peek_cards
     })
 
@@ -743,7 +774,12 @@ def api_admin_revive_card(admin_username, game_id):
     if card.get('type') == 'creature' and card.get('id') in CARDS:
         card['life'] = CARDS[card['id']].get('life', card.get('life', 512))
     
-    broadcast_system_message(game_id, f'✨ Admin reviveu {card["name"]} do cemitério para {target_username}')
+    # Silencioso no chat (beneficia o jogador sem avisar a sala)
+    _emit_admin_private(game, target_username, {
+        'type': 'card_revived',
+        'silent': True,
+        'message': f'Uma carta voltou à sua mão: {card.get("name")}',
+    })
     
     return jsonify({
         'success': True,
