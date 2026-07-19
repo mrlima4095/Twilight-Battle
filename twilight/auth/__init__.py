@@ -2,6 +2,8 @@
 
 from twilight.auth.admin import admin_required, is_admin, is_super_admin
 from twilight.auth.service import (
+    clear_game_from_all_accounts,
+    clear_user_game,
     create_token,
     get_current_user,
     hash_password,
@@ -15,6 +17,8 @@ from twilight.auth.service import (
 
 __all__ = [
     'admin_required',
+    'clear_game_from_all_accounts',
+    'clear_user_game',
     'create_token',
     'get_current_user',
     'hash_password',
