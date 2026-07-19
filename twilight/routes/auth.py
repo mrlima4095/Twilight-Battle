@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, make_response, request
 
 from twilight.auth.service import (
+    clear_user_game,
     create_token,
     get_current_user,
     hash_password,
@@ -110,8 +111,21 @@ def check_auth():
     accounts = load_accounts()
     current_game = accounts.get(username, {}).get('current_game')
     
-    # Verificar se o jogo ainda existe
+    # Verificar se o jogo ainda existe E não terminou
     if current_game and current_game in games:
+        game = games[current_game]
+        if getattr(game, 'finished', False):
+            # Partida acabou: limpar ponteiro (evita loop / → /game → /)
+            if username in accounts:
+                accounts[username]['current_game'] = None
+                save_accounts(accounts)
+            return jsonify({
+                'authenticated': True,
+                'username': username,
+                'current_game': None,
+                'game_exists': False,
+                'game_finished': True,
+            })
         return jsonify({
             'authenticated': True,
             'username': username,
@@ -131,6 +145,19 @@ def check_auth():
             'game_exists': False
         })
 
+
+
+@bp.route('/api/clear-current-game', methods=['POST'])
+def clear_current_game():
+    """Limpa current_game da conta (chamar no fim da partida / sair)."""
+    username = get_current_user()
+    if not username:
+        return jsonify({'success': False, 'message': 'Não autenticado'}), 401
+
+    data = request.json or {}
+    game_id = data.get('game_id')
+    clear_user_game(username, game_id)
+    return jsonify({'success': True, 'current_game': None})
 
 
 @bp.route('/api/auth/status')
