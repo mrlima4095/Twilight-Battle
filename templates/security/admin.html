@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin — Twilight Battle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+:root {
+  --bg-0: #07060f;
+  --bg-1: #0e0b1a;
+  --bg-2: #16122a;
+  --panel: rgba(18, 14, 36, 0.78);
+  --panel-2: rgba(28, 22, 52, 0.88);
+  --border: rgba(255, 215, 120, 0.18);
+  --border-strong: rgba(255, 215, 120, 0.42);
+  --gold: #f0c14b;
+  --gold-2: #ffb347;
+  --gold-dim: rgba(240, 193, 75, 0.15);
+  --cyan: #5ee7ff;
+  --violet: #9b7bff;
+  --green: #3ddc97;
+  --red: #ff4d6d;
+  --rose: #ff6b8a;
+  --text: #f4f0ff;
+  --muted: #a39bb8;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(155,123,255,.28), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,94,200,.14), transparent 50%),
+    radial-gradient(800px 400px at 50% 100%, rgba(94,231,255,.08), transparent 50%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 40%, #120b22);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%, rgba(240,193,75,.5), transparent);
+  opacity: .5;
+}
+@keyframes fade-up { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.shell {
+  position: relative; z-index: 1;
+  max-width: 1200px; margin: 0 auto;
+  padding: 20px 16px 56px;
+  animation: fade-up .45s ease both;
+}
+
+/* Header */
+.admin-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;
+  padding: 16px 20px; margin-bottom: 16px;
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+}
+.admin-header::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,120,.5), transparent);
+}
+.admin-title {
+  font-family: var(--font-display); font-size: clamp(1.15rem, 3vw, 1.45rem); font-weight: 700;
+  color: var(--gold); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.admin-title .badge-mini {
+  font-family: var(--font-ui); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px; background: var(--gold-dim); border: 1px solid var(--border);
+  color: var(--gold); font-weight: 700;
+}
+.header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.user-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08);
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; font-weight: 800; font-size: .95rem;
+}
+.user-chip span { color: var(--muted); font-size: .9rem; }
+.user-chip strong { color: var(--gold); font-weight: 600; }
+.badge {
+  padding: 5px 12px; border-radius: 999px; font-size: .72rem; font-weight: 800;
+  letter-spacing: .04em; text-transform: uppercase;
+}
+.badge.super {
+  background: rgba(255,77,109,.2); color: #ff8fa3; border: 1px solid rgba(255,77,109,.4);
+}
+.badge.admin {
+  background: rgba(61,220,151,.15); color: var(--green); border: 1px solid rgba(61,220,151,.35);
+}
+.nav-home {
+  padding: 9px 14px; border-radius: 11px; text-decoration: none; font-weight: 700; font-size: .85rem;
+  color: var(--gold); border: 1px solid var(--border); background: var(--gold-dim);
+  transition: .2s;
+}
+.nav-home:hover { filter: brightness(1.1); border-color: var(--border-strong); }
+
+/* Tabs */
+.nav-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 8px; margin-bottom: 16px;
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.tab-btn {
+  background: transparent; border: 1px solid transparent;
+  color: var(--muted); padding: 10px 16px; cursor: pointer;
+  font-family: inherit; font-size: .92rem; font-weight: 600;
+  border-radius: 12px; transition: .2s;
+}
+.tab-btn:hover {
+  background: rgba(240,193,75,.08); color: var(--gold); border-color: var(--border);
+}
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; border-color: transparent;
+  box-shadow: 0 6px 18px rgba(240,193,75,.25);
+}
+
+/* Content panels */
+.tab-content { display: none; animation: fade-up .35s ease both; }
+.tab-content.active { display: block; }
+
+.panel {
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 22px;
+  position: relative; overflow: hidden;
+}
+.panel::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,120,.45), transparent);
+}
+.panel h2, .panel h3 {
+  font-family: var(--font-display); color: var(--gold);
+  font-size: 1.15rem; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+.panel h3 { font-size: 1.05rem; margin-top: 8px; }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-bottom: 18px;
+}
+.stat-card {
+  padding: 18px 16px; border-radius: 16px; text-align: center;
+  background: var(--panel-2); border: 1px solid rgba(255,255,255,.06);
+  transition: border-color .2s, transform .15s;
+}
+.stat-card:hover { border-color: var(--border); transform: translateY(-2px); }
+.stat-card h3 {
+  font-family: var(--font-ui); font-size: .72rem; color: var(--muted);
+  letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px;
+  justify-content: center;
+}
+.stat-card .value {
+  font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--gold);
+}
+
+/* Tables */
+.table-wrap {
+  overflow-x: auto; border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,.06);
+}
+table {
+  width: 100%; border-collapse: collapse;
+  background: rgba(0,0,0,.2);
+}
+th, td {
+  padding: 12px 14px; text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  font-size: .92rem;
+}
+th {
+  background: rgba(240,193,75,.08); color: var(--gold);
+  font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; font-weight: 700;
+}
+tr:hover { background: rgba(255,255,255,.03); }
+tr:last-child td { border-bottom: none; }
+
+.status-alive { color: var(--green); font-weight: 600; }
+.status-dead { color: var(--red); font-weight: 600; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 14px; border: none; border-radius: 11px;
+  font-family: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+  transition: transform .15s, filter .2s, box-shadow .2s;
+  color: #fff;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.btn:active { transform: none; }
+.btn-sm { padding: 6px 10px; font-size: .75rem; border-radius: 9px; }
+.btn-primary {
+  background: linear-gradient(135deg, #5b8cff, #3d5afe);
+  box-shadow: 0 6px 16px rgba(61,90,254,.28);
+}
+.btn-success {
+  background: linear-gradient(135deg, #3ddc97, #2bb673);
+  box-shadow: 0 6px 16px rgba(61,220,151,.22);
+  color: #0a1a12;
+}
+.btn-danger {
+  background: linear-gradient(135deg, #ff4d6d, #d32f4a);
+  box-shadow: 0 6px 16px rgba(255,77,109,.25);
+}
+.btn-warning {
+  background: linear-gradient(135deg, #ffb347, #f0a020);
+  color: #1a1020; box-shadow: 0 6px 16px rgba(240,160,32,.25);
+}
+.btn-info {
+  background: linear-gradient(135deg, #5ee7ff, #2eb8d4);
+  color: #0a1520; box-shadow: 0 6px 16px rgba(94,231,255,.22);
+}
+.refresh-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 16px; border: none; border-radius: 12px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: .9rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; box-shadow: 0 6px 18px rgba(240,193,75,.22);
+  margin-bottom: 14px; margin-right: 8px; transition: .15s;
+}
+.refresh-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* Forms */
+.search-box { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.search-box input, .search-box select,
+input[type="text"], input[type="number"], select, textarea {
+  padding: 12px 14px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(0,0,0,.35); color: var(--text);
+  font-family: inherit; font-size: .95rem; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-box input { min-width: 220px; flex: 1; }
+.search-box select { min-width: 160px; }
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(240,193,75,.55); box-shadow: 0 0 0 3px rgba(240,193,75,.12);
+}
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block; margin-bottom: 6px; color: var(--muted);
+  font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+}
+.flex-row {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;
+}
+.flex-row select { min-width: 200px; }
+
+/* Cards */
+.game-card, .player-card {
+  background: var(--panel-2); border-radius: 16px; padding: 16px 18px;
+  margin-bottom: 12px; border: 1px solid rgba(255,255,255,.06);
+  transition: border-color .2s;
+}
+.game-card:hover, .player-card:hover { border-color: var(--border); }
+.game-card h4, .player-card h4 {
+  font-family: var(--font-display); color: var(--gold);
+  margin-bottom: 10px; font-size: 1.05rem;
+}
+.game-card p { color: var(--muted); font-size: .9rem; margin-bottom: 6px; line-height: 1.45; }
+.player-list { margin-top: 10px; }
+.player-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 10px; border-radius: 10px; flex-wrap: wrap; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.player-item:hover { background: rgba(255,255,255,.03); }
+
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px; max-height: 480px; overflow-y: auto; padding-right: 4px;
+}
+.card-item {
+  background: rgba(0,0,0,.28); padding: 12px; border-radius: 12px; cursor: pointer;
+  border: 1px solid rgba(255,255,255,.08); transition: .2s;
+}
+.card-item:hover {
+  background: rgba(240,193,75,.08); border-color: var(--border);
+  transform: translateY(-2px);
+}
+.card-item.selected {
+  background: rgba(240,193,75,.14); border-color: var(--border-strong);
+}
+.card-name { font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.card-type { font-size: .75rem; color: var(--muted); }
+
+.hand-cards { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.hand-card {
+  background: rgba(0,0,0,.35); padding: 5px 10px; border-radius: 8px;
+  font-size: .75rem; cursor: pointer; border: 1px solid rgba(255,255,255,.1);
+  color: var(--text); transition: .15s;
+}
+.hand-card:hover {
+  background: rgba(255,179,71,.25); border-color: var(--gold); color: var(--gold);
+}
+.position-slot {
+  display: inline-block; background: rgba(0,0,0,.35);
+  padding: 4px 8px; margin: 2px; border-radius: 8px; font-size: .72rem;
+  cursor: pointer; border: 1px solid rgba(255,255,255,.08); transition: .15s;
+}
+.position-slot.empty { color: #6b6480; }
+.position-slot:hover {
+  background: rgba(240,193,75,.2); border-color: var(--gold); color: var(--gold);
+}
+
+/* Modals */
+.modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(4, 3, 12, 0.78); backdrop-filter: blur(8px);
+  justify-content: center; align-items: center; z-index: 1000;
+  padding: 16px;
+}
+.modal-content {
+  background: var(--panel-2); border-radius: var(--radius); padding: 24px;
+  min-width: min(320px, 100%); max-width: 560px; width: 100%;
+  max-height: 85vh; overflow-y: auto;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  position: relative;
+}
+.modal-content::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,120,.5), transparent);
+}
+.modal-content h3, .modal-content h4 {
+  font-family: var(--font-display); color: var(--gold); margin-bottom: 14px; font-size: 1.15rem;
+}
+.modal-content p { color: var(--muted); margin-bottom: 10px; }
+.modal-content strong { color: var(--text); }
+.modal-content select, .modal-content input, .modal-content textarea {
+  width: 100%; margin: 6px 0 12px;
+}
+.modal-buttons {
+  display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end; flex-wrap: wrap;
+}
+
+/* Alerts */
+.alert {
+  padding: 12px 16px; border-radius: 12px; margin-bottom: 1rem;
+  position: fixed; top: 20px; right: 20px; z-index: 1001;
+  animation: slideIn .3s ease; font-weight: 600; font-size: .9rem;
+  box-shadow: var(--shadow); max-width: 360px;
+}
+.alert-success {
+  background: rgba(61,220,151,.2); color: var(--green);
+  border: 1px solid rgba(61,220,151,.4);
+}
+.alert-error {
+  background: rgba(255,77,109,.2); color: #ff8fa3;
+  border: 1px solid rgba(255,77,109,.4);
+}
+
+.empty-hint {
+  text-align: center; padding: 36px 16px; color: var(--muted);
+  border: 1px dashed rgba(240,193,75,.25); border-radius: 16px;
+  background: rgba(0,0,0,.15);
+}
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+
+@media (max-width: 768px) {
+  .shell { padding: 12px 10px 40px; }
+  th, td { padding: 8px 10px; font-size: .8rem; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .tab-btn { padding: 8px 12px; font-size: .82rem; }
+}
+    </style>
+</head>
+<body>
+<div class="shell">
+    <header class="admin-header">
+        <div class="admin-title">
+            ⚔️ Painel Admin
+            <span class="badge-mini">Twilight Battle</span>
+        </div>
+        <div class="header-right">
+            <div class="user-chip">
+                <div class="user-avatar">{{ username[:1]|upper }}</div>
+                <span><strong>{{ username }}</strong></span>
+            </div>
+            {% if is_super %}
+            <span class="badge super">Super Admin</span>
+            {% else %}
+            <span class="badge admin">Admin</span>
+            {% endif %}
+            <a href="/" class="nav-home">← Menu</a>
+        </div>
+    </header>
+
+    <nav class="nav-tabs">
+        <button class="tab-btn active" data-tab="dashboard" type="button">📊 Dashboard</button>
+        <button class="tab-btn" data-tab="users" type="button">👥 Usuários</button>
+        <button class="tab-btn" data-tab="games" type="button">🎮 Jogos ativos</button>
+        <button class="tab-btn" data-tab="game-control" type="button">🎛 Controle</button>
+        <button class="tab-btn" data-tab="cards" type="button">📚 Cartas</button>
+    </nav>
+
+    <div id="dashboard" class="tab-content active">
+        <div class="panel">
+            <h2>Visão geral</h2>
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card">
+                    <h3>Total de usuários</h3>
+                    <div class="value" id="total-users">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Jogos ativos</h3>
+                    <div class="value" id="active-games">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Jogadores online</h3>
+                    <div class="value" id="online-players">-</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Espectadores</h3>
+                    <div class="value" id="spectators">-</div>
+                </div>
+            </div>
+            <button class="refresh-btn" onclick="loadDashboard()" type="button">🔄 Atualizar</button>
+        </div>
+    </div>
+
+    <div id="users" class="tab-content">
+        <div class="panel">
+            <h2>Usuários</h2>
+            <div class="search-box">
+                <input type="text" id="user-search" placeholder="Buscar usuário..." onkeyup="filterUsers()">
+            </div>
+            <button class="refresh-btn" onclick="loadUsers()" type="button">🔄 Atualizar lista</button>
+            <div class="table-wrap">
+                <table id="users-table">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Criado em</th>
+                            <th>Admin</th>
+                            <th>Jogo atual</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-tbody">
+                        <tr><td colspan="6" style="text-align:center;color:var(--muted)">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="games" class="tab-content">
+        <div class="panel">
+            <h2>Jogos ativos</h2>
+            <button class="refresh-btn" onclick="loadGames()" type="button">🔄 Atualizar lista</button>
+            <div id="games-list"></div>
+        </div>
+    </div>
+
+    <div id="game-control" class="tab-content">
+        <div class="panel">
+            <h2>Controle de jogo</h2>
+            <div class="flex-row">
+                <select id="control-game-select" onchange="loadGameControlState()">
+                    <option value="">Selecione um jogo</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadGameControlState()" type="button">Carregar jogo</button>
+                <button class="btn btn-success" onclick="syncCurrentGame()" type="button">🔄 Sincronizar</button>
+            </div>
+
+            <div id="game-control-panel" style="margin-top: 1rem; display: none;">
+                <div class="game-card">
+                    <h4 id="control-game-title">Jogo: -</h4>
+                    <div class="flex-row">
+                        <span id="control-game-status"></span>
+                        <span id="control-game-time"></span>
+                        <span id="control-game-turn"></span>
+                    </div>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-card">
+                        <h3>Deck</h3>
+                        <div class="value" id="control-deck-count">-</div>
+                        <div class="toolbar" style="justify-content:center;margin-top:10px;margin-bottom:0">
+                            <button class="btn btn-info btn-sm" onclick="peekDeck()" type="button">👁️ Ver próximas</button>
+                            <button class="btn btn-warning btn-sm" onclick="shuffleDeck()" type="button">🃏 Embaralhar</button>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Cemitério</h3>
+                        <div class="value" id="control-graveyard-count">-</div>
+                        <div class="toolbar" style="justify-content:center;margin-top:10px;margin-bottom:0">
+                            <button class="btn btn-info btn-sm" onclick="showGraveyard()" type="button">💀 Ver cartas</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-row" style="margin-bottom: 1rem;">
+                    <button class="btn btn-warning" onclick="setGameTime('day')" type="button">☀️ Forçar dia</button>
+                    <button class="btn btn-info" onclick="setGameTime('night')" type="button">🌙 Forçar noite</button>
+                    <button class="btn btn-primary" onclick="openSetTurnModal()" type="button">👑 Alterar turno</button>
+                </div>
+
+                <h3>👥 Jogadores</h3>
+                <div id="control-players-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cards" class="tab-content">
+        <div class="panel">
+            <h2>Catálogo de cartas</h2>
+            <div class="search-box">
+                <input type="text" id="card-search" placeholder="Buscar carta..." onkeyup="filterCards()">
+                <select id="card-type-filter" onchange="filterCards()">
+                    <option value="">Todos os tipos</option>
+                    <option value="creature">Criaturas</option>
+                    <option value="spell">Feitiços</option>
+                    <option value="weapon">Armas</option>
+                    <option value="armor">Armaduras</option>
+                    <option value="trap">Armadilhas</option>
+                    <option value="talisman">Talismãs</option>
+                    <option value="ritual">Rituais</option>
+                    <option value="rune">Runas</option>
+                </select>
+            </div>
+            <button class="refresh-btn" onclick="loadCards()" type="button">🔄 Carregar cartas</button>
+            <div id="cards-grid" class="card-grid" style="margin-top: 1rem;"></div>
+        </div>
+    </div>
+</div>
+
+    <!-- Modais (ids preservados para o JS) -->
+    <div id="level-modal" class="modal"><div class="modal-content"><h3>Alterar nível de admin</h3><p>Usuário: <strong id="level-username"></strong></p><select id="level-select"><option value="0">0 - Usuário normal</option><option value="1">1 - Admin</option><option value="2">2 - Moderador</option><option value="3">3 - Gerente</option><option value="4">4 - Super Admin</option><option value="5">5 - Root</option></select><div class="modal-buttons"><button class="btn btn-primary" onclick="saveAdminLevel()" type="button">Salvar</button><button class="btn btn-danger" onclick="closeModal('level-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="give-card-modal" class="modal"><div class="modal-content"><h3>Dar carta</h3><p>Jogador: <strong id="give-card-player"></strong></p><p>Jogo: <strong id="give-card-game"></strong></p><div class="form-group"><label>Selecionar carta</label><select id="give-card-select" style="width: 100%;"></select></div><div class="form-group"><label>Quantidade</label><input type="number" id="give-card-quantity" value="1" min="1" max="10"></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitGiveCard()" type="button">Dar</button><button class="btn btn-danger" onclick="closeModal('give-card-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="modify-life-modal" class="modal"><div class="modal-content"><h3>Modificar vida</h3><p>Jogador: <strong id="modify-life-player"></strong></p><div class="form-group"><label>Valor (positivo = cura, negativo = dano)</label><input type="number" id="modify-life-delta" value="0" step="100"></div><div class="form-group"><label>Ou definir vida exata</label><input type="number" id="modify-life-exact" placeholder="Deixe em branco para usar delta"></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitModifyLife()" type="button">Aplicar</button><button class="btn btn-danger" onclick="closeModal('modify-life-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="remove-card-modal" class="modal"><div class="modal-content"><h3>Remover carta</h3><p>Jogador: <strong id="remove-card-player"></strong></p><div class="form-group"><label>Carta da mão</label><select id="remove-card-select" style="width: 100%;"></select></div><div class="modal-buttons"><button class="btn btn-danger" onclick="submitRemoveCard()" type="button">Remover</button><button class="btn btn-primary" onclick="closeModal('remove-card-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="field-modal" class="modal"><div class="modal-content"><h3>Modificar campo</h3><p>Jogador: <strong id="field-player"></strong></p><div class="form-group"><label>Posição</label><select id="field-position-type"><option value="attack">Ataque (0-2)</option><option value="defense">Defesa (0-5)</option></select></div><div class="form-group"><label>Índice</label><input type="number" id="field-position-index" value="0" min="0" max="5"></div><div class="form-group"><label>Ação</label><select id="field-action"><option value="set">Colocar carta</option><option value="remove">Remover carta</option></select></div><div class="form-group" id="field-card-group"><label>Carta</label><select id="field-card-select" style="width: 100%;"></select></div><div class="modal-buttons"><button class="btn btn-success" onclick="submitFieldModify()" type="button">Aplicar</button><button class="btn btn-danger" onclick="closeModal('field-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="peek-deck-modal" class="modal"><div class="modal-content"><h3>Próximas cartas do deck</h3><div id="peek-deck-content"></div><div class="modal-buttons"><button class="btn btn-primary" onclick="closeModal('peek-deck-modal')" type="button">Fechar</button></div></div></div>
+
+    <div id="graveyard-modal" class="modal"><div class="modal-content"><h3>Cemitério</h3><div id="graveyard-content"></div><div class="modal-buttons"><button class="btn btn-primary" onclick="closeModal('graveyard-modal')" type="button">Fechar</button></div></div></div>
+
+    <div id="set-turn-modal" class="modal"><div class="modal-content"><h3>Alterar turno</h3><select id="set-turn-select" style="width: 100%;"></select><div class="modal-buttons"><button class="btn btn-success" onclick="submitSetTurn()" type="button">Alterar</button><button class="btn btn-danger" onclick="closeModal('set-turn-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="message" style="display: none;"></div>
+
+    <script>
+        let currentGameId = null;
+        let currentGameState = null;
+        let allCards = [];
+        let currentTargetPlayer = null;
+        let pendingUser = null;
+        
+        function showMessage(message, isError = false) {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = `alert alert-${isError ? 'error' : 'success'}`;
+            msgDiv.textContent = message;
+            msgDiv.style.display = 'block';
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        }
+        
+        async function fetchAPI(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    throw new Error(response.ok
+                        ? 'Resposta inválida do servidor'
+                        : `Erro HTTP ${response.status}: ${text.slice(0, 120)}`);
+                }
+                if (!data.success) throw new Error(data.message || 'Erro na requisição');
+                return data;
+            } catch (error) {
+                showMessage(error.message, true);
+                throw error;
+            }
+        }
+        
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const [usersData, gamesData] = await Promise.all([fetchAPI('/api/admin/users'), fetchAPI('/api/admin/games')]);
+                const users = usersData.users || [], games = gamesData.games || [];
+                let onlinePlayers = 0, spectators = 0;
+                games.forEach(game => { onlinePlayers += game.players?.length || 0; spectators += game.spectators?.length || 0; });
+                document.getElementById('total-users').textContent = users.length;
+                document.getElementById('active-games').textContent = games.length;
+                document.getElementById('online-players').textContent = onlinePlayers;
+                document.getElementById('spectators').textContent = spectators;
+            } catch (error) { console.error(error); }
+        }
+        
+        // Usuários
+        async function loadUsers() {
+            try {
+                const data = await fetchAPI('/api/admin/users');
+                const users = data.users || [];
+                const tbody = document.getElementById('users-tbody');
+                if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Nenhum usuário encontrado</td></tr>'; return; }
+                tbody.innerHTML = users.map(user => `
+                    <tr data-username="${user.username}">
+                        <td><strong>${user.username}</strong></td>
+                        <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                        <td><span class="badge" style="background: ${user.admin_level >= 1 ? 'rgba(240,193,75,.15)' : 'rgba(255,255,255,.06)'}; color: ${user.admin_level >= 1 ? 'var(--gold)' : 'var(--muted)'}; border: 1px solid ${user.admin_level >= 1 ? 'var(--border)' : 'transparent'}">Lvl ${user.admin_level}</span></td>
+                        <td>${user.current_game || '-'}</td>
+                        <td class="${user.game_info?.is_dead ? 'status-dead' : 'status-alive'}">${user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline'}</td>
+                        <td>${user.admin_level < 4 ? `<button class="btn btn-primary btn-sm" onclick="openLevelModal('${user.username}', ${user.admin_level})" type="button">👑 Nível</button> <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')" type="button">🗑️</button>` : '—'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) { console.error(error); }
+        }
+        
+        function filterUsers() { const search = document.getElementById('user-search').value.toLowerCase(); document.querySelectorAll('#users-tbody tr').forEach(row => { row.style.display = row.getAttribute('data-username')?.toLowerCase().includes(search) ? '' : 'none'; }); }
+        
+        function openLevelModal(username, level) { pendingUser = username; document.getElementById('level-username').textContent = username; document.getElementById('level-select').value = level; document.getElementById('level-modal').style.display = 'flex'; }
+        async function saveAdminLevel() { try { await fetchAPI(`/api/admin/user/${pendingUser}/admin-level`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: parseInt(document.getElementById('level-select').value) })}); showMessage(`Nível alterado`); closeModal('level-modal'); loadUsers(); } catch(error) { console.error(error); } }
+        async function deleteUser(username) { if (!confirm(`Deletar "${username}"?`)) return; await fetchAPI(`/api/admin/user/${username}`, { method: 'DELETE' }); showMessage(`Usuário deletado`); loadUsers(); loadDashboard(); }
+        
+        // Jogos
+        async function loadGames() {
+            try {
+                const data = await fetchAPI('/api/admin/games');
+                const games = data.games || [];
+                const container = document.getElementById('games-list');
+                const select = document.getElementById('control-game-select');
+                if (games.length === 0) {
+                    container.innerHTML = '<div class="empty-hint">Nenhum jogo ativo no momento</div>';
+                    select.innerHTML = '<option value="">Nenhum jogo</option>';
+                    return;
+                }
+                container.innerHTML = games.map(game => `
+                    <div class="game-card">
+                        <h4>🎮 ${game.id} ${game.private ? '🔒' : '🌐'}</h4>
+                        <p>Criador: ${game.creator} · ${game.started ? '▶️ Em andamento' : '⏸️ Lobby'} · ${game.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite'} · Turno: ${game.current_turn || '-'}</p>
+                        <p>Jogadores: ${game.player_count}/${game.max_players} · Deck: ${game.deck_count} · Cemitério: ${game.graveyard_count}</p>
+                        <div class="player-list">${game.players.map(p => `<div class="player-item"><span>${p.username}</span><span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀' : `${p.life}❤️`}</span><span>📚 ${p.hand_count}</span></div>`).join('')}</div>
+                        <div class="flex-row" style="margin-top:12px;margin-bottom:0">
+                            <button class="btn btn-primary btn-sm" onclick="selectGameForControl('${game.id}')" type="button">🎮 Controlar</button>
+                            <button class="btn btn-warning btn-sm" onclick="syncGame('${game.id}')" type="button">🔄 Sincronizar</button>
+                            <button class="btn btn-danger btn-sm" onclick="forceEndGame('${game.id}')" type="button">⛔ Encerrar</button>
+                        </div>
+                    </div>
+                `).join('');
+                select.innerHTML = '<option value="">Selecione um jogo</option>' + games.map(g => `<option value="${g.id}">${g.id} (${g.player_count} jogadores)</option>`).join('');
+            } catch (error) { console.error(error); }
+        }
+        
+        async function syncGame(gameId) { const data = await fetchAPI(`/api/admin/game/${gameId}/sync`); showMessage(`Sincronizado: ${data.synced} jogadores`); }
+        async function forceEndGame(gameId) { if (!confirm(`Encerrar ${gameId}?`)) return; await fetchAPI(`/api/admin/game/${gameId}/force-end`, { method: 'POST' }); showMessage(`Jogo encerrado`); loadGames(); loadDashboard(); }
+        
+        // Controle de Jogo
+        async function loadGameControlState() {
+            currentGameId = document.getElementById('control-game-select').value;
+            if (!currentGameId) { document.getElementById('game-control-panel').style.display = 'none'; return; }
+            try {
+                const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`);
+                currentGameState = data.game;
+                document.getElementById('game-control-panel').style.display = 'block';
+                document.getElementById('control-game-title').innerHTML = `🎮 Jogo: ${currentGameId}`;
+                document.getElementById('control-game-status').innerHTML = currentGameState.started ? '▶️ Em andamento' : '⏸️ Aguardando';
+                document.getElementById('control-game-time').innerHTML = currentGameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
+                document.getElementById('control-game-turn').innerHTML = `👑 Turno: ${currentGameState.current_turn || '?'}`;
+                document.getElementById('control-deck-count').innerHTML = currentGameState.deck_count;
+                document.getElementById('control-graveyard-count').innerHTML = currentGameState.graveyard_count;
+                
+                const playersDiv = document.getElementById('control-players-list');
+                playersDiv.innerHTML = Object.entries(currentGameState.player_data).map(([uname, p]) => `
+                    <div class="player-card">
+                        <h4>${p.name} (${uname}) <span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀 MORTO' : `❤️ ${p.life}`}</span></h4>
+                        <div class="flex-row" style="margin-bottom: 0.5rem;">
+                            <button class="btn btn-primary btn-sm" onclick="openGiveCardModal('${uname}')" type="button">📦 Dar carta</button>
+                            <button class="btn btn-warning btn-sm" onclick="openModifyLifeModal('${uname}')" type="button">❤️ Vida</button>
+                            <button class="btn btn-danger btn-sm" onclick="openRemoveCardModal('${uname}', ${JSON.stringify(p.hand).replace(/"/g, '&quot;')})" type="button">🗑️ Remover</button>
+                            <button class="btn btn-info btn-sm" onclick="openFieldModal('${uname}')" type="button">🏟️ Campo</button>
+                            ${p.dead ? `<button class="btn btn-success btn-sm" onclick="revivePlayer('${uname}')" type="button">✨ Reviver</button>` : `<button class="btn btn-danger btn-sm" onclick="killPlayer('${uname}')" type="button">💀 Matar</button>`}
+                        </div>
+                        <div><strong>📚 Mão (${p.hand.length}):</strong> <div class="hand-cards">${p.hand.map(c => `<span class="hand-card" onclick="selectHandCard('${uname}', '${c.instance_id}', '${c.name}')">${c.name}</span>`).join('') || '<span style="color:var(--muted)">(vazia)</span>'}</div></div>
+                        <div style="margin-top:8px"><strong>⚔️ Ataque:</strong> ${p.attack_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'attack', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
+                        <div style="margin-top:6px"><strong>🛡️ Defesa:</strong> ${p.defense_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'defense', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
+                    </div>
+                `).join('');
+            } catch (error) { console.error(error); }
+        }
+        
+        function selectGameForControl(gameId) { document.getElementById('control-game-select').value = gameId; loadGameControlState(); document.querySelector('[data-tab="game-control"]').click(); }
+        async function syncCurrentGame() { if (currentGameId) await syncGame(currentGameId); loadGameControlState(); }
+        async function setGameTime(time) { await fetchAPI(`/api/admin/game/${currentGameId}/set-time`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ time_of_day: time }) }); showMessage(`Ciclo alterado para ${time}`); loadGameControlState(); }
+        async function shuffleDeck() { await fetchAPI(`/api/admin/game/${currentGameId}/deck/shuffle`, { method: 'POST' }); showMessage(`Deck embaralhado`); loadGameControlState(); }
+        async function peekDeck() {
+            const data = await fetchAPI(`/api/admin/game/${currentGameId}/deck/peek?quantity=10`);
+            const cards = data.cards || [];
+            document.getElementById('peek-deck-content').innerHTML = cards.length
+                ? `<p style="color:var(--muted);margin-bottom:12px;font-size:.85rem">Ordem real de compra (1 = próxima). Deck: ${data.deck_count} cartas.</p>
+                   <div class="card-grid">${cards.map(c => `
+                    <div class="card-item">
+                        <div class="card-name">#${c.position} · ${c.name || '?'}</div>
+                        <div class="card-type">${c.type || '?'} · ⚔️${c.attack ?? '-'} · ❤️${c.life ?? '-'}</div>
+                        <div class="card-type" style="font-size:.65rem;opacity:.7">${c.id || ''} ${c.instance_id ? '· ' + c.instance_id : ''}</div>
+                    </div>`).join('')}</div>`
+                : '<p class="empty-hint">Deck vazio</p>';
+            openModal('peek-deck-modal');
+        }
+        async function showGraveyard() { const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`); const graveyard = data.game.graveyard || []; document.getElementById('graveyard-content').innerHTML = `<div class="card-grid">${graveyard.map((c, i) => `<div class="card-item"><div class="card-name">${c.name}</div><div class="card-type">${c.type}</div><button class="btn btn-success btn-sm" onclick="reviveCard(${i})" type="button">✨ Reviver</button></div>`).join('') || '<p class="empty-hint">Cemitério vazio</p>'}</div>`; openModal('graveyard-modal'); }
+        async function reviveCard(index) { const target = prompt('Para qual jogador?'); if (!target) return; await fetchAPI(`/api/admin/game/${currentGameId}/graveyard/revive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target, card_index: index }) }); showMessage(`Carta revivida`); closeModal('graveyard-modal'); loadGameControlState(); }
+        async function killPlayer(username) { if (!confirm(`Matar ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/kill`, { method: 'POST' }); showMessage(`${username} morto`); loadGameControlState(); }
+        async function revivePlayer(username) { await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/revive`, { method: 'POST' }); showMessage(`${username} revivido`); loadGameControlState(); }
+        
+        function openSetTurnModal() { const select = document.getElementById('set-turn-select'); select.innerHTML = currentGameState.players.map(p => `<option value="${p}">${p}</option>`).join(''); openModal('set-turn-modal'); }
+        async function submitSetTurn() { const target = document.getElementById('set-turn-select').value; await fetchAPI(`/api/admin/game/${currentGameId}/set-turn`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target }) }); showMessage(`Turno alterado para ${target}`); closeModal('set-turn-modal'); loadGameControlState(); }
+        
+        // Cartas
+        async function loadCards() { const data = await fetchAPI('/api/admin/cards/list'); allCards = data.cards; renderCards(); }
+        function renderCards() { const search = document.getElementById('card-search').value.toLowerCase(); const typeFilter = document.getElementById('card-type-filter').value; const filtered = allCards.filter(c => c.name.toLowerCase().includes(search) && (!typeFilter || c.type === typeFilter)); document.getElementById('cards-grid').innerHTML = filtered.map(c => `<div class="card-item" onclick="selectCardForGive('${c.id}', '${c.name}')"><div class="card-name">${c.name}</div><div class="card-type">${c.type} · ⚔️${c.attack || '-'} · ❤️${c.life || '-'}</div><div class="card-type" style="font-size:0.65rem;opacity:.7">${c.id}</div></div>`).join('') || '<div class="empty-hint">Nenhuma carta encontrada</div>'; }
+        function filterCards() { renderCards(); }
+        function selectCardForGive(cardId, cardName) { if (currentGivePlayer) { document.getElementById('give-card-select').value = cardId; document.getElementById('give-card-select').dispatchEvent(new Event('change')); closeModal('cards-modal'); } }
+        
+        // Ações de jogador
+        let currentGivePlayer = null;
+        async function openGiveCardModal(username) { currentGivePlayer = username; document.getElementById('give-card-player').textContent = username; document.getElementById('give-card-game').textContent = currentGameId; if (allCards.length === 0) await loadCards(); const select = document.getElementById('give-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name} (${c.type})</option>`).join(''); openModal('give-card-modal'); }
+        async function submitGiveCard() { const cardId = document.getElementById('give-card-select').value; const quantity = parseInt(document.getElementById('give-card-quantity').value); if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentGivePlayer}/give-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_id: cardId, quantity: quantity }) }); showMessage(`${quantity}x carta(s) dada(s)`); closeModal('give-card-modal'); loadGameControlState(); }
+        
+        function openModifyLifeModal(username) { currentTargetPlayer = username; document.getElementById('modify-life-player').textContent = username; document.getElementById('modify-life-delta').value = 0; document.getElementById('modify-life-exact').value = ''; openModal('modify-life-modal'); }
+        async function submitModifyLife() { const delta = parseInt(document.getElementById('modify-life-delta').value) || 0; const exact = document.getElementById('modify-life-exact').value; const body = exact ? { new_life: parseInt(exact) } : { delta: delta }; await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/modify-life`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); showMessage(`Vida modificada`); closeModal('modify-life-modal'); loadGameControlState(); }
+        
+        function openRemoveCardModal(username, hand) { currentTargetPlayer = username; const select = document.getElementById('remove-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + (hand || []).map(c => `<option value="${c.instance_id}">${c.name}</option>`).join(''); if ((hand || []).length === 0) select.innerHTML = '<option value="">Mão vazia</option>'; openModal('remove-card-modal'); }
+        async function submitRemoveCard() { const cardId = document.getElementById('remove-card-select').value; if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/remove-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_instance_id: cardId }) }); showMessage(`Carta removida`); closeModal('remove-card-modal'); loadGameControlState(); }
+        
+        function openFieldModal(username) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; if (allCards.length === 0) loadCards(); const select = document.getElementById('field-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); document.getElementById('field-action').onchange = function() { document.getElementById('field-card-group').style.display = this.value === 'set' ? 'block' : 'none'; }; document.getElementById('field-action').dispatchEvent(new Event('change')); openModal('field-modal'); }
+        async function submitFieldModify() { const action = document.getElementById('field-action').value; const positionType = document.getElementById('field-position-type').value; const positionIndex = parseInt(document.getElementById('field-position-index').value); const cardId = action === 'set' ? document.getElementById('field-card-select').value : null; if (action === 'set' && !cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/field`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: action, position_type: positionType, position_index: positionIndex, card_id: cardId }) }); showMessage(`Campo modificado`); closeModal('field-modal'); loadGameControlState(); }
+        
+        function editFieldSlot(username, type, index) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; document.getElementById('field-position-type').value = type; document.getElementById('field-position-index').value = index; document.getElementById('field-action').value = 'set'; document.getElementById('field-action').dispatchEvent(new Event('change')); if (allCards.length === 0) loadCards(); openModal('field-modal'); }
+        
+        function selectHandCard(username, instanceId, cardName) { if (confirm(`Remover "${cardName}" de ${username}?`)) { fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/remove-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_instance_id: instanceId }) }).then(() => { showMessage(`"${cardName}" removida`); loadGameControlState(); }).catch(console.error); } }
+        
+        // Utilitários
+        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
+        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
+        window.onclick = function(event) { if (event.target.classList.contains('modal')) event.target.style.display = 'none'; }
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => { btn.addEventListener('click', () => { const tab = btn.getAttribute('data-tab'); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); btn.classList.add('active'); document.getElementById(tab).classList.add('active'); if (tab === 'dashboard') loadDashboard(); if (tab === 'users') loadUsers(); if (tab === 'games') loadGames(); if (tab === 'cards') loadCards(); }); });
+        
+        loadDashboard();
+    </script>
+</body>
+</html>
