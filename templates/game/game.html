@@ -4614,14 +4614,11 @@ body::before {
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
 
         // ------------------------------------------------------------------
-        // Tutorial coach (dicas + avisos contextuais)
+        // Tutorial coach — SÓ em partidas com flag tutorial no servidor.
+        // Não usa sessionStorage sozinho (evita dicas em salas normais).
         // ------------------------------------------------------------------
         (function initTutorialCoach() {
-            const params = new URLSearchParams(window.location.search || '');
-            const fromQuery = params.get('tutorial') === '1';
-            let fromStorage = false;
-            try { fromStorage = sessionStorage.getItem('tb_tutorial') === '1'; } catch (e) {}
-            window.TB_IS_TUTORIAL = fromQuery || fromStorage;
+            window.TB_IS_TUTORIAL = false;
 
             const DEFAULT_TIPS = [
                 { id: 'welcome', title: 'Bem-vindo ao treino', body: 'Você joga contra o Mentor (fácil). Compre, jogue criaturas no ataque e passe o turno. As dicas acompanham a partida.' },
@@ -4635,25 +4632,36 @@ body::before {
             ];
 
             let tips = DEFAULT_TIPS.slice();
-            try {
-                const raw = sessionStorage.getItem('tb_tutorial_tips');
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    if (Array.isArray(parsed) && parsed.length) tips = parsed;
-                }
-            } catch (e) {}
-
             let idx = 0;
             let active = false;
             let minimized = false;
+            let tipsLoaded = false;
             const el = document.getElementById('tutorial-coach');
             if (!el) return;
 
+            function clearTutorialStorage() {
+                try {
+                    sessionStorage.removeItem('tb_tutorial');
+                    sessionStorage.removeItem('tb_tutorial_tips');
+                } catch (e) {}
+            }
+
+            function hideCoach() {
+                active = false;
+                minimized = false;
+                window.TB_IS_TUTORIAL = false;
+                el.classList.remove('open');
+                el.style.display = 'none';
+                const fab = document.getElementById('tc-fab');
+                if (fab) fab.remove();
+            }
+
             function render() {
-                if (!active || minimized) {
-                    el.classList.toggle('open', active && !minimized);
+                if (!window.TB_IS_TUTORIAL || !active || minimized) {
+                    el.classList.toggle('open', !!(window.TB_IS_TUTORIAL && active && !minimized));
                     return;
                 }
+                el.style.display = '';
                 const t = tips[idx] || tips[0];
                 document.getElementById('tc-title').textContent = t.title || 'Dica';
                 document.getElementById('tc-body').textContent = t.body || '';
@@ -4662,13 +4670,41 @@ body::before {
             }
 
             function show() {
+                if (!window.TB_IS_TUTORIAL) return;
                 active = true;
                 minimized = false;
+                el.style.display = '';
                 render();
             }
 
+            function enableTutorial() {
+                if (window.TB_IS_TUTORIAL) return;
+                window.TB_IS_TUTORIAL = true;
+                try {
+                    sessionStorage.setItem('tb_tutorial', '1');
+                    const raw = sessionStorage.getItem('tb_tutorial_tips');
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        if (Array.isArray(parsed) && parsed.length) tips = parsed;
+                    }
+                } catch (e) {}
+                show();
+                if (!tipsLoaded) {
+                    tipsLoaded = true;
+                    fetch('/api/tutorial/tips', { credentials: 'same-origin' })
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d && Array.isArray(d.tips) && d.tips.length && window.TB_IS_TUTORIAL) {
+                                tips = d.tips;
+                                render();
+                            }
+                        })
+                        .catch(() => {});
+                }
+            }
+
             function contextualTip(state) {
-                if (!state || !state.started) return;
+                if (!window.TB_IS_TUTORIAL || !state || !state.started) return;
                 const me = (state.players || {})[currentUsername];
                 if (!me) return;
                 const hand = me.hand || [];
@@ -4680,7 +4716,6 @@ body::before {
                 const hasSpell = hand.some(c => c && c.type === 'spell');
 
                 if (state.attacks_blocked || state.first_round) {
-                    // dica de preparação
                     const i = tips.findIndex(t => t.id === 'attack');
                     if (i >= 0) idx = i;
                 } else if (state.time_of_day === 'day' && hasNight) {
@@ -4698,67 +4733,71 @@ body::before {
 
             window.TBTutorial = {
                 onState(data) {
-                    if (data && data.tutorial) {
-                        window.TB_IS_TUTORIAL = true;
-                        try { sessionStorage.setItem('tb_tutorial', '1'); } catch (e) {}
+                    // Fonte da verdade: flag do servidor nesta partida
+                    if (data && data.tutorial === true) {
+                        enableTutorial();
+                        contextualTip(data);
+                        return;
                     }
-                    if (!(window.TB_IS_TUTORIAL || (data && data.tutorial))) return;
-                    if (!active) show();
-                    contextualTip(data);
+                    // Sala normal (ou estado sem tutorial): esconde e limpa
+                    if (window.TB_IS_TUTORIAL || active) {
+                        hideCoach();
+                        clearTutorialStorage();
+                    } else {
+                        // limpa lixo de um tutorial anterior sem mostrar nada
+                        clearTutorialStorage();
+                    }
                 },
                 onMyTurn(data) {
+                    if (!window.TB_IS_TUTORIAL) return;
                     if (!active) show();
-                    // se mão vazia de criaturas no atk, empurra dica de play
                     contextualTip(data);
                 }
             };
 
+            // Painel começa oculto até o server confirmar tutorial
+            hideCoach();
+            // Se entrou com ?tutorial=1 mas a sala não for tutorial, o primeiro
+            // game_state limpa. Não mostrar dicas só por query/storage.
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                if (params.get('tutorial') !== '1') {
+                    clearTutorialStorage();
+                }
+            } catch (e) {
+                clearTutorialStorage();
+            }
+
             document.getElementById('tc-next').addEventListener('click', () => {
+                if (!window.TB_IS_TUTORIAL) return;
                 idx = (idx + 1) % tips.length;
                 render();
             });
             document.getElementById('tc-prev').addEventListener('click', () => {
+                if (!window.TB_IS_TUTORIAL) return;
                 idx = (idx - 1 + tips.length) % tips.length;
                 render();
             });
             document.getElementById('tc-hide').addEventListener('click', () => {
-                if (!minimized) {
-                    minimized = true;
-                    el.classList.remove('open');
-                    // botão flutuante reabre
-                    let fab = document.getElementById('tc-fab');
-                    if (!fab) {
-                        fab = document.createElement('button');
-                        fab.id = 'tc-fab';
-                        fab.type = 'button';
-                        fab.textContent = '🎓 Dicas';
-                        fab.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:1201;border-radius:999px;padding:10px 14px;font-weight:800;border:1px solid rgba(61,220,151,.4);background:rgba(12,10,28,.92);color:#3ddc97;cursor:pointer;font-family:inherit;';
-                        fab.onclick = () => {
-                            minimized = false;
-                            fab.remove();
-                            render();
-                        };
-                        document.body.appendChild(fab);
-                    }
+                if (!window.TB_IS_TUTORIAL || !active) return;
+                minimized = true;
+                el.classList.remove('open');
+                let fab = document.getElementById('tc-fab');
+                if (!fab) {
+                    fab = document.createElement('button');
+                    fab.id = 'tc-fab';
+                    fab.type = 'button';
+                    fab.textContent = '🎓 Dicas';
+                    fab.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:1201;border-radius:999px;padding:10px 14px;font-weight:800;border:1px solid rgba(61,220,151,.4);background:rgba(12,10,28,.92);color:#3ddc97;cursor:pointer;font-family:inherit;';
+                    fab.onclick = () => {
+                        if (!window.TB_IS_TUTORIAL) { fab.remove(); return; }
+                        minimized = false;
+                        fab.remove();
+                        render();
+                    };
+                    document.body.appendChild(fab);
                 }
             });
-
-            if (window.TB_IS_TUTORIAL) {
-                show();
-            }
-
-            // carrega tips da API se ainda não tiver
-            if (window.TB_IS_TUTORIAL) {
-                fetch('/api/tutorial/tips', { credentials: 'same-origin' })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d && Array.isArray(d.tips) && d.tips.length) {
-                            tips = d.tips;
-                            render();
-                        }
-                    })
-                    .catch(() => {});
-            }
         })();
 
         setInterval(function() {
