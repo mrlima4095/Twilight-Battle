@@ -1758,48 +1758,118 @@ body::before {
             });
         });
 
+        function isFogOfWar() {
+            const mods = (gameState && gameState.modifiers) || [];
+            return mods.includes('fog_of_war');
+        }
+
+        function fogMaskCardList(list) {
+            if (!list || !list.length) return [];
+            // "Orc (ataque) (-30❤️)" → "??? (ataque)"
+            return list.map((s) => {
+                const str = String(s);
+                const pos = str.match(/\((ataque|defesa)\)/i);
+                const where = pos ? pos[1].toLowerCase() : 'campo';
+                return `??? (${where})`;
+            });
+        }
+
         function showAttackResult(result) {
-            let html = `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
-            
+            const fog = isFogOfWar() || result.fog;
+            const attackerId = result.attacker || result.attacker_name;
+            const targetId = result.target || result.target_name || result.original_target;
+            const iAmAttacker = currentUsername === attackerId || currentUsername === result.attacker_name;
+            const iAmTarget = currentUsername === targetId || currentUsername === result.target_name;
+
+            let html = '';
+
+            // Poder de ataque: só o atacante vê o valor exato sob névoa
+            if (!fog || iAmAttacker) {
+                html += `<p style="color: #ffd700;">Poder de ataque: ${result.total_attack || 0}</p>`;
+            } else {
+                html += `<p style="color: #ffd700;">Poder de ataque: <em>obscurecido pela névoa</em></p>`;
+            }
+
             // Mostrar efeitos de armadilha primeiro
             if (result.trap_effects && result.trap_effects.length > 0) {
                 html += `<div style="background: rgba(255, 165, 0, 0.2); border-left: 4px solid #ffa500; padding: 10px; margin: 10px 0; border-radius: 5px;">`;
                 html += `<strong style="color: #ffa500;">⚠️ ARMADILHAS ATIVADAS:</strong><br>`;
                 result.trap_effects.forEach(effect => {
-                    html += `<span style="color: #fff;">• ${effect.message}</span><br>`;
+                    let msg = effect.message || '';
+                    if (fog && effect.message_fog) msg = effect.message_fog;
+                    else if (fog && msg) {
+                        // mascara nomes de cartas em mensagens genéricas
+                        msg = msg.replace(/\b\d+\s*de dano\b/gi, 'dano');
+                    }
+                    html += `<span style="color: #fff;">• ${msg}</span><br>`;
                 });
                 html += `</div>`;
             }
-            
+
             if (result.attack_cancelled) {
                 html += `<p style="color: #ff4444;">🛑 O ataque foi cancelado!</p>`;
             }
-            
-            if (result.cards_destroyed && result.cards_destroyed.length > 0) {
-                html += `<p style="color: #ff6b6b;">💀 Destruídas: ${result.cards_destroyed.join(', ')}</p>`;
+
+            // Cartas destruídas/danificadas: defensor vê as próprias com nome;
+            // atacante sob névoa só vê silhuetas (não revela o board inimigo)
+            let destroyed = result.cards_destroyed || [];
+            let damaged = result.cards_damaged || [];
+            if (fog && iAmAttacker && !iAmTarget) {
+                destroyed = fogMaskCardList(destroyed);
+                damaged = fogMaskCardList(damaged);
+            } else if (fog && !iAmAttacker && !iAmTarget) {
+                destroyed = fogMaskCardList(destroyed);
+                damaged = fogMaskCardList(damaged);
             }
-            
-            if (result.cards_damaged && result.cards_damaged.length > 0) {
-                html += `<p style="color: #ffa500;">💔 Danificadas: ${result.cards_damaged.join(', ')}</p>`;
+
+            if (destroyed.length > 0) {
+                html += `<p style="color: #ff6b6b;">💀 Destruídas: ${destroyed.join(', ')}</p>`;
             }
-            
+
+            if (damaged.length > 0) {
+                html += `<p style="color: #ffa500;">💔 Danificadas: ${damaged.join(', ')}</p>`;
+            }
+
+            // Dano direto na vida do jogador
             if (result.damage_to_player && result.damage_to_player > 0) {
-                html += `<p style="color: #ff4444;">⚔️ Dano direto: ${result.damage_to_player}</p>`;
+                if (!fog || iAmTarget || iAmAttacker) {
+                    // ambos precisam do número de dano à vida; ok
+                    html += `<p style="color: #ff4444;">⚔️ Dano direto: ${result.damage_to_player}</p>`;
+                }
+            } else if (result.damage_reflected && result.reflected_damage) {
+                if (!fog || iAmAttacker) {
+                    html += `<p style="color: #ff4444;">🪞 Dano refletido: ${result.reflected_damage}</p>`;
+                } else {
+                    html += `<p style="color: #ff4444;">🪞 Dano refletido (névoa)</p>`;
+                }
             }
-            
-            html += `<p>❤️ Vida restante: ${result.target_life}</p>`;
-            
+
+            // Vida restante: só o alvo vê sob névoa (atacante não “sonda” a vida)
+            if (result.target_life != null && result.target_life !== undefined) {
+                if (!fog || iAmTarget) {
+                    html += `<p>❤️ Vida restante: ${result.target_life}</p>`;
+                } else {
+                    html += `<p>❤️ Vida restante: <em>escondida pela névoa</em></p>`;
+                }
+            }
+
+            if (fog) {
+                html += `<p style="color:#8a829e;font-size:.85rem;margin-top:8px;">🌫️ Névoa de Guerra: detalhes do campo inimigo ficam ocultos.</p>`;
+            }
+
             Swal.fire({
-                title: `⚔️ Ataque de ${result.attacker_name}!`,
+                title: `⚔️ Ataque de ${result.attacker_name || 'alguém'}!`,
                 html: html,
                 icon: 'info',
                 background: '#1a1a2e',
                 color: '#fff',
                 confirmButtonColor: '#ffd700'
             });
-            
-            // Criar animação de dano
-            createDamageAnimation(result.damage_to_player || 0);
+
+            // Animação: só mostra número se soubermos o dano
+            if (!fog || iAmTarget || iAmAttacker) {
+                createDamageAnimation(result.damage_to_player || 0);
+            }
         }
         
         function createDamageAnimation(damage) {

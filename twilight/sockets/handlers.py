@@ -672,6 +672,9 @@ def handle_player_action(data):
     player_name = username
     timestamp = now_sp_str('%H:%M:%S')
     log_message = ""
+    fog = bool(getattr(game, 'has_fog', lambda: False)()) if hasattr(game, 'has_fog') else (
+        'fog_of_war' in (game.modifiers or [])
+    )
     
     try:
         if action == 'draw':
@@ -683,7 +686,17 @@ def handle_player_action(data):
             result = game.play_card(player_name, params['card_id'], params['position_type'], params['position_index'])
             if result and result.get('success'):
                 card_name = result.get('card', {}).get('name', 'uma carta')
-                log_message = f"🎴 {player_name} jogou {card_name}"
+                pos = params.get('position_type') or 'campo'
+                if fog:
+                    # não revela nome/tipo da carta jogada
+                    where = {
+                        'attack': 'no ataque',
+                        'defense': 'na defesa',
+                        'equipment': 'no equipamento',
+                    }.get(pos, 'no campo')
+                    log_message = f"🎴 {player_name} jogou uma carta {where} (névoa)"
+                else:
+                    log_message = f"🎴 {player_name} jogou {card_name}"
 
         elif action == 'attack':
             result = game.attack(player_name, params['target_id'])
@@ -695,39 +708,59 @@ def handle_player_action(data):
                 if result.get('attack_cancelled'):
                     log_message = f"⚔️ {player_name} atacou {target_name}, mas o ataque foi cancelado!"
                 elif result.get('damage_reflected'):
-                    log_message = (
-                        f"🪞 {player_name} atacou {target_name} e o dano foi refletido "
-                        f"({result.get('reflected_damage', total)})!"
-                    )
+                    if fog:
+                        log_message = (
+                            f"🪞 {player_name} atacou {target_name} e o dano foi refletido!"
+                        )
+                    else:
+                        log_message = (
+                            f"🪞 {player_name} atacou {target_name} e o dano foi refletido "
+                            f"({result.get('reflected_damage', total)})!"
+                        )
                 else:
-                    life_txt = f" → ❤️{life_left}" if life_left is not None else ""
-                    log_message = (
-                        f"⚔️ {player_name} atacou {target_name} "
-                        f"(poder {total}, dano {damage}){life_txt}"
-                    )
+                    if fog:
+                        # sem poder, dano e vida — a névoa cobre o resultado público
+                        log_message = f"⚔️ {player_name} atacou {target_name} sob a névoa"
+                    else:
+                        life_txt = f" → ❤️{life_left}" if life_left is not None else ""
+                        log_message = (
+                            f"⚔️ {player_name} atacou {target_name} "
+                            f"(poder {total}, dano {damage}){life_txt}"
+                        )
                 # Sempre no chat da sala (todos veem sem Swal)
                 broadcast_system_message(game_id, log_message)
 
         elif action == 'equip_item':
             result = game.equip_item_to_creature(player_name, params['item_card_id'], params['creature_card_id'])
             if result and result.get('success'):
-                log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
+                if fog:
+                    log_message = f"🔰 {player_name} equipou um item (névoa)"
+                else:
+                    log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
 
         elif action == 'cast_spell':
             result = game.cast_spell(player_name, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
             if result and result.get('success'):
                 spell_name = result.get('spell', {}).get('name', 'um feitiço')
-                log_message = f"✨ {player_name} usou {spell_name}"
+                if fog:
+                    log_message = f"✨ {player_name} usou um feitiço (névoa)"
+                else:
+                    log_message = f"✨ {player_name} usou {spell_name}"
 
         elif action == 'call_centaurs':
             result = game.call_centaurs(player_name)
             if result and result.get('success'):
-                log_message = f"🐎 {player_name} usou CHAMAR CENTAUROS e coletou {result.get('centaurs_collected', 0)} centauro(s)"
+                if fog:
+                    log_message = f"🐎 {player_name} usou CHAMAR CENTAUROS"
+                else:
+                    log_message = f"🐎 {player_name} usou CHAMAR CENTAUROS e coletou {result.get('centaurs_collected', 0)} centauro(s)"
 
         elif action == 'ritual':
             result = game.perform_ritual(player_name, params['ritual_id'], params.get('target_player_id'))
             if result and result.get('success'):
-                log_message = f"📿 {player_name} realizou {result.get('message', 'um ritual')}"
+                log_message = f"📿 {player_name} realizou um ritual" if fog else (
+                    f"📿 {player_name} realizou {result.get('message', 'um ritual')}"
+                )
 
         elif action == 'swap_positions':
             result = game.swap_positions(
@@ -752,7 +785,13 @@ def handle_player_action(data):
                 params['target_card_id']
             )
             if result and result.get('success'):
-                log_message = f"🔮 {player_name} amaldiçoou {result.get('target_card', 'uma carta')} de {result.get('target_player', 'um oponente')} (morre em 2 rodadas)"
+                if fog:
+                    log_message = (
+                        f"🔮 {player_name} amaldiçoou uma criatura de "
+                        f"{result.get('target_player', 'um oponente')} (morre em 2 rodadas)"
+                    )
+                else:
+                    log_message = f"🔮 {player_name} amaldiçou {result.get('target_card', 'uma carta')} de {result.get('target_player', 'um oponente')} (morre em 2 rodadas)"
 
         elif action == 'revive':
             # Verificar se params['card_id'] existe
@@ -769,7 +808,10 @@ def handle_player_action(data):
             result = game.revive_from_graveyard(player_name, card_id)
             if result and result.get('success'):
                 card_name = result.get('card', {}).get('name', 'uma carta')
-                log_message = f"🔄 {player_name} reviveu {card_name} do cemitério"
+                log_message = (
+                    f"🔄 {player_name} reviveu uma carta do cemitério"
+                    if fog else f"🔄 {player_name} reviveu {card_name} do cemitério"
+                )
 
         elif action == 'flip_card':
             result = game.flip_card(player_name, params['position_type'], params['position_index'])
@@ -805,14 +847,22 @@ def handle_player_action(data):
                     'message': '🎉 PRIMEIRA RODADA CONCLUÍDA! Todos já jogaram, ataques liberados!'
                 }, room=game_id)
             
+            # Resultado público sob névoa: remove detalhes de combate que vazam o board
+            emit_result = result
+            if fog and action == 'attack' and isinstance(result, dict):
+                emit_result = dict(result)
+                emit_result['fog'] = True
+                # client usa isso + papel (atacante/defensor) para montar o Swal
+
             # Emitir ação com todas as informações para o log
             emit('action_success', {
                 'player_id': player_name,
                 'player_name': player_name,
                 'action': action,
-                'result': result,
+                'result': emit_result,
                 'log_message': log_message,
-                'timestamp': timestamp
+                'timestamp': timestamp,
+                'fog': fog,
             }, room=game_id)
             
             # Só emite game_over UMA vez por partida
