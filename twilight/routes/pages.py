@@ -39,6 +39,11 @@ def rules(): return render_template('game/docs/rules.html')
 @bp.route('/help')
 def help_page(): return render_template('game/docs/help.html')
 
+@bp.route('/lore')
+def lore_page():
+    """Crônica / lore do mundo (docs/lore.md → templates/game/docs/lore.html)."""
+    return render_template('game/docs/lore.html')
+
 @bp.route('/tutorial')
 @login_required
 def tutorial_page(username):
