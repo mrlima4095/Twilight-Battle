@@ -424,6 +424,10 @@ class Game:
                 count += 1
         return count
 
+    def has_fog(self):
+        """Névoa de Guerra ativa nesta sala."""
+        return 'fog_of_war' in (self.modifiers or [])
+
     def get_card_for_player(self, card, viewer_username, owner_username):
         """
         Retorna a versão apropriada da carta para o visualizador.
@@ -1010,7 +1014,8 @@ class Game:
                     broadcast_system_message(
                         self.game_id,
                         f"☀️ Apollo de {target_username}: +{heal}❤️ no jogador, "
-                        f"carta toma {card_damage} (metade de {hit})!"
+                        f"carta toma {card_damage} (metade de {hit})!",
+                        fog_message=f"☀️ Uma defesa especial de {target_username} absorveu parte do golpe!",
                     )
                 except Exception:
                     pass
@@ -1601,10 +1606,15 @@ class Game:
                 target_creature['spell_resist_charges'] = target_creature.get('spell_resist_charges', 0) + 1
                 broadcast_system_message(
                     self.game_id,
-                    f'🌳 Peitoral de Carvalho: {target_creature["name"]} resiste ao próximo feitiço hostil!'
+                    f'🌳 Peitoral de Carvalho: {target_creature["name"]} resiste ao próximo feitiço hostil!',
+                    fog_message=f'🌳 Peitoral de Carvalho: uma criatura de {username} resiste ao próximo feitiço hostil!',
                 )
         
-        broadcast_system_message(self.game_id, f'🔧 {username} equipou {item_card["name"]} em {target_creature["name"]}')
+        broadcast_system_message(
+            self.game_id,
+            f'🔧 {username} equipou {item_card["name"]} em {target_creature["name"]}',
+            fog_message=f'🔧 {username} equipou um item em uma criatura (névoa)',
+        )
 
         return {
             'success': True,
@@ -2497,7 +2507,11 @@ class Game:
         
         uses_message = f" (usos restantes deste Profeta: {uses_left})" if uses_left > 0 else " (este Profeta está esgotado!)"
         
-        broadcast_system_message(self.game_id, f'🔮 {username} amaldiçoou {target_card["name"]} de {target_player["name"]} (morre em 2 rodadas){uses_message}')
+        broadcast_system_message(
+            self.game_id,
+            f'🔮 {username} amaldiçoou {target_card["name"]} de {target_player["name"]} (morre em 2 rodadas){uses_message}',
+            fog_message=f'🔮 {username} amaldiçoou uma criatura de {target_player["name"]} (morre em 2 rodadas)',
+        )
         
         return {
             'success': True,
@@ -2565,11 +2579,16 @@ class Game:
                 stolen_card = attacker['attack_bases'].pop(index)
                 defender['hand'].append(stolen_card)
 
-                broadcast_system_message(self.game_id, f'🔮 Armadilha 171 ativada! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!')
+                broadcast_system_message(
+                    self.game_id,
+                    f'🔮 Armadilha 171 ativada! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!',
+                    fog_message=f'🔮 Armadilha 171 ativada! {defender["name"]} roubou uma criatura de {attacker["name"]}!',
+                )
                 effects.append({
                     'type': 'steal_card',
                     'stolen_card': stolen_card['name'],
-                    'message': f'🔮 Armadilha 171! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!'
+                    'message': f'🔮 Armadilha 171! {defender["name"]} roubou {stolen_card["name"]} de {attacker["name"]}!',
+                    'message_fog': f'🔮 Armadilha 171! {defender["name"]} roubou uma criatura de {attacker["name"]}!',
                 })
             
             # Retornar efeito com consumo da armadilha
@@ -2581,12 +2600,17 @@ class Game:
         
         # Armadilha Espelho - Reverte ataques
         elif trap_id == 'armadilha_espelho':
-            broadcast_system_message(self.game_id, f'🪞 Armadilha Espelho ativada! O ataque de {attack_power} foi refletido para {attacker["name"]}!')
+            broadcast_system_message(
+                self.game_id,
+                f'🪞 Armadilha Espelho ativada! O ataque de {attack_power} foi refletido para {attacker["name"]}!',
+                fog_message=f'🪞 Armadilha Espelho ativada! O ataque de {attacker["name"]} foi refletido!',
+            )
             return {
                 'type': 'mirror_damage',
                 'cancel_attack': True,
                 'damage_to_reflect': attack_power,
                 'message': f'🪞 Armadilha Espelho! {attack_power} de dano refletido para {attacker["name"]}!',
+                'message_fog': f'🪞 Armadilha Espelho! O ataque de {attacker["name"]} foi refletido!',
                 'consume_trap': True
             }
         
@@ -2629,13 +2653,19 @@ class Game:
                     self.graveyard.append(card)
                     attacker['attack_bases'][i] = None
             
-            broadcast_system_message(self.game_id, f'🕳️ Poço Sem Fundo ativado! As criaturas atacantes {", ".join(destroyed_attackers)} foram destruídas!')
+            n = len(destroyed_attackers)
+            broadcast_system_message(
+                self.game_id,
+                f'🕳️ Poço Sem Fundo ativado! As criaturas atacantes {", ".join(destroyed_attackers)} foram destruídas!',
+                fog_message=f'🕳️ Poço Sem Fundo ativado! {n} criatura(s) atacante(s) de {attacker["name"]} foram destruídas!',
+            )
             
             return {
                 'type': 'destroy_attackers',
                 'cancel_attack': True,
                 'destroyed': destroyed_attackers,
                 'message': f'🕳️ Poço Sem Fundo! As criaturas atacantes foram destruídas: {", ".join(destroyed_attackers)}',
+                'message_fog': f'🕳️ Poço Sem Fundo! {n} criatura(s) atacante(s) foram destruídas!',
                 'consume_trap': True
             }
         

@@ -44,15 +44,25 @@ def add_chat_message(game_id, username, message, is_system=False):
     return final_message
 
 
-def broadcast_system_message(game_id, message):
+def broadcast_system_message(game_id, message, fog_message=None):
+    """
+    Envia mensagem de sistema para a sala.
+    Com Névoa de Guerra (fog_of_war), se fog_message for passado, usa ela
+    no chat público (evita vazar nomes/stats de cartas).
+    """
     if game_id not in games:
         return
 
-    add_chat_message(game_id, 'Sistema', message, is_system=True)
+    game = games[game_id]
+    public = message
+    if fog_message is not None and 'fog_of_war' in (getattr(game, 'modifiers', None) or []):
+        public = fog_message
+
+    add_chat_message(game_id, 'Sistema', public, is_system=True)
 
     socketio.emit('chat_message', {
         'username': 'Sistema',
-        'message': message,
+        'message': public,
         'timestamp': now_sp_str('%H:%M:%S'),
         'is_system': True
     }, room=game_id)
