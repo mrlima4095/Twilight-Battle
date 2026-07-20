@@ -127,8 +127,10 @@ CARDS = {
         "type": "creature", 
         "life": 1500, 
         "attack": 600, 
-        "count": 1, 
-        "description": "Ataques sofridos com menos de 1k de dano recuperam a vida do jogador se colocado na defesa."
+        "count": 1,
+        "ability": "apollo_guard",
+        "apollo_guard_threshold": 1000,
+        "description": "Em defesa: se um ataque com menos de 1000 de dano o atingir, o JOGADOR cura o valor total do golpe e a carta Apollo sofre só a metade do dano."
     },
     
     # - Bestas
