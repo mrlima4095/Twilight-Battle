@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lore — Twilight Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700&family=Literata:opsz,wght@7..72,400;7..72,600&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg-0:#07060f; --panel:rgba(18,14,36,.78); --border:rgba(255,215,120,.18);
+  --gold:#f0c14b; --gold-2:#ffb347; --cyan:#5ee7ff; --text:#f4f0ff; --muted:#a39bb8;
+  --font-ui:"Outfit",system-ui,sans-serif; --font-display:"Cinzel",serif; --font-story:"Literata",Georgia,serif;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family: var(--font-ui); color: var(--text); min-height: 100vh;
+  background:
+    radial-gradient(1000px 500px at 10% -10%, rgba(155,123,255,.22), transparent 55%),
+    radial-gradient(800px 400px at 100% 0%, rgba(240,193,75,.1), transparent 50%),
+    linear-gradient(160deg, #07060f, #0e0b1a 45%, #120b22);
+  padding: 28px 16px 70px;
+}
+.wrap { max-width: 760px; margin: 0 auto; }
+.header {
+  text-align: center; padding: 28px 20px; border-radius: 22px; margin-bottom: 18px;
+  background: var(--panel); border: 1px solid var(--border);
+  box-shadow: 0 20px 50px rgba(0,0,0,.35);
+}
+.header h1 {
+  font-family: var(--font-display); font-size: clamp(1.7rem, 4vw, 2.4rem);
+  background: linear-gradient(120deg, #fff6d0, var(--gold), var(--gold-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 8px;
+}
+.header p { color: var(--muted); line-height: 1.5; max-width: 36em; margin: 0 auto; }
+.nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom: 20px; }
+.nav a {
+  padding:10px 16px; border-radius:999px; text-decoration:none; font-weight:700; font-size:.9rem;
+  border:1px solid var(--border); background:rgba(240,193,75,.12); color:var(--gold);
+}
+.nav a.alt { background:rgba(155,123,255,.12); color:#d4c8ff; border-color:rgba(155,123,255,.3); }
+.lore {
+  background: var(--panel); border:1px solid rgba(255,255,255,.06); border-radius: 20px;
+  padding: 28px 26px 36px; border-left: 3px solid rgba(240,193,75,.45);
+  box-shadow: 0 16px 40px rgba(0,0,0,.3);
+}
+.lore h2 {
+  font-family: var(--font-display); color: var(--gold); font-size: 1.35rem;
+  margin: 28px 0 14px; line-height: 1.35;
+}
+.lore h2:first-child { margin-top: 0; }
+.lore h3 { color: var(--cyan); font-size: 1.05rem; margin: 20px 0 10px; }
+.lore p {
+  font-family: var(--font-story); color: #ddd6ef; line-height: 1.85;
+  margin-bottom: 1em; font-size: 1.02rem;
+}
+.lore ul { margin: 8px 0 16px 1.2em; color: #d8d0eb; line-height: 1.7; }
+.lore li { margin-bottom: 6px; font-family: var(--font-story); }
+.lore strong { color: #fff; }
+.lore-hr {
+  border: 0; height: 1px; margin: 22px 0;
+  background: linear-gradient(90deg, transparent, rgba(240,193,75,.35), transparent);
+}
+.footer { text-align:center; margin-top: 24px; color: var(--muted); font-size: .85rem; opacity: .85; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>📖 Lore do Crepúsculo</h1>
+    <p>A crônica do mundo de Twilight Battle — deuses, reis magos, Aurora e Crepúsculo.</p>
+  </div>
+  <div class="nav">
+    <a href="/">🏠 Início</a>
+    <a href="/rules">📜 Regras</a>
+    <a class="alt" href="/story">🎮 Modo História</a>
+    <a href="/help">❓ Ajuda</a>
+  </div>
+  <article class="lore">
+<h2 id="Capítulo 1 - Piloto">Capítulo 1 - Piloto</h2>
+<p>Há incontáveis eras, o deus maligno chamado Gauthiel tomou o controle deste mundo. Ele não o criou, mas tornou-se seu dono. Subjugou as bestas que guardavam os céus — a Fênix —, a terra — Apófis — e os mares — Leviatã.</p>
+<p>Agora, Gauthiel mantém todas as raças sob seu jugo: orcs, elfos, centauros, fadas, ninfas, vampiros, zumbis, goblins. Todos o servem por temor às próprias cabeças.</p>
+<p>Ele também esconde a maior parte dos conhecimentos mágicos, impedindo que magos tenham acesso a esses poderes. Com o controle das bestas ancestrais e da própria magia, torna-se quase totalmente imbatível.</p>
+<hr class="lore-hr">
+<p>A fogueira crepitava baixo, quase apagando. Lá fora, o vento uivava entre as árvores, fazendo as sombras dançarem nas paredes de madeira da cabana.</p>
+<p>Orion estava deitado no tapete próximo à lareira, os olhos fixos nas brasas. O pai, Theron, sentado na cadeira de balanço, passava a mão pela barba grisalha — um hábito que tinha quando algo o incomodava.</p>
+<p>— Pai... — Orion quebrou o silêncio, a voz ainda hesitante. — Você acha que alguém, um dia, vai derrotar ele?</p>
+<p>Theron parou de balançar. Ficou olhando para o vazio por um instante, como se enxergasse algo que o filho não podia ver.</p>
+<p>— Talvez um dia — respondeu, a voz grave. — Mas não se ilude, filho. É melhor você aceitar a realidade e não tentar dar uma de herói no futuro. É o melhor jeito de ficar vivo.</p>
+<p>Orion virou a cabeça para encarar o pai. A luz do fogo dançava no rosto cansado de Theron, marcado por rugas que pareciam mais profundas do que a idade justificava.</p>
+<p>— Eu digo o mesmo, pai — retrucou Orion, com um meio sorriso que não chegava aos olhos.</p>
+<p>Theron suspirou. Se levantou com um esforço que não existia anos atrás e colocou a mão no ombro do filho.</p>
+<p>— Já está tarde. Vai dormir, que amanhã o sol nasce cedo.</p>
+<p>— Tá bom... Boa noite.</p>
+<p>— Boa noite, Orion.</p>
+<hr class="lore-hr">
+<p>Orion Fellmore subiu para o quarto, se enfiou debaixo das cobertas de lã e fechou os olhos. O cansaço veio rápido, e com ele, os sonhos.</p>
+<p>Ele se viu em um campo aberto, mas não era nenhum lugar que conhecia. O céu estava escuro, salpicado por relâmpagos que não produziam trovão. Na sua mão, uma espada que brilhava com uma luz que ele não reconhecia — quente, como se tivesse vida.</p>
+<p>À sua frente, Gauthiel.</p>
+<p>O deus era imenso, envolto em sombras que se moviam como tentáculos. Mas Orion não sentiu medo. Avançou.</p>
+<p>Os golpes vieram rápido. A espada cortou as trevas. Cada movimento parecia certo, ensaiado, como se ele já tivesse lutado aquela batalha mil vezes.</p>
+<p>O golpe final atravessou o peito do deus.</p>
+<p>Gauthiel caiu de joelhos. Raios desceram dos céus e consumiram o corpo do tirano. Então, uma luz ainda mais forte envolveu Orion, e ele começou a subir. Anjos desciam ao seu encontro, estendendo as mãos. Uma coroa de luz pousou sobre sua cabeça.</p>
+<p>Ele estava sendo coroado Rei da Aurora.</p>
+<hr class="lore-hr">
+<p>Orion acordou ofegante.</p>
+<p>A luz do sol já entrava pelas frestas da janela. Ele ficou alguns segundos deitado, processando o sonho, sentindo o coração batendo forte no peito.</p>
+<p>Desceu as escadas descalço, os pés gelados no assoalho de madeira. O cheiro de pão fresco vinha da cozinha.</p>
+<p>— Bom dia, meu amor — Heloíse estava no fogão, virando uma frigideira. — Dormiu bem?</p>
+<p>— Mãe... tive um sonho estranho.</p>
+<p>Ela riu, aquele riso gostoso que ela sempre tinha.</p>
+<p>— Senta aqui e me conta.</p>
+<p>Orion puxou um banco e começou a falar. Contou tudo — a espada de luz, a luta contra Gauthiel, os anjos, a coroa. As palavras saíam rápidas, tropeçando umas nas outras, enquanto ele gesticulava no ar.</p>
+<p>Quando terminou, Heloíse colocou um prato de pão e mel na frente dele e se sentou ao seu lado.</p>
+<p>— Ah, filho... — Ela passou a mão pelos cabelos dele, com um carinho que só mãe tem. — Sonho é o que a gente quer que aconteça. Se você quer que isso tudo se realize... bom, aí só depende de você.</p>
+<p>Orion sentiu o peito aquecer. Mastigou o pão em silêncio, pensativo.</p>
+<p>— Mãe... cadê o pai?</p>
+<p>Heloíse desviou o olhar por um segundo. Rápido. Quase imperceptível.</p>
+<p>— Saiu cedo. Disse que tinha uma coisa pra resolver.</p>
+<p>Orion sentiu uma pontada no peito. Seu pai tinha partido sem se despedir. <em>De novo.</em></p>
+<p>— Ah... — foi tudo o que conseguiu dizer.</p>
+<p>Terminou o pão, bebeu o resto do leite e subiu para o quarto em silêncio.</p>
+<p>Algo naquele dia estava diferente. Ele não sabia o quê. Mas sentiria falta da despedida do pai para sempre.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 2 – Golpe Fatal">Capítulo 2 – Golpe Fatal</h2>
+<p>Theron Fellmore saiu de casa ainda no escuro.</p>
+<p>Não acendeu vela. Não fez barulho. Vestiu a capa escura, pegou sua adaga — a que ninguém sabia que ele tinha — e fechou a porta com cuidado, para não acordar Heloíse.</p>
+<p>A lua estava alta. O caminho atrás das montanhas era íngreme, mas Theron o conhecia de cor. Já tinha feito aquela trilha dezenas de vezes, sempre às escondidas, sempre quando o mundo dormia.</p>
+<p>Lá no alto, atrás do pico coberto de pinheiros, um grupo o esperava.</p>
+<p>— Chegou, Fellmore — disse Edgar Ashford, o mais velho dos irmãos, apoiado em sua espada. — Estávamos começando a achar que você tinha desistido.</p>
+<p>— Desistir não é comigo — respondeu Theron, sentando-se perto do fogo improvisado. — Minha família está dormindo lá embaixo. Se eu não voltar...</p>
+<p>— Você vai voltar — cortou Jasper, o irmão mais novo, mais impulsivo. — Todos nós vamos. Gauthiel vai morrer hoje.</p>
+<p>Theron olhou para os outros ao redor da fogueira.</p>
+<p>Os irmãos Ashford — filhos do general Fergus, o representante dos elfos diante do tirano. Eamon Blackwood, dono das terras férteis do Oeste, um homem de poucas palavras e olhar pesado. Merek Altamira, líder do clã Altamira da Aurora, com a cicatriz que atravessava o rosto como um lembrete do que já tinha enfrentado.</p>
+<p>E atrás deles, dezenas de camponeses e servos. Gente simples. Gente que só queria viver sem medo.</p>
+<p>— O plano é simples — Edgar começou, traçando linhas na terra com um graveto. — A baderna no centro. Atrai os guardas. Enquanto isso, a gente entra no castelo. Invisibilidade pelo feitiço proibido — sim, eu sei o risco — e vamos direto à sala do trono.</p>
+<p>— E matamos ele — completou Jasper, com um sorriso que não tinha nada de alegre.</p>
+<p>— E matamos ele — repetiu Edgar. — Antes que ele perceba nossa energia. Temos que ser rápidos.</p>
+<p>Theron ouviu em silêncio. Concordou com a cabeça.</p>
+<p>Mas, no fundo, algo não cheirava bem.</p>
+<hr class="lore-hr">
+<p>Ao meio-dia, o grupo cruzou a montanha e chegou às proximidades do centro da cidade.</p>
+<p>O sol estava a pino. O calor era abafado. Theron sentia a adaga pesando contra a perna.</p>
+<p>Então ouviu o grito:</p>
+<p>— <strong>É A HORA!</strong></p>
+<p>A revolta começou.</p>
+<p>Camponeses saíram das vielas. Barracas foram viradas. Gritos, confusão, fumaça. Tudo conforme o planejado.</p>
+<p>Os guardas correram para conter a multidão. Mas um deles — mais esperto — escapou e sumiu na direção do castelo.</p>
+<p>Theron viu aquilo.</p>
+<p><em>Merda.</em></p>
+<hr class="lore-hr">
+<p>Dentro do castelo, Gauthiel ouviu o relato do guarda sem alterar a expressão.</p>
+<p>Sentado em seu trono de espinhos e ferro, ele parecia entediado.</p>
+<p>— Matem todos os envolvidos — ordenou, a voz ecoando pelas paredes de pedra. — E tragam os líderes vivos. Quero vê-los de perto.</p>
+<p>Os guardas restantes partiram.</p>
+<p>Apenas os leais ao deus permaneceram.</p>
+<hr class="lore-hr">
+<p>Theron, os irmãos Ashford, Eamon e Merek invadiram o castelo.</p>
+<p>O feitiço de invisibilidade os envolvia como uma pele fria. Theron odiava aquela sensação — como se algo estivesse sempre observando de dentro da própria sombra.</p>
+<p>Subiram as escadas. Passaram por corredores vazios. Chegaram ao grande portão da sala do trono.</p>
+<p>— Vamos — sussurrou Jasper.</p>
+<p>Empurraram o portão.</p>
+<p>A invisibilidade caiu como um véu rasgado.</p>
+<p>E Gauthiel estava lá, sentado no trono, aplaudindo lentamente.</p>
+<p>Palma. Palma. Palma.</p>
+<p>O som seco preenchia a sala.</p>
+<p>Os portões se fecharam atrás deles com um eco sombrio. <em>Trancados.</em></p>
+<p>— O que vocês pretendiam fazer? — perguntou o deus, com um sorriso que não chegava aos olhos.</p>
+<p>Edgar deu um passo à frente, a mão na espada.</p>
+<p>— Apenas conversar, Vossa Majestade.</p>
+<p>— Conversar? — Gauthiel inclinou a cabeça, divertido. — Para conversar, precisam ficar invisíveis? Precisam tirar TODOS os guardas do castelo?</p>
+<p>Ele se levantou. As sombras ao redor do trono se mexeram.</p>
+<p>— Fico triste que vocês me subestimem...</p>
+<p>Theron sentiu o chão gelado sob as botas.</p>
+<p>— Corre! — gritou alguém — talvez Eamon.</p>
+<p>Viraram-se para o portão. Empurraram. Chutaram. Nada. O maldito portão nem sequer rangeu.</p>
+<p>Gauthiel desceu as escadas do trono com passos lentos, calculados. Como um caçador que sabe que a presa já está encurralada.</p>
+<p>— Acalmem-se — disse ele, com uma doçura doentia.</p>
+<p>Correntes negras brotaram do chão de pedra e se enrolaram nos tornozelos de todos. Theron caiu de joelhos.</p>
+<p><em>Não...</em></p>
+<hr class="lore-hr">
+<p>Lá fora, no centro da cidade, o céu escureceu.</p>
+<p>Gauthiel emergiu do castelo voando, as asas de sombra abertas como um manto de morte. Os revoltados olharam para cima. Alguns rezaram. A maioria chorou.</p>
+<p>Raios desceram.</p>
+<p>Um. Dois. Dez.</p>
+<p>Corpos caíam. Gritos eram abafados pelo estrondo.</p>
+<p>O chão se abriu. Engoliu os líderes — Theron, Edgar, Jasper, Eamon, Merek — e os vomitou bem no meio da praça, amarrados, aterrorizados.</p>
+<p>Os que não estavam envolvidos na revolta — os que se esconderam nas lojas e barracas — assistiram tudo de dentro da escuridão.</p>
+<p>Gauthiel pousou sobre a terra encharcada de sangue.</p>
+<p>— Hoje, estes homens me subestimaram. — Sua voz ecoava, amplificada por magia. — Fizeram essa baderna para tirar meus guardas do castelo. Tentaram usar magia das trevas para me pegar desprevenido. E tentaram me matar... no meu próprio trono.</p>
+<p>Ele riu. Um som seco, cruel.</p>
+<p>— Vou mostrar o que acontece com quem trai minha coroa.</p>
+<p>Virou-se para um guarda.</p>
+<p>— Traga Fergus Ashford. E reúna a população. Todos.</p>
+<hr class="lore-hr">
+<p>Uma hora depois, um palco estava montado. Forcas erguidas.</p>
+<p>Theron olhou para o lado. Os irmãos Ashford estavam pálidos. Eamon tremia. Merek mantinha os olhos fechados, os lábios se movendo em uma prece silenciosa.</p>
+<p>A população chegou. Primeiro os curiosos. Depois os obrigados. No meio da multidão, Theron procurou com os olhos.</p>
+<p><em>Heloíse. Orion.</em></p>
+<p>Não os viu. Sentiu um alívio amargo.</p>
+<p>Então Fergus Ashford chegou.</p>
+<p>O velho general caminhou entre os guardas como um condenado. Quando seus olhos encontraram os filhos — Edgar e Jasper, de pé no palco, a corda no pescoço — ele parou.</p>
+<p>Seu rosto desmoronou.</p>
+<p>— Não... — sussurrou. Depois, mais alto. — NÃO!</p>
+<p>Gauthiel desceu do palco e se aproximou de Fergus.</p>
+<p>— Fergus. Fergus, Fergus... — Ele colocou uma mão fria no ombro do general. — Se você não consegue controlar nem seus próprios filhos... como poderá representar o povo perante mim?</p>
+<p>Fergus tentou falar. Não conseguiu.</p>
+<p>— Deixe-me mostrar para todos o que acontece com quem falha.</p>
+<p>Gauthiel agarrou Fergus pelo pescoço.</p>
+<p>Ergueu-o no ar como quem levanta um fantoche.</p>
+<p>— Boa noite, seu miserável.</p>
+<p><em>Estalo.</em></p>
+<p>O pescoço quebrou. O corpo caiu no chão como um saco vazio.</p>
+<p>No palco, os guardas ao lado das forcas se entreolharam. Receberam um aceno. Empurraram as caixas.</p>
+<p>Os seis corpos balançaram no ar.</p>
+<p>Theron Fellmore foi um deles.</p>
+<hr class="lore-hr">
+<p>Orion estava no meio da multidão.</p>
+<p>Ele não conseguia respirar.</p>
+<p>Viu o pai ser içado. Viu o corpo balançar. Viu os olhos arregalados, a boca entreaberta.</p>
+<p>Alguém ao lado vomitou. Uma mulher chorava baixo. Um homem rezava em língua antiga.</p>
+<p>Orion não fez nada disso.</p>
+<p>Ele apenas olhou.</p>
+<p><em>Por que, pai? Por que você foi fazer justamente o que me disse para não fazer?</em></p>
+<p>A pergunta ecoou na cabeça dele como um sino quebrado.</p>
+<p>Então, o ódio veio.</p>
+<p>Não foi um sentimento quente. Não foi explosivo. Foi frio. Pesado. Como se alguém tivesse despejado chumbo derretido no peito dele.</p>
+<p>Gauthiel subiu no palco novamente, os pés manchados de sangue e terra.</p>
+<p>— Voltem para suas casas. Contem para seus filhos o que viram hoje. E lembrem-se: este é o preço da traição.</p>
+<p>A multidão se dispersou em silêncio.</p>
+<p>Orion ficou parado por um longo tempo.</p>
+<p>Olhou para o corpo do pai mais uma vez.</p>
+<p>Depois virou as costas e foi embora.</p>
+<p><em>Gauthiel vai morrer.</em></p>
+<p>Não era mais um sonho.</p>
+<p>Era uma promessa.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 3 - Jornada em Busca de Vinganç">Capítulo 3 - Jornada em Busca de Vingança</h2>
+<p>Orion não voltou para casa naquela noite.</p>
+<p>Caminhou até a orla da floresta, onde o vento cortava o rosto como lâmina, e só então deixou as lágrimas virem. Não gritou. Não jurou em voz alta. Apenas enterrou as unhas na palma até sangrar e murmurou o nome do pai como se pudesse puxá-lo de volta da forca.</p>
+<p>Quando voltou, Heloíse já sabia.</p>
+<p>Estava sentada na cadeira de balanço de Theron, as mãos tremendo em volta de um copo vazio. Ao ver o filho, tentou se levantar — e caiu de joelhos.</p>
+<p>— Ele... ele foi... — a voz dela se quebrou.</p>
+<p>— Eu sei, mãe.</p>
+<p>Orion a ergueu. Abraçou-a com força de quem tem medo de soltar o último pedaço de casa que ainda restava.</p>
+<p>— Você precisa ir embora — disse Heloíse, de repente, firme demais para alguém que acabara de perder o marido. — Eles vão caçar nomes. Vão caçar sangue. Se ficarem, vão te matar também.</p>
+<p>— Eu não vou te deixar.</p>
+<p>— Vai sim. — Ela segurou o rosto dele com as duas mãos. — Porque eu te peço. Porque Theron morreu para você viver. E porque... se você ficar, o ódio te engole antes de você aprender a usá-lo.</p>
+<p>Orion queria discutir. Queria gritar que ódio era tudo o que ele tinha.</p>
+<p>Mas olhou nos olhos da mãe — os mesmos olhos do sonho da coroa, cansados e ainda cheios de luz — e baixou a cabeça.</p>
+<p>— Eu vou matá-lo, mãe.</p>
+<p>— Então aprenda primeiro — sussurrou ela. — Vá para o norte. Longe. E não volte até estar pronto.</p>
+<hr class="lore-hr">
+<p>Orion partiu antes do amanhecer.</p>
+<p>Não levou ouro. Levou pão, a adaga pequena de Theron — a que a mãe guardava escondida sob o assoalho — e a promessa fria no peito.</p>
+<p>Caminhou semanas. Depois meses. Atravessou fronteiras que mudavam de nome a cada língua. O Império da Maldição era grande, e o norte ainda maior: montanhas gélidas, vilas escondidas sob neve, magia antiga escorrendo pelas frestas da pedra.</p>
+<p>Foi numa dessas terras distantes que ele encontrou o velho.</p>
+<p>O mago morava num torreão de pedra negra encostado num penhasco, com fumaça saindo de uma chaminé torta. A barba era branca como o gelo do topo. Os olhos, no entanto, eram escuros demais para qualquer idade.</p>
+<p>— Você cheira a vingança — disse o velho, sem se apresentar. — Entre, antes que a neve decida te enterrar.</p>
+<p>Orion contou tudo. O sonho. A revolta. A forca. Gauthiel.</p>
+<p>O velho ouviu em silêncio. Quando Orion terminou, ele riu — um som seco, sem alegria.</p>
+<p>— Há dois mil anos Gauthiel me amaldiçoou — falou, virando as mãos. Nas veias dele havia linhas pretas, como raízes. — Eu não morro. Não envelheço como devia. A maldição me prendeu neste mundo para que eu assistisse, eternamente, o que ele faz com os vivos.</p>
+<p>Orion engoliu em seco.</p>
+<p>— Por que você não o mata, então?</p>
+<p>— Porque sozinho eu não bastava. — O velho se aproximou. — Mas você... você tem o fogo do sonho e o gelo do ódio. Eu te treino, Orion Fellmore. Se estiver disposto de alma a matar o tirano.</p>
+<p>— Estou.</p>
+<p>— Então esqueça a pressa. Vingança sem disciplina é só suicídio com enfeite.</p>
+<hr class="lore-hr">
+<p>Os anos passaram como estações empilhadas.</p>
+<p>Orion treinou corpo e magia. Aprendeu a respirar sob a neve. Aprendeu a ouvir o silêncio das montanhas. Aprendeu que magia não era só poder — era memória, dor e escolha.</p>
+<p>Numa vila próxima, protegida pelo velho, ele conheceu Celeste.</p>
+<p>Ela era filha de um ferreiro e de uma parteira. Tinha as mãos calejadas e o riso fácil. Na primeira vez em que se falaram, Orion tentou esconder o nome. Ela não deixou.</p>
+<p>— Se você vai viver aqui, vai viver de verdade — disse Celeste. — Mentira é coisa de tirano.</p>
+<p>Ele contou a história. Ela ouviu sem desviar o olhar.</p>
+<p>— Então eu vou com você — respondeu, simples. — Quando chegar a hora.</p>
+<p>— Isso não é um conto.</p>
+<p>— Eu sei. — Ela sorriu, triste. — Por isso eu vou.</p>
+<hr class="lore-hr">
+<p>Cinquenta anos.</p>
+<p>Cinquenta invernos de treino. Cinquenta primaveras em que a aldeia aprendeu a chamar Orion pelo nome e a confiar nele como se fosse filho da terra.</p>
+<p>As crianças cresceram ouvindo as histórias do sul. Os velhos morreram. Novos nasceram. E Orion — mais forte a cada década, a magia alongando-lhe a vida como alongava a do mestre — tornou-se quase do nível do mago amaldiçoado.</p>
+<p>Um dia, o velho apontou para as montanhas mais altas.</p>
+<p>— Traga o coração de um dragão. Não por glória. Por prova. Prova para você. Prova para eles.</p>
+<p>Orion subiu.</p>
+<p>A batalha durou três dias e duas noites. O dragão queimava o céu; Orion respondia com magia e ferro. Quando o monstro caiu, o vale inteiro tremeu.</p>
+<p>Ele voltou com o coração ainda quente envolto em peles.</p>
+<p>A aldeia festejou. Celeste chorou e riu ao mesmo tempo. O velho apenas acenou, satisfeito.</p>
+<p>— Agora você não é só um vingador — disse. — É um líder. E líderes não caminham sozinhos.</p>
+<p>Um a um, os aldeões falaram.</p>
+<p>— Vamos com você. — Nós também. — Se for matar o tirano, não te deixamos ir sem nós.</p>
+<p>Orion e Celeste se casaram no fim do outono, sob um céu limpo demais para um mundo ainda amaldiçoado.</p>
+<p>No fim do inverno, com cerca de cinquenta almas e a esposa ao lado, Orion olhou para o sul.</p>
+<p>— É hora — murmurou.</p>
+<p>E a coluna começou a caminhar de volta, em direção ao coração do Império da Maldição.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 4 - Queda de um Rei, Ascensão d">Capítulo 4 - Queda de um Rei, Ascensão de Outro</h2>
+<p>A casa de Heloíse estava menor do que Orion lembrava.</p>
+<p>Ou ele é que tinha ficado grande demais para o menino que partira.</p>
+<p>Encontrou a mãe na cama, a pele fina como papel, a respiração curta. Quando ela abriu os olhos e o reconheceu, o rosto se iluminou com uma alegria tão pura que doeu.</p>
+<p>— Meu menino...</p>
+<p>— Mãe. — Orion ajoelhou-se. — Eu voltei. Eu... eu aprendi. Eu trouxe gente. Eu vou...</p>
+<p>— Shhh. — Heloíse tocou a testa dele. — Eu sempre soube que voltaria. Conte-me rápido. Eu não tenho muito tempo, e quero ouvir a voz do meu filho inteira.</p>
+<p>Ele contou. O norte. O velho. Celeste. O dragão. A promessa.</p>
+<p>Heloíse sorriu, as lágrimas escorrendo para o travesseiro.</p>
+<p>— Então posso descansar em paz.</p>
+<p>— Não. Ainda não. Fica.</p>
+<p>— Já fiquei o suficiente esperando você se tornar quem eu vi no menino da fogueira. — A voz dela enfraqueceu. — Mate o monstro, Orion. Depois... viva.</p>
+<p>Ela morreu ao entardecer, com a mão ainda entrelaçada à dele.</p>
+<p>Orion não gritou.</p>
+<p>Enterrou-a ao lado da memória de Theron — um túmulo sem corpo, só nome — e no dia seguinte vestiu a capa de guerra.</p>
+<p>— Gauthiel — falou para o vento. — Acabou a espera.</p>
+<hr class="lore-hr">
+<p>A batalha durou sete dias e sete noites.</p>
+<p>Não houve trégua. Não houve público aplaudindo. Houve fogo, sombra, magia proibida e o grito das bestas antigas tentando se soltar das correntes de Gauthiel.</p>
+<p>No primeiro dia, Orion quase morreu. No terceiro, o castelo começou a rachar. No quinto, o velho mago do norte caiu de joelhos, exausto, e ainda assim ergueu um escudo para proteger Celeste e os aldeões. No sétimo, Orion avançou sozinho pela sala do trono — a mesma onde seu pai fora capturado décadas atrás.</p>
+<p>Gauthiel estava ferido. Mas ria.</p>
+<p>— Sonhou com isso, menino?</p>
+<p>— Não. — Orion ergueu a lâmina de luz. — Eu vivi por isso.</p>
+<p>O golpe final não foi belo. Foi sujo, pesado, necessário.</p>
+<p>Gauthiel caiu de joelhos. Raios desceram — não os dele, mas os do céu recuperando o que fora roubado. O corpo do tirano ardeu em sombra e cinza. As bestas ancestrais — Fênix, Apófis, Leviatã — se soltaram das correntes e fugiram para seus habitats, gritos antigos cortando o mundo.</p>
+<p>Então o sol nasceu.</p>
+<p>Não um sol tímido. Um sol verdadeiro, dourado, quente, como se a terra tivesse segurado a respiração por eras e finalmente exalasse.</p>
+<p>As pessoas caíram de joelhos. Algumas choraram. Outras riram sem entender por quê.</p>
+<p>Orion olhou para o horizonte iluminado e compreendeu o sonho de outrora.</p>
+<p>Não era só coroa.</p>
+<p>Era amanhecer.</p>
+<p>Aquele dia — o primeiro da primavera após a queda de Gauthiel — tornou-se o <strong>Ano 1 da Aurora</strong>.</p>
+<p>Orion Fellmore foi coroado o <strong>1º Rei Mago da Aurora</strong>.</p>
+<p>Sobre as ruínas do Império das Trevas, erguia-se um reino novo. Povos libertos. Magia deixando de ser segredo de um só.</p>
+<p>Celeste segurou a mão dele no alto do palco improvisado.</p>
+<p>— E agora? — perguntou ela.</p>
+<p>— Agora — respondeu Orion — a gente constrói o que meu pai não pôde ver.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 5 - Onde um dia pisou um Rei">Capítulo 5 - Onde um dia pisou um Rei</h2>
+<p>Os anos da Aurora foram longos e, por um tempo, bons.</p>
+<p>Orion e Celeste tiveram filhos. O palácio ecoava com passos pequenos e discussões sobre leis, plantações e escolas de magia. O velho mago do norte — finalmente livre da maldição de Gauthiel — envelheceu de verdade e morreu sorrindo, como se a morte fosse um presente atrasado.</p>
+<p>Celeste morreu aos <strong>210 primaveras</strong>.</p>
+<p>Orion a enterrou sob uma árvore de folhas douradas, no jardim que ela plantara com as próprias mãos. Ficou calado por um inverno inteiro. Depois voltou ao trono, mais cinza, mais silencioso, ainda justo.</p>
+<p>Morreu aos <strong>223 primaveras</strong>.</p>
+<p>O filho deles assumiu a coroa. Depois o neto. Depois o bisneto.</p>
+<p>A linhagem Fellmore se estendeu como um rio através das estações.</p>
+<p>Reis Magos vieram e foram — Oswin, Reinhold, Balthasar, Baldric e tantos outros — cada um deixando pedra sobre pedra no edifício da Aurora. Houve colheitas generosas e invernos duros. Houve reformas e traições pequenas. Houve paz o bastante para o povo esquecer o cheiro do Império da Maldição.</p>
+<p>Até a <strong>550ª primavera</strong>, a Aurora ainda se lembrava de Orion como fundador e mito.</p>
+<p>Mas mitos não impedem ambição.</p>
+<p>E ambição, quando nasce em gêmeos, parte reinos ao meio.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 6 - Dois Irmãos e Um Trono">Capítulo 6 - Dois Irmãos e Um Trono</h2>
+<p>Nasceram no mesmo grito.</p>
+<p><strong>Aldric</strong> e <strong>Alaric</strong> Fellmore — gêmeos, iguais no rosto, opostos no fogo dos olhos. Um amava a ordem das leis da Aurora. O outro amava a liberdade de quem não queria se curvar a nenhuma tradição.</p>
+<p>Quando o Rei Mago morreu sem deixar testamento claro — ou pior: deixando um testamento que cada lado leu como quisesse — os dois estenderam a mão para a mesma coroa.</p>
+<p>— Eu sou o primogênito do minuto — disse Aldric. — Eu sou o primogênito da vontade — retrucou Alaric.</p>
+<p>A corte se dividiu. As raças se dividiram.</p>
+<p>Metade apoiou <strong>Aldric Fellmore da Aurora</strong>. A outra metade apoiou <strong>Alaric Fellmore</strong>.</p>
+<p>A guerra civil começou sem buzina. Começou em sussurros, depois em punhais, depois em exércitos.</p>
+<p>Alaric buscou apoio na <strong>Casa Blackwood</strong> e entre os <strong>orcs</strong>, que viam nele a chance de não mais viverem sob a sombra dourada da Aurora. Marchou para o sul — terras quentes, desertos, florestas densas — e ali fincou bandeiras escuras.</p>
+<p>Nasceu o <strong>Reino do Crepúsculo</strong>.</p>
+<p>Naquela mesma noite, sob ordens de Aldric e do conselho da Aurora, as muralhas começaram a subir.</p>
+<p>Pedra sobre pedra. Medo sobre medo.</p>
+<p>A grande paz — a paz que Orion comprara com sangue e sol — acabara.</p>
+<p>Dois irmãos. Um trono. Dois reinos.</p>
+<p>E o mundo aprendeu de novo a dormir de espada ao lado da cama.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 7 - Reino do Crepúsculo">Capítulo 7 - Reino do Crepúsculo</h2>
+<p>A revolta não foi limpa.</p>
+<p>Fadas e goblins — povos que tentaram não tomar lado por completo — foram esmagados entre as pedras da história. Houve extinções. Houve canções que ninguém mais canta porque não restou quem as lembrasse.</p>
+<p>No Crepúsculo, a consolidação veio com histórias soltas: um mercante orc que salvou crianças da Aurora; uma assassina Blackwood que matou o próprio irmão por desertar; um mago menor que vendeu nomes por pão.</p>
+<p>Alaric Fellmore do Crepúsculo reinou com a ferocidade de quem acredita ter sido traído desde o berço. Casou-se com uma princesa orc por aliança e por desejo.</p>
+<p>O filho nasceu.</p>
+<p>O avô orc — vendo no menino uma ameaça à sua própria linhagem de poder — assassinou Alaric.</p>
+<p>A princesa assumiu o trono.</p>
+<p>Rainha do Crepúsculo.</p>
+<p>Não foi uma rainha de canções suaves. Foi tirana. Fez guerras. Queimou fronteiras. Cobrou tributos em sangue e ferro. O povo do sul aprendeu a temê-la mais do que amá-la.</p>
+<p>Alguns disseram que Alaric pagou o karma de ter partido o mundo ao meio.</p>
+<p>Outros disseram que o karma ainda não terminara de cobrar.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 8 - Batalhas &amp; Guerras">Capítulo 8 - Batalhas &amp; Guerras</h2>
+<p>Os séculos seguintes foram um mapa manchado de vermelho.</p>
+<p><strong>A Batalha das Muralhas Douradas</strong> — a Aurora repeliu a primeira grande invasão do Crepúsculo, e as pedras erguidas na noite da cisão provaram seu valor.</p>
+<p><strong>A Queda de Valeleste</strong> — uma cidade-fronteira mudou de mãos sete vezes em trinta primaveras; no fim, não restou nome digno de mapa, só cinzas.</p>
+<p><strong>A Guerra dos Rios Negros</strong> — orcs e elfos se enfrentaram na água até o rio mudar de cor por uma estação inteira.</p>
+<p><strong>O Cerco de Kaelthar</strong> — magos da Aurora prenderam um exército crepuscular no gelo das montanhas do norte por um inverno; quando o degelo veio, só armaduras vazias restaram.</p>
+<p><strong>A Noite das Dagas Gêmeas</strong> — espiões de ambos os lados mataram-se uns aos outros na mesma hora, em cidades diferentes, como se o ódio tivesse aprendido a sincronizar o relógio.</p>
+<p>Houve trevas e coragem dos dois lados.</p>
+<p>Houve heróis sem estátua. Houve monstrengos com coroa.</p>
+<p>E a cada geração, as crianças aprendiam o mesmo refrão:</p>
+<p>— Não confie em quem nasce do outro lado da muralha.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 9 - Amor Proibido">Capítulo 9 - Amor Proibido</h2>
+<p>Belly Lorem era ninfa da Aurora — sangue nobre, magia de floresta, temperamento de tempestade.</p>
+<p>Brigou com os pais por liberdade. Atravessou a fronteira não como espiã, mas como alguém que queria respirar sem protocolo.</p>
+<p>Nas terras do Crepúsculo, vagando entre penumbras, encontrou <strong>Necrothic Tayler Wers</strong> — vampiro, soldado, homem de poucas ilusões.</p>
+<p>Eles deviam se odiar.</p>
+<p>Em vez disso, se apaixonaram.</p>
+<p>A notícia correu como fogo em palha seca. Por um momento frágil, os reinos hesitaram. Houve embaixadas. Houve trégua. Houve quem sonhasse que o amor faria o que os exércitos não fizeram.</p>
+<p>Então o <strong>Mago Negro</strong> — Rei do Crepúsculo — decidiu que trégua era fraqueza.</p>
+<p>Invadiu a Aurora. Matou o Rei Mago.</p>
+<p>Belly e Tayler, em desespero e ódio sagrado, amaldiçoaram o Mago Negro e as tropas do Crepúsculo: o sol os queimaria. Tayler era fraco para tal magia sozinho — foi a <strong>amplificação</strong> de Belly Lorem que tornou o feitiço possível, um grito de amor e vingança trançados.</p>
+<p><strong>Benjamim Wers</strong>, irmão de Tayler, fugiu para a Aurora. Sabia que no Crepúsculo seria executado pelo crime do irmão.</p>
+<p>Mas a casa <strong>Altamira</strong>, cega de luto e orgulho, viu traição onde havia tragédia.</p>
+<p>Mataram Belly. Mataram Tayler. Mataram Benjamim.</p>
+<p>Vingança pelo Rei Mago. Castigo por um casamento que ousou atravessar muralhas.</p>
+<p>A trégua morreu com eles.</p>
+<p>A guerra voltou — e voltou pior.</p>
+<p>Dizem que, nas noites sem lua, ainda se ouve o nome de Belly nos rios da Aurora e o de Tayler no vento seco do Crepúsculo.</p>
+<p>E o sol, desde então, nunca mais foi só luz: foi também sentença.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 10 - Jornada de Apófis">Capítulo 10 - Jornada de Apófis</h2>
+<p>Anos depois, um elfo e seu amigo centauro liam as crônicas antigas à luz de uma lanterna.</p>
+<p>— Se as bestas ajudaram a prender o mundo — disse o elfo — talvez uma besta ajude a libertá-lo da guerra.</p>
+<p>— Ou nos engula — respondeu o centauro. — Mas eu vou contigo.</p>
+<p>Foram ao deserto do sul, onde o chão arde e o nome <strong>Apófis</strong> ainda assusta os mapas.</p>
+<p>Encontraram a serpente da terra — não como deus de altar, mas como inteligência antiga, entediada e perigosa.</p>
+<p>O pacto foi selado com sangue e promessa: a Aurora teria o poder de Apófis por um tempo; em troca, a besta exigiria o fim do acordo quando a batalha decisiva terminasse.</p>
+<p>Voltaram. O Rei Mago montou o ataque coordenado ao Crepúsculo.</p>
+<p>Mas o Crepúsculo também fizera seu pacto.</p>
+<p><strong>Leviatã</strong> ergueu-se dos mares escuros.</p>
+<p>A batalha foi um espelho: besta contra besta, magia contra magia, muralha contra onda.</p>
+<p>O Crepúsculo venceu.</p>
+<p>O elfo e o centauro morreram lado a lado, como tinham marchado.</p>
+<p>Apófis, o pacto cumprido, voltou ao deserto do sul — livre de novo, indifente à dor dos reinos.</p>
+<p>E a guerra, alimentada por deuses e orgulho, continuou.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 11 - Reviravoltas">Capítulo 11 - Reviravoltas</h2>
+<p>A Aurora não se rendeu.</p>
+<p>Após a derrota do pacto de Apófis, veio uma geração mais fria e mais inteligente. Não buscavam só glória: buscavam logística, espiões, rotas, magia de cerco.</p>
+<p><strong>A Batalha da Ponte de Cinzas</strong> marcou a virada: a Aurora retomou três fortalezas numa única primavera.</p>
+<p><strong>A Revolta dos Mercadores do Meio</strong> — cidades neutras cansadas de tributos dos dois lados — abriu caminhos de suprimento que o Crepúsculo não conseguiu fechar.</p>
+<p><strong>O Dia em que o Sol Não Queimou</strong> — um ritual da Aurora amenizou a maldição solar sobre prisioneiros crepusculares e, paradoxalmente, ganhou simpatia de desertores orcs que odiavam a tirania do próprio trono.</p>
+<p>Pouco a pouco, as bandeiras douradas avançaram.</p>
+<p>O Crepúsculo ainda mordia. Ainda queimava. Ainda tinha o Mago Negro e o medo do mar.</p>
+<p>Mas, pela primeira vez em gerações, a Aurora não apenas defendia muralhas.</p>
+<p>Ela empurrava o mapa.</p>
+<hr class="lore-hr">
+<h2 id="Capítulo 12 - O Fim de uma Era e o Iníci">Capítulo 12 - O Fim de uma Era e o Início de Outra</h2>
+<p>O novo Rei Mago — cansado de sepulturas e canções de guerra — propôs o impensável:</p>
+<p>Trégua.</p>
+<p>Não paz eterna. Uma pausa.</p>
+<p>Por um tempo, os dois reinos respiraram. Forjas viraram oficinas. Magos estudaram estrelas em vez de balística. Houve feiras na fronteira. Houve casamentos discretos que ninguém ousou chamar de traição. Houve ciência, engenhos, livros.</p>
+<p>A trégua não durou.</p>
+<p>Nunca dura, quando o ódio aprendeu a se herdar como sobrenome.</p>
+<p>Ainda assim, abriu uma fresta.</p>
+<p>E é nessa fresta que o mundo se encontra agora.</p>
+<hr class="lore-hr">
+<h3>O Tempo Presente</h3>
+<p>No calendário dos reinos, <strong>60 dias formam uma estação</strong>. Quatro estações formam um ano — e os anos se contam em <strong>primaveras</strong>, desde o sol do Ano 1 da Aurora.</p>
+<p>A guerra dorme de olho aberto. O Mago Negro ainda reina no Crepúsculo. O Rei Mago da Aurora envelhece sob o peso da coroa de Orion.</p>
+<p>E você chega.</p>
+<p>Pode lutar na guerra. Pode plantar, negociar, explorar, sobreviver. Pode invadir o Crepúsculo. Pode completar a jornada principal e as missões que o destino (e o mapa) colocarem à sua frente.</p>
+<p>Se derrotar o Mago Negro após provar seu caminho...</p>
+<p>O Rei Mago da Aurora cairá — por lâmina, idade ou conspiração, o trono não fica vazio por acaso.</p>
+<p>Então restará a escolha que nem Orion, nem Aldric, nem Alaric souberam fazer sem sangue:</p>
+<ul>
+<li>Assumir o <strong>Reino do Crepúsculo</strong>.</li>
+<li>Assumir a <strong>Aurora</strong> e deixar o Crepúsculo a um amigo, a um orc, a alguém que ainda acredite em fronteiras.</li>
+<li>Ou <strong>unificar os reinos</strong> outra vez — e descobrir se a paz de Orion pode nascer de novo, ou se o mundo só sabe viver entre sol e penumbra.</li>
+</ul>
+<p>A era dos deuses tiranos acabou. A era dos irmãos partidos sangrou por séculos. A era seguinte...</p>
+<p>Começa quando você dá o primeiro passo.</p>
+  </article>
+  <div class="footer">Twilight Battle · Lore</div>
+</div>
+</body>
+</html>
