@@ -540,6 +540,7 @@ class Game:
                     self.apply_day_effects()
                 else:
                     self.apply_werewolf_forms()
+                self.refresh_dynamic_weapon_bonuses()
 
         
         current_player = self.players[self.current_turn]
@@ -703,12 +704,11 @@ class Game:
         if not has_attack_cards:
             return {'success': False, 'message': 'Você precisa de criaturas em posição de ataque para atacar'}
         
-        # Adicionar bônus de equipamentos
-        if attacker['equipment']['weapon']:
+        # Adicionar bônus de equipamentos (armas com efeito dinâmico: clava/adaga)
+        if attacker.get('equipment') and attacker['equipment'].get('weapon'):
             weapon = attacker['equipment']['weapon']
             if weapon.get('type') == 'weapon':
-                weapon_attack = weapon.get('attack', 0)
-                attack_power += weapon_attack
+                attack_power += self.get_weapon_attack_value(attacker, weapon)
         
         # Talismã Guerreiro na MÃO
         for talisman in attacker['hand']:
@@ -1239,7 +1239,16 @@ class Game:
                         form = 'day'
                     old_form = card.get('werewolf_form')
                     # preservar bônus de equipamento em attack: recompute base + gear
-                    gear_atk = sum((eq.get('attack') or 0) for eq in (card.get('equipped_items') or []))
+                    gear_atk = 0
+                    for eq in (card.get('equipped_items') or []):
+                        if eq.get('ability') in ('crepusculo_dagger', 'orc_club') or eq.get('id') in (
+                            'adaga_crepusculo', 'clava_orc',
+                        ):
+                            val = self.get_weapon_attack_value(player, eq)
+                            eq['_applied_attack'] = val
+                            gear_atk += val
+                        else:
+                            gear_atk += int(eq.get('attack') or 0)
                     gear_hp = sum((eq.get('protection') or 0) + (eq.get('life') or 0) for eq in (card.get('equipped_items') or []))
                     # Botas de Guerra: +atk se em ataque
                     if base == 'attack_bases':
@@ -1323,6 +1332,7 @@ class Game:
                                 broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
         # lobisomem troca forma no ciclo (também à noite via toggle)
         self.apply_werewolf_forms()
+        self.refresh_dynamic_weapon_bonuses()
 
     def swap_positions(self, username, pos1_type, pos1_index, pos2_type, pos2_index):
         """Troca duas cartas de posição"""
@@ -1368,6 +1378,57 @@ class Game:
             'message': msg
         }
     
+    def get_weapon_attack_value(self, player, weapon):
+        """Ataque efetivo de uma arma (efeitos dinâmicos: clava, adaga do crepúsculo)."""
+        if not weapon:
+            return 0
+
+        ability = weapon.get('ability')
+        wid = weapon.get('id')
+
+        # Adaga do Crepúsculo: dia fraco / noite forte
+        if ability == 'crepusculo_dagger' or wid == 'adaga_crepusculo':
+            if self.time_of_day == 'night':
+                return int(weapon.get('night_attack', 600))
+            return int(weapon.get('day_attack', weapon.get('attack', 150)))
+
+        base = int(weapon.get('attack', 0) or 0)
+
+        # Clava do Orc: +50 por orc em bases de ataque (cap 3)
+        if ability == 'orc_club' or wid == 'clava_orc':
+            bonus = int(weapon.get('orc_bonus', 50))
+            cap = int(weapon.get('orc_bonus_cap', 3))
+            orcs = 0
+            for card in (player or {}).get('attack_bases') or []:
+                if not card:
+                    continue
+                cid = (card.get('id') or '')
+                if cid == 'orc' or cid.startswith('orc'):
+                    orcs += 1
+            base += min(cap, orcs) * bonus
+
+        return base
+
+    def refresh_dynamic_weapon_bonuses(self):
+        """Atualiza bônus de armas dinâmicas equipadas em criaturas (ex.: adaga dia/noite)."""
+        for username in self.players:
+            player = self.player_data.get(username)
+            if not player:
+                continue
+            for base in ('attack_bases', 'defense_bases'):
+                for card in player.get(base) or []:
+                    if not card or card.get('type') != 'creature':
+                        continue
+                    for eq in card.get('equipped_items') or []:
+                        if eq.get('ability') not in ('crepusculo_dagger', 'orc_club') and eq.get('id') not in (
+                            'adaga_crepusculo', 'clava_orc',
+                        ):
+                            continue
+                        old = int(eq.get('_applied_attack', 0) or 0)
+                        new = self.get_weapon_attack_value(player, eq)
+                        card['attack'] = int(card.get('attack', 0) or 0) - old + new
+                        eq['_applied_attack'] = new
+
     def equip_item_to_creature(self, username, item_card_id, creature_card_id):
         """Equipa um item em uma criatura"""
 
@@ -1419,6 +1480,15 @@ class Game:
         
         if item_card.get('id') == 'lamina_almas' and target_creature.get('id') not in ['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers']:
             return {'success': False, 'message': 'Apenas elfos, magos e vampiros podem usar a Lâmina das Almas'}
+
+        if item_card.get('id') == 'adaga_crepusculo' or item_card.get('werewolf_only'):
+            if not target_creature.get('werewolf') and target_creature.get('id') != 'lobisomem_crepusculo':
+                return {'success': False, 'message': 'A Adaga do Crepúsculo só pode ser usada por Lobisomem do Crepúsculo'}
+
+        if item_card.get('id') == 'cajado_mago_negro':
+            races = item_card.get('equip_races') or ['mago', 'mago_negro', 'rei_mago']
+            if target_creature.get('id') not in races:
+                return {'success': False, 'message': 'O Cajado do Mago Negro só pode ser usado por magos'}
         
         if 'equipped_items' not in target_creature:
             target_creature['equipped_items'] = []
@@ -1437,8 +1507,15 @@ class Game:
         
         # Equipar item
         target_creature['equipped_items'].append(item_card)
-        
-        if item_card.get('attack'):
+
+        # Armas dinâmicas (clava / adaga): aplica valor efetivo e guarda para refresh
+        if item_card.get('ability') in ('crepusculo_dagger', 'orc_club') or item_card.get('id') in (
+            'adaga_crepusculo', 'clava_orc',
+        ):
+            bonus = self.get_weapon_attack_value(player, item_card)
+            target_creature['attack'] = target_creature.get('attack', 0) + bonus
+            item_card['_applied_attack'] = bonus
+        elif item_card.get('attack'):
             target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
         if item_card.get('attack_bonus') and item_card.get('ability') == 'charge_bonus':
             # Botas de Guerra: bônus só em ataque
@@ -1698,6 +1775,7 @@ class Game:
             self.apply_day_effects()
         else:
             self.apply_werewolf_forms()
+            self.refresh_dynamic_weapon_bonuses()
         
         self.use_action(username, 'toggle_time')
         
@@ -1911,6 +1989,23 @@ class Game:
                         return uname, base, idx, card
         return None
 
+    def _staff_spell_bonus(self, player):
+        """Cajado do Mago Negro: +spell_power em cura/buff se equipado no jogador ou em mago."""
+        bonus = 0
+        if not player:
+            return 0
+        w = (player.get('equipment') or {}).get('weapon')
+        if w and (w.get('id') == 'cajado_mago_negro' or w.get('ability') == 'dark_staff'):
+            bonus = max(bonus, int(w.get('spell_power', 256)))
+        for base in ('attack_bases', 'defense_bases'):
+            for card in player.get(base) or []:
+                if not card:
+                    continue
+                for eq in card.get('equipped_items') or []:
+                    if eq.get('id') == 'cajado_mago_negro' or eq.get('ability') == 'dark_staff':
+                        bonus = max(bonus, int(eq.get('spell_power', 256)))
+        return bonus
+
     def _try_spell_resist(self, target_card):
         """Peitoral de Carvalho: gasta 1 carga de resist."""
         if target_card and target_card.get('spell_resist_charges', 0) > 0:
@@ -1931,22 +2026,24 @@ class Game:
         
         # Aplicar efeitos específicos
         if spell_id == 'feitico_cortes':
-            # Aumenta ataque de um monstro
+            # Aumenta ataque de um monstro (+ Cajado do Mago Negro)
+            power = 1024 + self._staff_spell_bonus(caster)
             if target_card_id:
                 found = self._find_card_on_field(target_card_id)
                 if found:
                     uname, base, idx, card = found
                     if self._try_spell_resist(card):
                         return {'type': 'resisted', 'target': card['name'], 'message': f'{card["name"]} resistiu ao feitiço!'}
-                    card['attack'] = card.get('attack', 0) + 1024
-                    return {'type': 'buff', 'target': card['name'], 'effect': '+1024 ataque'}
+                    card['attack'] = card.get('attack', 0) + power
+                    return {'type': 'buff', 'target': card['name'], 'effect': f'+{power} ataque'}
             return {'type': 'error', 'message': 'Alvo não encontrado'}
         
         elif spell_id == 'feitico_duro_matar':
-            # Aumenta defesa do jogador
+            # Aumenta defesa do jogador (+ Cajado)
+            power = 1024 + self._staff_spell_bonus(caster)
             if target_username:
-                self.player_data[target_username]['life'] += 1024
-                return {'type': 'buff', 'target': self.player_data[target_username]['name'], 'effect': '+1024 vida'}
+                self.player_data[target_username]['life'] += power
+                return {'type': 'buff', 'target': self.player_data[target_username]['name'], 'effect': f'+{power} vida'}
             return {'type': 'error', 'message': 'Alvo não especificado'}
         
         elif spell_id == 'feitico_troca':
@@ -2016,8 +2113,8 @@ class Game:
             return {'type': 'error', 'message': 'Alvo não especificado'}
         
         elif spell_id == 'feitico_cura':
-            # Cura o jogador alvo
-            heal_amount = 1024
+            # Cura o jogador alvo (+ bônus do Cajado do Mago Negro)
+            heal_amount = 1024 + self._staff_spell_bonus(caster)
             if target_username:
                 self.player_data[target_username]['life'] += heal_amount
                 return {
@@ -2039,6 +2136,7 @@ class Game:
         elif spell_id == 'feitico_clareira_lua':
             self.time_of_day = 'night'
             self.apply_werewolf_forms()
+            self.refresh_dynamic_weapon_bonuses()
             broadcast_system_message(self.game_id, '🌙 Clareira da Lua! A noite cai sobre o campo!')
             return {'type': 'force_night', 'time_of_day': 'night', 'message': 'Ciclo forçado para NOITE'}
 
