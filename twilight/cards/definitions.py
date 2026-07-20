@@ -209,13 +209,64 @@ CARDS = {
         "description": "Assume o dano de uma carta do cemitério. Só pode ser equipado por Elfos, magos e vampiros."
     },
 
+    "espada_madeira": {
+        "id": "espada_madeira",
+        "name": "Espada de Madeira",
+        "type": "weapon",
+        "attack": 128,
+        "count": 40,
+        "description": "Espada de treino. Fraca, mas melhor que as mãos vazias."
+    },
     "espada_ferro": {
         "id": "espada_ferro",
         "name": "Espada de Ferro",
         "type": "weapon",
         "attack": 256,
-        "count": 40,
-        "description": "Uma espada para seus soldados."
+        "count": 35,
+        "description": "Uma espada padrão para seus soldados."
+    },
+    "katana": {
+        "id": "katana",
+        "name": "Katana",
+        "type": "weapon",
+        "attack": 512,
+        "count": 18,
+        "description": "Lâmina afiada de corte limpo. Bom equilíbrio entre poder e disponibilidade."
+    },
+
+    "clava_orc": {
+        "id": "clava_orc",
+        "name": "Clava do Orc",
+        "type": "weapon",
+        "attack": 350,
+        "count": 22,
+        "ability": "orc_club",
+        "orc_bonus": 50,
+        "orc_bonus_cap": 3,
+        "description": "350⚔️ base. +50⚔️ por Orc em bases de ataque (máx. 3 orcs = +150)."
+    },
+    "cajado_mago_negro": {
+        "id": "cajado_mago_negro",
+        "name": "Cajado do Mago Negro",
+        "type": "weapon",
+        "attack": 100,
+        "count": 12,
+        "ability": "dark_staff",
+        "spell_power": 256,
+        "equip_races": ["mago", "mago_negro", "rei_mago"],
+        "description": "100⚔️. Só magos. Seus feitiços de cura/buff ganham +256 de poder."
+    },
+    "adaga_crepusculo": {
+        "id": "adaga_crepusculo",
+        "name": "Adaga do Crepúsculo",
+        "type": "weapon",
+        "attack": 150,
+        "day_attack": 150,
+        "night_attack": 600,
+        "count": 14,
+        "ability": "crepusculo_dagger",
+        "werewolf_only": True,
+        "description": "Só Lobisomem do Crepúsculo. De dia 150⚔️; de noite 600⚔️. O poder muda com o ciclo."
     },
     
     "blade_vampires": {
