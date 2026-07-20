@@ -1,851 +1,239 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twilight Battle — Regras</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-
-    
-    <style>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twilight Battle — Regras</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
 :root {
-  --bg-0: #07060f;
-  --bg-1: #0e0b1a;
-  --bg-2: #16122a;
-  --panel: rgba(18, 14, 36, 0.72);
-  --panel-solid: #141026;
-  --panel-2: rgba(28, 22, 52, 0.85);
-  --border: rgba(255, 215, 120, 0.18);
-  --border-strong: rgba(255, 215, 120, 0.42);
-  --gold: #f0c14b;
-  --gold-2: #ffb347;
-  --gold-dim: rgba(240, 193, 75, 0.15);
-  --cyan: #5ee7ff;
-  --violet: #9b7bff;
-  --magenta: #ff5ec8;
-  --rose: #ff6b8a;
-  --green: #3ddc97;
-  --red: #ff4d6d;
-  --text: #f4f0ff;
-  --muted: #a39bb8;
-  --shadow: 0 20px 60px rgba(0,0,0,.45);
-  --radius: 18px;
-  --radius-sm: 12px;
-  --font-ui: "Outfit", system-ui, sans-serif;
-  --font-display: "Cinzel", "Times New Roman", serif;
-  --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
-  --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
+  --bg-0: #07060f; --bg-1: #0e0b1a; --panel: rgba(18,14,36,.72);
+  --border: rgba(255,215,120,.18); --gold: #f0c14b; --gold-2: #ffb347;
+  --cyan: #5ee7ff; --violet: #9b7bff; --green: #3ddc97; --red: #ff4d6d;
+  --text: #f4f0ff; --muted: #a39bb8; --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --font-ui: "Outfit", system-ui, sans-serif; --font-display: "Cinzel", serif;
 }
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body { min-height: 100%; }
+* { margin:0; padding:0; box-sizing:border-box; }
 body {
-  font-family: var(--font-ui);
-  color: var(--text);
+  font-family: var(--font-ui); color: var(--text);
   background:
     radial-gradient(1200px 600px at 10% -10%, rgba(155,123,255,.28), transparent 55%),
     radial-gradient(900px 500px at 100% 0%, rgba(255,94,200,.14), transparent 50%),
-    radial-gradient(800px 400px at 50% 100%, rgba(94,231,255,.08), transparent 50%),
     linear-gradient(160deg, var(--bg-0), var(--bg-1) 40%, #120b22);
-  min-height: 100vh;
-  overflow-x: hidden;
+  min-height: 100vh; padding: 28px 16px 60px;
 }
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35), transparent),
-    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
-    radial-gradient(1.5px 1.5px at 85% 60%, rgba(240,193,75,.5), transparent),
-    radial-gradient(1px 1px at 10% 70%, rgba(94,231,255,.4), transparent);
-  opacity: .5;
-}
-@keyframes fade-up { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } 50% { box-shadow: 0 0 18px rgba(61,220,151,.25); } }
-
-.swal2-popup {
-  background: #16122a !important; color: var(--text) !important;
-  border: 1px solid var(--border) !important; border-radius: 18px !important;
-}
-
-body { padding: 28px 16px 60px; }
-.rules-container {
-  position: relative; z-index: 1;
-  max-width: 980px; margin: 0 auto; animation: fade-up .5s ease;
-}
+.wrap { max-width: 920px; margin: 0 auto; position: relative; z-index: 1; }
 .header {
-  text-align: center; margin-bottom: 22px;
-  padding: 28px 20px; border-radius: 22px;
-  background: var(--panel); backdrop-filter: blur(16px);
-  border: 1px solid var(--border); box-shadow: var(--shadow);
+  text-align: center; margin-bottom: 20px; padding: 28px 20px; border-radius: 22px;
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
 }
 .header h1 {
-  font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem);
   background: linear-gradient(120deg, #fff6d0, var(--gold), var(--gold-2));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  margin-bottom: 8px;
+  -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 8px;
 }
-.header .subtitle { color: var(--muted); font-weight: 300; }
-.nav-buttons {
-  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
-  margin: 0 0 22px;
+.header p { color: var(--muted); }
+.nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom: 20px; }
+.nav a {
+  display:inline-flex; padding:10px 16px; border-radius:999px; text-decoration:none;
+  font-weight:700; font-size:.9rem; border:1px solid var(--border);
+  background: rgba(240,193,75,.12); color: var(--gold);
 }
-.nav-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 16px; border-radius: 999px; text-decoration: none;
-  font-family: inherit; font-weight: 700; font-size: .9rem; cursor: pointer;
-  border: 1px solid var(--border); background: var(--gold-dim); color: var(--gold);
-  transition: .2s;
-}
-.nav-btn:hover { background: rgba(240,193,75,.22); transform: translateY(-1px); }
-button.nav-btn { background: rgba(155,123,255,.12); color: #d4c8ff; border-color: rgba(155,123,255,.3); }
-
+.nav a.alt { background: rgba(155,123,255,.12); color:#d4c8ff; border-color: rgba(155,123,255,.3); }
+.nav a.ok { background: rgba(61,220,151,.12); color:#b8f5d8; border-color: rgba(61,220,151,.3); }
 .section {
-  background: var(--panel); backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,.06); border-radius: 18px;
-  padding: 22px 22px 18px; margin-bottom: 16px;
-  box-shadow: 0 12px 36px rgba(0,0,0,.25);
-  border-left: 3px solid rgba(240,193,75,.45);
+  background: var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:18px;
+  padding: 22px; margin-bottom: 14px; border-left: 3px solid rgba(240,193,75,.45);
 }
-.section h2 {
-  font-family: var(--font-display); color: var(--gold);
-  font-size: 1.25rem; margin-bottom: 12px;
-}
-.section h3 {
-  color: var(--cyan); font-size: 1.05rem; margin: 18px 0 8px; font-weight: 700;
-}
-.section h4 { color: var(--gold-2); margin-bottom: 6px; }
-.section p, .section li { color: #d8d0eb; line-height: 1.7; margin-bottom: 8px; }
-.section strong { color: #fff; }
+.section h2 { font-family: var(--font-display); color: var(--gold); font-size:1.2rem; margin-bottom:12px; }
+.section h3 { color: var(--cyan); font-size:1.02rem; margin: 16px 0 8px; }
+.section p, .section li { color:#d8d0eb; line-height:1.7; margin-bottom:8px; }
 .section ul, .section ol { margin: 8px 0 8px 20px; }
-
-.tip, .info, .warning {
-  margin: 14px 0; padding: 12px 14px; border-radius: 12px; font-size: .95rem; line-height: 1.5;
+.section strong { color:#fff; }
+.tip, .warn, .info {
+  margin:12px 0; padding:12px 14px; border-radius:12px; font-size:.95rem; line-height:1.5;
 }
-.tip { background: rgba(61,220,151,.1); border: 1px solid rgba(61,220,151,.28); color: #b8f5d8; }
-.info { background: rgba(94,231,255,.08); border: 1px solid rgba(94,231,255,.25); color: #b8f0ff; }
-.warning { background: rgba(255,77,109,.1); border: 1px solid rgba(255,77,109,.3); color: #ffb3c1; }
-
-.phase-timeline {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px; margin: 16px 0;
+.tip { background:rgba(61,220,151,.1); border:1px solid rgba(61,220,151,.28); color:#b8f5d8; }
+.warn { background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); color:#ffb3c1; }
+.info { background:rgba(94,231,255,.08); border:1px solid rgba(94,231,255,.25); color:#b8f0ff; }
+table { width:100%; border-collapse:collapse; margin:10px 0; font-size:.9rem; }
+th, td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:top; }
+th { color:var(--gold); background:rgba(240,193,75,.08); font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+td { color:#d8d0eb; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:12px 0; }
+.card {
+  padding:14px; border-radius:14px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.06);
 }
-.phase {
-  text-align: center; padding: 14px 10px; border-radius: 14px;
-  background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.06);
-}
-.phase .number {
-  width: 34px; height: 34px; margin: 0 auto 8px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--gold), var(--gold-2));
-  color: #1a1020; font-weight: 800;
-}
-.phase strong { display: block; color: var(--text); margin-bottom: 4px; }
-.phase small { color: var(--muted); font-size: .78rem; }
-
-.rule-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px; margin: 14px 0;
-}
-.rule-card {
-  padding: 14px; border-radius: 14px;
-  background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);
-  transition: border-color .2s;
-}
-.rule-card:hover { border-color: var(--border); }
-.rule-card h4 { margin-bottom: 8px; color: var(--gold); }
-.rule-card p { margin: 0; font-size: .9rem; color: var(--muted); }
-
-.example-board {
-  display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0;
-}
-.example-slot {
-  width: 88px; min-height: 72px; border-radius: 12px; padding: 8px;
-  text-align: center; font-size: .75rem; font-weight: 600;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  background: rgba(0,0,0,.3); border: 1px dashed rgba(255,255,255,.15);
-}
-.example-slot.attack { border-color: rgba(255,77,109,.4); color: #ffb3c1; }
-.example-slot.defense { border-color: rgba(91,140,255,.4); color: #b0c8ff; }
-
-.card-types {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 10px; margin: 14px 0;
-}
-.card-type {
-  padding: 14px 10px; border-radius: 14px; text-align: center;
-  background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.06);
-}
-.card-type h4 { color: var(--gold); margin: 8px 0 6px; font-size: .95rem; }
-.card-type p { margin: 0; font-size: .78rem; color: var(--muted); line-height: 1.4; }
-.card-type.creature { border-top: 3px solid #ff6b8a; }
-.card-type.weapon { border-top: 3px solid #f0c14b; }
-.card-type.armor { border-top: 3px solid #5b8cff; }
-.card-type.spell { border-top: 3px solid #9b7bff; }
-.card-type.talisman { border-top: 3px solid #3ddc97; }
-.card-type.trap { border-top: 3px solid #5ee7ff; }
-.card-type.rune { border-top: 3px solid #7dd3fc; }
-.card-type.oracle { border-top: 3px solid #e879f9; }
-.card-type.ritual { border-top: 3px solid #c084fc; }
-
-table {
-  width: 100%; border-collapse: collapse; margin: 12px 0 8px;
-  font-size: .9rem; overflow: hidden; border-radius: 12px;
-}
-th, td {
-  padding: 10px 12px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.06);
-  vertical-align: top;
-}
-th {
-  background: rgba(240,193,75,.1); color: var(--gold);
-  font-weight: 700; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase;
-}
-td { color: #d8d0eb; }
-tr:hover td { background: rgba(255,255,255,.02); }
-
-.footer {
-  text-align: center; margin-top: 28px; padding: 22px;
-  color: var(--muted); font-size: .85rem; opacity: .85;
-  border-top: 1px solid rgba(255,255,255,.06);
-}
-@media print {
-  body { background: #fff; color: #111; }
-  body::before { display: none; }
-  .nav-buttons { display: none; }
-  .section, .header { background: #fff; border: 1px solid #ddd; box-shadow: none; color: #111; }
-  .section h2, .header h1 { color: #222; -webkit-text-fill-color: #222; }
-  td, .section p { color: #333; }
-}
-
-    </style>
+.card h4 { color:var(--gold); margin-bottom:6px; }
+.card p { margin:0; font-size:.88rem; color:var(--muted); }
+.toc { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0; }
+.toc a { font-size:.85rem; color:var(--cyan); text-decoration:none; }
+.footer { text-align:center; margin-top:24px; color:var(--muted); font-size:.85rem; opacity:.85; }
+  </style>
 </head>
 <body>
-
-<div class="rules-container">
+<div class="wrap">
   <div class="header">
-    <h1>📜 Twilight Battle</h1>
-    <p class="subtitle">Guia de regras e como jogar — versão atualizada</p>
+    <h1>📜 Regras — Twilight Battle</h1>
+    <p>Guia prático alinhado ao motor do jogo (vida, turnos, equip, dia/noite).</p>
+    <div class="toc">
+      <a href="#basico">Básico</a> ·
+      <a href="#turno">Turno</a> ·
+      <a href="#campo">Campo</a> ·
+      <a href="#equip">Equipamento</a> ·
+      <a href="#ciclo">Dia/Noite</a> ·
+      <a href="#cartas">Tipos de carta</a> ·
+      <a href="#mods">Modificadores</a>
+    </div>
   </div>
-  <div class="nav-buttons">
-    <a href="/" class="nav-btn">🏠 Início</a>
-    <a href="/journal" class="nav-btn">📔 Jornal da Aurora</a>
-    <button class="nav-btn" type="button" onclick="window.print()">🖨️ Imprimir</button>
-  </div>
-  
-        
-        <!-- Visão Geral -->
-        <div class="section">
-            <h2>🎮 Visão Geral do Jogo</h2>
-            <p>Twilight Battle é um RPG de cartas estratégico onde 2 a 6 jogadores duelam até restar apenas um sobrevivente. Cada jogador começa com <strong>5000 de vida</strong> e <strong>5 cartas iniciais</strong>, podendo invocar criaturas, equipar itens, lançar feitiços e usar armadilhas para derrotar seus oponentes.</p>
-            
-            <div class="tip">
-                <strong>🎯 Objetivo:</strong> Ser o último jogador com vida. Quando a vida de um jogador chega a 0, ele é eliminado.
-            </div>
-        </div>
-        
-        <!-- Fases do Jogo -->
-        <div class="section">
-            <h2>⏳ Fases do Jogo</h2>
-            
-            <div class="phase-timeline">
-                <div class="phase">
-                    <div class="number">1</div>
-                    <strong>Preparação</strong>
-                    <small>Primeira rodada sem ataques</small>
-                </div>
-                <div class="phase">
-                    <div class="number">2</div>
-                    <strong>Turnos</strong>
-                    <small>1 ação de cada tipo por turno</small>
-                </div>
-                <div class="phase">
-                    <div class="number">3</div>
-                    <strong>Ciclo Dia/Noite</strong>
-                    <small>Muda a cada 24 turnos</small>
-                </div>
-                <div class="phase">
-                    <div class="number">4</div>
-                    <strong>Fim</strong>
-                    <small>Último sobrevivente vence</small>
-                </div>
-            </div>
-            
-            <h3>🎲 Primeira Rodada (Preparação)</h3>
-            <p>Na primeira rodada, <strong>ataques são bloqueados</strong>. Todos os jogadores devem fazer pelo menos uma ação (comprar carta, jogar criatura, equipar item, etc.) antes dos ataques serem liberados. Isso dá tempo para todos se prepararem.</p>
-            
-            <h3>🔄 Turnos</h3>
-            <p>Em seu turno, você pode realizar <strong>UMA ação de cada tipo</strong>:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>📥 Comprar uma carta</li>
-                <li>🎴 Jogar uma carta (criatura, armadilha, etc.)</li>
-                <li>⚔️ Atacar um oponente</li>
-                <li>🔰 Equipar um item em uma criatura</li>
-                <li>🔄 Trocar posições de cartas</li>
-                <li>✨ Usar um feitiço</li>
-                <li>👁️ Usar o Oráculo</li>
-                <li>🔮 Profetizar (com o Profeta)</li>
-                <li>📿 Realizar um Ritual</li>
-            </ul>
-            
-            <div class="info">
-                <strong>💡 Talismã da Sabedoria:</strong> Permite jogar <strong>DUAS cartas por turno</strong> (em vez de uma)!
-            </div>
-            
-            <h3>☀️ Ciclo Dia/Noite</h3>
-            <p>A cada 24 turnos, o ciclo muda:</p>
-            <div class="rule-grid">
-                <div class="rule-card">
-                    <h4>☀️ Dia</h4>
-                    <p>Criaturas noturnas (Vampiros, Zumbis) tomam <strong>100 de dano</strong> da luz do sol, a menos que estejam usando <strong>Capacete das Trevas</strong>.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🌙 Noite</h4>
-                    <p>Criaturas noturnas ficam mais fortes. Alguns feitiços e armadilhas só funcionam à noite.</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Campo de Batalha -->
-        <div class="section">
-            <h2>🏰 Campo de Batalha</h2>
-            
-            <h3>⚔️ Bases de Ataque (3 slots)</h3>
-            <p>Criaturas em ataque contribuem com seu poder de ataque quando você ataca. <strong>Apenas criaturas podem ser colocadas aqui.</strong></p>
-            
-            <h3>🛡️ Bases de Defesa (6 slots)</h3>
-            <p>Criaturas e <strong>armadilhas</strong> podem ser colocadas aqui. A ordem de absorção de dano é das cartas com <strong>maior vida primeiro</strong>.</p>
-            
-            <h3>⚠️ Armadilhas em Defesa</h3>
-            <p>Armadilhas colocadas em defesa <strong>aparecem como criaturas comuns</strong> (disfarce) para os oponentes! Quando atacadas, são ativadas e revelam sua verdadeira natureza.</p>
-            
-            <div class="example-board">
-                <div class="example-slot attack">⚔️<br>Ataque<br><small style="color:#ff4444;">(só criaturas)</small></div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot attack">⚔️<br>Ataque</div>
-                <div class="example-slot defense">🛡️<br>Defesa<br><small style="color:#44aaff;">(criaturas/armadilhas)</small></div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-                <div class="example-slot defense">🛡️<br>Defesa</div>
-            </div>
-        </div>
-        
-        <!-- Tipos de Cartas -->
-        <div class="section">
-            <h2>🃏 Tipos de Cartas</h2>
-            
-            <div class="card-types">
-                <div class="card-type creature">
-                    <div style="font-size: 30px;">👤</div>
-                    <h4>Criaturas</h4>
-                    <p>Vida e ataque. Colocadas em bases de ataque ou defesa.</p>
-                </div>
-                <div class="card-type weapon">
-                    <div style="font-size: 30px;">⚔️</div>
-                    <h4>Armas</h4>
-                    <p>Aumentam ataque da criatura equipada. <strong>Limite: 1 por criatura</strong></p>
-                </div>
-                <div class="card-type armor">
-                    <div style="font-size: 30px;">🛡️</div>
-                    <h4>Armaduras</h4>
-                    <p>Aumentam vida/proteção da criatura. <strong>Limite: 4 por criatura</strong></p>
-                </div>
-                <div class="card-type spell">
-                    <div style="font-size: 30px;">✨</div>
-                    <h4>Feitiços</h4>
-                    <p>Efeitos mágicos. <strong>Requerem um Mago em campo</strong></p>
-                </div>
-                <div class="card-type talisman">
-                    <div style="font-size: 30px;">🔮</div>
-                    <h4>Talismãs</h4>
-                    <p>Ficam na mão e ativam automaticamente. <strong>Não podem ser jogados</strong></p>
-                </div>
-                <div class="card-type trap">
-                    <div style="font-size: 30px;">⚠️</div>
-                    <h4>Armadilhas</h4>
-                    <p>Colocadas em defesa com <strong>disfarce</strong>. Ativam quando atacadas.</p>
-                </div>
-                <div class="card-type rune">
-                    <div style="font-size: 30px;">🔷</div>
-                    <h4>Runas</h4>
-                    <p>4 runas = reviver 1 carta do cemitério</p>
-                </div>
-                <div class="card-type oracle">
-                    <div style="font-size: 30px;">👁️</div>
-                    <h4>Oráculo</h4>
-                    <p>Anula o Talismã da Imortalidade</p>
-                </div>
-                <div class="card-type ritual">
-                    <div style="font-size: 30px;">📿</div>
-                    <h4>Rituais</h4>
-                    <p>Efeitos poderosos com requisitos específicos</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Combate -->
-        <div class="section">
-            <h2>⚔️ Sistema de Combate</h2>
-            
-            <h3>📈 Cálculo de Dano</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li><strong>Soma-se</strong> o ataque de todas as criaturas em posição de ataque</li>
-                <li><strong>Adiciona-se</strong> ataque de armas equipadas</li>
-                <li><strong>Adiciona-se</strong> bônus de talismãs (Guerreiro: +1000)</li>
-                <li>Este é seu <strong>Poder de Ataque</strong> total</li>
-            </ol>
-            
-            <h3>🛡️ Absorção de Dano</h3>
-            <p>Quando você ataca, o dano é aplicado nesta ordem:</p>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li><strong>Primeiro:</strong> Armadilhas em defesa são ativadas (podem cancelar, refletir ou transferir o dano)</li>
-                <li><strong>Depois:</strong> Cartas em defesa do oponente (maior vida primeiro)</li>
-                <li><strong>Depois:</strong> Se sobrar dano, vai para cartas em ataque</li>
-                <li><strong>Por último:</strong> Dano restante vai para a vida do jogador</li>
-            </ol>
-            
-            <h3>💀 Morte de Criaturas</h3>
-            <p>Quando uma criatura tem sua vida reduzida a 0, ela vai para o <strong>cemitério</strong>.</p>
-            
-            <h3>🏆 Morte de Jogador</h3>
-            <p>Quando a vida de um jogador chega a 0:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>Se tiver <strong>Talismã da Imortalidade</strong> (com usos restantes): vida restaurada para 5000</li>
-                <li>Se <strong>Oráculo</strong> foi usado contra ele: Talismã é anulado e jogador morre</li>
-                <li>Caso contrário: jogador é eliminado</li>
-            </ul>
-            
-            <div class="tip">
-                <strong>💡 Dica:</strong> O Talismã da Imortalidade tem <strong>2 usos</strong>. Após usá-lo duas vezes, ele volta para o deck.
-            </div>
-        </div>
-        
-        <!-- Equipamentos -->
-        <div class="section">
-            <h2>🔰 Sistema de Equipamentos</h2>
-            
-            <p>Criaturas podem equipar:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>1 arma</strong> (aumenta ataque)</li>
-                <li><strong>4 armaduras</strong> (capacete, peitoral, botas, etc. - aumentam vida/proteção)</li>
-            </ul>
-            
-            <h3>Itens Especiais:</h3>
-            <table>
-                <tr>
-                    <th>Item</th>
-                    <th>Quem pode usar</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Blade of Vampires</td>
-                    <td>Apenas vampiros</td>
-                    <td>+5000 ataque, torna oponente noturno</td>
-                </tr>
-                <tr>
-                    <td>Blade of Dragons</td>
-                    <td>Elfos, magos e vampiros</td>
-                    <td>+5000 ataque, pode eliminar permanentemente</td>
-                </tr>
-                <tr>
-                    <td>Lâmina das Almas</td>
-                    <td>Elfos, magos e vampiros</td>
-                    <td>Assume dano de carta do cemitério</td>
-                </tr>
-                <tr>
-                    <td>Capacete das Trevas</td>
-                    <td>Todos</td>
-                    <td>+800 proteção, protege da luz do dia</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Feitiços -->
-        <div class="section">
-            <h2>✨ Sistema de Feitiços</h2>
-            
-            <p>Para usar feitiços, você precisa de:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>Mago comum:</strong> Pode usar feitiços que estão na sua mão</li>
-                <li><strong>Rei Mago:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo (mesmo sem ter na mão)</li>
-                <li><strong>Mago Negro:</strong> Pode usar <strong>QUALQUER</strong> feitiço do jogo</li>
-            </ul>
-            
-            <div class="info">
-                <strong>📝 Nota:</strong> Feitiços voltam para o <strong>fundo do deck</strong> após serem usados.
-            </div>
-            
-            <h3>Lista de Feitiços:</h3>
-            <table>
-                <tr>
-                    <th>Feitiço</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Cortes</td>
-                    <td>Aumenta ataque de um monstro em <strong>1024</strong> por duas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Duro de matar</td>
-                    <td>Aumenta defesa do jogador em <strong>1024</strong> por duas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Troca</td>
-                    <td>Troca cartas de defesa por ataque de um jogador</td>
-                </tr>
-                <tr>
-                    <td>Comunista</td>
-                    <td>Todas as cartas das mãos voltam para a pilha</td>
-                </tr>
-                <tr>
-                    <td>Silêncio</td>
-                    <td>2 rodadas sem armadilhas</td>
-                </tr>
-                <tr>
-                    <td>Para Sempre</td>
-                    <td>Reverte efeito da Blade of Vampires</td>
-                </tr>
-                <tr>
-                    <td>Capitalista</td>
-                    <td>Troca cartas com outros jogadores</td>
-                </tr>
-                <tr>
-                    <td>Cura</td>
-                    <td>Cura <strong>1024</strong> pontos de vida do jogador alvo</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Armadilhas -->
-        <div class="section">
-            <h2>⚠️ Sistema de Armadilhas</h2>
-            
-            <div class="info">
-                <strong>🃏 Disfarce:</strong> Quando você coloca uma armadilha em defesa, ela aparece como uma <strong>criatura comum</strong> para os oponentes! Eles só descobrem quando atacam e a armadilha é ativada.
-            </div>
-            
-            <h3>Lista de Armadilhas:</h3>
-            <table>
-                <tr>
-                    <th>Armadilha</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Armadilha 171</td>
-                    <td>Rouba a carta que te dá um golpe crítico</td>
-                </tr>
-                <tr>
-                    <td>Armadilha Espelho</td>
-                    <td><strong>Reflete</strong> todo o dano de volta para o atacante</td>
-                </tr>
-                <tr>
-                    <td>Armadilha Cheat</td>
-                    <td>Dobra o ataque e <strong>passa para o próximo jogador</strong> (requer noite + mago em campo)</td>
-                </tr>
-                <tr>
-                    <td>Poço Sem Fundo</td>
-                    <td>Destrói <strong>TODAS as 3 criaturas atacantes</strong></td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Rituais -->
-        <div class="section">
-            <h2>📿 Rituais</h2>
-            
-            <p>Rituais são feitiços poderosos que requerem condições específicas para serem realizados. <strong>Mago Negro</strong> pode realizar qualquer ritual sem ter a carta.</p>
-            
-            <table>
-                <tr>
-                    <th>Ritual</th>
-                    <th>Requisitos</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Ritual 157</td>
-                    <td>Apofis + Mago Negro + 6 zumbis + 2 elfos em defesa</td>
-                    <td>Rouba <strong>TODOS</strong> os talismãs da mão do alvo</td>
-                </tr>
-                <tr>
-                    <td>Ritual Amor</td>
-                    <td>Ninfa Belly Lorem + Vampiro Necrothic Tayler</td>
-                    <td><strong>Anula</strong> a maldição do Profeta</td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Profeta -->
-        <div class="section">
-            <h2>🔮 Profeta - Maldição da Morte</h2>
-            
-            <p>O <strong>Profeta</strong> é uma criatura especial que pode anunciar a morte de qualquer carta em campo.</p>
-            
-            <h3>Como funciona:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha um <strong>Profeta</strong> em campo (ataque ou defesa)</li>
-                <li>Use a ação "🔮 Profetizar" durante seu turno</li>
-                <li>Selecione uma carta inimiga em campo</li>
-                <li>A carta recebe uma <strong>maldição</strong> e será destruída em <strong>2 rodadas</strong></li>
-            </ol>
-            
-            <div class="tip">
-                <strong>💡 Dica:</strong> O <strong>Ritual Amor</strong> pode anular a maldição do Profeta!
-            </div>
-        </div>
-        
-        <!-- Oráculo -->
-        <div class="section">
-            <h2>👁️ Oráculo da Imortalidade</h2>
-            
-            <p>O Oráculo é uma carta especial que pode <strong>anular o Talismã da Imortalidade</strong> e eliminar permanentemente um oponente.</p>
-            
-            <h3>Como usar:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha a carta <strong>Oráculo</strong> na mão</li>
-                <li>Durante seu ataque, quando o oponente tem Talismã da Imortalidade</li>
-                <li>O Oráculo é <strong>consumido</strong> e volta para o deck</li>
-                <li>O Talismã é anulado e o oponente morre</li>
-            </ol>
-            
-            <div class="warning">
-                <strong>⚠️ Atenção:</strong> O Oráculo <strong>não funciona</strong> contra Talismã da Verdade (imunidade a oráculos).
-            </div>
-        </div>
-        
-        <!-- Efeitos Especiais -->
-        <div class="section">
-            <h2>🌟 Efeitos Especiais das Criaturas</h2>
-            
-            <table>
-                <tr>
-                    <th>Criatura</th>
-                    <th>Efeito Especial</th>
-                </tr>
-                <tr>
-                    <td>Vampiros</td>
-                    <td>Morrem durante o dia (100 de dano), a menos que equipados com Capacete das Trevas</td>
-                </tr>
-                <tr>
-                    <td>Zumbis</td>
-                    <td>Morrem durante o dia. Quando mortos por outro zumbi, voltam para a mão do jogador</td>
-                </tr>
-                <tr>
-                    <td>Dragão</td>
-                    <td>Seu ataque incendeia o inimigo, causando <strong>50 de dano por rodada</strong> nas próximas rodadas</td>
-                </tr>
-                <tr>
-                    <td>Centauro</td>
-                    <td>Permite que outras criaturas montem nele para ataques terrestres</td>
-                </tr>
-                <tr>
-                    <td>Fênix</td>
-                    <td>Pode <strong>mudar o ciclo dia/noite</strong> quando quiser</td>
-                </tr>
-                <tr>
-                    <td>Medusa</td>
-                    <td>Seu ataque transforma personagens em pedra (cartas com maior vida são imunes)</td>
-                </tr>
-                <tr>
-                    <td>Apofis</td>
-                    <td>Rei do Caos - pode desativar armadilhas e magias de outros jogadores</td>
-                </tr>
-                <tr>
-                    <td>Leviatã</td>
-                    <td>Só pode ser domado por deuses e magos supremos</td>
-                </tr>
-                <tr>
-                    <td>Ninfa Lorem</td>
-                    <td>Torna o jogador <strong>imune a rituais</strong></td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Runas e Reviver -->
-        <div class="section">
-            <h2>🔷 Runas - Reviver Cartas</h2>
-            
-            <p>Runas são cartas especiais que permitem reviver cartas do cemitério.</p>
-            
-            <h3>Como reviver:</h3>
-            <ol style="margin-left: 20px; line-height: 2;">
-                <li>Tenha <strong>4 runas</strong> na sua mão</li>
-                <li>Clique no cemitério para ver as cartas disponíveis</li>
-                <li>Selecione a carta que deseja reviver</li>
-                <li>As 4 runas são <strong>consumidas</strong> (vão para o cemitério)</li>
-                <li>A carta revivida vai para sua <strong>mão</strong></li>
-            </ol>
-            
-            <div class="tip">
-                <strong>💡 Dica:</strong> Você pode reviver <strong>qualquer tipo de carta</strong> (criaturas, feitiços, armas, etc.)!
-            </div>
-        </div>
-        
-        <!-- Chat e Reconexão -->
-        <div class="section">
-            <h2>💬 Chat e Reconexão</h2>
-            
-            <h3>💬 Chat da Sala</h3>
-            <p>O jogo possui um chat integrado onde você pode conversar com outros jogadores durante a partida. O chat tem:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li><strong>Histórico</strong> das últimas mensagens</li>
-                <li>Opção de <strong>minimizar/expandir</strong> a janela</li>
-                <li><strong>Censura automática</strong> de palavras impróprias</li>
-                <li><strong>Notificações</strong> de novas mensagens quando o chat está minimizado</li>
-            </ul>
-            
-            <h3>🔄 Sistema de Reconexão</h3>
-            <p>Se você perder a conexão com o servidor:</p>
-            <ul style="margin-left: 20px; line-height: 2;">
-                <li>O jogo tenta <strong>reconectar automaticamente</strong></li>
-                <li>Sua sessão é <strong>salva localmente</strong></li>
-                <li>Ao reconectar, você volta exatamente de onde parou</li>
-                <li>Outros jogadores são notificados da sua desconexão/reconexão</li>
-            </ul>
-            
-            <div class="info">
-                <strong>💡 Dica:</strong> Se você sair do jogo voluntariamente, sua sessão é limpa e você precisa entrar novamente.
-            </div>
-        </div>
-        
-        <!-- Talismãs -->
-        <div class="section">
-            <h2>🔮 Talismãs</h2>
-            
-            <p>Talismãs são cartas especiais que <strong>ficam na mão</strong> e se ativam automaticamente. Eles <strong>não podem ser jogados</strong> em campo.</p>
-            
-            <table>
-                <tr>
-                    <th>Talismã</th>
-                    <th>Efeito</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Imortalidade</td>
-                    <td>Salva o jogador da morte <strong>2 vezes</strong>. Vida restaurada para 5000</th>
-                </tr>
-                <tr>
-                    <td>Talismã do Guerreiro</td>
-                    <td>Aumenta em <strong>1024</strong> o ataque do jogador</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Sabedoria</td>
-                    <td>Permite jogar <strong>2 cartas por turno</strong> (em vez de 1)</th>
-                </tr>
-                <tr>
-                    <td>Talismã da Verdade</td>
-                    <td>Imunidade a <strong>feitiços e oráculos</strong></th>
-                </tr>
-                <tr>
-                    <td>Talismã da Ordem</td>
-                    <td>Imunidade ao <strong>Caos</strong> (Apofis)</th>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Dicas Estratégicas -->
-        <div class="section">
-            <h2>💡 Dicas Estratégicas</h2>
-            
-            <div class="rule-grid">
-                <div class="rule-card">
-                    <h4>🛡️ Defesa é Prioridade</h4>
-                    <p>Sempre mantenha criaturas em defesa. Elas absorvem dano e protegem sua vida.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>⚔️ Ataque Calculado</h4>
-                    <p>Calcule se seu poder de ataque é suficiente para superar as defesas do oponente antes de atacar.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🔮 Guarde Talismãs</h4>
-                    <p>Talismãs são extremamente poderosos. O da Imortalidade pode salvar sua vida!</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🌙 Aproveite a Noite</h4>
-                    <p>Use vampiros e zumbis à noite. Durante o dia, proteja-os com Capacete das Trevas.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🎴 Gerencie sua Mão</h4>
-                    <p>Não acumule muitas cartas. Use runas para reviver criaturas importantes do cemitério.</p>
-                </div>
-                <div class="rule-card">
-                    <h4>⚠️ Armadilhas Enganosas</h4>
-                    <p>Armadilhas são mais efetivas quando o oponente não sabe que são armadilhas. Coloque-as em defesa!</p>
-                </div>
-                <div class="rule-card">
-                    <h4>🔮 Profeta Estratégico</h4>
-                    <p>Use o Profeta para eliminar cartas-chave do oponente, mas cuidado com o Ritual Amor!</p>
-                </div>
-                <div class="rule-card">
-                    <h4>📿 Rituais Poderosos</h4>
-                    <p>Rituais exigem preparação, mas podem mudar completamente o jogo. Invista neles!</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Glossário -->
-        <div class="section">
-            <h2>📚 Glossário</h2>
-            
-            <table>
-                <tr>
-                    <th>Termo</th>
-                    <th>Significado</th>
-                </tr>
-                <tr>
-                    <td>Monte</td>
-                    <td>Pilha de cartas para comprar</td>
-                </tr>
-                <tr>
-                    <td>Cemitério</td>
-                    <td>Onde vão as cartas destruídas/usadas</td>
-                </tr>
-                <tr>
-                    <td>Poder de Ataque</td>
-                    <td>Soma do ataque de todas as suas criaturas + equipamentos</td>
-                </tr>
-                <tr>
-                    <td>Runas</td>
-                    <td>Cartas especiais. <strong>4 runas</strong> revivem uma carta do cemitério</th>
-                </tr>
-                <tr>
-                    <td>Talismãs</td>
-                    <td>Cartas que ficam na mão e dão bônus passivos</td>
-                </tr>
-                <tr>
-                    <td>Modo Troca</td>
-                    <td>Permite trocar cartas entre posições de ataque e defesa</td>
-                </tr>
-                <tr>
-                    <td>Modo Equipar</td>
-                    <td>Permite equipar itens em criaturas</td>
-                </tr>
-                <tr>
-                    <td>Primeira Rodada</td>
-                    <td>Rodada inicial sem ataques para preparação</td>
-                </tr>
-                <tr>
-                    <td>Disfarce</td>
-                    <td>Armadilhas aparecem como criaturas comuns para oponentes</td>
-                </tr>
-                <tr>
-                    <td>Maldição do Profeta</td>
-                    <td>Carta amaldiçoada morre em 2 rodadas</td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="footer">
-            <p>Twilight Battle - Um jogo de estratégia e cartas</p>
-            <p>Desenvolvido por Mr. Lima</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">Versão 2.0 - © 2026</p>
-        </div>
-</div>
 
-    
+  <div class="nav">
+    <a href="/">🏠 Início</a>
+    <a class="ok" href="/tutorial">🎓 Tutorial com Mentor</a>
+    <a class="alt" href="/help">❓ Ajuda / FAQ</a>
+    <a href="/journal">📔 Journal</a>
+  </div>
+
+  <div class="section" id="basico">
+    <h2>🎯 O que é o jogo</h2>
+    <p><strong>Twilight Battle</strong> é um duelo de cartas multiplayer (2 a 6 jogadores, FFA). Cada um monta legião, equipa, arma armadilhas e tenta ser o <strong>último com vida &gt; 0</strong>.</p>
+    <div class="grid">
+      <div class="card"><h4>❤️ Vida inicial</h4><p><strong>1200</strong> (padrão).<br>Hardcore: <strong>600</strong>.</p></div>
+      <div class="card"><h4>🃏 Mão inicial</h4><p><strong>5</strong> cartas (padrão).<br>Mão Cheia: 8 · Mão Vazia: 0.</p></div>
+      <div class="card"><h4>⚔️ Ataque</h4><p><strong>3</strong> bases (5 com Frente de Guerra).</p></div>
+      <div class="card"><h4>🛡️ Defesa</h4><p><strong>6</strong> bases (1 com Campo Aberto).</p></div>
+    </div>
+    <div class="tip"><strong>Treinar:</strong> use o <a href="/tutorial" style="color:#fff">Tutorial</a> — 1v1 contra o Mentor (IA fácil) com dicas na tela e ciclo acelerado.</div>
+  </div>
+
+  <div class="section" id="turno">
+    <h2>⏳ Turno e ações</h2>
+    <p>No seu turno você pode fazer <strong>no máximo 1 ação de cada tipo</strong> (exceto quando um efeito diga o contrário):</p>
+    <table>
+      <tr><th>Ação</th><th>Limite</th><th>Notas</th></tr>
+      <tr><td>📥 Comprar (draw)</td><td>1×</td><td>Monte vazio = falha</td></tr>
+      <tr><td>🎴 Jogar carta (play)</td><td>1× (2× com Talismã da Sabedoria)</td><td>Criatura, armadilha, equip no jogador…</td></tr>
+      <tr><td>⚔️ Atacar</td><td>1×</td><td>Bloqueado na 1ª rodada até todos agirem</td></tr>
+      <tr><td>🔰 Equipar em criatura</td><td>sem limite de “play”</td><td>Tira item da mão e coloca na criatura</td></tr>
+      <tr><td>🔄 Trocar posições</td><td>1× (grátis com Botas do Andarilho no jogador)</td><td>Ataque ↔ defesa</td></tr>
+      <tr><td>✨ Feitiço</td><td>1×</td><td>Precisa mago em campo</td></tr>
+      <tr><td>🔮 Profetizar / Oráculo / Ritual</td><td>1× cada</td><td>Condições específicas</td></tr>
+      <tr><td>➡️ Passar turno</td><td>—</td><td>Sempre disponível</td></tr>
+    </table>
+
+    <h3>Primeira rodada (preparação)</h3>
+    <p>Os <strong>ataques ficam bloqueados</strong> até todos os jogadores vivos realizarem pelo menos uma ação (comprar, jogar, etc.). Depois: “ataques liberados”.</p>
+    <p>Modificador <strong>Sem Preparação</strong> (<code>no_first_round</code>) remove isso.</p>
+
+    <div class="info"><strong>Dica:</strong> no início, compre + coloque criatura no ataque + armadilha na defesa. Ataque só quando o board estiver pronto (e a 1ª rodada acabar).</div>
+  </div>
+
+  <div class="section" id="campo">
+    <h2>🏰 Campo de batalha</h2>
+    <h3>⚔️ Bases de ataque</h3>
+    <p>Somente <strong>criaturas</strong>. O poder de ataque do turno é a <strong>soma do ataque</strong> das criaturas nessas bases + arma do jogador + Talismã do Guerreiro (se na mão), etc.</p>
+    <h3>🛡️ Bases de defesa</h3>
+    <p>Criaturas <strong>e armadilhas</strong>. O dano ao jogador costuma passar primeiro pelas defesas (maior vida primeiro). Armadilhas ficam <strong>disfarçadas</strong> de criatura comum para os oponentes.</p>
+    <div class="warn"><strong>Poço Sem Fundo:</strong> se o oponente atacar e a armadilha ativar, <em>todas</em> as criaturas nas bases de ataque dele podem ser destruídas. Por isso: desconfie de defesa cheia de “tropas” desconhecidas.</div>
+  </div>
+
+  <div class="section" id="equip">
+    <h2>🔰 Equipamento (o ponto que mais confunde)</h2>
+    <p>Existem <strong>dois destinos</strong> diferentes. O efeito muda conforme o destino.</p>
+
+    <table>
+      <tr><th></th><th>Na criatura</th><th>No jogador</th></tr>
+      <tr>
+        <td><strong>Como</strong></td>
+        <td>Ação <em>equipar item</em> (escolhe criatura em campo)</td>
+        <td>Ação <em>jogar carta</em> no slot de equipamento</td>
+      </tr>
+      <tr>
+        <td><strong>Gasta play?</strong></td>
+        <td><strong>Não</strong></td>
+        <td><strong>Sim</strong> (1 play do turno)</td>
+      </tr>
+      <tr>
+        <td><strong>Slots</strong></td>
+        <td>Itens grudados na criatura (1 arma; até 4 armaduras)</td>
+        <td>weapon · helmet · armor · pants · boots · mount</td>
+      </tr>
+      <tr>
+        <td><strong>Efeito típico</strong></td>
+        <td>+ataque / +vida na criatura</td>
+        <td>Poder do personagem (dano, swap grátis, 1º hit…)</td>
+      </tr>
+    </table>
+
+    <h3>Onde cada peça “acorda” de verdade</h3>
+    <ul>
+      <li><strong>Armas comuns</strong> (espadas, katana): funcionam bem nos dois destinos (no jogador somam no ataque do turno; na criatura buffam a carta).</li>
+      <li><strong>Botas do Andarilho:</strong> free-swap <strong>só no slot Botas do jogador</strong>. Na criatura = só +80 vida.</li>
+      <li><strong>Calças da Marcha:</strong> −40 de dano na vida do jogador <strong>só no slot Calças do jogador</strong>. Na criatura = só +150 vida.</li>
+      <li><strong>Capacete da Sentinela:</strong> −80 no 1º hit do turno <strong>no jogador</strong>; na criatura = +180 vida.</li>
+      <li><strong>Botas de Guerra:</strong> +40 ataque extra <strong>na criatura em ATAQUE</strong>.</li>
+      <li><strong>Capacete das Trevas / Manto do Eclipse:</strong> proteção solar em criaturas noturnas quando equipados nelas (manto também no peitoral do jogador).</li>
+      <li><strong>Adaga do Crepúsculo / Blades / Cajado:</strong> restrição de raça/criatura — leia a carta.</li>
+    </ul>
+    <div class="tip"><strong>Regra mental:</strong> quer buff de board? Equipe na criatura. Quer habilidade de personagem (swap, reduzir dano)? Slot do jogador — e isso gasta o play.</div>
+  </div>
+
+  <div class="section" id="ciclo">
+    <h2>☀️🌙 Ciclo dia / noite</h2>
+    <p>A cada <strong>24 turnos</strong> o ciclo troca (ou <strong>6</strong> com modificador Crepúsculo Acelerado). O tutorial usa ciclo rápido.</p>
+    <div class="grid">
+      <div class="card">
+        <h4>☀️ Dia</h4>
+        <p>Criaturas com <em>dies_daylight</em> (zumbi, vampiros…) <strong>morrem</strong> sem proteção solar. Algumas noturnas perdem vida. Lobisomem fica tanque fraco em ataque.</p>
+      </div>
+      <div class="card">
+        <h4>🌙 Noite</h4>
+        <p>Noturnos e lobisomem ficam perigosos. Certas armadilhas (Cheat) e a Adaga do Crepúsculo brilham.</p>
+      </div>
+    </div>
+    <p>Feitiço <strong>Clareira da Lua</strong> força noite. <strong>Fênix</strong> pode alternar o ciclo. <strong>Julgamento da Aurora</strong> destrói 1 noturno visível.</p>
+  </div>
+
+  <div class="section" id="cartas">
+    <h2>🃏 Tipos de carta (resumo prático)</h2>
+    <table>
+      <tr><th>Tipo</th><th>O que faz</th></tr>
+      <tr><td>Criatura</td><td>Board de ataque/defesa; algumas são lendas com efeitos únicos</td></tr>
+      <tr><td>Arma / Armadura</td><td>Equip na criatura ou no jogador (ver seção Equip)</td></tr>
+      <tr><td>Armadilha</td><td>Só defesa; disfarce; ativa quando o oponente interage/ataca</td></tr>
+      <tr><td>Feitiço</td><td>Precisa mago em campo; 1 por turno</td></tr>
+      <tr><td>Talismã</td><td><strong>Fica na mão</strong> (não vai pro board). Efeitos passivos (imortalidade, +play, +ataque…)</td></tr>
+      <tr><td>Runa</td><td>4 runas → reviver/invocar do cemitério</td></tr>
+      <tr><td>Oráculo / Ritual</td><td>Setup pesado; leia a descrição da carta</td></tr>
+    </table>
+    <p>Descrições no jogo foram alinhadas ao motor (números, restrições e onde o item vale).</p>
+  </div>
+
+  <div class="section" id="mods">
+    <h2>⚙️ Modificadores de sala (os que o código tem)</h2>
+    <table>
+      <tr><th>Mod</th><th>Efeito real</th></tr>
+      <tr><td>Mão Vazia / Cheia</td><td>0 ou 8 cartas iniciais</td></tr>
+      <tr><td>Hardcore</td><td>600 de vida</td></tr>
+      <tr><td>Sangria</td><td>Se não atacar no turno, −20 vida ao passar</td></tr>
+      <tr><td>Crepúsculo Acelerado</td><td>Ciclo a cada 6 turnos</td></tr>
+      <tr><td>Desativar ciclo</td><td>Não avança dia/noite sozinho</td></tr>
+      <tr><td>Sem Preparação</td><td>Ataque livre desde o 1º turno</td></tr>
+      <tr><td>Sem armadilhas / feitiços / lendas / runas / equip</td><td>Filtram o baralho</td></tr>
+      <tr><td>Campo Aberto / Frente de Guerra</td><td>1 defesa ou 5 ataques</td></tr>
+      <tr><td>Névoa de Guerra</td><td>Inimigos só como silhueta</td></tr>
+      <tr><td>Caça ao Rei</td><td>Eliminar o criador da sala: +300 vida</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>🏁 Vitória</h2>
+    <p>Quando só resta <strong>um jogador vivo</strong>, ele vence. A sala pode voltar ao lobby (rematch) com os mesmos mods.</p>
+  </div>
+
+  <div class="footer">Alinhado ao motor Twilight Battle · vida 1200 · play 1 · draw 1 · ciclo 24/6</div>
+</div>
 </body>
 </html>

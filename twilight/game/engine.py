@@ -35,12 +35,15 @@ class Game:
         self.current_turn = 0  # Índice na lista players
         self.time_of_day = "day"
         self.time_cycle = 0
-        self.max_players = 6
+        # respeita config (antes era sobrescrito para 6 sempre)
+        self.max_players = int(self.config.get('max_players', 6) or 6)
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
         self.last_spell_id = None  # para Eco do Grimório
         # Ciclo dia/noite: 24 normal, 6 com fast_cycle
         self.day_cycle_length = 6 if 'fast_cycle' in self.modifiers else 24
+        # Tutorial 1v1 com mentor (IA fácil)
+        self.tutorial = bool(self.config.get('tutorial', False))
 
         self.first_round = True
         self.players_acted = set()
@@ -52,7 +55,7 @@ class Game:
         # Tamanhos de board
         self.attack_slot_count = 5 if 'war_front' in self.modifiers else 3
         self.defense_slot_count = 1 if 'open_field' in self.modifiers else 6
-        # Vida inicial
+        # Vida inicial (padrão 1200; hardcore 600)
         self.starting_life = 600 if 'hardcore' in self.modifiers else 1200
         # Mão inicial
         if 'empty_hand' in self.modifiers:
@@ -135,11 +138,19 @@ class Game:
         Mantém jogadores e sockets; recria baralho e estados.
         """
         last_winner = last_winner or self.winner
-        # preserva espectadores
+        # preserva espectadores e flags de bot
         spectators = {
             u: dict(d)
             for u, d in (self.player_data or {}).items()
             if d and d.get('spectator')
+        }
+        bot_flags = {
+            u: {
+                'is_bot': bool(d.get('is_bot')),
+                'name': d.get('name') or u,
+            }
+            for u, d in (self.player_data or {}).items()
+            if d and d.get('is_bot')
         }
         # quem ainda está na lista de jogadores
         active = list(self.players)
@@ -182,6 +193,10 @@ class Game:
             self.player_data[username] = self._make_player_state(
                 username, sock, deal_hand=True
             )
+            # restaura bots de tutorial / IA
+            if username in bot_flags:
+                self.player_data[username]['is_bot'] = True
+                self.player_data[username]['name'] = bot_flags[username].get('name') or username
 
         # reanexa espectadores
         for uname, data in spectators.items():

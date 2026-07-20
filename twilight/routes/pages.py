@@ -36,6 +36,12 @@ def rules(): return render_template('game/docs/rules.html')
 @bp.route('/help')
 def help_page(): return render_template('game/docs/help.html')
 
+@bp.route('/tutorial')
+@login_required
+def tutorial_page(username):
+    """Página de entrada do tutorial (inicia 1v1 com o Mentor)."""
+    return render_template('game/docs/tutorial.html', username=username)
+
 
 @bp.route('/story')
 @login_required

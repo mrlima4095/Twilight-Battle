@@ -132,8 +132,49 @@ def handle_join_game(data):
         join_room(game_id)
         update_user_game(username, game_id)
         broadcast_system_message(game_id, f'{username} entrou na sala')
-        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
-        emit('player_joined', {'username': username, 'players': players_list}, room=game_id)
+        # Tutorial: humano joga primeiro
+        if getattr(game, 'tutorial', False) and username in game.players:
+            try:
+                game.players.remove(username)
+                game.players.insert(0, username)
+                game.current_turn = 0
+            except ValueError:
+                pass
+        players_list = [
+            {
+                'username': p,
+                'name': game.player_data[p]['name'],
+                'is_bot': bool(game.player_data[p].get('is_bot')),
+            }
+            for p in game.players
+        ]
+        emit('player_joined', {
+            'username': username,
+            'players': players_list,
+            'tutorial': bool(getattr(game, 'tutorial', False)),
+        }, room=game_id)
+
+        # Tutorial: auto-inicia com 2 jogadores (humano + mentor)
+        if (
+            getattr(game, 'tutorial', False)
+            and not game.started
+            and len(game.players) >= 2
+        ):
+            game.started = True
+            game.finished = False
+            game.finished_at = None
+            game.winner = None
+            game._game_over_emitted = False
+            broadcast_system_message(
+                game_id,
+                '🎓 Tutorial iniciado! Você treina contra o Mentor (fácil). Veja as dicas no painel.',
+            )
+            socketio.emit('game_started', {
+                'game_id': game_id,
+                'tutorial': True,
+            }, room=game_id)
+            from twilight.game.ai import schedule_bot_turn
+            schedule_bot_turn(game_id, delay=1.2)
     else:
         emit('error', {'message': 'Não foi possível entrar no jogo'})
 
@@ -244,6 +285,11 @@ def handle_get_game_state(data):
         'modifiers': list(game.modifiers or []),
         'attack_slot_count': getattr(game, 'attack_slot_count', 3),
         'defense_slot_count': getattr(game, 'defense_slot_count', 6),
+        'tutorial': bool(getattr(game, 'tutorial', False)),
+        'starting_life': getattr(game, 'starting_life', 1200),
+        'day_cycle_length': getattr(game, 'day_cycle_length', 24),
+        'first_round': bool(getattr(game, 'first_round', False)),
+        'attacks_blocked': bool(getattr(game, 'attacks_blocked', False)),
     }
     
     # Coletar lista de espectadores
@@ -283,7 +329,8 @@ def handle_get_game_state(data):
                 'talisman_count': game.get_player_talismans_count(uname),
                 'runes': game.get_player_runes_count(uname),
                 'dead': player_data.get('dead', False),
-                'observer': player_data.get('observer', False)
+                'observer': player_data.get('observer', False),
+                'is_bot': bool(player_data.get('is_bot', False)),
             }
             
             # Informações privadas apenas para o próprio jogador (não para espectadores)
@@ -776,6 +823,10 @@ def handle_player_action(data):
                 winner_name = game.player_data[winner]['name']
                 # Mantém a sala: modal de vitória + reset para lobby (mesmo id/mods)
                 _emit_game_over_and_rematch(game_id, game, winner, winner_name)
+            elif action == 'end_turn':
+                # se o próximo for bot (tutorial / IA), agenda o turno
+                from twilight.game.ai import schedule_bot_turn
+                schedule_bot_turn(game_id, delay=0.8)
         else:
             error_msg = result['message'] if result else 'Ação inválida'
             emit('action_error', {

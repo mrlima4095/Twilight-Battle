@@ -386,10 +386,12 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
 
       <div class="action-buttons">
         <button class="btn btn-primary" id="create-room-btn" type="button">🎲 Criar sala</button>
+        <button class="btn btn-secondary" id="tutorial-btn" type="button">🎓 Tutorial</button>
         <button class="btn btn-secondary" id="story-mode-btn" type="button">📖 Modo História</button>
       </div>
 
       <div class="nav-links">
+        <a href="/tutorial">🎓 Tutorial</a>
         <a href="/rules">📜 Regras</a>
         <a href="/journal">📔 Journal</a>
         <a href="/help">❓ Ajuda</a>
@@ -1378,6 +1380,24 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 }
                 window.location.href = '/story';
             });
+
+            const tutorialBtn = document.getElementById('tutorial-btn');
+            if (tutorialBtn) {
+                tutorialBtn.addEventListener('click', function() {
+                    if (!currentUsername) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Erro de autenticação',
+                            text: 'Faça login primeiro!',
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
+                    window.location.href = '/tutorial';
+                });
+            }
             
             // Carregar lista inicial
             loadGames();

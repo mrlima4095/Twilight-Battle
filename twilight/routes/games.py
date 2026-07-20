@@ -8,6 +8,7 @@ from flask import Blueprint, jsonify, request
 from twilight.auth.service import get_current_user, update_user_game
 from twilight.cards.definitions import MODIFIERS
 from twilight.extensions import socketio
+from twilight.game.ai import TUTORIAL_BOT_NAME, TUTORIAL_TIPS, add_tutorial_bot, schedule_bot_turn
 from twilight.game.chat import broadcast_system_message
 from twilight.game.engine import Game
 from twilight.state import games
@@ -63,6 +64,53 @@ def create_game():
     return jsonify({'game_id': game_id, 'config': config})
 
 
+@bp.route('/api/tutorial/start', methods=['POST'])
+def start_tutorial():
+    """
+    Cria partida privada 1v1 de treino com o Mentor (IA fácil).
+    O jogador entra na sala; o bot já está presente e a partida inicia ao entrar.
+    """
+    username = get_current_user()
+    if not username:
+        return jsonify({'success': False, 'message': 'Usuário não autenticado'}), 401
+
+    # evita colisão com o nome reservado do bot
+    if username.lower() == TUTORIAL_BOT_NAME:
+        return jsonify({
+            'success': False,
+            'message': f'Use outra conta (nome "{TUTORIAL_BOT_NAME}" é reservado ao tutorial).',
+        }), 400
+
+    config = {
+        'max_players': 2,
+        'private': True,
+        'allow_spectators': False,
+        'chat_enabled': True,
+        # ciclo mais curto para treinar dia/noite sem partidas eternas
+        'modifiers': ['fast_cycle'],
+        'tutorial': True,
+    }
+    game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    game = Game(game_id, username, config)
+    game.tutorial = True
+    add_tutorial_bot(game, TUTORIAL_BOT_NAME)
+    games[game_id] = game
+
+    return jsonify({
+        'success': True,
+        'game_id': game_id,
+        'tutorial': True,
+        'bot': TUTORIAL_BOT_NAME,
+        'tips': TUTORIAL_TIPS,
+        'message': 'Tutorial criado. Entre na sala e pratique contra o Mentor.',
+    })
+
+
+@bp.route('/api/tutorial/tips')
+def tutorial_tips():
+    return jsonify({'tips': TUTORIAL_TIPS})
+
+
 
 @bp.route('/start-game/<game_id>', methods=['POST'])
 def start_game(game_id):
@@ -93,8 +141,19 @@ def start_game(game_id):
         game.finished_at = None
         game.winner = None
         game._game_over_emitted = False
-        broadcast_system_message(game_id, f'🎮 O jogo começou! Que comece a batalha! ⚔️')
-        socketio.emit('game_started', {'game_id': game_id}, room=game_id)
+        if getattr(game, 'tutorial', False):
+            broadcast_system_message(
+                game_id,
+                '🎓 Tutorial: você treina contra o Mentor (fácil). Siga as dicas no painel!',
+            )
+        else:
+            broadcast_system_message(game_id, f'🎮 O jogo começou! Que comece a batalha! ⚔️')
+        socketio.emit('game_started', {
+            'game_id': game_id,
+            'tutorial': bool(getattr(game, 'tutorial', False)),
+        }, room=game_id)
+        # se o primeiro turno for do bot, joga
+        schedule_bot_turn(game_id, delay=1.0)
         return jsonify({'success': True})
     
     return jsonify({'success': False, 'message': 'Mínimo de 2 jogadores para começar'}), 400

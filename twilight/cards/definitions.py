@@ -10,7 +10,7 @@ CARDS = {
         "life": 512, 
         "attack": 50,
         "count": 50, 
-        "description": "Não ataca outros elfos. Use para realizar oraculos."
+        "description": "Tropa (50⚔️ / 512❤️). Em campo: habilita Oráculo se estiver em defesa. Não ataca outros elfos."
     },
     "mago": {
         "id": "mago",
@@ -19,7 +19,7 @@ CARDS = {
         "life": 512, 
         "attack": 50, 
         "count": 50, 
-        "description": "Use-o para invocar feitiços."
+        "description": "Tropa (50⚔️ / 512❤️). Em campo (ataque ou defesa): permite lançar feitiços da mão (1 feitiço por turno)."
     },
     "orc": {
         "id": "orc",
@@ -28,7 +28,7 @@ CARDS = {
         "life": 512,
         "attack": 60,
         "count": 50,
-        "description": "Brutais."
+        "description": "Tropa bruta (60⚔️ / 512❤️). Sinergia com Clava do Orc (+50⚔️ por orc em bases de ataque, máx. 3)."
     },
     "zumbi": {
         "id": "zumbi", 
@@ -37,7 +37,7 @@ CARDS = {
         "life": 100, 
         "attack": 25,
         "count": 50, 
-        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
+        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Morre ao virar o DIA se não tiver proteção solar (Capacete das Trevas / Manto do Eclipse). Se destruído por outro zumbi, pode voltar à mão.", 
         "dies_daylight": True
     },
     "centauro": {
@@ -47,7 +47,7 @@ CARDS = {
         "life": 512, 
         "attack": 70, 
         "count": 50, 
-        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
+        "description": "Tropa (70⚔️ / 512❤️). Pode ser montaria (slot mount do jogador) ou chamada em grupo (Chamar Centauros com 2+). Super Centauro pode roubar centauros em campo."
     },
     "ninfa": {
         "id": "ninfa",
@@ -56,7 +56,7 @@ CARDS = {
         "life": 512,
         "attack": 30,
         "count": 35,
-        "description": "Espiritos Magicos da Natureza"
+        "description": "Espírito da natureza (30⚔️ / 512❤️). Sinergia com Peitoral de Carvalho (ward contra feitiço hostil)."
     },
     "vampiro": {
         "id": "vampiro", 
@@ -65,7 +65,7 @@ CARDS = {
         "life": 512, 
         "attack": 75, 
         "count": 1, 
-        "description": "Criatura noturna.", 
+        "description": "Criatura noturna rara (75⚔️ / 512❤️). Morre com a luz do dia sem proteção solar.", 
         "dies_daylight": True
     },
     
@@ -77,7 +77,7 @@ CARDS = {
         "life": 512, 
         "attack": 250, 
         "count": 1, 
-        "description": "Mata todos os centauros em campo dos oponentes e entrega a vida a jogador.", 
+        "description": "Lenda (250⚔️ / 512❤️). Noturno (morre de dia sem proteção). Ao entrar em jogo: destrói centauros inimigos em campo e cura o dono com a vida deles.", 
         "dies_daylight": True
     },
     "vampiro_tayler": {
@@ -87,7 +87,7 @@ CARDS = {
         "life": 512, 
         "attack": 100, 
         "count": 1, 
-        "description": "Rouba a vida do oponente para recuperar a vida de seu jogador.", 
+        "description": "Lenda (100⚔️ / 512❤️). Noturno. Ao atacar: rouba vida do oponente para curar o dono. Usado no Ritual Amor com Ninfa Belly Lorem.", 
         "dies_daylight": True
     },
 
@@ -98,7 +98,7 @@ CARDS = {
         "life": 512, 
         "attack": 128, 
         "count": 1, 
-        "description": "Torna o jogador imune a rituais."
+        "description": "Lenda (128⚔️ / 512❤️). Enquanto em campo, o dono é imune a rituais hostis. Usada no Ritual Amor com Vampiro Necrothic Tayler."
     },
     
     # - Mestres
@@ -109,7 +109,7 @@ CARDS = {
         "life": 1250, 
         "attack": 512, 
         "count": 1, 
-        "description": "Pode impedir outros magos de realizar feitiços. Realiza feitiços sem possuir a carta."
+        "description": "Mestre (512⚔️ / 1250❤️). Conta como mago para feitiços; pode bloquear magos rivais e lançar feitiços sem a carta (regras especiais de lenda)."
     },
     "mago_negro": {
         "id": "mago_negro", 
@@ -118,7 +118,7 @@ CARDS = {
         "life": 1250, 
         "attack": 510, 
         "count": 1, 
-        "description": "Não se subordina ao Rei Mago. Realiza rituais sem possuir a carta."
+        "description": "Mestre (510⚔️ / 1250❤️). Conta como mago. Não se subordina ao Rei Mago. Usado em rituais (Caos, 157) sem precisar da carta de ritual em alguns casos."
     },
     
     "apollo": {
@@ -130,7 +130,7 @@ CARDS = {
         "count": 1,
         "ability": "apollo_guard",
         "apollo_guard_threshold": 1000,
-        "description": "Em defesa: se um ataque com menos de 1000 de dano o atingir, o JOGADOR cura o valor total do golpe e a carta Apollo sofre só a metade do dano."
+        "description": "Guardião (600⚔️ / 1500❤️). Em DEFESA: se um golpe com menos de 1000 de poder o atingir, o JOGADOR cura o valor total do golpe e Apollo sofre só metade do dano."
     },
     
     # - Bestas
@@ -141,7 +141,7 @@ CARDS = {
         "life": 1500, 
         "attack": 250, 
         "count": 12, 
-        "description": "Seu ataque incendeia o inimigo, com isso ele toma 50 de danos nas próximas rodadas do fogo."
+        "description": "Besta (250⚔️ / 1500❤️). Ataque aplica queimadura: o alvo toma 50 de dano de fogo em rodadas seguintes."
     },
     "leviatan": {
         "id": "leviatan", 
@@ -150,7 +150,7 @@ CARDS = {
         "life": 5000, 
         "attack": 1024, 
         "count": 1, 
-        "description": "Só pode ser domado por deuses e magos supremos."
+        "description": "Titã (1024⚔️ / 5000❤️). Carta única colossal — só entra no baralho se lendas estiverem ativas."
     },
     "apofis": {
         "id": "apofis", 
@@ -159,7 +159,7 @@ CARDS = {
         "life": 5000, 
         "attack": 1250, 
         "count": 1, 
-        "description": "Rei do Caos. Pode desativar armadilhas e magias de outros jogadores."
+        "description": "Rei do Caos (1250⚔️ / 5000❤️). Pode anular armadilhas/magias rivais. Peça de Ritual 157 e Ritual do Caos."
     },
     "fenix": {
         "id": "fenix", 
@@ -168,7 +168,7 @@ CARDS = {
         "life": 5000, 
         "attack": 1500, 
         "count": 1, 
-        "description": "Grande ave com ataque de fogo, pode mudar de dia para noite e vice-versa quando bem entender."
+        "description": "Ave lendária (1500⚔️ / 5000❤️). Ação toggle_time: alterna dia↔noite (1× por turno, se a carta permitir)."
     },
 
     "medusa": {
@@ -178,7 +178,7 @@ CARDS = {
         "life": 1024, 
         "attack": 512, 
         "count": 1, 
-        "description": "Seu ataque transforma personagens em pedra. Cartas com maior vida são imunes."
+        "description": "Lenda (512⚔️ / 1024❤️). Ataque pode transformar criaturas em pedra; alvos com muita vida são imunes."
     },
     
     "profeta": {
@@ -188,7 +188,7 @@ CARDS = {
         "life": 256, 
         "attack": 50, 
         "count": 2, 
-        "description": "Anuncia a morte de um monstro para duas rodadas a frente. A maldição pode ser retirada caso o jogador seja derrotado."
+        "description": "Suporte (50⚔️ / 256❤️). Habilidade Profetizar: amaldiçoa uma criatura visível para morrer em 2 rodadas (se o dono do Profeta cair, a maldição pode cair)."
     },
     
     "super_centauro": {
@@ -198,7 +198,7 @@ CARDS = {
         "life": 600, 
         "attack": 256, 
         "count": 5, 
-        "description": "Apenas ataques diretos. Pode encantar centauros de outros jogadores e pegar eles para a sua mão (os centauros que estão em campo)"
+        "description": "Elite (256⚔️ / 600❤️). Ataques diretos; pode encantar e roubar centauros inimigos que estejam em campo para a sua mão."
     },
     
     # Itens/Espadas
@@ -208,7 +208,7 @@ CARDS = {
         "type": "weapon", 
         "attack": 0, 
         "count": 1, 
-        "description": "Assume o dano de uma carta do cemitério. Só pode ser equipado por Elfos, magos e vampiros."
+        "description": "Arma (0⚔️ base). Só equipável em Elfo, Magos ou Vampiros (Tayler/Wers). Copia o ataque de uma carta do cemitério ao equipar/usar."
     },
 
     "espada_madeira": {
@@ -217,7 +217,7 @@ CARDS = {
         "type": "weapon",
         "attack": 128,
         "count": 40,
-        "description": "Espada de treino. Fraca, mas melhor que as mãos vazias."
+        "description": "Arma comum (+128⚔️). Pode ir no slot Arma do JOGADOR (play) ou equipada numa criatura (equip_item, sem gastar play)."
     },
     "espada_ferro": {
         "id": "espada_ferro",
@@ -225,7 +225,7 @@ CARDS = {
         "type": "weapon",
         "attack": 256,
         "count": 35,
-        "description": "Uma espada padrão para seus soldados."
+        "description": "Arma comum (+256⚔️). Slot do jogador ou equipada em criatura."
     },
     "katana": {
         "id": "katana",
@@ -233,7 +233,7 @@ CARDS = {
         "type": "weapon",
         "attack": 512,
         "count": 18,
-        "description": "Lâmina afiada de corte limpo. Bom equilíbrio entre poder e disponibilidade."
+        "description": "Arma incomum (+512⚔️). Slot do jogador ou equipada em criatura."
     },
 
     "clava_orc": {
@@ -245,7 +245,7 @@ CARDS = {
         "ability": "orc_club",
         "orc_bonus": 50,
         "orc_bonus_cap": 3,
-        "description": "350⚔️ base. +50⚔️ por Orc em bases de ataque (máx. 3 orcs = +150)."
+        "description": "Arma (350⚔️ base). +50⚔️ por Orc nas bases de ATAQUE do dono (máx. 3 orcs = +150). Bônus é dinâmico."
     },
     "cajado_mago_negro": {
         "id": "cajado_mago_negro",
@@ -256,7 +256,7 @@ CARDS = {
         "ability": "dark_staff",
         "spell_power": 256,
         "equip_races": ["mago", "mago_negro", "rei_mago"],
-        "description": "100⚔️. Só magos. Seus feitiços de cura/buff ganham +256 de poder."
+        "description": "Arma (100⚔️). Só Magos (mago / mago_negro / rei_mago). Feitiços de cura/buff do dono ganham +256 de poder."
     },
     "adaga_crepusculo": {
         "id": "adaga_crepusculo",
@@ -268,7 +268,7 @@ CARDS = {
         "count": 14,
         "ability": "crepusculo_dagger",
         "werewolf_only": True,
-        "description": "Só Lobisomem do Crepúsculo. De dia 150⚔️; de noite 600⚔️. O poder muda com o ciclo."
+        "description": "Arma só para Lobisomem do Crepúsculo. De DIA: 150⚔️. De NOITE: 600⚔️. O valor muda com o ciclo automaticamente."
     },
     
     "blade_vampires": {
@@ -277,7 +277,7 @@ CARDS = {
         "type": "weapon", 
         "attack": 1500, 
         "count": 1, 
-        "description": "Só pode ser usada por um vampiro. Seu ataque torna o oponente noturno (morre de dia)"
+        "description": "Arma lendária (+1500⚔️). Só Vampiro Tayler ou Wers. Ataques podem marcar o oponente como noturno (vulnerável ao sol)."
     },
     "blade_dragons": {
         "id": "blade_dragons", 
@@ -285,7 +285,7 @@ CARDS = {
         "type": "weapon", 
         "attack": 1500, 
         "count": 1, 
-        "description": "Usada apenas por elfos ou vampiros. Seu ataque pode eliminar personagens permanentemente tornando impossíveis de reviver ou ser invocados de volta do cemitério."
+        "description": "Arma lendária (+1500⚔️). Só Elfo ou Vampiros (Tayler/Wers). Pode banir criaturas do cemitério (sem reviver/invocar)."
     },
     
     # Armaduras/Equipamentos
@@ -297,7 +297,7 @@ CARDS = {
         "protection": 300, 
         "count": 20,
         "daylight_protect": True,
-        "description": "Impede o dano da luz do dia em mortos-vivos e a proteção é adicionada à carta."
+        "description": "Armadura slot capacete (+300 proteção/vida na criatura). Protege criaturas dies_daylight da morte solar quando equipada nelas."
     },
     "capacete_sentinela": {
         "id": "capacete_sentinela",
@@ -308,7 +308,7 @@ CARDS = {
         "count": 18,
         "ability": "first_hit_reduce",
         "first_hit_reduce": 80,
-        "description": "Só vale equipado. +180 proteção. Equipado no capacete do jogador: 1× por turno o primeiro dano à vida é −80. Equipado em criatura: +180 de vida nela."
+        "description": "Slot capacete. No JOGADOR: 1× por turno o 1º dano à vida do jogador é −80. Na CRIATURA: +180 vida. Na mão não faz nada."
     },
     "peitoral_carvalho": {
         "id": "peitoral_carvalho",
@@ -319,7 +319,7 @@ CARDS = {
         "count": 16,
         "ability": "nature_ward",
         "spell_resist_races": ["elfo", "ninfa", "ninfa_lorem"],
-        "description": "Só vale equipado. +350 proteção na criatura. Em Elfo ou Ninfa: a criatura ignora o próximo feitiço hostil."
+        "description": "Slot peitoral. Na CRIATURA: +350 vida; em Elfo/Ninfa concede ward (ignora o próximo feitiço hostil). Prefira na criatura."
     },
     "peitoral_ferro": {
         "id": "peitoral_ferro",
@@ -328,7 +328,7 @@ CARDS = {
         "slot": "armor",
         "protection": 220,
         "count": 25,
-        "description": "Só vale equipado. Armadura comum: +220 vida na criatura equipada."
+        "description": "Slot peitoral. Equipado na criatura: +220 vida. Na mão não protege."
     },
     "calcas_marcha": {
         "id": "calcas_marcha",
@@ -339,7 +339,7 @@ CARDS = {
         "count": 18,
         "ability": "damage_flat_reduce",
         "damage_flat_reduce": 40,
-        "description": "Só vale equipado no slot Calças do jogador (não na mão). Todo dano à vida do jogador é reduzido em 40. Na criatura: +150 vida."
+        "description": "Slot calças. No JOGADOR: todo dano à vida do jogador −40. Na CRIATURA: apenas +150 vida (sem redução de dano)."
     },
     "botas_andarilho": {
         "id": "botas_andarilho",
@@ -349,7 +349,7 @@ CARDS = {
         "protection": 80,
         "count": 14,
         "ability": "free_swap",
-        "description": "Só vale equipado no slot Botas do jogador (não na mão). 1 troca grátis ataque↔defesa por turno. Na criatura: +80 vida."
+        "description": "Slot botas. No JOGADOR: 1 troca grátis ataque↔defesa por turno. Na CRIATURA: só +80 vida (sem free swap)."
     },
     "botas_guerra": {
         "id": "botas_guerra",
@@ -360,7 +360,7 @@ CARDS = {
         "count": 16,
         "ability": "charge_bonus",
         "attack_bonus": 40,
-        "description": "Só vale equipado na criatura em ATAQUE: +120 vida e +40 ataque. Na mão não faz nada."
+        "description": "Melhor na CRIATURA em ATAQUE: +120 vida e +40 ataque. Na mão ou só no jogador o bônus de carga não se aplica como na criatura em ataque."
     },
     "manto_eclipse": {
         "id": "manto_eclipse",
@@ -371,7 +371,7 @@ CARDS = {
         "count": 10,
         "daylight_protect": True,
         "ability": "eclipse_cloak",
-        "description": "Só vale equipado (criatura ou peitoral do jogador). +200 proteção e impede morte/dano da luz do dia em noturnos. Na mão não protege."
+        "description": "Slot peitoral. Equipado (criatura ou jogador): +200 proteção e proteção solar (noturnos não morrem/tomam sol). Na mão não protege."
     },
 
     # Lobisomem
@@ -387,7 +387,7 @@ CARDS = {
         "day_attack": 40,
         "night_life": 480,
         "night_attack": 170,
-        "description": "De dia: tanque (700❤️ / 40⚔️). De noite: predador (480❤️ / 170⚔️). Forma muda com o ciclo."
+        "description": "Muda com o ciclo. DIA: 700❤️ / 40⚔️ (tanque). NOITE: 480❤️ / 170⚔️ (predador). Usa Adaga do Crepúsculo."
     },
     
     # Talismãs (não podem ser jogados, apenas segurados)
@@ -396,7 +396,7 @@ CARDS = {
         "name": "Talismã - Ordem", 
         "type": "talisman", 
         "count": 1, 
-        "description": "Imunidade ao Caos."
+        "description": "Talismã (fica na mão; não se joga no board). Imunidade a efeitos de Caos."
     },
     "talisma_imortalidade": {
         "id": "talisma_imortalidade", 
@@ -404,28 +404,28 @@ CARDS = {
         "type": "talisman", 
         "count": 1, 
         "uses_left": 2,
-        "description": "Se o jogador for morto com este item em mãos ele terá seus pontos de vida restaurados."
+        "description": "Talismã na mão. Ao morrer (vida 0), restaura vida e consome uso (começa com 2 usos). Oráculo inimigo pode anular."
     },
     "talisma_verdade": {
         "id": "talisma_verdade", 
         "name": "Talismã - Verdade", 
         "type": "talisman", 
         "count": 1, 
-        "description": "Imunidade a feitiços e oráculos."
+        "description": "Talismã na mão. Imunidade a feitiços e oráculos hostis."
     },
     "talisma_guerreiro": {
         "id": "talisma_guerreiro", 
         "name": "Talismã - Guerreiro", 
         "type": "talisman", 
         "count": 1, 
-        "description": "Aumenta em 1024 pontos o ataque e defesa do jogador."
+        "description": "Talismã na mão. Enquanto na mão: +1024 no poder de ataque do jogador ao atacar."
     },
     "talisma_sabedoria": {
         "id": "talisma_sabedoria", 
         "name": "Talismã - Sabedoria", 
         "type": "talisman", 
         "count": 1, 
-        "description": "Permite jogar duas cartas por turno (em vez de uma)."
+        "description": "Talismã na mão (ou lista de talismãs). Permite 2 ações de JOGAR CARTA por turno (play ×2)."
     },
     
     # Runas
@@ -434,7 +434,7 @@ CARDS = {
         "name": "Runa", 
         "type": "rune",
         "count": 40, 
-        "description": "Colete quatro runas para realizar uma invocação de um personagem do cemitério."
+        "description": "Recurso na mão. 4 runas permitem invocar/reviver uma criatura do cemitério (ação revive). Mod no_runes desliga."
     },
     
     # Feitiços
@@ -443,84 +443,84 @@ CARDS = {
         "name": "Feitiço - Cortes", 
         "type": "spell", 
         "count": 2, 
-        "description": "Aumenta ataque de um monstro em 1024 pontos por duas rodadas."
+        "description": "Requer mago em campo. +1024 de ataque em UMA criatura sua por 2 rodadas."
     },
     "feitico_duro_matar": {
         "id": "feitico_duro_matar", 
         "name": "Feitiço - Duro de matar", 
         "type": "spell", 
         "count": 2, 
-        "description": "Aumenta defesa do jogador em 1024 pontos por duas rodadas."
+        "description": "Requer mago. +1024 de 'defesa' ao jogador alvo por 2 rodadas (mitiga dano)."
     },
     "feitico_troca": {
         "id": "feitico_troca", 
         "name": "Feitiço - Troca", 
         "type": "spell", 
         "count": 2, 
-        "description": "Troca as cartas de outro Jogador de ataque para defesa e vice-versa."
+        "description": "Requer mago. Inverte bases de ataque↔defesa do jogador alvo."
     },
     "feitico_comunista": {
         "id": "feitico_comunista", 
         "name": "Feitiço - Comunista", 
         "type": "spell", 
         "count": 2, 
-        "description": "Faz as cartas das mãos dos jogadores irem de volta para a pilha."
+        "description": "Requer mago. Devolve as mãos dos jogadores ao baralho (redistribui pressão de mão)."
     },
     "feitico_silencio": {
         "id": "feitico_silencio", 
         "name": "Feitiço - Silêncio", 
         "type": "spell", 
         "count": 2, 
-        "description": "Os ataques das próximas duas rodadas não ativam armadilhas."
+        "description": "Requer mago. Nas próximas 2 rodadas, ataques não ativam armadilhas."
     },
     "feitico_para_sempre": {
         "id": "feitico_para_sempre", 
         "name": "Feitiço - Para Sempre", 
         "type": "spell", 
         "count": 2, 
-        "description": "Reverte o efeito da espada Blade of Vampires."
+        "description": "Requer mago. Remove a maldição noturna da Blade of Vampires."
     },
     "feitico_capitalista": {
         "id": "feitico_capitalista", 
         "name": "Feitiço - Capitalista", 
         "type": "spell", 
         "count": 2, 
-        "description": "Troque cartas com outros jogadores."
+        "description": "Requer mago. Troca cartas da mão com outro jogador."
     },
     "feitico_cura": {
         "id": "feitico_cura", 
         "name": "Feitiço - Cura", 
         "type": "spell", 
         "count": 10, 
-        "description": "Cura 1024 pontos de vida do jogador alvo. Pode ser usado em si mesmo ou em outros jogadores."
+        "description": "Requer mago. Cura 1024 de vida no jogador alvo (você ou aliado/oponente)."
     },
     "feitico_clareira_lua": {
         "id": "feitico_clareira_lua",
         "name": "Feitiço - Clareira da Lua",
         "type": "spell",
         "count": 6,
-        "description": "Força a noite imediatamente. Lobisomens e criaturas noturnas se beneficiam."
+        "description": "Requer mago. Força NOITE imediatamente (beneficia noturnos e lobisomem)."
     },
     "feitico_julgamento_aurora": {
         "id": "feitico_julgamento_aurora",
         "name": "Feitiço - Julgamento da Aurora",
         "type": "spell",
         "count": 5,
-        "description": "Destrói 1 criatura noturna no campo (zumbi, vampiro, lobisomem ou dies_daylight / night_creature)."
+        "description": "Requer mago. Destrói 1 criatura noturna visível (zumbi/vampiro/lobisomem/dies_daylight)."
     },
     "feitico_eco_grimorio": {
         "id": "feitico_eco_grimorio",
         "name": "Feitiço - Eco do Grimório",
         "type": "spell",
         "count": 3,
-        "description": "Copia o efeito do último feitiço usado nesta partida (exceto o próprio Eco)."
+        "description": "Requer mago. Copia o efeito do último feitiço da partida (não copia a si mesmo)."
     },
     "feitico_selo_silencio": {
         "id": "feitico_selo_silencio",
         "name": "Feitiço - Selo de Silêncio Menor",
         "type": "spell",
         "count": 6,
-        "description": "Seu próximo ataque não ativa armadilhas. Counter do Poço Sem Fundo e similares."
+        "description": "Requer mago. Seu PRÓXIMO ataque não ativa armadilhas (counter de Poço etc.)."
     },
     
     # Oraculo
@@ -529,7 +529,7 @@ CARDS = {
         "name": "Oráculo", 
         "type": "oracle", 
         "count": 1, 
-        "description": "Se você atacar um jogador que possui o Talismã da Imortalidade, o talismã é anulado e o jogador morre como qualquer outro. O Oráculo é consumido após o uso. Requer elfo em modo de defesa."
+        "description": "Requer Elfo em DEFESA. Anula Talismã da Imortalidade do alvo no ataque mortal e é consumido."
     },
     
     # Rituais (requerem condições específicas)
@@ -538,21 +538,21 @@ CARDS = {
         "name": "Ritual 157", 
         "type": "ritual", 
         "count": 1, 
-        "description": "Requer Apofis, Mago Negro, 2 zumbis e 2 elfos em modo de defesa. Todos os talismãs da mão do jogador escolhido são roubados."
+        "description": "Ritual. Requer em campo: Apofis, Mago Negro, 2 zumbis e 2 elfos em defesa. Rouba todos os talismãs da mão do alvo."
     },
     "ritual_amor": {
         "id": "ritual_amor", 
         "name": "Ritual Amor", 
         "type": "ritual", 
         "count": 1, 
-        "description": "Requer a Ninfa Belly Lorem e o Vampiro Necrothic Tayler. Anula a maldição do Profeta."
+        "description": "Ritual. Requer Ninfa Belly Lorem + Vampiro Necrothic Tayler. Remove maldição do Profeta."
     },
     "ritual_chaos": {
         "id": "ritual_chaos",
         "name": "Ritual do Caos",
         "type": "ritual",
         "count": 1,
-        "description": "Requer Apofis e o Mago Negro. Invoca o Caos."
+        "description": "Ritual. Requer Apofis + Mago Negro. Invoca efeito de Caos (anula proteções de Ordem se aplicável)."
     },
 
     # Armadilhas
@@ -561,28 +561,28 @@ CARDS = {
         "name": "Armadilha 171", 
         "type": "trap", 
         "count": 2, 
-        "description": "Rouba a carta que te dá um golpe crítico."
+        "description": "Armadilha em defesa (disfarçada). Ao ser ativada por ataque: rouba a criatura/carta que deu o golpe crítico."
     },
     "armadilha_espelho": {
         "id": "armadilha_espelho", 
         "name": "Armadilha Espelho", 
         "type": "trap", 
         "count": 2, 
-        "description": "Reverte ataques e magia."
+        "description": "Armadilha em defesa. Reflete o ataque (e efeitos mágicos associados) de volta ao agressor."
     },
     "armadilha_cheat": {
         "id": "armadilha_cheat", 
         "name": "Armadilha Cheat", 
         "type": "trap", 
         "count": 2, 
-        "description": "Dobrar o ataque e passar para o próximo jogador na rodada, precisa estar de noite e um mago em campo."
+        "description": "Armadilha. Só à NOITE e com mago em campo: dobra o ataque recebido e redireciona ao próximo jogador."
     },
     "armadilha_poco": {
         "id": "armadilha_poco", 
         "name": "Armadilha - Poço Sem Fundo", 
         "type": "trap", 
         "count": 2, 
-        "description": "Quando o oponente atacar, TODAS as 3 criaturas atacantes são destruídas e enviadas para o cemitério. Armadilha é desativada após o uso."
+        "description": "Armadilha em defesa. Ao ser atacado: destrói TODAS as criaturas nas bases de ataque do agressor e vai ao cemitério; a armadilha se desativa."
     }
 }
 
@@ -594,7 +594,7 @@ DISGUISE_OPTIONS = [
         "life": 512, 
         "attack": 50,
         "count": 50, 
-        "description": "Não ataca outros elfos. Use para realizar oraculos."
+        "description": "Tropa (50⚔️ / 512❤️). Em campo: habilita Oráculo se estiver em defesa. Não ataca outros elfos."
     },
     {
         "id": "mago",
@@ -603,7 +603,7 @@ DISGUISE_OPTIONS = [
         "life": 512, 
         "attack": 50, 
         "count": 50, 
-        "description": "Use-o para invocar feitiços."
+        "description": "Tropa (50⚔️ / 512❤️). Em campo (ataque ou defesa): permite lançar feitiços da mão (1 feitiço por turno)."
     },
     {
         "id": "orc",
@@ -612,7 +612,7 @@ DISGUISE_OPTIONS = [
         "life": 512,
         "attack": 60,
         "count": 50,
-        "description": "Brutais."
+        "description": "Tropa bruta (60⚔️ / 512❤️). Sinergia com Clava do Orc (+50⚔️ por orc em bases de ataque, máx. 3)."
     },
     {
         "id": "zumbi", 
@@ -621,7 +621,7 @@ DISGUISE_OPTIONS = [
         "life": 100, 
         "attack": 25,
         "count": 50, 
-        "description": "Morre durante o dia. A menos que derrotado por outro zumbi volta para a mão do jogador.", 
+        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Morre ao virar o DIA se não tiver proteção solar (Capacete das Trevas / Manto do Eclipse). Se destruído por outro zumbi, pode voltar à mão.", 
         "dies_daylight": True
     },
     {
@@ -631,7 +631,7 @@ DISGUISE_OPTIONS = [
         "life": 512, 
         "attack": 70, 
         "count": 50, 
-        "description": "O jogador pode colocar personagens para montar no centauro. Realiza qualquer ataque terrestre."
+        "description": "Tropa (70⚔️ / 512❤️). Pode ser montaria (slot mount do jogador) ou chamada em grupo (Chamar Centauros com 2+). Super Centauro pode roubar centauros em campo."
     },
     {
         "id": "ninfa",
@@ -640,7 +640,7 @@ DISGUISE_OPTIONS = [
         "life": 512,
         "attack": 30,
         "count": 35,
-        "description": "Espiritos Magicos da Natureza"
+        "description": "Espírito da natureza (30⚔️ / 512❤️). Sinergia com Peitoral de Carvalho (ward contra feitiço hostil)."
     }
 ]
 
@@ -697,7 +697,7 @@ MODIFIERS = [
     {
         'id': 'hardcore',
         'name': 'Hardcore',
-        'description': 'Jogadores começam com apenas 600 de vida',
+        'description': 'Jogadores começam com 600 de vida (padrão é 1200)',
         'icon': '💀',
         'enabled': True
     },

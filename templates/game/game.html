@@ -593,17 +593,72 @@ body::before {
   .opponent-card { min-width: 240px; max-width: 280px; }
   .game-header { padding: 10px 12px; }
   .chat-container { right: 8px; bottom: 8px; }
+  .tutorial-coach { left: 8px; right: 8px; bottom: 8px; width: auto; max-width: none; }
 }
+
+/* Painel de dicas do tutorial */
+.tutorial-coach {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: min(340px, calc(100vw - 32px));
+  z-index: 1200;
+  background: rgba(12, 10, 28, 0.94);
+  border: 1px solid rgba(61, 220, 151, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.45);
+  padding: 14px 14px 12px;
+  color: var(--text);
+  display: none;
+  font-family: inherit;
+}
+.tutorial-coach.open { display: block; }
+.tutorial-coach .tc-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 8px;
+}
+.tutorial-coach .tc-badge {
+  font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: #3ddc97;
+}
+.tutorial-coach .tc-title { font-weight: 800; color: #f0c14b; font-size: 1rem; margin-bottom: 6px; }
+.tutorial-coach .tc-body { color: #cfc6e6; font-size: .9rem; line-height: 1.5; margin-bottom: 12px; }
+.tutorial-coach .tc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.tutorial-coach button {
+  border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);
+  color: #fff; border-radius: 999px; padding: 7px 12px; font-size: .82rem;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.tutorial-coach button.primary {
+  background: rgba(61,220,151,.2); border-color: rgba(61,220,151,.4); color: #b8f5d8;
+}
+.tutorial-coach .tc-progress { font-size: .75rem; color: #8a829e; margin-top: 8px; }
 
     </style>
 </head>
 <body>
+
+<div class="tutorial-coach" id="tutorial-coach" aria-live="polite">
+  <div class="tc-head">
+    <span class="tc-badge">🎓 Tutorial · Mentor fácil</span>
+    <button type="button" id="tc-hide" title="Minimizar">−</button>
+  </div>
+  <div class="tc-title" id="tc-title">Dica</div>
+  <div class="tc-body" id="tc-body">…</div>
+  <div class="tc-actions">
+    <button type="button" class="primary" id="tc-next">Próxima dica</button>
+    <button type="button" id="tc-prev">Anterior</button>
+    <a href="/rules" target="_blank" style="align-self:center;color:#5ee7ff;font-size:.82rem;font-weight:700;text-decoration:none">Regras</a>
+  </div>
+  <div class="tc-progress" id="tc-progress"></div>
+</div>
 
 <div class="game-container" id="game-container">
   <div class="game-header" id="game-header">
     <div class="game-title">
       Twilight Battle
       <a href="/rules" target="_blank">📜 Regras</a>
+      <a href="/help" target="_blank">❓ Ajuda</a>
     </div>
     <div class="game-info" id="game-info">
       <div class="time-indicator" id="time-indicator">Carregando...</div>
@@ -633,7 +688,7 @@ body::before {
     <div class="player-header">
       <h2 id="player-name">Seu campo</h2>
       <div class="player-stats">
-        <div class="stat">❤️ Vida: <span id="player-life">5000</span></div>
+        <div class="stat">❤️ Vida: <span id="player-life">1200</span></div>
         <div class="stat">🔷 Runas: <span id="player-runes">0</span></div>
         <div class="stat">🔮 Talismãs: <span id="player-talismans">0</span></div>
       </div>
@@ -1080,6 +1135,11 @@ body::before {
             const oldTurn = oldGameState ? oldGameState.current_turn : null;
             gameState = data;
 
+            // Tutorial: painel de dicas + contexto
+            if (typeof window.TBTutorial !== 'undefined') {
+                window.TBTutorial.onState(data);
+            }
+
             // Partida finalizada no servidor → UI de fim (sem loop)
             if (data && (data.finished || data.winner) && !gameOverHandled) {
                 gameFinished = true;
@@ -1097,7 +1157,12 @@ body::before {
             
             if (oldTurn !== data.current_turn && data.current_turn === currentUsername && data.started && !data.current_player_dead) {
                 console.log('🎲 É MEU TURNO! Mostrando alerta...');
-                showTurnStartAlert(currentUsername);
+                // no tutorial: alerta mais curto / opcional
+                if (!(data.tutorial || window.TB_IS_TUTORIAL)) {
+                    showTurnStartAlert(currentUsername);
+                } else if (typeof window.TBTutorial !== 'undefined') {
+                    window.TBTutorial.onMyTurn(data);
+                }
                 
                 // Parar timer antigo (se existir)
                 if (timerInterval) {
@@ -4547,6 +4612,155 @@ body::before {
             if (!gameOverHandled && !gameFinished) requestGameState();
         }, 3000);
         setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
+
+        // ------------------------------------------------------------------
+        // Tutorial coach (dicas + avisos contextuais)
+        // ------------------------------------------------------------------
+        (function initTutorialCoach() {
+            const params = new URLSearchParams(window.location.search || '');
+            const fromQuery = params.get('tutorial') === '1';
+            let fromStorage = false;
+            try { fromStorage = sessionStorage.getItem('tb_tutorial') === '1'; } catch (e) {}
+            window.TB_IS_TUTORIAL = fromQuery || fromStorage;
+
+            const DEFAULT_TIPS = [
+                { id: 'welcome', title: 'Bem-vindo ao treino', body: 'Você joga contra o Mentor (fácil). Compre, jogue criaturas no ataque e passe o turno. As dicas acompanham a partida.' },
+                { id: 'draw', title: 'Compre cartas', body: 'Clique no monte (📚) para comprar 1 carta por turno. Mais opções = mais jogo.' },
+                { id: 'play_attack', title: 'Bases de ataque', body: 'Criaturas no ATAQUE somam poder quando você ataca. Coloque tropas fortes ali.' },
+                { id: 'defense_traps', title: 'Defesa e armadilhas', body: 'Na defesa cabem criaturas e armadilhas. Armadilhas ficam disfarçadas para o inimigo.' },
+                { id: 'equip', title: 'Dois jeitos de equipar', body: 'Equipar na criatura não gasta o play. Slot do jogador (arma/botas/etc.) gasta o play e ativa efeitos de personagem.' },
+                { id: 'day_night', title: 'Dia e noite', body: 'Zumbis/vampiros morrem de dia sem proteção. No tutorial o ciclo é rápido (a cada 6 turnos).' },
+                { id: 'attack', title: 'Ataque', body: 'Na 1ª rodada os ataques ficam bloqueados. Depois, ataque com board de ataque montado — cuidado com “tropas” misteriosas na defesa inimiga.' },
+                { id: 'end', title: 'Passe o turno', body: 'Quando terminar, passe o turno. O Mentor joga devagar e de forma simples para você treinar.' },
+            ];
+
+            let tips = DEFAULT_TIPS.slice();
+            try {
+                const raw = sessionStorage.getItem('tb_tutorial_tips');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length) tips = parsed;
+                }
+            } catch (e) {}
+
+            let idx = 0;
+            let active = false;
+            let minimized = false;
+            const el = document.getElementById('tutorial-coach');
+            if (!el) return;
+
+            function render() {
+                if (!active || minimized) {
+                    el.classList.toggle('open', active && !minimized);
+                    return;
+                }
+                const t = tips[idx] || tips[0];
+                document.getElementById('tc-title').textContent = t.title || 'Dica';
+                document.getElementById('tc-body').textContent = t.body || '';
+                document.getElementById('tc-progress').textContent = `Dica ${idx + 1} / ${tips.length}`;
+                el.classList.add('open');
+            }
+
+            function show() {
+                active = true;
+                minimized = false;
+                render();
+            }
+
+            function contextualTip(state) {
+                if (!state || !state.started) return;
+                const me = (state.players || {})[currentUsername];
+                if (!me) return;
+                const hand = me.hand || [];
+                const atk = (me.attack_bases || []).filter(Boolean).length;
+                const hasNight = hand.some(c => c && (c.dies_daylight || (c.id || '').includes('vampiro') || c.id === 'zumbi'));
+                const hasMage = [...(me.attack_bases || []), ...(me.defense_bases || [])].some(
+                    c => c && ['mago', 'rei_mago', 'mago_negro'].includes(c.id)
+                );
+                const hasSpell = hand.some(c => c && c.type === 'spell');
+
+                if (state.attacks_blocked || state.first_round) {
+                    // dica de preparação
+                    const i = tips.findIndex(t => t.id === 'attack');
+                    if (i >= 0) idx = i;
+                } else if (state.time_of_day === 'day' && hasNight) {
+                    const i = tips.findIndex(t => t.id === 'day_night');
+                    if (i >= 0) idx = i;
+                } else if (hasSpell && !hasMage) {
+                    const i = tips.findIndex(t => t.id === 'mage_spell' || t.id === 'play_attack');
+                    if (i >= 0) idx = i;
+                } else if (atk === 0 && hand.some(c => c && c.type === 'creature')) {
+                    const i = tips.findIndex(t => t.id === 'play_attack');
+                    if (i >= 0) idx = i;
+                }
+                render();
+            }
+
+            window.TBTutorial = {
+                onState(data) {
+                    if (data && data.tutorial) {
+                        window.TB_IS_TUTORIAL = true;
+                        try { sessionStorage.setItem('tb_tutorial', '1'); } catch (e) {}
+                    }
+                    if (!(window.TB_IS_TUTORIAL || (data && data.tutorial))) return;
+                    if (!active) show();
+                    contextualTip(data);
+                },
+                onMyTurn(data) {
+                    if (!active) show();
+                    // se mão vazia de criaturas no atk, empurra dica de play
+                    contextualTip(data);
+                }
+            };
+
+            document.getElementById('tc-next').addEventListener('click', () => {
+                idx = (idx + 1) % tips.length;
+                render();
+            });
+            document.getElementById('tc-prev').addEventListener('click', () => {
+                idx = (idx - 1 + tips.length) % tips.length;
+                render();
+            });
+            document.getElementById('tc-hide').addEventListener('click', () => {
+                if (!minimized) {
+                    minimized = true;
+                    el.classList.remove('open');
+                    // botão flutuante reabre
+                    let fab = document.getElementById('tc-fab');
+                    if (!fab) {
+                        fab = document.createElement('button');
+                        fab.id = 'tc-fab';
+                        fab.type = 'button';
+                        fab.textContent = '🎓 Dicas';
+                        fab.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:1201;border-radius:999px;padding:10px 14px;font-weight:800;border:1px solid rgba(61,220,151,.4);background:rgba(12,10,28,.92);color:#3ddc97;cursor:pointer;font-family:inherit;';
+                        fab.onclick = () => {
+                            minimized = false;
+                            fab.remove();
+                            render();
+                        };
+                        document.body.appendChild(fab);
+                    }
+                }
+            });
+
+            if (window.TB_IS_TUTORIAL) {
+                show();
+            }
+
+            // carrega tips da API se ainda não tiver
+            if (window.TB_IS_TUTORIAL) {
+                fetch('/api/tutorial/tips', { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d && Array.isArray(d.tips) && d.tips.length) {
+                            tips = d.tips;
+                            render();
+                        }
+                    })
+                    .catch(() => {});
+            }
+        })();
+
         setInterval(function() {
             if (gameOverHandled || gameFinished) return;
             if (socket.connected && currentPlayerId) {
