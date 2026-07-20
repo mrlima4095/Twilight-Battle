@@ -149,16 +149,96 @@ def filled_creatures(bases: list) -> list[tuple[int, dict]]:
 
 
 # ---------------------------------------------------------------------------
-# Estratégia
+# Estratégia (estrategista: replan por ação, draw sempre, swap, hold noturno)
 # ---------------------------------------------------------------------------
+MAGE_IDS = frozenset({"mago", "rei_mago", "mago_negro"})
+WEAPON_IDS = frozenset({"lamina_almas", "blade_vampires", "blade_dragons"})
+TRAP_VALUE = {
+    "armadilha_poco": 100,
+    "armadilha_espelho": 90,
+    "armadilha_171": 70,
+    "armadilha_cheat": 60,
+}
+# Ações do motor → contador interno de limite
+ACTION_BUCKET = {
+    "draw": "draw",
+    "play_card": "play",
+    "attack": "attack",
+    "swap_positions": "swap",
+    "cast_spell": "spell",
+    "call_centaurs": "call_centaurs",
+    "prophet_curse": "prophet_curse",
+    "equip_item": "equip_item",  # grátis no motor (sem limite de turno)
+    "end_turn": "end_turn",
+}
+
+
+def is_night_creature(card: Optional[dict]) -> bool:
+    if not card:
+        return False
+    cid = card.get("id") or ""
+    return bool(
+        card.get("dies_daylight")
+        or card.get("night_creature")
+        or card.get("werewolf")
+        or cid in NIGHT_CREATURE_IDS
+        or cid == "lobisomem_crepusculo"
+        or "lobisomem" in cid
+    )
+
+
+def is_hidden_card(card: Optional[dict]) -> bool:
+    if not card:
+        return False
+    return bool(
+        card.get("hidden")
+        or card.get("name") in ("???", "Silhueta")
+    )
+
+
+def has_sabedoria(me_data: dict, hand: list) -> bool:
+    for c in hand + (me_data.get("talismans") or []):
+        if c and c.get("id") == "talisma_sabedoria":
+            return True
+    return False
+
+
+def attack_power(atk: list, equipment: dict, hand: list) -> float:
+    power = 0.0
+    has = False
+    for c in atk:
+        if not c:
+            continue
+        if is_creature(c) or c.get("_placeholder"):
+            has = True
+            power += float(c.get("attack") or 50)
+    if not has:
+        return 0.0
+    w = equipment.get("weapon") if equipment else None
+    if w:
+        # adaga crepúsculo: valor efetivo aproximado no state
+        power += float(w.get("attack") or w.get("night_attack") or w.get("day_attack") or 0)
+    for t in hand or []:
+        if t and t.get("id") == "talisma_guerreiro":
+            power += 1024
+    return power
+
+
+def enemy_list(players: dict, me: str) -> list[tuple[str, dict]]:
+    return [
+        (uname, pdata)
+        for uname, pdata in (players or {}).items()
+        if uname != me and not pdata.get("dead") and not pdata.get("observer") and not pdata.get("spectator")
+    ]
+
+
 class Strategy:
-    """Decide ações com base na dificuldade."""
+    """Decide a próxima ação com base no estado fresco (closed-loop)."""
 
     def __init__(self, difficulty: str = "normal"):
         self.difficulty = (difficulty or "normal").lower().strip()
         if self.difficulty not in ("easy", "facil", "normal", "hard", "dificil", "difícil"):
             self.difficulty = "normal"
-        # normalizar
         if self.difficulty in ("facil",):
             self.difficulty = "easy"
         if self.difficulty in ("dificil", "difícil"):
@@ -189,21 +269,43 @@ class Strategy:
     def maybe_blunder(self) -> bool:
         return random.random() < self.mistake_chance
 
-    def plan_turn(self, state: dict, me: str) -> list[dict]:
+    def max_for(self, bucket: str, me_data: dict, hand: list) -> int:
+        if bucket == "play":
+            return 2 if has_sabedoria(me_data, hand) else 1
+        if bucket == "equip_item":
+            return 8  # motor não limita; cap anti-loop
+        if bucket == "end_turn":
+            return 1
+        return 1
+
+    def can_use(self, used: dict, bucket: str, me_data: dict, hand: list) -> bool:
+        return int(used.get(bucket, 0)) < self.max_for(bucket, me_data, hand)
+
+    def next_action(
+        self,
+        state: dict,
+        me: str,
+        used: Optional[dict] = None,
+        attacks_blocked: bool = False,
+        failed: Optional[set] = None,
+    ) -> Optional[dict]:
         """
-        Retorna lista ordenada de ações:
-          {action, params, reason}
+        Uma ação por chamada (closed-loop). Sempre tenta draw se ainda não usou.
+        Retorna None se deve encerrar o loop (emite end_turn ou nada a fazer).
         """
-        if not state or not state.get("started"):
-            return []
+        used = used if used is not None else {}
+        failed = failed if failed is not None else set()
+
+        if not state or not state.get("started") or state.get("finished"):
+            return {"action": "end_turn", "params": {}, "reason": "not-playing"}
 
         players = state.get("players") or {}
         me_data = players.get(me)
         if not me_data or me_data.get("dead"):
-            return []
+            return None
 
         if state.get("current_turn") != me:
-            return []
+            return None
 
         hand = list(me_data.get("hand") or [])
         atk = list(me_data.get("attack_bases") or [])
@@ -214,266 +316,218 @@ class Strategy:
         time_of_day = state.get("time_of_day") or "day"
         atk_slots = int(state.get("attack_slot_count") or len(atk) or 3)
         def_slots = int(state.get("defense_slot_count") or len(defense) or 6)
+        deck_count = int(state.get("deck_count") or 0)
+        cycle_len = 6 if "fast_cycle" in modifiers else 24
+        time_cycle = int(state.get("time_cycle") or 0)
+        turns_to_flip = cycle_len - (time_cycle % cycle_len) if cycle_len else 99
 
-        # garantir tamanho das listas
         while len(atk) < atk_slots:
             atk.append(None)
         while len(defense) < def_slots:
             defense.append(None)
 
-        enemies = [
-            (uname, pdata)
-            for uname, pdata in players.items()
-            if uname != me and not pdata.get("dead") and not pdata.get("observer")
-        ]
+        enemies = enemy_list(players, me)
+        force_attack = "bleed_out" in modifiers
+        phase = self._phase(
+            my_life, atk, defense, enemies, attack_power(atk, equipment, hand),
+            attacks_blocked, force_attack,
+        )
 
-        actions: list[dict] = []
-
-        # --- Easy: às vezes só compra e passa / joga aleatório ---
-        if self.difficulty == "easy" and self.maybe_blunder():
-            if hand and random.random() < 0.5:
+        # --- Easy: decisões ruidosas ---
+        if self.difficulty == "easy" and self.maybe_blunder() and "easy-blunder" not in failed:
+            # ainda assim draw se puder
+            if self.can_use(used, "draw", me_data, hand) and deck_count > 0:
+                return {"action": "draw", "params": {}, "reason": "easy-draw-first"}
+            if hand and self.can_use(used, "play", me_data, hand) and random.random() < 0.55:
                 c = random.choice([x for x in hand if is_creature(x) or is_trap(x)] or hand)
                 if is_creature(c):
-                    slots = empty_slots(atk) or empty_slots(defense)
-                    if slots:
-                        ptype = "attack" if empty_slots(atk) else "defense"
-                        actions.append(
-                            {
-                                "action": "play_card",
-                                "params": {
-                                    "card_id": c["instance_id"],
-                                    "position_type": ptype,
-                                    "position_index": slots[0],
-                                },
-                                "reason": "easy-random-play",
-                            }
-                        )
-                elif is_trap(c) and empty_slots(defense):
-                    actions.append(
-                        {
+                    slots_a, slots_d = empty_slots(atk), empty_slots(defense)
+                    if slots_a or slots_d:
+                        ptype = "attack" if slots_a else "defense"
+                        idx = (slots_a or slots_d)[0]
+                        return {
                             "action": "play_card",
                             "params": {
                                 "card_id": c["instance_id"],
-                                "position_type": "defense",
-                                "position_index": empty_slots(defense)[0],
+                                "position_type": ptype,
+                                "position_index": idx,
                             },
-                            "reason": "easy-trap",
+                            "reason": "easy-random-play",
                         }
-                    )
-            actions.append({"action": "draw", "params": {}, "reason": "easy-draw"})
-            # às vezes ataca aleatório
-            if any(is_creature(c) for c in atk) and enemies and random.random() < 0.4:
-                target = random.choice(enemies)[0]
-                actions.append(
-                    {
-                        "action": "attack",
-                        "params": {"target_id": target},
-                        "reason": "easy-attack",
-                    }
-                )
-            actions.append({"action": "end_turn", "params": {}, "reason": "easy-end"})
-            return actions
-
-        # ========== HARD / NORMAL: ordem tática ==========
-        # 1) Draw cedo se mão fraca
-        playable = [c for c in hand if is_creature(c) or is_trap(c) or is_weapon(c) or is_armor(c) or is_spell(c)]
-        should_draw_first = len(hand) < 3 or (len(playable) == 0 and len(hand) < 6)
-        if should_draw_first:
-            actions.append({"action": "draw", "params": {}, "reason": "draw-early"})
-
-        # 2) Equipar itens da mão em criaturas fortes
-        creatures_on_field = filled_creatures(atk) + filled_creatures(defense)
-        items = [c for c in hand if is_weapon(c) or is_armor(c)]
-        if creatures_on_field and items and self.difficulty != "easy":
-            # melhor criatura primeiro
-            creatures_on_field.sort(key=lambda x: card_score(x[1]), reverse=True)
-            for item in sorted(items, key=lambda c: float(c.get("attack") or c.get("protection") or 0), reverse=True):
-                best_creature = None
-                for _, creature in creatures_on_field:
-                    if self._can_equip(item, creature):
-                        best_creature = creature
-                        break
-                if best_creature:
-                    actions.append(
-                        {
-                            "action": "equip_item",
-                            "params": {
-                                "item_card_id": item["instance_id"],
-                                "creature_card_id": best_creature["instance_id"],
-                            },
-                            "reason": f"equip-{item.get('name')}-on-{best_creature.get('name')}",
-                        }
-                    )
-                    # remove da mão local para não reusar
-                    hand = [c for c in hand if c.get("instance_id") != item.get("instance_id")]
-                    if self.difficulty == "normal":
-                        break  # normal: 1 equip por turno
-
-        # 2b) Arma no slot do JOGADOR só se não há criatura boa p/ jogar
-        #     (play_card gasta a ação de "play" do turno)
-        weapons = [c for c in hand if is_weapon(c)]
-        creatures_in_hand = [c for c in hand if is_creature(c)]
-        want_player_weapon = (
-            weapons
-            and not equipment.get("weapon")
-            and (not creatures_in_hand or not empty_slots(atk))
-            and self.difficulty != "easy"
-        )
-        if want_player_weapon:
-            w = max(weapons, key=lambda c: float(c.get("attack") or 0))
-            # só se a arma for forte o suficiente
-            if float(w.get("attack") or 0) >= 50:
-                actions.append(
-                    {
+                elif is_trap(c) and empty_slots(defense):
+                    return {
                         "action": "play_card",
                         "params": {
-                            "card_id": w["instance_id"],
-                            "position_type": "equipment",
-                            "position_index": "weapon",
+                            "card_id": c["instance_id"],
+                            "position_type": "defense",
+                            "position_index": empty_slots(defense)[0],
                         },
-                        "reason": f"player-weapon-{w.get('name')}",
+                        "reason": "easy-trap",
                     }
+            if (
+                not attacks_blocked
+                and self.can_use(used, "attack", me_data, hand)
+                and any(is_creature(c) for c in atk)
+                and enemies
+                and random.random() < 0.4
+            ):
+                return {
+                    "action": "attack",
+                    "params": {"target_id": random.choice(enemies)[0]},
+                    "reason": "easy-attack",
+                }
+            return {"action": "end_turn", "params": {}, "reason": "easy-end"}
+
+        # ========== 1) DRAW SEMPRE que puder (mais opções no futuro) ==========
+        if (
+            self.can_use(used, "draw", me_data, hand)
+            and deck_count > 0
+            and "draw" not in failed
+        ):
+            return {"action": "draw", "params": {}, "reason": "draw-always"}
+
+        # ========== 2) Equip em criaturas (não gasta play) ==========
+        if self.can_use(used, "equip_item", me_data, hand) and "equip_item" not in failed:
+            eq = self._pick_equip_creature(hand, atk, defense, equipment)
+            if eq:
+                return eq
+
+        # ========== 3) Swap tático (alinhar board) ==========
+        if (
+            self.difficulty != "easy"
+            and self.can_use(used, "swap", me_data, hand)
+            and "swap_positions" not in failed
+        ):
+            sw = self._pick_swap(atk, defense, equipment, phase)
+            if sw:
+                return sw
+
+        # ========== 4) Jogar carta ==========
+        if self.can_use(used, "play", me_data, hand) and "play_card" not in failed:
+            play = self._pick_play(
+                hand, atk, defense, equipment, time_of_day, modifiers,
+                turns_to_flip, phase, my_life,
+            )
+            if play:
+                return play
+
+        # ========== 5) Feitiço ==========
+        if (
+            self.can_use(used, "spell", me_data, hand)
+            and "no_spells" not in modifiers
+            and "cast_spell" not in failed
+        ):
+            has_mage = any(
+                is_creature(c) and (c.get("id") in MAGE_IDS)
+                for c in atk + defense
+            )
+            spells = [c for c in hand if is_spell(c)]
+            if has_mage and spells:
+                spell_action = self._pick_spell(
+                    spells, me, me_data, enemies, atk, defense, my_life, time_of_day, modifiers
                 )
-                hand = [c for c in hand if c.get("instance_id") != w.get("instance_id")]
+                if spell_action:
+                    return spell_action
 
-        # 3) Feitiços (se tiver mago em campo)
-        has_mage = any(
-            is_creature(c) and (c.get("id") in ("mago", "rei_mago", "mago_negro"))
-            for c in atk + defense
-        )
-        spells = [c for c in hand if is_spell(c)]
-        if has_mage and spells and "no_spells" not in modifiers:
-            spell_action = self._pick_spell(
-                spells, me, me_data, enemies, atk, defense, my_life, time_of_day, modifiers
+        # ========== 6) Call centauros ==========
+        if (
+            self.difficulty == "hard"
+            and self.can_use(used, "call_centaurs", me_data, hand)
+            and "call_centaurs" not in failed
+        ):
+            centaur_count = sum(
+                1 for c in atk + defense + hand if c and c.get("id") == "centauro"
             )
-            if spell_action:
-                actions.append(spell_action)
-                hand = [
-                    c
-                    for c in hand
-                    if c.get("instance_id") != spell_action["params"].get("spell_id")
-                ]
+            if centaur_count >= 2:
+                return {"action": "call_centaurs", "params": {}, "reason": "call-centaurs"}
 
-        # 4) Jogar carta (prioridade tática)
-        play = self._pick_play(hand, atk, defense, time_of_day, modifiers)
-        if play:
-            actions.append(play)
-            # simular no local
-            p = play["params"]
-            # marcar slot ocupado mentalmente com stats da carta
-            played = next(
-                (c for c in hand if c.get("instance_id") == p.get("card_id")),
-                None,
-            )
-            if p["position_type"] == "attack":
-                idx = p["position_index"]
-                if 0 <= idx < len(atk):
-                    if played:
-                        atk[idx] = dict(played)
-                        atk[idx]["_placeholder"] = True
-                    else:
-                        atk[idx] = {"_placeholder": True, "type": "creature", "attack": 50}
-            elif p["position_type"] == "defense":
-                idx = p["position_index"]
-                if 0 <= idx < len(defense):
-                    defense[idx] = played or {"_placeholder": True}
-
-        # 4b) Second play se Talismã da Sabedoria (hand still has cards - try opportunistic)
-        has_sabedoria = any(
-            c and c.get("id") == "talisma_sabedoria"
-            for c in (hand + (me_data.get("talismans") or []))
-        )
-        if has_sabedoria:
-            play2 = self._pick_play(
-                [c for c in hand if c.get("instance_id") != (play or {}).get("params", {}).get("card_id")],
-                atk,
-                defense,
-                time_of_day,
-                modifiers,
-            )
-            if play2:
-                actions.append(play2)
-
-        # 5) Call centaurs se tiver 2+ centauros
-        centaur_count = sum(
-            1
-            for c in atk + defense + hand
-            if c and c.get("id") == "centauro"
-        )
-        if centaur_count >= 2 and self.difficulty == "hard":
-            actions.append(
-                {"action": "call_centaurs", "params": {}, "reason": "call-centaurs"}
-            )
-
-        # 6) Prophet curse em ameaça forte (hard)
+        # ========== 7) Profecia (critério, não random) ==========
         if (
             self.difficulty == "hard"
             and "no_prophet" not in modifiers
+            and self.can_use(used, "prophet_curse", me_data, hand)
+            and "prophet_curse" not in failed
             and enemies
-            and random.random() < 0.55
         ):
             curse = self._pick_prophet_curse(enemies)
             if curse:
-                actions.append(curse)
+                return curse
 
-        # 7) Ataque (board já inclui placeholders das plays planejadas)
-        my_atk_power = 0.0
-        has_attacker = False
-        for c in atk:
-            if not c:
-                continue
-            if is_creature(c) or c.get("_placeholder"):
-                has_attacker = True
-                my_atk_power += float(c.get("attack") or 50)
-        if equipment.get("weapon"):
-            my_atk_power += float(equipment["weapon"].get("attack") or 0)
-        for t in hand:
-            if t and t.get("id") == "talisma_guerreiro":
-                my_atk_power += 1024
-
-        can_attack = has_attacker and bool(enemies)
-        # bleed_out: SEMPRE atacar se possível
-        force_attack = "bleed_out" in modifiers
-
-        if can_attack and (my_atk_power > 0 or force_attack):
-            target = self._pick_attack_target(enemies, my_atk_power, modifiers, me)
-            if target:
-                if not (self.difficulty == "easy" and self.maybe_blunder()):
-                    actions.append(
-                        {
+        # ========== 8) Ataque ==========
+        if (
+            not attacks_blocked
+            and self.can_use(used, "attack", me_data, hand)
+            and "attack" not in failed
+            and enemies
+        ):
+            pwr = attack_power(atk, equipment, hand)
+            has_attacker = any(is_creature(c) for c in atk)
+            if has_attacker and (pwr > 0 or force_attack):
+                want = force_attack or phase in ("lethal", "pressure") or pwr >= 80
+                if phase == "setup":
+                    want = force_attack
+                if phase == "stabilize" and not force_attack:
+                    # ataca se puder matar alguém
+                    want = any(float(e[1].get("life") or 0) <= pwr for e in enemies)
+                if self.difficulty == "easy" and self.maybe_blunder():
+                    want = force_attack
+                if want:
+                    target = self._pick_attack_target(enemies, pwr, modifiers, me)
+                    if target:
+                        return {
                             "action": "attack",
                             "params": {"target_id": target},
-                            "reason": f"attack-{target}-pwr{int(my_atk_power)}",
+                            "reason": f"attack-{target}-pwr{int(pwr)}-{phase}",
                         }
-                    )
-                elif force_attack:
-                    actions.append(
-                        {
-                            "action": "attack",
-                            "params": {"target_id": target},
-                            "reason": "bleed-force-attack",
-                        }
-                    )
 
-        # 8) Draw se ainda não pediu e mão pequena
-        if not should_draw_first and len(hand) < 7:
-            actions.append({"action": "draw", "params": {}, "reason": "draw-late"})
+        # ========== 9) Fim de turno ==========
+        return {"action": "end_turn", "params": {}, "reason": f"end-{phase}"}
 
-        # 9) End turn
-        actions.append({"action": "end_turn", "params": {}, "reason": "end"})
-
-        # Easy/normal: chance de dropar o ataque ou o play
-        if self.difficulty != "hard" and self.maybe_blunder():
-            actions = [
-                a
-                for a in actions
-                if a["action"] not in ("attack", "cast_spell", "prophet_curse")
-                or random.random() > 0.5
-            ]
-            if not any(a["action"] == "end_turn" for a in actions):
-                actions.append({"action": "end_turn", "params": {}, "reason": "end"})
-
+    def plan_turn(
+        self,
+        state: dict,
+        me: str,
+        attacks_blocked: bool = False,
+    ) -> list[dict]:
+        """Compat: gera plano open-loop (pouco usado; preferir next_action)."""
+        used: dict[str, int] = {}
+        failed: set = set()
+        actions: list[dict] = []
+        for _ in range(16):
+            step = self.next_action(state, me, used, attacks_blocked, failed)
+            if not step:
+                break
+            actions.append(step)
+            bucket = ACTION_BUCKET.get(step["action"], step["action"])
+            used[bucket] = int(used.get(bucket, 0)) + 1
+            if step["action"] == "end_turn":
+                break
         return actions
+
+    def _phase(
+        self,
+        my_life: float,
+        atk: list,
+        defense: list,
+        enemies: list,
+        my_power: float,
+        attacks_blocked: bool,
+        force_attack: bool,
+    ) -> str:
+        if attacks_blocked:
+            return "setup"
+        if enemies and any(float(e[1].get("life") or 0) <= my_power for e in enemies):
+            return "lethal"
+        if my_life < 350:
+            return "stabilize"
+        atk_n = len(filled_creatures(atk))
+        if atk_n == 0:
+            return "develop"
+        if my_power >= 200 or force_attack:
+            return "pressure"
+        if atk_n < 2:
+            return "develop"
+        return "pressure"
 
     def _can_equip(self, item: dict, creature: dict) -> bool:
         iid = item.get("id") or ""
@@ -481,98 +535,317 @@ class Strategy:
         if iid == "blade_vampires" and cid not in ("vampiro_tayler", "vampiro_wers"):
             return False
         if iid == "blade_dragons" and cid not in (
-            "elfo",
-            "vampiro_tayler",
-            "vampiro_wers",
-            "mago",
-            "mago_negro",
-            "rei_mago",
+            "elfo", "vampiro_tayler", "vampiro_wers", "mago", "mago_negro", "rei_mago",
         ):
             return False
         if iid == "lamina_almas" and cid not in (
-            "elfo",
-            "mago",
-            "mago_negro",
-            "rei_mago",
-            "vampiro_tayler",
-            "vampiro_wers",
+            "elfo", "mago", "mago_negro", "rei_mago", "vampiro_tayler", "vampiro_wers",
         ):
             return False
-        # já tem arma?
+        if iid == "adaga_crepusculo" or item.get("werewolf_only"):
+            if not creature.get("werewolf") and cid not in ("lobisomem_crepusculo", "lobisomem"):
+                return False
+        if iid == "cajado_mago_negro":
+            races = item.get("equip_races") or list(MAGE_IDS)
+            if cid not in races:
+                return False
         eqs = creature.get("equipped_items") or []
-        weapon_ids = {"lamina_almas", "blade_vampires", "blade_dragons"}
-        if item.get("type") == "weapon" or iid in weapon_ids:
-            if any(e.get("type") == "weapon" or e.get("id") in weapon_ids for e in eqs):
+        if item.get("type") == "weapon" or iid in WEAPON_IDS:
+            if any(e.get("type") == "weapon" or e.get("id") in WEAPON_IDS for e in eqs):
+                return False
+        if item.get("type") == "armor" or iid == "capacete_trevas":
+            armor_n = sum(
+                1 for e in eqs if e.get("type") == "armor" or e.get("id") == "capacete_trevas"
+            )
+            if armor_n >= 4:
                 return False
         return True
+
+    def _pick_equip_creature(
+        self, hand: list, atk: list, defense: list, equipment: Optional[dict] = None
+    ) -> Optional[dict]:
+        creatures = filled_creatures(atk) + filled_creatures(defense)
+        if not creatures:
+            return None
+        equipment = equipment or {}
+        # itens com habilidade forte no slot do JOGADOR: não gastar em criatura
+        # se o slot correspondente ainda está livre
+        player_prefer = {
+            "botas_andarilho": "boots",
+            "calcas_marcha": "pants",
+            "capacete_sentinela": "helmet",
+            "manto_eclipse": "armor",
+        }
+        items = []
+        for c in hand:
+            if not (is_weapon(c) or is_armor(c)):
+                continue
+            cid = c.get("id") or ""
+            slot = player_prefer.get(cid)
+            if slot and not equipment.get(slot):
+                continue  # reservar para play_card no slot do jogador
+            items.append(c)
+        if not items:
+            return None
+        creatures.sort(key=lambda x: card_score(x[1]), reverse=True)
+        items_sorted = sorted(
+            items,
+            key=lambda c: float(c.get("attack") or 0) + float(c.get("protection") or 0),
+            reverse=True,
+        )
+        for item in items_sorted:
+            for _, creature in creatures:
+                if self._can_equip(item, creature):
+                    return {
+                        "action": "equip_item",
+                        "params": {
+                            "item_card_id": item["instance_id"],
+                            "creature_card_id": creature["instance_id"],
+                        },
+                        "reason": f"equip-{item.get('name')}-on-{creature.get('name')}",
+                    }
+        return None
+
+    def _pick_swap(
+        self, atk: list, defense: list, equipment: dict, phase: str
+    ) -> Optional[dict]:
+        """Troca para maximizar ATK no ataque e proteger mago/tank em defesa."""
+        atk_filled = filled_creatures(atk)
+        def_filled = filled_creatures(defense)
+        empty_atk = empty_slots(atk)
+        empty_def = empty_slots(defense)
+
+        # 1) Melhor criatura de defesa → ataque se ataque fraco / lethal
+        if atk_filled or empty_atk:
+            if def_filled and (empty_atk or atk_filled):
+                best_def = max(def_filled, key=lambda x: float(x[1].get("attack") or 0))
+                def_atk = float(best_def[1].get("attack") or 0)
+                if empty_atk and def_atk >= 60 and phase in ("pressure", "lethal", "develop"):
+                    return {
+                        "action": "swap_positions",
+                        "params": {
+                            "pos1_type": "defense",
+                            "pos1_index": best_def[0],
+                            "pos2_type": "attack",
+                            "pos2_index": empty_atk[0],
+                        },
+                        "reason": f"swap-def-to-atk-{best_def[1].get('name')}",
+                    }
+                if atk_filled:
+                    worst_atk = min(atk_filled, key=lambda x: float(x[1].get("attack") or 0))
+                    if def_atk > float(worst_atk[1].get("attack") or 0) + 20:
+                        return {
+                            "action": "swap_positions",
+                            "params": {
+                                "pos1_type": "defense",
+                                "pos1_index": best_def[0],
+                                "pos2_type": "attack",
+                                "pos2_index": worst_atk[0],
+                            },
+                            "reason": f"swap-upgrade-atk-{best_def[1].get('name')}",
+                        }
+
+        # 2) Mago em ataque com vida baixa → defesa (proteger caster)
+        for i, c in atk_filled:
+            if (c.get("id") in MAGE_IDS) and float(c.get("life") or 0) < 300 and empty_def:
+                return {
+                    "action": "swap_positions",
+                    "params": {
+                        "pos1_type": "attack",
+                        "pos1_index": i,
+                        "pos2_type": "defense",
+                        "pos2_index": empty_def[0],
+                    },
+                    "reason": f"swap-protect-mage-{c.get('name')}",
+                }
+
+        # 3) Criatura fraca em ataque e tank em defesa
+        if phase == "stabilize" and atk_filled and empty_def:
+            weak = min(atk_filled, key=lambda x: float(x[1].get("life") or 0))
+            if float(weak[1].get("life") or 0) < 200:
+                return {
+                    "action": "swap_positions",
+                    "params": {
+                        "pos1_type": "attack",
+                        "pos1_index": weak[0],
+                        "pos2_type": "defense",
+                        "pos2_index": empty_def[0],
+                    },
+                    "reason": f"swap-shelter-{weak[1].get('name')}",
+                }
+        return None
+
+    def _should_hold_night(
+        self, c: dict, time_of_day: str, turns_to_flip: int
+    ) -> bool:
+        if not is_night_creature(c):
+            return False
+        if time_of_day == "night":
+            return False
+        if self.difficulty == "easy":
+            return False
+        # hard: segura a menos que a noite esteja muito perto (1 turno)
+        if self.difficulty == "hard":
+            return turns_to_flip > 1
+        # normal: segura se faltar mais de 3 turnos
+        return turns_to_flip > 3
+
+    def _creature_priority(
+        self, c: dict, time_of_day: str, turns_to_flip: int, hand: list, atk: list, defense: list
+    ) -> float:
+        s = card_score(c)
+        cid = c.get("id") or ""
+        if self._should_hold_night(c, time_of_day, turns_to_flip):
+            s -= 800
+        elif time_of_day == "night" and is_night_creature(c):
+            s += 220
+        if cid in MAGE_IDS:
+            # mago ainda mais se tem spell na mão e nenhum mago em campo
+            has_mage = any(
+                is_creature(x) and x.get("id") in MAGE_IDS for x in atk + defense
+            )
+            has_spell = any(is_spell(x) for x in hand)
+            s += 280 if (has_spell and not has_mage) else 160
+        if cid == "centauro":
+            s += 80
+        return s
+
+    def _pick_player_equipment(
+        self, hand: list, equipment: dict, atk: list, defense: list, phase: str
+    ) -> Optional[dict]:
+        """Equipar no slot do jogador (gasta play)."""
+        # slots: weapon, helmet, armor, pants, boots, mount
+        candidates: list[tuple[float, dict, str]] = []
+
+        for c in hand:
+            if not c:
+                continue
+            ctype = c.get("type")
+            cid = c.get("id") or ""
+            slot = c.get("slot")
+
+            if ctype == "weapon" and not equipment.get("weapon"):
+                atk_v = float(c.get("attack") or 0)
+                # preferir arma forte no jogador se board de atk cheio ou lethal
+                pri = atk_v
+                if phase == "lethal":
+                    pri += 100
+                if empty_slots(atk) and any(is_creature(x) for x in hand):
+                    pri -= 80  # prefere board
+                if atk_v >= 50:
+                    candidates.append((pri, c, "weapon"))
+            elif ctype == "armor" and slot in ("helmet", "armor", "pants", "boots"):
+                if equipment.get(slot):
+                    continue
+                prot = float(c.get("protection") or 0)
+                pri = prot
+                # botas andarilho: swap grátis = muito valor tático
+                if cid == "botas_andarilho":
+                    pri += 200
+                if cid == "calcas_marcha":
+                    pri += 80
+                if cid == "manto_eclipse":
+                    pri += 60
+                # se há criatura e item também serve nela, às vezes melhor equip_item
+                # mas botas/calças preferem slot jogador
+                if cid in ("botas_andarilho", "calcas_marcha", "capacete_sentinela"):
+                    candidates.append((pri, c, slot))
+                elif not filled_creatures(atk) and not filled_creatures(defense):
+                    candidates.append((pri * 0.8, c, slot))
+            elif ctype == "creature" and not equipment.get("mount") and cid == "centauro":
+                # montaria só se sobra centauro e ataque cheio
+                if not empty_slots(atk) and not empty_slots(defense):
+                    candidates.append((40.0, c, "mount"))
+
+        if not candidates:
+            return None
+        candidates.sort(key=lambda x: x[0], reverse=True)
+        pri, card, slot = candidates[0]
+        if pri < 40 and self.difficulty == "hard":
+            return None
+        return {
+            "action": "play_card",
+            "params": {
+                "card_id": card["instance_id"],
+                "position_type": "equipment",
+                "position_index": slot,
+            },
+            "reason": f"player-eq-{slot}-{card.get('name')}",
+        }
 
     def _pick_play(
         self,
         hand: list,
         atk: list,
         defense: list,
+        equipment: dict,
         time_of_day: str,
         modifiers: set,
+        turns_to_flip: int,
+        phase: str,
+        my_life: float,
     ) -> Optional[dict]:
-        creatures = [c for c in hand if is_creature(c)]
+        creatures = [
+            c for c in hand
+            if is_creature(c) and not self._should_hold_night(c, time_of_day, turns_to_flip)
+        ]
+        # se só tem noturnos e dia, easy/normal ainda pode jogar
+        if not creatures:
+            creatures = [c for c in hand if is_creature(c)]
+            if self.difficulty == "hard" and time_of_day == "day":
+                # hard: só joga noturno se não há alternativa E board vazio crítico
+                only_night = all(is_night_creature(c) for c in creatures) if creatures else False
+                if only_night and filled_creatures(atk):
+                    creatures = []  # segura
+                elif only_night and turns_to_flip > 1:
+                    creatures = []
+
         traps = [c for c in hand if is_trap(c)]
         empty_atk = empty_slots(atk)
         empty_def = empty_slots(defense)
 
-        if not creatures and not traps:
-            return None
+        def cprio(c: dict) -> float:
+            return self._creature_priority(c, time_of_day, turns_to_flip, hand, atk, defense)
 
-        # valor das criaturas — evitar zumbi de dia se hard
-        def creature_priority(c: dict) -> float:
-            s = card_score(c)
-            cid = c.get("id") or ""
-            if time_of_day == "day" and (
-                c.get("dies_daylight") or cid in NIGHT_CREATURE_IDS
-            ):
-                s -= 400 if self.difficulty == "hard" else 150
-            if time_of_day == "night" and cid in NIGHT_CREATURE_IDS:
-                s += 200
-            # magos são valiosos para feitiços
-            if cid in ("mago", "rei_mago", "mago_negro"):
-                s += 180
-            # centauro bom
-            if cid == "centauro":
-                s += 80
-            return s
-
-        # Hard: priorizar encher ataque com melhores criaturas, 1 defesa se vazio
-        need_defense = len(filled_creatures(defense)) == 0 and empty_def
+        # prioridade: board de ataque > trap > defesa > equip jogador
         need_attack = bool(empty_atk)
+        need_defense = len(filled_creatures(defense)) == 0 and bool(empty_def)
+        has_mage_field = any(
+            is_creature(c) and c.get("id") in MAGE_IDS for c in atk + defense
+        )
+        spells_in_hand = any(is_spell(c) for c in hand)
+
+        # mago se tem spell e sem mago
+        if need_attack and creatures and spells_in_hand and not has_mage_field:
+            mages = [c for c in creatures if c.get("id") in MAGE_IDS]
+            if mages:
+                best = max(mages, key=cprio)
+                return {
+                    "action": "play_card",
+                    "params": {
+                        "card_id": best["instance_id"],
+                        "position_type": "attack",
+                        "position_index": empty_atk[0],
+                    },
+                    "reason": f"play-mage-{best.get('name')}",
+                }
 
         if need_attack and creatures:
-            best = max(creatures, key=creature_priority)
-            # se só tem slot defesa e criatura fraca, etc.
-            return {
-                "action": "play_card",
-                "params": {
-                    "card_id": best["instance_id"],
-                    "position_type": "attack",
-                    "position_index": empty_atk[0],
-                },
-                "reason": f"play-atk-{best.get('name')}",
-            }
+            best = max(creatures, key=cprio)
+            # se score muito negativo (hold), pula
+            if cprio(best) > -200 or self.difficulty == "easy":
+                return {
+                    "action": "play_card",
+                    "params": {
+                        "card_id": best["instance_id"],
+                        "position_type": "attack",
+                        "position_index": empty_atk[0],
+                    },
+                    "reason": f"play-atk-{best.get('name')}",
+                }
 
-        # armadilhas em defesa (prioridade hard)
         if traps and empty_def and self.difficulty != "easy":
-            trap = traps[0]
-            # hard: prefere poço e espelho
-            if self.difficulty == "hard":
-                traps_sorted = sorted(
-                    traps,
-                    key=lambda t: {
-                        "armadilha_poco": 100,
-                        "armadilha_espelho": 90,
-                        "armadilha_171": 70,
-                        "armadilha_cheat": 60,
-                    }.get(t.get("id"), 50),
-                    reverse=True,
-                )
-                trap = traps_sorted[0]
+            trap = max(traps, key=lambda t: TRAP_VALUE.get(t.get("id"), 50))
             return {
                 "action": "play_card",
                 "params": {
@@ -584,7 +857,6 @@ class Strategy:
             }
 
         if need_defense and creatures:
-            # defesa: criatura tank (mais vida / menos ataque relativo) ou qualquer
             tank = max(
                 creatures,
                 key=lambda c: float(c.get("life") or 0) - float(c.get("attack") or 0) * 0.2,
@@ -599,21 +871,21 @@ class Strategy:
                 "reason": f"play-def-{tank.get('name')}",
             }
 
-        # se ainda tem slots de ataque e criaturas
         if empty_atk and creatures:
-            best = max(creatures, key=creature_priority)
-            return {
-                "action": "play_card",
-                "params": {
-                    "card_id": best["instance_id"],
-                    "position_type": "attack",
-                    "position_index": empty_atk[0],
-                },
-                "reason": f"play-atk2-{best.get('name')}",
-            }
+            best = max(creatures, key=cprio)
+            if cprio(best) > -200 or self.difficulty != "hard":
+                return {
+                    "action": "play_card",
+                    "params": {
+                        "card_id": best["instance_id"],
+                        "position_type": "attack",
+                        "position_index": empty_atk[0],
+                    },
+                    "reason": f"play-atk2-{best.get('name')}",
+                }
 
         if empty_def and creatures:
-            c = max(creatures, key=creature_priority)
+            c = max(creatures, key=cprio)
             return {
                 "action": "play_card",
                 "params": {
@@ -623,6 +895,11 @@ class Strategy:
                 },
                 "reason": f"play-def2-{c.get('name')}",
             }
+
+        # equipamento no jogador se não há play de board
+        peq = self._pick_player_equipment(hand, equipment, atk, defense, phase)
+        if peq:
+            return peq
 
         return None
 
@@ -638,14 +915,13 @@ class Strategy:
         time_of_day: str,
         modifiers: set,
     ) -> Optional[dict]:
-        scored: list[tuple[float, dict, dict]] = []  # score, spell, params
-
+        scored: list[tuple[float, dict, dict]] = []
         my_creatures = [c for _, c in filled_creatures(atk) + filled_creatures(defense)]
         best_my = max(my_creatures, key=card_score) if my_creatures else None
 
         for sp in spells:
             sid = sp.get("id") or ""
-            base = SPELL_PRIORITY.get(sid, 20)
+            base = float(SPELL_PRIORITY.get(sid, 20))
             params: dict[str, Any] = {"spell_id": sp.get("instance_id") or sid}
 
             if sid == "feitico_cura":
@@ -667,19 +943,12 @@ class Strategy:
                     base += 25
                 params["target_player_id"] = me
             elif sid == "feitico_julgamento_aurora":
-                # achar criatura noturna inimiga
                 night_target = None
                 for uname, pdata in enemies:
                     for c in (pdata.get("attack_bases") or []) + (pdata.get("defense_bases") or []):
-                        if not c or c.get("hidden") or c.get("name") in ("???", "Silhueta"):
+                        if not c or is_hidden_card(c):
                             continue
-                        cid = c.get("id") or ""
-                        if (
-                            cid in NIGHT_CREATURE_IDS
-                            or c.get("dies_daylight")
-                            or c.get("night_creature")
-                            or c.get("werewolf")
-                        ):
+                        if is_night_creature(c):
                             night_target = (uname, c)
                             break
                     if night_target:
@@ -691,20 +960,14 @@ class Strategy:
                 else:
                     base -= 50
             elif sid == "feitico_clareira_lua":
-                if time_of_day == "day" and any(
-                    (c.get("id") in NIGHT_CREATURE_IDS or c.get("werewolf") or c.get("dies_daylight"))
-                    for c in my_creatures
-                ):
+                if time_of_day == "day" and any(is_night_creature(c) for c in my_creatures):
                     base += 40
                 else:
                     base -= 20
             elif sid == "feitico_troca" and enemies:
-                # trocar board do inimigo mais armado em ataque
                 best_enemy = max(
                     enemies,
-                    key=lambda e: sum(
-                        1 for c in (e[1].get("attack_bases") or []) if c
-                    ),
+                    key=lambda e: sum(1 for c in (e[1].get("attack_bases") or []) if c),
                 )
                 if sum(1 for c in (best_enemy[1].get("attack_bases") or []) if c) >= 2:
                     params["target_player_id"] = best_enemy[0]
@@ -712,7 +975,6 @@ class Strategy:
                 else:
                     base -= 30
             elif sid == "feitico_comunista":
-                # se mão inimiga parece grande (não sabemos) — só se mão própria fraca
                 if len(me_data.get("hand") or []) <= 2:
                     base += 20
                 else:
@@ -746,17 +1008,19 @@ class Strategy:
         def threat(entry):
             uname, pdata = entry
             life = float(pdata.get("life") or 0)
-            atk_power = 0.0
+            atk_power_e = 0.0
+            hidden_defs = 0
             for c in pdata.get("attack_bases") or []:
-                if is_creature(c):
-                    atk_power += float(c.get("attack") or 0)
-            # preferir matar se possível
-            killable = 1 if life <= my_power else 0
-            # king_hunt: priorizar criador se soubermos — não temos creator no state
-            # board fraco = menos defesas
+                if is_creature(c) and not is_hidden_card(c):
+                    atk_power_e += float(c.get("attack") or 0)
+            for c in pdata.get("defense_bases") or []:
+                if c:
+                    if is_hidden_card(c):
+                        hidden_defs += 1
             defs = sum(1 for c in (pdata.get("defense_bases") or []) if c)
-            # score: matar > low life > high threat
-            return (killable, -life, atk_power, -defs)
+            killable = 1 if life <= my_power else 0
+            # menos defesa e menos ocultos = melhor alvo
+            return (killable, -life, atk_power_e, -defs, -hidden_defs)
 
         if self.difficulty == "easy":
             return random.choice(enemies)[0]
@@ -769,12 +1033,17 @@ class Strategy:
         best_score = 0.0
         for uname, pdata in enemies:
             for c in (pdata.get("attack_bases") or []) + (pdata.get("defense_bases") or []):
-                if not c or not is_creature(c):
-                    continue
-                # fog pode esconder stats
-                if c.get("name") in ("???", "Silhueta") or c.get("hidden"):
+                if not c or not is_creature(c) or is_hidden_card(c):
                     continue
                 sc = card_score(c)
+                # bônus se está em ataque (ameaça direta)
+                atk_ids = {
+                    x.get("instance_id")
+                    for x in (pdata.get("attack_bases") or [])
+                    if x
+                }
+                if c.get("instance_id") in atk_ids:
+                    sc += 50
                 if sc > best_score:
                     best_score = sc
                     best = (uname, c)
@@ -814,7 +1083,7 @@ class TwilightBot:
         self.session = requests.Session()
         self.session.headers.update(
             {
-                "User-Agent": "TwilightBattleBot/1.0",
+                "User-Agent": "TwilightBattleBot/1.1",
                 "Accept": "*/*",
             }
         )
@@ -835,9 +1104,17 @@ class TwilightBot:
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._last_action_error = ""
+        self._last_action_ok = False
         # chave do turno que já executamos por completo (user+cycle)
         self._turn_done_for: Optional[str] = None
         self._last_seen_turn: Optional[str] = None
+        # primeira rodada: False por padrão; vira True se o server recusar ataque
+        # (evita travar se o bot entrar no meio da partida)
+        self._attacks_blocked = False
+        # contadores de ações do turno atual
+        self._used: dict[str, int] = {}
+        self._failed: set = set()
+        self._turn_key_active: Optional[str] = None
 
         self._register_handlers()
 
@@ -900,7 +1177,7 @@ class TwilightBot:
     def connect(self) -> bool:
         headers = {
             "Cookie": f"auth_token={self.token}",
-            "User-Agent": "TwilightBattleBot/1.0",
+            "User-Agent": "TwilightBattleBot/1.1",
         }
         # Força cookie também na jar (domínio do host)
         try:
@@ -1034,6 +1311,16 @@ class TwilightBot:
         @self.sio.on("game_started")
         def on_started(data):
             print("[jogo] PARTIDA INICIADA!")
+            mods = set()
+            if isinstance(data, dict):
+                mods = set(data.get("modifiers") or [])
+            st = self.game_state or {}
+            mods = mods or set(st.get("modifiers") or [])
+            # com no_first_round: ataca livre; senão assume bloqueado até first_round_ended
+            self._attacks_blocked = "no_first_round" not in mods
+            self._used = {}
+            self._failed = set()
+            self._turn_key_active = None
             self.request_state()
 
         @self.sio.on("game_state")
@@ -1046,6 +1333,9 @@ class TwilightBot:
                 self.auto_play = False
                 self._turn_done_for = "FINISHED"
                 return
+            # se o state já tem mods com no_first_round
+            if "no_first_round" in set(data.get("modifiers") or []):
+                self._attacks_blocked = False
             # não bloquear o event loop do socketio
             if (
                 self.auto_play
@@ -1060,25 +1350,31 @@ class TwilightBot:
             log = data.get("log_message") or ""
             action = data.get("action")
             who = data.get("player_name") or data.get("player_id")
+            if who == self.username or data.get("player_id") == self.username:
+                self._last_action_ok = True
+                self._last_action_error = ""
             if log:
                 print(f"[ação] {log}")
             elif action:
                 print(f"[ação] {who}: {action}")
-            # se outro jogador acabou o turno, puxar estado (pode ser nossa vez)
-            if action == "end_turn" or who != self.username:
-                self.request_state()
-            else:
-                self.request_state()
+            if data.get("first_round_ended"):
+                self._attacks_blocked = False
+                print("[jogo] primeira rodada acabou — ataques liberados")
+            self.request_state()
 
         @self.sio.on("action_error")
         def on_action_error(data):
             msg = data.get("message") or str(data)
             self._last_action_error = msg
+            self._last_action_ok = False
             if data.get("game_finished"):
                 print(f"[fim] partida já terminou ({msg})")
                 self.auto_play = False
                 self._turn_done_for = "FINISHED"
                 return
+            low = msg.lower()
+            if "primeira rodada" in low or "ataques bloqueados" in low:
+                self._attacks_blocked = True
             # não spammar tudo
             if data.get("player_name") == self.username or data.get("player_id") == self.username:
                 print(f"[ação falhou] {msg}")
@@ -1125,6 +1421,7 @@ class TwilightBot:
 
         @self.sio.on("first_round_ended")
         def on_first_round(data):
+            self._attacks_blocked = False
             print(f"[jogo] {data.get('message', 'primeira rodada acabou')}")
 
         @self.sio.on("turn_changed")
@@ -1132,9 +1429,24 @@ class TwilightBot:
             self.request_state()
 
     def _turn_key(self, state: dict) -> str:
-        return f"{state.get('current_turn')}|{state.get('time_cycle')}|{state.get('deck_count')}"
+        return f"{self.username}|{state.get('time_cycle')}|{state.get('current_turn')}"
+
+    def _wait_action_result(self, timeout: float = 2.5) -> bool:
+        """Espera action_success/error ou timeout. Retorna True se sucesso."""
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if self._last_action_ok:
+                return True
+            if self._last_action_error:
+                return False
+            if self._stop.is_set():
+                return False
+            time.sleep(0.05)
+        # timeout: assume ok se não houve erro explícito (rede lenta)
+        return not bool(self._last_action_error)
 
     def _maybe_play(self):
+        """Closed-loop: a cada passo reavalia o estado e escolhe a próxima ação."""
         if not self.auto_play:
             return
         with self._lock:
@@ -1156,13 +1468,17 @@ class TwilightBot:
             if not me or me.get("dead"):
                 return
 
-            key = f"{self.username}|{state.get('time_cycle')}"
+            key = self._turn_key(state)
             if self._turn_done_for == key:
                 return
             self.playing_turn = True
+            # reset contadores se mudou de turno
+            if self._turn_key_active != key:
+                self._used = {}
+                self._failed = set()
+                self._turn_key_active = key
 
         try:
-            # snapshot fresco
             time.sleep(0.15)
             self.request_state()
             time.sleep(0.25)
@@ -1170,19 +1486,34 @@ class TwilightBot:
             if state.get("current_turn") != self.username:
                 return
 
-            plan = self.strategy.plan_turn(state, self.username)
-            if not plan:
-                return
+            if "no_first_round" in set(state.get("modifiers") or []):
+                self._attacks_blocked = False
 
-            print(f"[bot] meu turno — {len(plan)} passos ({self.strategy.difficulty})")
-            for step in plan:
-                if self._stop.is_set():
-                    break
+            print(
+                f"[bot] meu turno — closed-loop ({self.strategy.difficulty})"
+                f"{' [setup/1ª rodada]' if self._attacks_blocked else ''}"
+            )
+
+            steps = 0
+            max_steps = 18
+            while steps < max_steps and not self._stop.is_set():
                 st = self.game_state or {}
                 if st.get("current_turn") != self.username:
                     break
+                if st.get("finished"):
+                    break
                 me_now = (st.get("players") or {}).get(self.username) or {}
                 if me_now.get("dead"):
+                    break
+
+                step = self.strategy.next_action(
+                    st,
+                    self.username,
+                    used=self._used,
+                    attacks_blocked=self._attacks_blocked,
+                    failed=self._failed,
+                )
+                if not step:
                     break
 
                 action = step["action"]
@@ -1191,13 +1522,42 @@ class TwilightBot:
                 print(f"  → {action} {params}  ({reason})")
 
                 lo, hi = self.strategy.think_delay
+                # draw é rápido; decisões de ataque/play pensam mais
+                if action == "draw":
+                    lo, hi = max(0.35, lo * 0.6), max(0.55, hi * 0.7)
+                elif action in ("attack", "cast_spell", "swap_positions"):
+                    lo, hi = lo * 1.1, hi * 1.25
                 time.sleep(random.uniform(lo, hi))
 
                 self._last_action_error = ""
+                self._last_action_ok = False
                 self.do_action(action, params)
-                # gap mínimo ~500ms+ entre ações (evita flood de Swal/estado)
+
                 gap = max(0.5, self.strategy.action_gap)
-                time.sleep(gap + random.uniform(0.0, 0.25))
+                time.sleep(gap + random.uniform(0.0, 0.2))
+                ok = self._wait_action_result(timeout=2.2)
+
+                bucket = ACTION_BUCKET.get(action, action)
+                if ok:
+                    self._used[bucket] = int(self._used.get(bucket, 0)) + 1
+                    # limpa falha prévia desse tipo se passou
+                    self._failed.discard(action)
+                else:
+                    # marca falha para não loopar a mesma ação
+                    self._failed.add(action)
+                    err = (self._last_action_error or "").lower()
+                    if "já comprou" in err or "já jogou" in err or "já atacou" in err:
+                        self._used[bucket] = self.strategy.max_for(
+                            bucket, me_now, me_now.get("hand") or []
+                        )
+                    if "primeira rodada" in err or "ataques bloqueados" in err:
+                        self._attacks_blocked = True
+                    print(f"  ⚠ falhou ({self._last_action_error or 'timeout'}); reavaliando")
+
+                # pede estado fresco e espera um pouco
+                self.request_state()
+                time.sleep(0.2)
+                steps += 1
 
                 if action == "end_turn":
                     break
