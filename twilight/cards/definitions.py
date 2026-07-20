@@ -753,7 +753,7 @@ MODIFIERS = [
     {
         'id': 'fog_of_war',
         'name': 'Névoa de Guerra',
-        'description': 'Você não vê nome, vida nem ataque das criaturas inimigas — só silhueta',
+        'description': 'Criaturas inimigas viram silhueta (sem nome/stats). Logs e avisos de combate também escondem nomes, poder de ataque e vida restante do oponente.',
         'icon': '🌫️',
         'enabled': True
     },

@@ -1364,7 +1364,11 @@ class Game:
                         if not self.has_daylight_protection(player, card):
                             self.graveyard.append(card)
                             player['defense_bases'][i] = None
-                            broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
+                            broadcast_system_message(
+                                self.game_id,
+                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!',
+                                fog_message=f'☀️ Uma criatura de {username} morreu com a luz do dia!',
+                            )
                     
                     # Criaturas noturnas tomam 10 de dano
                     elif card.get('night_creature', False):
@@ -1378,7 +1382,11 @@ class Game:
                             if new_life <= 0:
                                 self.graveyard.append(card)
                                 player['defense_bases'][i] = None
-                                broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
+                                broadcast_system_message(
+                                    self.game_id,
+                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)',
+                                    fog_message=f'☀️ Uma criatura de {username} foi destruída pelo sol!',
+                                )
             
             # Processar cartas em ataque
             for i, card in enumerate(player['attack_bases']):
@@ -1388,7 +1396,11 @@ class Game:
                         if not self.has_daylight_protection(player, card):
                             self.graveyard.append(card)
                             player['attack_bases'][i] = None
-                            broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} morreu com a luz do dia!')
+                            broadcast_system_message(
+                                self.game_id,
+                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!',
+                                fog_message=f'☀️ Uma criatura de {username} morreu com a luz do dia!',
+                            )
                     
                     # Criaturas noturnas tomam 10 de dano
                     elif card.get('night_creature', False):
@@ -1402,7 +1414,11 @@ class Game:
                             if new_life <= 0:
                                 self.graveyard.append(card)
                                 player['attack_bases'][i] = None
-                                broadcast_system_message(self.game_id, f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)')
+                                broadcast_system_message(
+                                    self.game_id,
+                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)',
+                                    fog_message=f'☀️ Uma criatura de {username} foi destruída pelo sol!',
+                                )
         # lobisomem troca forma no ciclo (também à noite via toggle)
         self.apply_werewolf_forms()
         self.refresh_dynamic_weapon_bonuses()
@@ -2050,7 +2066,11 @@ class Game:
         
         self.use_action(username, 'spell')
 
-        broadcast_system_message(self.game_id, f'✨ {username} usou {spell_card["name"]} {f"em {target_username}" if target_username else ""}')
+        broadcast_system_message(
+            self.game_id,
+            f'✨ {username} usou {spell_card["name"]} {f"em {target_username}" if target_username else ""}',
+            fog_message=f'✨ {username} usou um feitiço' + (f' em {target_username}' if target_username else '') + ' (névoa)',
+        )
         
         return {
             'success': True,
@@ -2241,7 +2261,11 @@ class Game:
                         return {'type': 'resisted', 'target': card['name'], 'message': f'{card["name"]} resistiu!'}
                     self.graveyard.append(card)
                     self.player_data[uname][base][idx] = None
-                    broadcast_system_message(self.game_id, f'☀️ Julgamento da Aurora destruiu {card["name"]} de {uname}!')
+                    broadcast_system_message(
+                        self.game_id,
+                        f'☀️ Julgamento da Aurora destruiu {card["name"]} de {uname}!',
+                        fog_message=f'☀️ Julgamento da Aurora destruiu uma criatura noturna de {uname}!',
+                    )
                     return {'type': 'destroy', 'target': card['name'], 'owner': uname}
                 return {'type': 'error', 'message': 'Carta alvo não encontrada'}
             # sem card id: pega do target_username
@@ -2255,7 +2279,11 @@ class Game:
                             name = card['name']
                             self.graveyard.append(card)
                             target[base][idx] = None
-                            broadcast_system_message(self.game_id, f'☀️ Julgamento da Aurora destruiu {name} de {target_username}!')
+                            broadcast_system_message(
+                                self.game_id,
+                                f'☀️ Julgamento da Aurora destruiu {name} de {target_username}!',
+                                fog_message=f'☀️ Julgamento da Aurora destruiu uma criatura noturna de {target_username}!',
+                            )
                             return {'type': 'destroy', 'target': name, 'owner': target_username}
                 return {'type': 'error', 'message': 'Nenhuma criatura noturna no alvo'}
             return {'type': 'error', 'message': 'Alvo não especificado'}

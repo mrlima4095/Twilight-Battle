@@ -213,13 +213,21 @@ def _run_one_action(game, bot: str, step: dict) -> tuple[bool, Optional[dict], s
         )
         if result and result.get("success"):
             name = (result.get("card") or {}).get("name", "uma carta")
-            log = f"🎴 {bot} jogou {name}"
+            if getattr(game, "has_fog", lambda: False)():
+                pos = params.get("position_type") or "campo"
+                where = {"attack": "no ataque", "defense": "na defesa", "equipment": "no equipamento"}.get(pos, "no campo")
+                log = f"🎴 {bot} jogou uma carta {where} (névoa)"
+            else:
+                log = f"🎴 {bot} jogou {name}"
     elif action == "attack":
         result = game.attack(bot, params.get("target_id"))
         if result and result.get("success"):
             tname = result.get("target_name", "oponente")
             dmg = result.get("damage_to_player", 0)
-            log = f"⚔️ {bot} atacou {tname} (dano {dmg})"
+            if getattr(game, "has_fog", lambda: False)():
+                log = f"⚔️ {bot} atacou {tname} sob a névoa"
+            else:
+                log = f"⚔️ {bot} atacou {tname} (dano {dmg})"
             broadcast_system_message(game.game_id, log)
     elif action == "end_turn":
         game.next_turn()
