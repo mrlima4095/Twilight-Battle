@@ -147,6 +147,18 @@ body::before {
 }
 #logout-btn:hover { background: rgba(255,77,109,.3); color: #fff; }
 
+.active-game-banner {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px; margin: 0 0 14px; padding: 12px 14px; border-radius: 14px;
+  background: rgba(61, 220, 151, 0.1); border: 1px solid rgba(61, 220, 151, 0.35);
+}
+.active-game-banner .agb-text { color: #b8f5d8; font-weight: 600; font-size: .92rem; }
+.active-game-banner .agb-link {
+  display: inline-flex; padding: 8px 14px; border-radius: 999px; text-decoration: none;
+  font-weight: 800; font-size: .85rem; color: #062016;
+  background: linear-gradient(135deg, #3ddc97, #2bb87a);
+}
+
 .input-group { margin-bottom: 14px; }
 .input-group label {
   display: block; color: var(--muted); font-size: .82rem; font-weight: 600;
@@ -376,6 +388,11 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
       <div class="user-chip">
         <div class="who">👤 Logado como <strong id="logged-username">Carregando...</strong></div>
         <button type="button" id="logout-btn">Sair</button>
+      </div>
+
+      <div id="active-game-banner" class="active-game-banner" style="display:none" role="status">
+        <div class="agb-text">⚔️ Você tem uma partida em andamento</div>
+        <a class="agb-link" id="active-game-link" href="#">Voltar à sala</a>
       </div>
 
       <div class="input-group">
@@ -966,6 +983,15 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 setModifiersCollapsed(true);
             }
             
+            function showActiveGameBanner(gameId) {
+                const banner = document.getElementById('active-game-banner');
+                const link = document.getElementById('active-game-link');
+                if (!banner || !link || !gameId) return;
+                link.href = '/game/' + encodeURIComponent(gameId);
+                link.textContent = 'Voltar à sala ' + gameId;
+                banner.style.display = 'flex';
+            }
+
             // Verificar autenticação ao carregar
             fetch('/api/check-auth')
                 .then(response => response.json())
@@ -978,9 +1004,10 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                     currentUsername = data.username;
                     loggedUsername.textContent = currentUsername;
                     
-                    // Só redireciona se a partida ainda estiver ativa (não finished)
+                    // Em partida ativa: NÃO redireciona (permite abrir o lobby em outra aba).
+                    // Mostra atalho para voltar à sala.
                     if (data.current_game && data.game_exists && !data.game_finished) {
-                        window.location.href = `/game/${data.current_game}`;
+                        showActiveGameBanner(data.current_game);
                     }
                     
                     // Carregar modificadores após autenticação

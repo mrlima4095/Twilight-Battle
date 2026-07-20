@@ -16,18 +16,21 @@ bp = Blueprint('pages', __name__)
 @bp.route('/')
 def index():
     username = get_current_user()
-    if username:
-        accounts = load_accounts()
-        current_game = accounts.get(username, {}).get('current_game')
-        if current_game and current_game in games:
-            # Mesma sala (lobby ou partida) — rematch mantém o id
-            return render_template('game.html', game_id=current_game, username=username)
-        elif current_game:
-            # sala sumiu da memória
-            clear_user_game(username, current_game)
-    else:
+    if not username:
         return render_template('security/auth.html')
-    return render_template('index.html')
+
+    # Limpa ponteiro se a sala morreu; NÃO força a página da partida aqui —
+    # o jogador pode abrir o lobby em outra aba e voltar com o link/código.
+    accounts = load_accounts()
+    current_game = accounts.get(username, {}).get('current_game')
+    if current_game and current_game not in games:
+        clear_user_game(username, current_game)
+        current_game = None
+
+    return render_template(
+        'index.html',
+        active_game_id=current_game if current_game in games else None,
+    )
 
 
 @bp.route('/rules')
