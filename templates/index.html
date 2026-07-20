@@ -197,9 +197,23 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
   background: linear-gradient(135deg, #9b7bff, #6c4dff);
   color: #fff; box-shadow: 0 8px 24px rgba(155,123,255,.28);
 }
-.action-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px; }
-.action-buttons .btn { margin-bottom: 0; }
-@media (max-width: 520px) { .action-buttons { grid-template-columns: 1fr; } }
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+.action-buttons .btn {
+  margin-bottom: 0;
+  width: 100%;
+  padding: 12px 10px;
+  font-size: .92rem;
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .action-buttons { grid-template-columns: 1fr; }
+  .action-buttons .btn { white-space: normal; }
+}
 
 .nav-links {
   display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px;
@@ -408,11 +422,10 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
       </div>
 
       <div class="nav-links">
-        <a href="/tutorial">🎓 Tutorial</a>
         <a href="/rules">📜 Regras</a>
+        <a href="/lore">📖 Lore</a>
         <a href="/journal">📔 Journal</a>
         <a href="/help">❓ Ajuda</a>
-        <a href="/story">📖 História</a>
       </div>
     </section>
 
