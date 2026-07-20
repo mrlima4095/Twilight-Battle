@@ -942,6 +942,7 @@ class Game:
             pants_flat = pants.get('damage_flat_reduce', 40)
         
         # ORDEM 1: Absorver dano pelas cartas de DEFESA (índice 0 → 5)
+        apollo_healed = 0
         for def_card in defense_cards:
             if remaining_damage <= 0:
                 break
@@ -949,6 +950,57 @@ class Game:
             card = def_card['card']
             card_life = def_card['current_life']
             reflected_text = " [dano refletido]" if is_reflected else ""
+
+            # Apollo (defesa): dano < 1000 que o atinge → cura o JOGADOR pelo valor
+            # total do golpe, mas a CARTA Apollo sofre só a metade do dano.
+            if (
+                remaining_damage > 0
+                and remaining_damage < int(card.get('apollo_guard_threshold', 1000))
+                and (
+                    card.get('id') == 'apollo'
+                    or card.get('ability') == 'apollo_guard'
+                )
+            ):
+                hit = remaining_damage
+                heal = hit
+                card_damage = max(1, hit // 2) if hit > 0 else 0  # metade (mín. 1 se hit>0)
+
+                old_player_life = target.get('life', 0)
+                target['life'] = old_player_life + heal
+                apollo_healed = heal
+
+                old_card_life = card_life
+                new_card_life = card_life - card_damage
+                if new_card_life <= 0:
+                    self.graveyard.append(card)
+                    target['defense_bases'][def_card['index']] = None
+                    cards_destroyed.append(card['name'])
+                    damage_log.append(
+                        f"☀️ Apollo (defesa) converteu {heal} em cura para {target['name']} "
+                        f"({old_player_life}→{target['life']}❤️), mas caiu com {card_damage} de dano "
+                        f"(metade de {hit}){reflected_text}"
+                    )
+                else:
+                    card['life'] = new_card_life
+                    cards_damaged.append(
+                        f"{card['name']} (defesa) (-{card_damage}❤️, metade)"
+                    )
+                    damage_log.append(
+                        f"☀️ Apollo (defesa) converteu {heal} em cura para {target['name']} "
+                        f"({old_player_life}→{target['life']}❤️) e sofreu só {card_damage} "
+                        f"na carta ({old_card_life}→{new_card_life}❤️){reflected_text}"
+                    )
+
+                try:
+                    broadcast_system_message(
+                        self.game_id,
+                        f"☀️ Apollo de {target_username}: +{heal}❤️ no jogador, "
+                        f"carta toma {card_damage} (metade de {hit})!"
+                    )
+                except Exception:
+                    pass
+                remaining_damage = 0
+                break
             
             if remaining_damage >= card_life:
                 remaining_damage -= card_life
@@ -1076,6 +1128,7 @@ class Game:
             'player_killed': player_killed,
             'oracle_activated': oracle_activated,
             'immortality_activated': immortality_activated,
+            'apollo_healed': apollo_healed,
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
             'log': damage_log
