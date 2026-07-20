@@ -39,8 +39,7 @@ def help_page(): return render_template('game/docs/help.html')
 
 @bp.route('/story')
 @login_required
-def story(username):
-    return render_template('game/story.html')
+def story(username): return render_template('game/story.html')
 
 
 @bp.route('/journal')
