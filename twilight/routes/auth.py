@@ -156,13 +156,16 @@ def api_auth_status():
     
     accounts = load_accounts()
     user_data = accounts.get(username, {})
+    admin_level = int(user_data.get('admin_level', user_data.get('level', 0)) or 0)
     
     return jsonify({
         'logged_in': True,
         'user': {
             'username': username,
             'realname': user_data.get('realname', username),
-            'level': user_data.get('level', 1)
+            # level legado + admin_level (journal/admin usam admin_level)
+            'level': admin_level,
+            'admin_level': admin_level,
         }
     })
 

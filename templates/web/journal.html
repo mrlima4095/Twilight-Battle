@@ -164,6 +164,36 @@ body { padding: 0; }
   transition: border-color .2s, transform .15s;
 }
 .chronicle-entry:hover { border-color: var(--border); transform: translateX(2px); }
+.chronicle-entry.roadmap {
+  border-left-color: var(--violet);
+  background: linear-gradient(135deg, rgba(155,123,255,.12), var(--panel));
+  border-color: rgba(155,123,255,.25);
+}
+.badge-roadmap {
+  background: rgba(155,123,255,.2) !important;
+  color: #d4c8ff !important;
+  border: 1px solid rgba(155,123,255,.4) !important;
+}
+.roadmap-banner {
+  display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px; border-radius: 12px;
+  background: rgba(155,123,255,.1); border: 1px solid rgba(155,123,255,.3);
+  color: #d4c8ff; font-size: .88rem; font-weight: 600;
+}
+.roadmap-banner.visible { display: flex; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.filter-chip {
+  padding: 7px 12px; border-radius: 999px; cursor: pointer; font-size: .8rem; font-weight: 700;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.25); color: var(--muted);
+  font-family: inherit; transition: .15s;
+}
+.filter-chip:hover { border-color: var(--border); color: var(--gold); }
+.filter-chip.active {
+  background: var(--gold-dim); color: var(--gold); border-color: var(--border);
+}
+.filter-chip.active.roadmap-chip {
+  background: rgba(155,123,255,.2); color: #d4c8ff; border-color: rgba(155,123,255,.4);
+}
 .entry-header {
   display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
   margin-bottom: 10px;
@@ -307,14 +337,32 @@ body { padding: 0; }
     </div>
   </div>
 
+  <div class="roadmap-banner" id="roadmapBanner">
+    <i class="fas fa-map-signs"></i>
+    <span>Você é staff: entradas <strong>ROADMAP</strong> aparecem só para admins (invisíveis a jogadores).</span>
+  </div>
+  <div class="filter-chips" id="filterChips" style="display:none">
+    <button type="button" class="filter-chip active" data-filter="all">Todas</button>
+    <button type="button" class="filter-chip" data-filter="public">Públicas</button>
+    <button type="button" class="filter-chip roadmap-chip" data-filter="roadmap">🗺️ ROADMAP</button>
+  </div>
+
   <div id="chronicleContainer" class="chronicle"></div>
 </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
     let currentUser = null;
-    let isAdmin = false;
+    let isAdmin = false;       // pode criar/editar (level >= 4)
+    let canSeeRoadmap = false; // staff vê ROADMAP (admin_level >= 1)
     let entries = [];
+    let entryFilter = 'all';   // all | public | roadmap
+
+    const isRoadmapEntry = (e) => {
+        const t = (e?.type || '').toLowerCase();
+        return t === 'roadmap' || t === 'plan' || t === 'internal'
+            || ['admin', 'private', 'hidden', 'staff'].includes((e?.visibility || '').toLowerCase());
+    };
 
     const formatDate = (iso) => {
         let d = new Date(iso);
@@ -331,12 +379,26 @@ body { padding: 0; }
         });
     };
 
+    function filteredEntries() {
+        if (!canSeeRoadmap || entryFilter === 'all') return entries;
+        if (entryFilter === 'roadmap') return entries.filter(isRoadmapEntry);
+        return entries.filter(e => !isRoadmapEntry(e));
+    }
+
     async function loadEntries() {
         try {
             const res = await fetch('/api/journal/entries');
             const data = await res.json();
             if (data.success) {
                 entries = data.entries || [];
+                if (typeof data.can_see_roadmap === 'boolean') {
+                    canSeeRoadmap = data.can_see_roadmap;
+                }
+                if (canSeeRoadmap) {
+                    document.getElementById('roadmapBanner')?.classList.add('visible');
+                    const chips = document.getElementById('filterChips');
+                    if (chips) chips.style.display = 'flex';
+                }
                 renderChronicle();
                 updateStats();
             } else {
@@ -357,7 +419,9 @@ body { padding: 0; }
                 return;
             }
             currentUser = data.user;
-            isAdmin = currentUser?.level >= 4;
+            const lvl = currentUser?.admin_level ?? currentUser?.level ?? 0;
+            isAdmin = lvl >= 4;
+            canSeeRoadmap = lvl >= 1;
             
             const displayName = currentUser.realname || currentUser.username;
             document.getElementById('userName').innerText = displayName;
@@ -417,11 +481,13 @@ body { padding: 0; }
     }
 
     function updateStats() {
-        let totalVersions = entries.length;
+        // Stats: releases públicas (roadmap não conta como versão lançada)
+        const publicEntries = entries.filter(e => !isRoadmapEntry(e));
+        let totalVersions = publicEntries.length;
         let totalFeatures = 0;
         let totalImprovements = 0;
         
-        entries.forEach(e => {
+        publicEntries.forEach(e => {
             totalFeatures += (e.features?.length || 0);
             totalImprovements += (e.improvements?.length || 0) + (e.bugfixes?.length || 0);
         });
@@ -429,7 +495,7 @@ body { padding: 0; }
         document.getElementById('statVersions').innerText = totalVersions;
         document.getElementById('statFeatures').innerText = totalFeatures;
         document.getElementById('statImprovements').innerText = totalImprovements;
-        document.getElementById('statLatest').innerText = entries.length ? entries[0].version : '-';
+        document.getElementById('statLatest').innerText = publicEntries.length ? publicEntries[0].version : '-';
     }
 
     function renderChronicle() {
@@ -445,7 +511,17 @@ body { padding: 0; }
             return;
         }
         
-        container.innerHTML = entries.map(entry => {
+        const list = filteredEntries();
+        if (!list.length) {
+            container.innerHTML = `
+                <div class="empty-chronicle">
+                    <i class="fas fa-filter"></i>
+                    <p style="margin-top: 20px;">Nenhuma entrada neste filtro.</p>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = list.map(entry => {
             const featuresHtml = entry.features?.length ? `
                 <div class="features-tome">
                     ${entry.features.map(f => `
@@ -473,8 +549,10 @@ body { padding: 0; }
             ` : '';
             
             let typeBadge = '';
-            if (entry.type === 'major') typeBadge = '<span class="badge badge-major">⚡ Major Release</span>';
-            else if (entry.type === 'minor') typeBadge = '<span class="badge">📦 Minor Update</span>';
+            const et = (entry.type || '').toLowerCase();
+            if (et === 'roadmap' || isRoadmapEntry(entry)) typeBadge = '<span class="badge badge-roadmap">🗺️ ROADMAP · só staff</span>';
+            else if (et === 'major') typeBadge = '<span class="badge badge-major">⚡ Major Release</span>';
+            else if (et === 'minor') typeBadge = '<span class="badge">📦 Minor Update</span>';
             else typeBadge = '<span class="badge">🔧 Patch</span>';
             
             const tagsHtml = entry.tags?.length ? `
@@ -490,9 +568,11 @@ body { padding: 0; }
                     <button class="small-btn danger" data-delete="${entry.id}"><i class="fas fa-trash-alt"></i> Excluir</button>
                 </div>
             ` : '';
+
+            const roadmapClass = isRoadmapEntry(entry) ? ' roadmap' : '';
             
             return `
-                <div class="chronicle-entry" data-entry-id="${entry.id}">
+                <div class="chronicle-entry${roadmapClass}" data-entry-id="${entry.id}">
                     <div class="entry-header">
                         <div class="version-tag"><i class="fas fa-tag"></i> ${escapeHtml(entry.version)}</div>
                         <div class="entry-date"><i class="far fa-calendar-alt"></i> ${formatDate(entry.date)}</div>
@@ -705,9 +785,10 @@ body { padding: 0; }
                     <div class="tw-field">
                         <label>⚡ TIPO</label>
                         <select id="modalType">
-                            <option value="minor">Minor Update</option>
-                            <option value="major">Major Release</option>
-                            <option value="patch">Patch</option>
+                            <option value="minor">Minor Update (público)</option>
+                            <option value="major">Major Release (público)</option>
+                            <option value="patch">Patch (público)</option>
+                            <option value="roadmap">🗺️ ROADMAP (só staff)</option>
                         </select>
                     </div>
                     <div class="tw-field">
@@ -804,9 +885,10 @@ body { padding: 0; }
                     <div class="tw-field">
                         <label>⚡ TIPO</label>
                         <select id="modalType">
-                            <option value="minor" ${entry.type === 'minor' ? 'selected' : ''}>Minor Update</option>
-                            <option value="major" ${entry.type === 'major' ? 'selected' : ''}>Major Release</option>
-                            <option value="patch" ${entry.type === 'patch' ? 'selected' : ''}>Patch</option>
+                            <option value="minor" ${entry.type === 'minor' ? 'selected' : ''}>Minor Update (público)</option>
+                            <option value="major" ${entry.type === 'major' ? 'selected' : ''}>Major Release (público)</option>
+                            <option value="patch" ${entry.type === 'patch' ? 'selected' : ''}>Patch (público)</option>
+                            <option value="roadmap" ${entry.type === 'roadmap' ? 'selected' : ''}>🗺️ ROADMAP (só staff)</option>
                         </select>
                     </div>
                     <div class="tw-field">
@@ -899,6 +981,15 @@ body { padding: 0; }
     });
     document.getElementById('newChronicleBtn')?.addEventListener('click', openNewModal);
     document.getElementById('refreshBtn')?.addEventListener('click', loadEntries);
+
+    document.getElementById('filterChips')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-chip');
+        if (!btn) return;
+        entryFilter = btn.getAttribute('data-filter') || 'all';
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c === btn));
+        renderChronicle();
+        updateStats();
+    });
     
     checkAuth();
 </script>
