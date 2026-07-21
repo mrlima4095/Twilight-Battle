@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajuda — Modo História · Twilight Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg-0:#07060f; --panel:rgba(18,14,36,.78); --border:rgba(255,215,120,.18);
+  --gold:#f0c14b; --cyan:#5ee7ff; --violet:#9b7bff; --green:#3ddc97;
+  --text:#f4f0ff; --muted:#a39bb8; --font-ui:"Outfit",system-ui,sans-serif; --font-display:"Cinzel",serif;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:var(--font-ui); color:var(--text); min-height:100vh; padding:28px 16px 60px;
+  background:
+    radial-gradient(800px 400px at 0% 0%, rgba(94,231,255,.12), transparent 50%),
+    radial-gradient(700px 400px at 100% 10%, rgba(155,123,255,.15), transparent 50%),
+    linear-gradient(160deg,#07060f,#0e0b1a 50%,#120b22);
+}
+.wrap { max-width:880px; margin:0 auto; }
+.header {
+  text-align:center; padding:26px 18px; border-radius:20px; margin-bottom:18px;
+  background:var(--panel); border:1px solid var(--border);
+}
+.badge {
+  display:inline-block; margin-bottom:10px; padding:5px 12px; border-radius:999px;
+  font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:#b8f0ff; background:rgba(94,231,255,.1); border:1px solid rgba(94,231,255,.3);
+}
+.header h1 { font-family:var(--font-display); color:var(--gold); font-size:clamp(1.5rem,3.5vw,2.1rem); margin-bottom:8px; }
+.header p { color:var(--muted); }
+.nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:18px; }
+.nav a {
+  padding:10px 16px; border-radius:999px; text-decoration:none; font-weight:700; font-size:.9rem;
+  border:1px solid var(--border); background:rgba(240,193,75,.12); color:var(--gold);
+}
+.nav a.ok { background:rgba(61,220,151,.12); color:#b8f5d8; border-color:rgba(61,220,151,.3); }
+.nav a.alt { background:rgba(155,123,255,.12); color:#d4c8ff; border-color:rgba(155,123,255,.3); }
+.section {
+  background:var(--panel); border-radius:16px; padding:20px 22px; margin-bottom:12px;
+  border:1px solid rgba(255,255,255,.06); border-left:3px solid rgba(94,231,255,.45);
+}
+.section h2 { font-family:var(--font-display); color:var(--cyan); font-size:1.1rem; margin-bottom:10px; }
+.section h3 { color:var(--gold); margin:14px 0 6px; font-size:1rem; }
+.section p, .section li { color:#d8d0eb; line-height:1.65; margin-bottom:8px; }
+.section ul, .section ol { margin-left:18px; }
+.section strong { color:#fff; }
+.kbd {
+  display:inline-block; padding:2px 8px; border-radius:6px; background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12); font-size:.85rem;
+}
+.faq details {
+  background:rgba(0,0,0,.25); border-radius:12px; padding:12px 14px; margin:8px 0;
+  border:1px solid rgba(255,255,255,.06);
+}
+.faq summary { cursor:pointer; font-weight:700; color:#fff; }
+.faq details p { margin-top:8px; color:var(--muted); }
+.tip {
+  margin-top:10px; padding:12px; border-radius:12px;
+  background:rgba(61,220,151,.1); border:1px solid rgba(61,220,151,.25); color:#b8f5d8;
+}
+.flow {
+  display:grid; gap:8px; margin:12px 0;
+}
+.flow div {
+  padding:12px 14px; border-radius:12px; background:rgba(0,0,0,.28);
+  border:1px solid rgba(255,255,255,.06); color:#d8d0eb; font-size:.92rem;
+}
+.flow strong { color:var(--gold); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="badge">Modo História · RPG</div>
+    <h1>❓ Ajuda da jornada</h1>
+    <p>Como usar a interface e resolver dúvidas do single-player — não do multiplayer.</p>
+  </div>
+
+  <div class="nav">
+    <a class="ok" href="/story">🎮 Voltar ao História</a>
+    <a class="alt" href="/story/rules">📜 Regras do História</a>
+    <a href="/lore">📖 Lore</a>
+    <a href="/help">⚔️ Ajuda multiplayer</a>
+    <a href="/">🏠 Início</a>
+  </div>
+
+  <div class="section">
+    <h2>🚀 Começar</h2>
+    <ol>
+      <li>Entre em <a href="/story" style="color:var(--cyan)">/story</a> (precisa estar logado).</li>
+      <li><strong>Novo personagem</strong> — escolha raça e nome.</li>
+      <li>Ou <strong>Continuar</strong> / <strong>Carregar</strong> se já tiver save.</li>
+    </ol>
+    <div class="tip">Quer só a história do mundo? Abra a <a href="/lore" style="color:#fff">Lore</a>. Quer jogar cartas multiplayer? Use o <a href="/" style="color:#fff">Início</a> e as salas.</div>
+  </div>
+
+  <div class="section">
+    <h2>🖱️ Interface</h2>
+    <h3>HUD superior</h3>
+    <ul>
+      <li><span class="kbd">❤️ Vida</span> <span class="kbd">🔮 Mana</span> <span class="kbd">⚔️ Atk</span> <span class="kbd">🛡️ Def</span> <span class="kbd">💰 Ouro</span></li>
+      <li><strong>👤</strong> perfil · <strong>💾</strong> salvar · <strong>📂</strong> carregar · <strong>🏠</strong> menu do História</li>
+    </ul>
+    <h3>Três colunas</h3>
+    <ul>
+      <li><strong>Esquerda</strong> — inventário (arraste para o lixo 🗑️ para descartar)</li>
+      <li><strong>Centro</strong> — local atual e botões de ação (mundo)</li>
+      <li><strong>Direita</strong> — equipamento, comidas, bônus de atk/def</li>
+    </ul>
+    <h3>Log inferior</h3>
+    <p>Mensagens da jornada (missões, compras, combate, craft).</p>
+  </div>
+
+  <div class="section">
+    <h2>📍 Fluxo sugerido (primeira hora)</h2>
+    <div class="flow">
+      <div><strong>1.</strong> Saia de casa → Praça principal</div>
+      <div><strong>2.</strong> Explore mercado / taberna · fale com NPCs</div>
+      <div><strong>3.</strong> Visite o castelo · quadro de missões / Capitão</div>
+      <div><strong>4.</strong> Campos (oeste) · moinho, água, farm</div>
+      <div><strong>5.</strong> Salve na nuvem antes de sair</div>
+    </div>
+  </div>
+
+  <div class="section faq">
+    <h2>💬 FAQ do História</h2>
+
+    <details open>
+      <summary>Não acho o botão Continuar</summary>
+      <p>Ele só aparece se o jogo detectar progresso recente no navegador. Use <strong>Carregar</strong> (local ou nuvem) se o Continuar não mostrar.</p>
+    </details>
+    <details>
+      <summary>Onde guardo o jogo?</summary>
+      <p>Botão <strong>Salvar</strong>: escolha salvar <strong>local</strong> (download/arquivo) ou <strong>nuvem</strong> (conta). Carregar funciona do mesmo jeito.</p>
+    </details>
+    <details>
+      <summary>Morri e não carrega o save</summary>
+      <p>É intencional: personagem morto fica bloqueado. Crie um <strong>Novo personagem</strong>.</p>
+    </details>
+    <details>
+      <summary>Como equipo um item?</summary>
+      <p>Com o item no inventário, clique no <strong>slot</strong> de equipamento (capacete, peitoral, etc.) e siga o fluxo de equipar. Bônus aparecem no resumo da coluna direita e no perfil.</p>
+    </details>
+    <details>
+      <summary>NPC não vende / fala estranho</summary>
+      <p>Alguns diálogos mudam com o horário (ex.: fazendeiro dormindo à noite). Volte de dia ou escolha outro tópico.</p>
+    </details>
+    <details>
+      <summary>Como faço missão?</summary>
+      <p>Pegue no quadro / NPC (ex.: Capitão Aldric). Cumpra o estágio no local certo. Use “Verificar missões” se a ação existir no local. Progresso aparece no log e na UI de missão.</p>
+    </details>
+    <details>
+      <summary>Craft / moinho não funciona</summary>
+      <p>Você precisa dos materiais no inventário e estar no local certo (moinho, forja…). Coloque itens nos slots e inicie o processo.</p>
+    </details>
+    <details>
+      <summary>Isso é o mesmo que a batalha multiplayer?</summary>
+      <p>Não. Multiplayer = cartas em salas. História = RPG single-player no mesmo universo. Regras de cartas: <a href="/rules" style="color:var(--cyan)">/rules</a>.</p>
+    </details>
+    <details>
+      <summary>Mobile / tela pequena</summary>
+      <p>As três colunas empilham. Role a página. Arraste de inventário funciona melhor no desktop.</p>
+    </details>
+  </div>
+
+  <div class="section">
+    <h2>📎 Links úteis</h2>
+    <ul>
+      <li><a href="/story" style="color:var(--green)">Abrir Modo História</a></li>
+      <li><a href="/story/rules" style="color:var(--gold)">Regras do História</a></li>
+      <li><a href="/lore" style="color:var(--violet)">Lore do mundo</a></li>
+      <li><a href="/help" style="color:var(--cyan)">Ajuda multiplayer (cartas)</a></li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
