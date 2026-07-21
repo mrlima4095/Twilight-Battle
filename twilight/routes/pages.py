@@ -56,6 +56,18 @@ def tutorial_page(username):
 def story(username): return render_template('game/story.html')
 
 
+@bp.route('/story/rules')
+def story_rules():
+    """Regras do Modo História (RPG) — separado do multiplayer de cartas."""
+    return render_template('game/docs/story_rules.html')
+
+
+@bp.route('/story/help')
+def story_help():
+    """Ajuda / FAQ do Modo História — separado do multiplayer de cartas."""
+    return render_template('game/docs/story_help.html')
+
+
 @bp.route('/journal')
 def journal():
     username = get_current_user()
