@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Regras — Modo História · Twilight Battle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg-0:#07060f; --panel:rgba(18,14,36,.78); --border:rgba(255,215,120,.18);
+  --gold:#f0c14b; --gold-2:#ffb347; --cyan:#5ee7ff; --violet:#9b7bff; --green:#3ddc97;
+  --text:#f4f0ff; --muted:#a39bb8; --font-ui:"Outfit",system-ui,sans-serif; --font-display:"Cinzel",serif;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:var(--font-ui); color:var(--text); min-height:100vh; padding:28px 16px 60px;
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(155,123,255,.22), transparent 55%),
+    radial-gradient(700px 400px at 100% 0%, rgba(240,193,75,.1), transparent 50%),
+    linear-gradient(160deg,#07060f,#0e0b1a 45%,#120b22);
+}
+.wrap { max-width:900px; margin:0 auto; }
+.header {
+  text-align:center; padding:28px 20px; border-radius:22px; margin-bottom:18px;
+  background:var(--panel); border:1px solid var(--border); box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.badge {
+  display:inline-block; margin-bottom:10px; padding:5px 12px; border-radius:999px;
+  font-size:.72rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+  color:#d4c8ff; background:rgba(155,123,255,.15); border:1px solid rgba(155,123,255,.35);
+}
+.header h1 {
+  font-family:var(--font-display); font-size:clamp(1.6rem,4vw,2.2rem);
+  background:linear-gradient(120deg,#fff6d0,var(--gold),var(--gold-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:8px;
+}
+.header p { color:var(--muted); line-height:1.5; max-width:36em; margin:0 auto; }
+.nav { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:18px; }
+.nav a {
+  padding:10px 16px; border-radius:999px; text-decoration:none; font-weight:700; font-size:.9rem;
+  border:1px solid var(--border); background:rgba(240,193,75,.12); color:var(--gold);
+}
+.nav a.ok { background:rgba(61,220,151,.12); color:#b8f5d8; border-color:rgba(61,220,151,.3); }
+.nav a.alt { background:rgba(155,123,255,.12); color:#d4c8ff; border-color:rgba(155,123,255,.3); }
+.section {
+  background:var(--panel); border-radius:18px; padding:22px; margin-bottom:14px;
+  border:1px solid rgba(255,255,255,.06); border-left:3px solid rgba(155,123,255,.5);
+}
+.section h2 { font-family:var(--font-display); color:var(--gold); font-size:1.15rem; margin-bottom:12px; }
+.section h3 { color:var(--cyan); font-size:1rem; margin:16px 0 8px; }
+.section p, .section li { color:#d8d0eb; line-height:1.7; margin-bottom:8px; }
+.section ul, .section ol { margin:8px 0 8px 20px; }
+.section strong { color:#fff; }
+.tip, .info, .warn {
+  margin:12px 0; padding:12px 14px; border-radius:12px; font-size:.95rem; line-height:1.5;
+}
+.tip { background:rgba(61,220,151,.1); border:1px solid rgba(61,220,151,.28); color:#b8f5d8; }
+.info { background:rgba(94,231,255,.08); border:1px solid rgba(94,231,255,.25); color:#b8f0ff; }
+.warn { background:rgba(255,77,109,.1); border:1px solid rgba(255,77,109,.3); color:#ffb3c1; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; margin:12px 0; }
+.card {
+  padding:14px; border-radius:14px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.06);
+}
+.card h4 { color:var(--gold); margin-bottom:6px; }
+.card p { margin:0; font-size:.88rem; color:var(--muted); }
+table { width:100%; border-collapse:collapse; margin:10px 0; font-size:.9rem; }
+th, td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(255,255,255,.06); vertical-align:top; }
+th { color:var(--gold); background:rgba(240,193,75,.08); font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; }
+td { color:#d8d0eb; }
+.footer { text-align:center; margin-top:22px; color:var(--muted); font-size:.85rem; opacity:.85; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="badge">Modo História · RPG</div>
+    <h1>📜 Regras da jornada</h1>
+    <p>Isto é o <strong>Modo História</strong> (aventura single-player) — não as regras do multiplayer de cartas.</p>
+  </div>
+
+  <div class="nav">
+    <a class="ok" href="/story">🎮 Voltar ao História</a>
+    <a class="alt" href="/story/help">❓ Ajuda do História</a>
+    <a href="/lore">📖 Lore</a>
+    <a href="/rules">⚔️ Regras multiplayer</a>
+    <a href="/">🏠 Início</a>
+  </div>
+
+  <div class="section">
+    <h2>🎯 O que é o Modo História</h2>
+    <p>Você cria um personagem, explora o reino da Aurora (e além), conversa com NPCs, completa missões, crafta, dorme, compra e vende — e escreve sua própria lenda.</p>
+    <div class="tip"><strong>Importante:</strong> morte é permanente neste save. Se a vida chegar a 0, o personagem fica bloqueado e não pode ser carregado de novo.</div>
+  </div>
+
+  <div class="section">
+    <h2>🧝 Criação de personagem</h2>
+    <p>No início da jornada você escolhe:</p>
+    <ul>
+      <li><strong>Raça</strong> — define vida, ataque base e habilidade</li>
+      <li><strong>Nome, idade, gênero</strong></li>
+      <li><strong>Biografia</strong> — só flavor (pode editar depois no perfil)</li>
+    </ul>
+    <div class="grid">
+      <div class="card"><h4>🧝 Elfo</h4><p>Vida 512 · Atk 50 · Esquiva</p></div>
+      <div class="card"><h4>🔮 Mago</h4><p>Vida 600 · Atk 75 · Magia</p></div>
+      <div class="card"><h4>🏹 Centauro</h4><p>Vida 600 · Atk 120 · Carga</p></div>
+      <div class="card"><h4>🌸 Ninfa</h4><p>Vida 512 · Atk 30 · Cura</p></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>🗺️ Mundo e navegação</h2>
+    <p>A tela central mostra o <strong>local atual</strong> (casa, praça, taberna, castelo, campos, vilas…).</p>
+    <ul>
+      <li>Botões de ação levam a outros lugares, NPCs, lojas, craft e missões</li>
+      <li>Alguns locais permitem <strong>estações de trabalho</strong> (forja, moinho, baú…)</li>
+      <li>O <strong>mapa</strong> (quando disponível nas ações) ajuda a se orientar no reino</li>
+    </ul>
+    <div class="info">Comece em casa / praça da Aurora e expanda: mercado, taberna, castelo, campos agrícolas, vilas do norte e sul.</div>
+  </div>
+
+  <div class="section">
+    <h2>🎒 Inventário e equipamento</h2>
+    <table>
+      <tr><th>Área</th><th>Função</th></tr>
+      <tr><td>Inventário (esquerda)</td><td>Itens, materiais, ferramentas. Arraste para o lixo para descartar.</td></tr>
+      <tr><td>Equipamento (direita)</td><td>Capacete, peitoral, calças, botas, mãos principal/secundária.</td></tr>
+      <tr><td>Comidas</td><td>Consumíveis para recuperar vida/recursos (conforme o item).</td></tr>
+    </table>
+    <p>O resumo no painel direito mostra <strong>atk/def base</strong> e <strong>bônus</strong> dos equipamentos equipados.</p>
+  </div>
+
+  <div class="section">
+    <h2>💬 NPCs, loja e conversa</h2>
+    <ul>
+      <li><strong>Conversar</strong> — tópicos e diálogos (lore, dicas, missões)</li>
+      <li><strong>Comprar / vender</strong> — ouro 💰 na HUD</li>
+      <li>Horário e humor do NPC podem mudar as falas (ex.: fazendeiro à noite)</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>📜 Missões</h2>
+    <p>Missões têm <strong>estágios</strong> com progresso. Use o quadro de missões / ações do local (ex.: Capitão da Guarda, quadro no salão) e o botão de verificar missão quando estiver ativo.</p>
+    <p>Complete objetivos no mapa certo (ex.: patrulhar estrada, entregar item, falar com alguém).</p>
+  </div>
+
+  <div class="section">
+    <h2>🛠️ Craft, descanso e progressão</h2>
+    <ul>
+      <li><strong>Moinho / forja / bancadas</strong> — transformam materiais em itens</li>
+      <li><strong>Dormir</strong> — passa o tempo, restaura (modal com timer; pode acordar)</li>
+      <li><strong>EXP e nível</strong> — sobe no perfil; barra de experiência</li>
+      <li><strong>Biblioteca</strong> — pegar/devolver livros, ler e assinar</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>💾 Saves</h2>
+    <ul>
+      <li><strong>Salvar</strong> — local (arquivo) e/ou <strong>nuvem</strong> (conta logada)</li>
+      <li><strong>Carregar</strong> — do arquivo ou da nuvem</li>
+      <li><strong>Continuar</strong> na tela inicial se houver progresso recente</li>
+    </ul>
+    <div class="warn">Save de personagem <strong>morto</strong> não carrega. Crie um novo herói para recomeçar.</div>
+  </div>
+
+  <div class="section">
+    <h2>≠ Multiplayer de cartas</h2>
+    <p>O modo multiplayer (salas, bases de ataque/defesa, dia/noite de cartas, armadilhas) tem regras próprias em <a href="/rules" style="color:var(--cyan)">/rules</a>.</p>
+    <p>O História é um RPG de exploração no mesmo universo (Aurora / Crepúsculo).</p>
+  </div>
+
+  <div class="footer">Twilight Battle · Regras do Modo História</div>
+</div>
+</body>
+</html>
