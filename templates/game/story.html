@@ -8590,21 +8590,30 @@ textarea { min-height: 96px; resize: vertical; }
             `;
             
             const img = document.createElement('img');
-            img.src = "https://git.opentty.fun/fetuber4095/pagina/raw/branch/gh-pages/map.jpg/1776028540097.png";
+            // Mapa local do projeto (static/images/story/Map.png)
+            img.src = "/static/images/story/Map.png";
             img.alt = "Mapa da Aurora";
+            img.loading = "eager";
+            img.decoding = "async";
             img.style.cssText = `
                 display: block;
                 margin: 0 auto;
                 transition: transform 0.2s ease;
                 transform: scale(${currentZoom});
                 transform-origin: top left;
-                max-width: none;
+                max-width: 100%;
                 width: auto;
                 height: auto;
             `;
             
             img.onerror = function() {
-                img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23ffd700' font-size='16' dy='.3em'%3E🗺️ Mapa indisponível%3C/text%3E%3C/svg%3E";
+                // fallback: tentar Map.png na raiz de static (legado)
+                if (!img.dataset.triedRoot) {
+                    img.dataset.triedRoot = "1";
+                    img.src = "/static/Map.png";
+                    return;
+                }
+                img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3Crect width='400' height='300' fill='%231a1a2e'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='%23ffd700' font-size='16' dy='.3em'%3E%F0%9F%97%BA%EF%B8%8F Mapa indispon%C3%ADvel%3C/text%3E%3C/svg%3E";
                 img.style.maxWidth = '100%';
                 img.style.width = '100%';
             };
