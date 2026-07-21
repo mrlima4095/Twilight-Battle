@@ -395,8 +395,71 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .shop-item-info, .sell-item-info { flex: 1; min-width: 0; }
 .shop-item-name, .sell-item-name { font-weight: 700; color: var(--text); }
+.shop-item-desc { font-size: .78rem; color: var(--muted); margin: 2px 0 4px; line-height: 1.35; }
 .shop-item-price { color: var(--gold); font-weight: 700; font-size: .9rem; }
 .talk-option { cursor: pointer; color: #d8d0eb; line-height: 1.4; }
+
+/* Conversar com NPC — tópicos (class usada no JS: topic-btn / topics-grid) */
+.topics-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.topic-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: linear-gradient(145deg, rgba(40,34,64,.95), rgba(18,14,32,.98));
+  color: var(--text);
+  font-family: inherit;
+  font-size: .92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .15s;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+.topic-btn:hover {
+  border-color: rgba(155,123,255,.45);
+  background: linear-gradient(145deg, rgba(70,55,110,.95), rgba(30,24,52,.98));
+  color: #fff;
+  transform: translateY(-1px);
+}
+.topic-message {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(20,16,36,.95), rgba(0,0,0,.35));
+  border: 1px solid rgba(255,255,255,.08);
+  border-left: 3px solid var(--violet);
+  color: #e2dcf5;
+  line-height: 1.6;
+  font-size: .95rem;
+  animation: fade-up .25s ease;
+}
+.submodal-back-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.05);
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: .9rem;
+  cursor: pointer;
+  transition: .15s;
+}
+.submodal-back-btn:hover {
+  color: var(--text);
+  border-color: var(--border);
+  background: rgba(240,193,75,.08);
+}
 
 .sleep-modal {
   position: fixed; inset: 0; z-index: 2000;
@@ -835,19 +898,112 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .empty-message { color: var(--muted); text-align: center; padding: 16px; font-size: .9rem; }
 .map-toolbar { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.npc-action-btn, .npc-actions button {
-  display: flex; align-items: center; gap: 10px;
-  width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08);
-  background: rgba(0,0,0,.3); color: var(--text); cursor: pointer; text-align: left;
-  font-family: inherit; transition: .15s;
+.npc-action-btn, .npc-actions button.npc-action-btn {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255,255,255,.1) !important;
+  background: linear-gradient(145deg, rgba(40,34,64,.95), rgba(18,14,32,.98)) !important;
+  color: var(--text) !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  font-family: inherit !important;
+  transition: .15s !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.22);
 }
-.npc-action-btn:hover, .npc-actions button:hover {
-  border-color: var(--border); background: rgba(240,193,75,.08);
+.npc-action-btn:hover, .npc-actions button.npc-action-btn:hover {
+  border-color: rgba(240,193,75,.4) !important;
+  background: linear-gradient(145deg, rgba(60,50,90,.98), rgba(28,22,48,.98)) !important;
+  transform: translateY(-1px);
 }
-.npc-action-icon { font-size: 1.2rem; }
-.npc-action-text { font-weight: 700; }
-.npc-action-desc { font-size: .78rem; color: var(--muted); }
+.npc-action-icon { font-size: 1.35rem; flex-shrink: 0; line-height: 1; }
+.npc-action-text { font-weight: 700; flex: 1; min-width: 0; }
+.npc-action-text > div:first-child { font-size: .95rem; color: #fff; }
+.npc-action-desc { font-size: .78rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 .npc-info { flex: 1; }
+
+/* Baú da casa — compacto no PC, sem scroll desnecessário */
+#game-content .chest-container {
+  padding: 10px 12px !important;
+  margin: 8px 0 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(240,193,75,.35) !important;
+  background: rgba(0,0,0,.4) !important;
+  max-width: 100%;
+}
+#game-content .chest-container h3 {
+  font-size: 1rem !important;
+  margin-bottom: 4px !important;
+  color: var(--gold) !important;
+  font-family: var(--font-display);
+  text-align: center;
+}
+#game-content .chest-container > p {
+  font-size: .75rem !important;
+  margin-bottom: 8px !important;
+  color: var(--muted) !important;
+  text-align: center;
+}
+#chest-grid,
+#game-content #chest-grid.inventory-grid,
+#game-content .chest-grid {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: none !important;
+  overflow: visible !important;
+  max-height: none !important;
+}
+#chest-grid .inventory-slot,
+#game-content #chest-grid .inventory-slot {
+  aspect-ratio: 1 !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  max-height: 52px !important;
+  height: auto !important;
+  padding: 3px !important;
+  border-radius: 8px !important;
+  font-size: 9px !important;
+  line-height: 1.15 !important;
+}
+#chest-grid .inventory-slot .item-name,
+#game-content #chest-grid .item-name {
+  font-size: 9px !important;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+#chest-grid .inventory-slot .item-quantity {
+  font-size: 9px !important;
+}
+#chest-grid .chest-empty {
+  color: #444;
+  font-size: 12px;
+  line-height: 1;
+  opacity: .7;
+}
+.chest-toolbar {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.chest-toolbar .action-btn {
+  flex: 1 1 120px;
+  max-width: 200px;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  font-size: 12px !important;
+}
 .low-mana { color: var(--rose) !important; animation: pulse 1s ease infinite; }
 @keyframes pulse { 50% { opacity: .6; } }
 
@@ -2858,16 +3014,15 @@ textarea { min-height: 96px; resize: vertical; }
             
             if (gameState.location === 'home' && gameState.chestOpen) {
                 html += `
-                    <div style="margin-bottom: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button class="action-btn" onclick="toggleChest()" style="background: #ffa500; flex: 1;">🔙 Fechar Baú</button>
-                        <button class="action-btn success" onclick="organizeChest()" style="flex: 1;">📦 Organizar Baú</button>
+                    <div class="chest-toolbar">
+                        <button class="action-btn" onclick="toggleChest()" style="background: linear-gradient(135deg,#ffb347,#e08900); color:#1a1020; border:none;">🔙 Fechar Baú</button>
+                        <button class="action-btn success" onclick="organizeChest()">📦 Organizar</button>
                     </div>
                     
-                    <div class="chest-container" style="background: rgba(0,0,0,0.5); border: 2px solid #ffd700; border-radius: 15px; padding: 20px; margin: 20px 0;">
-                        <h3 style="color: #ffd700; text-align: center; margin-bottom: 20px; font-size: 24px;">📦 Baú da Casa</h3>
-                        <p style="color: #888; text-align: center; margin-bottom: 20px;">Arraste itens entre o inventário e o baú</p>
-                        
-                        <div class="inventory-grid" id="chest-grid" style="grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <div class="chest-container">
+                        <h3>📦 Baú da Casa</h3>
+                        <p>Arraste itens entre inventário e baú</p>
+                        <div class="inventory-grid chest-grid" id="chest-grid">
                 `;
                 
                 for (let i = 0; i < 18; i++) {
@@ -2891,7 +3046,7 @@ textarea { min-height: 96px; resize: vertical; }
                             ${item.quantity > 1 ? `<span class="item-quantity">${item.quantity}</span>` : ''}
                         `;
                     } else {
-                        html += `<span style="color: #444; font-size: 20px;">⬜</span>`;
+                        html += `<span class="chest-empty">·</span>`;
                     }
                     
                     html += `</div>`;
@@ -6809,6 +6964,11 @@ textarea { min-height: 96px; resize: vertical; }
                 }
             }, 60000);
             
+        }
+
+        // Alias usado pelos submodais (voltar da loja / conversa / venda)
+        async function openNPCDialog(npcId) {
+            return talkToNPC(npcId);
         }
 
         async function talkToNPC(npcId) {
