@@ -66,8 +66,6 @@ def init_db() -> None:
                 """
             )
             conn.commit()
-            _migrate_from_json_if_needed(conn)
-            conn.commit()
         finally:
             conn.close()
         _initialized = True
