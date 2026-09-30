@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Twilight Battle — Modo História</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -233,6 +231,37 @@ body::before {
   font-size: 1.3rem; margin-bottom: 18px; text-align: center;
   letter-spacing: .03em;
 }
+.system-modal-content { width: min(520px, 100%); }
+.system-modal-close {
+  position: absolute; top: 12px; right: 14px; border: 0; background: transparent;
+  color: var(--muted); font-size: 1.25rem; cursor: pointer;
+}
+.system-modal-close:hover { color: var(--text); }
+.system-modal-icon { font-size: 2.4rem; text-align: center; margin: -2px 0 8px; }
+.system-modal-body { color: var(--text); line-height: 1.55; }
+.system-modal-body > p { margin: 0; text-align: center; }
+.system-modal-validation { color: #ff8fa3; font-size: .85rem; margin: 12px 0 0; text-align: center; }
+.system-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.system-modal-actions .action-btn { min-width: 110px; }
+.system-modal-loading { text-align: center; color: var(--gold); }
+.system-modal-loading::after {
+  content: ""; display: block; width: 28px; height: 28px; margin: 14px auto 0;
+  border: 3px solid rgba(240,193,75,.25); border-top-color: var(--gold); border-radius: 50%; animation: spin .7s linear infinite;
+}
+.toast-container {
+  position: fixed; top: 18px; right: 18px; z-index: 1100; display: grid; gap: 10px;
+  width: min(360px, calc(100vw - 36px)); pointer-events: none;
+}
+.story-toast {
+  position: relative; overflow: hidden; padding: 14px 16px; border-radius: 14px;
+  background: linear-gradient(145deg, #24203c, #12101f); border: 1px solid var(--border);
+  box-shadow: 0 14px 32px rgba(0,0,0,.35); color: var(--text); animation: fade-up .2s ease;
+}
+.story-toast-title { color: var(--gold); font-weight: 800; }
+.story-toast-text { color: var(--muted); font-size: .85rem; margin-top: 3px; }
+.story-toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--gold); animation: toast-progress var(--toast-duration) linear forwards; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes toast-progress { to { width: 0; } }
 .input-group { margin-bottom: 14px; }
 .input-group label {
   display: block; color: var(--muted); font-size: .76rem; font-weight: 700;
@@ -1026,11 +1055,6 @@ textarea { min-height: 96px; resize: vertical; }
 .low-mana { color: var(--rose) !important; animation: pulse 1s ease infinite; }
 @keyframes pulse { 50% { opacity: .6; } }
 
-.swal2-popup {
-  background: #16122a !important; color: var(--text) !important;
-  border: 1px solid var(--border) !important; border-radius: 18px !important;
-}
-
 @media (max-width: 980px) {
   .story-hud {
     grid-template-columns: 1fr;
@@ -1305,6 +1329,19 @@ textarea { min-height: 96px; resize: vertical; }
         </div>
     </div>
 
+    <!-- System modal used by game notifications, choices, and forms -->
+    <div class="modal" id="system-modal" role="dialog" aria-modal="true" aria-labelledby="system-modal-title">
+        <div class="modal-content system-modal-content" id="system-modal-content">
+            <button class="system-modal-close" id="system-modal-close" type="button" aria-label="Fechar">✕</button>
+            <div class="system-modal-icon" id="system-modal-icon" hidden></div>
+            <h2 class="modal-title" id="system-modal-title"></h2>
+            <div class="system-modal-body" id="system-modal-body"></div>
+            <div class="system-modal-validation" id="system-modal-validation" hidden></div>
+            <div class="system-modal-actions" id="system-modal-actions"></div>
+        </div>
+    </div>
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
     <!-- Main Game UI -->
     <div class="game-container" id="game-ui" style="display: none;">
         <div class="game-header">
@@ -1463,6 +1500,112 @@ textarea { min-height: 96px; resize: vertical; }
             },
             learnedRecipes: []
         };
+
+        let activeStoryModal = null;
+
+        const StoryModal = {
+            fire(options) {
+                options = typeof options === 'string' ? { title: options } : options;
+
+                if (options.toast) {
+                    const duration = options.timer || 3000;
+                    const toast = document.createElement('div');
+                    toast.className = 'story-toast';
+                    toast.innerHTML = `<div class="story-toast-title">${options.title || ''}</div>${options.html ? `<div class="story-toast-text">${options.html}</div>` : options.text ? `<div class="story-toast-text">${options.text}</div>` : ''}${options.timerProgressBar ? `<div class="story-toast-progress" style="--toast-duration: ${duration}ms; width: 100%;"></div>` : ''}`;
+                    document.getElementById('toast-container').appendChild(toast);
+                    return new Promise(resolve => setTimeout(() => {
+                        toast.remove();
+                        resolve({ isConfirmed: false, isDismissed: true });
+                    }, duration));
+                }
+
+                this.close();
+
+                const modal = document.getElementById('system-modal');
+                const content = document.getElementById('system-modal-content');
+                const title = document.getElementById('system-modal-title');
+                const icon = document.getElementById('system-modal-icon');
+                const body = document.getElementById('system-modal-body');
+                const validation = document.getElementById('system-modal-validation');
+                const actions = document.getElementById('system-modal-actions');
+                const closeButton = document.getElementById('system-modal-close');
+                const iconByType = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️', question: '❓' };
+
+                title.textContent = options.title || '';
+                icon.textContent = iconByType[options.icon] || '';
+                icon.hidden = !icon.textContent;
+                body.replaceChildren();
+                validation.hidden = true;
+                validation.textContent = '';
+                actions.replaceChildren();
+                actions.classList.remove('system-modal-loading');
+                content.style.width = options.width || '';
+                content.className = 'modal-content system-modal-content';
+                if (options.customClass?.popup) content.classList.add(options.customClass.popup);
+
+                if (options.html instanceof Node) body.appendChild(options.html);
+                else if (options.html) body.innerHTML = options.html;
+                else if (options.text) body.innerHTML = `<p>${options.text}</p>`;
+
+                let resolveResult;
+                const result = new Promise(resolve => { resolveResult = resolve; });
+                const close = (isConfirmed = false, value) => {
+                    if (activeStoryModal?.close !== close) return;
+                    modal.classList.remove('active');
+                    activeStoryModal = null;
+                    if (typeof options.willClose === 'function') options.willClose();
+                    resolveResult({ isConfirmed, isDismissed: !isConfirmed, value });
+                };
+                const confirm = async () => {
+                    let value;
+                    if (typeof options.preConfirm === 'function') {
+                        value = await options.preConfirm();
+                        if (value === false) return;
+                    }
+                    close(true, value);
+                };
+                const makeButton = (label, className, handler) => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = `action-btn ${className}`;
+                    button.textContent = label;
+                    button.addEventListener('click', handler);
+                    actions.appendChild(button);
+                    return button;
+                };
+
+                if (options.showCancelButton) makeButton(options.cancelButtonText || 'Cancelar', 'danger', () => close());
+                if (options.showConfirmButton !== false) makeButton(options.confirmButtonText || 'OK', 'success', confirm);
+
+                closeButton.hidden = !options.showCloseButton;
+                closeButton.onclick = () => close();
+                modal.onclick = event => {
+                    if (event.target === modal && options.allowOutsideClick !== false) close();
+                };
+                activeStoryModal = { close, validation, actions };
+                modal.classList.add('active');
+                if (typeof options.didOpen === 'function') options.didOpen(content);
+                if (options.timer) setTimeout(() => close(), options.timer);
+                return result;
+            },
+            close() {
+                activeStoryModal?.close();
+            },
+            showValidationMessage(message) {
+                if (!activeStoryModal) return;
+                activeStoryModal.validation.textContent = message;
+                activeStoryModal.validation.hidden = false;
+            },
+            showLoading() {
+                if (!activeStoryModal) return;
+                activeStoryModal.actions.replaceChildren();
+                activeStoryModal.actions.classList.add('system-modal-loading');
+                activeStoryModal.actions.textContent = 'Aguarde...';
+            }
+        };
+
+        // Existing game interactions use this native modal interface.
+        const Swal = StoryModal;
         
         const RACES = {
             elf: { 
@@ -5261,7 +5404,7 @@ textarea { min-height: 96px; resize: vertical; }
                         <div style="text-align: center;">
                             <p>Item: <strong>${item.name}</strong></p>
                             <p>Disponível: <strong>${maxQty}</strong></p>
-                            <input type="number" id="mill-qty" class="swal2-input" min="1" max="${maxQty}" value="${Math.min(5, maxQty)}" style="margin: 10px auto;">
+                            <input type="number" id="mill-qty" min="1" max="${maxQty}" value="${Math.min(5, maxQty)}" style="margin: 10px auto;">
                         </div>
                     `,
                     confirmButtonText: 'Moer',
@@ -5601,7 +5744,7 @@ textarea { min-height: 96px; resize: vertical; }
                 html: `
                     <div style="text-align: left;">
                         <p>Digite o nome para assinar este livro:</p>
-                        <input type="text" id="signer-name" class="swal2-input" value="${gameState.character.name}" style="margin-top: 10px;">
+                        <input type="text" id="signer-name" value="${gameState.character.name}" style="margin-top: 10px;">
                     </div>
                 `,
                 confirmButtonText: 'Assinar',
@@ -5966,7 +6109,6 @@ textarea { min-height: 96px; resize: vertical; }
                 const minutes = Math.floor(remaining / 60);
                 const seconds = remaining % 60;
                 
-                const currentPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
                 const nextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
                 
                 // Calcular porcentagem do ciclo
@@ -5974,13 +6116,13 @@ textarea { min-height: 96px; resize: vertical; }
                 
                 return `
                     <div style="text-align: center;">
-                        <div style="font-size: 64px; margin-bottom: 20px; animation: pulse 1s ease-in-out infinite;">
+                        <div id="clock-phase-icon" style="font-size: 64px; margin-bottom: 20px; animation: pulse 1s ease-in-out infinite;">
                             ${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}
                         </div>
                         <div style="font-size: 48px; font-weight: bold; color: #ffd700; margin-bottom: 15px; font-family: monospace;" id="live-timer">
                             ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}
                         </div>
-                        <div style="color: #888; margin-bottom: 15px; font-size: 16px;">
+                        <div id="clock-phase" style="color: #888; margin-bottom: 15px; font-size: 16px;">
                             Restante para ${nextPhase}
                         </div>
                         <div style="width: 100%; background: #333; border-radius: 10px; overflow: hidden; height: 25px; margin: 20px 0;">
@@ -6026,7 +6168,7 @@ textarea { min-height: 96px; resize: vertical; }
                 
                 // Verificar se o ciclo terminou e atualizar fase
                 if (remaining <= 0) {
-                    const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
+                    const currentPhaseElement = document.getElementById('clock-phase');
                     if (currentPhaseElement) {
                         const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
                         const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
@@ -6034,24 +6176,14 @@ textarea { min-height: 96px; resize: vertical; }
                     }
                     
                     // Atualizar ícone
-                    const iconElement = document.querySelector('.swal2-html-container div div:first-child');
+                    const iconElement = document.getElementById('clock-phase-icon');
                     if (iconElement) {
                         iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
                     }
                 }
             };
             
-            // Estilo CSS para animação
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes pulse {
-                    0%, 100% { transform: scale(1); opacity: 1; }
-                    50% { transform: scale(1.1); opacity: 0.8; }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            Swal.fire({
+            StoryModal.fire({
                 title: '⏰ Relógio',
                 html: createTimerHTML(),
                 icon: 'info',
@@ -6063,9 +6195,7 @@ textarea { min-height: 96px; resize: vertical; }
                 didOpen: () => {
                     // Iniciar atualização a cada segundo
                     updateInterval = setInterval(() => {
-                        // Verificar se o Swal ainda está aberto
-                        const swalContent = document.querySelector('.swal2-html-container');
-                        if (swalContent) {
+                        if (document.getElementById('system-modal').classList.contains('active')) {
                             updateTimer();
                         } else {
                             clearInterval(updateInterval);
@@ -6076,10 +6206,6 @@ textarea { min-height: 96px; resize: vertical; }
                     // Limpar intervalo quando fechar
                     if (updateInterval) {
                         clearInterval(updateInterval);
-                    }
-                    // Remover o estilo adicionado
-                    if (style.parentNode) {
-                        style.parentNode.removeChild(style);
                     }
                 }
             });
@@ -6118,17 +6244,17 @@ textarea { min-height: 96px; resize: vertical; }
                     gameState.remainingCycleTime = gameState.cycleDuration;
                     
                     // Verificar se o relógio está aberto e atualizar
-                    const swalContent = document.querySelector('.swal2-html-container');
-                    if (swalContent) {
+                    const clockPhase = document.getElementById('clock-phase');
+                    if (clockPhase) {
                         // Se o modal do relógio estiver aberto, atualizar a fase
-                        const currentPhaseElement = document.querySelector('.swal2-html-container div div:nth-child(3)');
+                        const currentPhaseElement = clockPhase;
                         if (currentPhaseElement) {
                             const newPhase = gameState.timeOfDay === 'day' ? '☀️ DIA' : '🌙 NOITE';
                             const newNextPhase = gameState.timeOfDay === 'day' ? '🌙 NOITE' : '☀️ DIA';
                             currentPhaseElement.textContent = `${newPhase} - Restante para ${newNextPhase}`;
                         }
                         
-                        const iconElement = document.querySelector('.swal2-html-container div div:first-child');
+                        const iconElement = document.getElementById('clock-phase-icon');
                         if (iconElement) {
                             iconElement.innerHTML = gameState.timeOfDay === 'day' ? '☀️' : '🌙';
                         }
@@ -8378,13 +8504,13 @@ textarea { min-height: 96px; resize: vertical; }
                                     const loadedState = JSON.parse(e.target.result);
                                     
                                     if (loadedState.isDead) {
-                                        alert('❌ Este save é de um personagem MORTO e não pode ser carregado!');
+                                        StoryModal.fire({ title: '❌ Save inválido', text: 'Este save é de um personagem morto e não pode ser carregado!', icon: 'error' });
                                         document.getElementById('title-screen').style.display = 'flex';
                                         return;
                                     }
                                     
                                     if (loadedState.character && loadedState.character.life <= 0) {
-                                        alert('❌ Este save é de um personagem com vida zero e não pode ser carregado!');
+                                        StoryModal.fire({ title: '❌ Save inválido', text: 'Este save é de um personagem com vida zero e não pode ser carregado!', icon: 'error' });
                                         document.getElementById('title-screen').style.display = 'flex';
                                         return;
                                     }
@@ -8431,7 +8557,7 @@ textarea { min-height: 96px; resize: vertical; }
                                     updateUI();
                                     startCycleTimer(); 
                                 } catch (err) {
-                                    alert('Erro ao carregar arquivo!');
+                                    StoryModal.fire({ title: '❌ Erro', text: 'Erro ao carregar arquivo!', icon: 'error' });
                                     document.getElementById('title-screen').style.display = 'flex';
                                 }
                             };
