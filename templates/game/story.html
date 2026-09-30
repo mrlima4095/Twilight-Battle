@@ -925,7 +925,7 @@ textarea { min-height: 96px; resize: vertical; }
 .npc-action-desc { font-size: .78rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 .npc-info { flex: 1; }
 
-/* Baú da casa — compacto no PC, sem scroll desnecessário */
+/* Baú da casa */
 #game-content .chest-container {
   padding: 10px 12px !important;
   margin: 8px 0 10px !important;
@@ -988,6 +988,25 @@ textarea { min-height: 96px; resize: vertical; }
   font-size: 12px;
   line-height: 1;
   opacity: .7;
+}
+#game-content.chest-open {
+   display: flex !important;
+   flex-direction: column;
+}
+#game-content.chest-open .chest-container {
+   flex: 1 1 auto;
+   min-height: 0;
+   display: flex;
+   flex-direction: column;
+}
+#game-content.chest-open #chest-grid {
+   flex: 1 1 auto !important;
+   min-height: 0;
+   grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+#game-content.chest-open #chest-grid .inventory-slot {
+   max-height: none !important;
+   height: 100% !important;
 }
 .chest-toolbar {
   display: flex;
@@ -2857,6 +2876,7 @@ textarea { min-height: 96px; resize: vertical; }
         }
         function updateGameContent() {
             const content = document.getElementById('game-content');
+            content.classList.remove('chest-open');
 
             if (gameState.isBookOpen && gameState.openBookIndex !== null) {
                 const book = gameState.inventory[gameState.openBookIndex];
@@ -3013,6 +3033,7 @@ textarea { min-height: 96px; resize: vertical; }
             `;
             
             if (gameState.location === 'home' && gameState.chestOpen) {
+                content.classList.add('chest-open');
                 html += `
                     <div class="chest-toolbar">
                         <button class="action-btn" onclick="toggleChest()" style="background: linear-gradient(135deg,#ffb347,#e08900); color:#1a1020; border:none;">🔙 Fechar Baú</button>
