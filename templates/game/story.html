@@ -758,6 +758,7 @@ textarea { min-height: 96px; resize: vertical; }
 #game-ui #food-grid {
   display: grid !important;
   grid-template-columns: repeat(3, 1fr) !important;
+  grid-auto-rows: max-content !important; /* linhas acompanham a altura real do slot (aspect-ratio) e não se sobrepõem */
   gap: 8px !important;
   margin-bottom: 12px !important;
   flex: 1 1 auto !important;
