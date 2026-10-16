@@ -705,6 +705,54 @@ textarea { min-height: 96px; resize: vertical; }
   letter-spacing: .04em;
 }
 
+/* Cabeçalho do painel "Mundo" com a barra de status (local · dia · clima) */
+#game-ui .panel-header {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
+  border-bottom: 1px solid rgba(240,193,75,.22) !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 12px !important;
+}
+#game-ui .panel-header .panel-title {
+  flex: 0 0 auto !important;
+  text-align: left !important;
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 0 !important;
+}
+#game-ui .world-status {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 6px 10px !important;
+  font-size: .78rem !important;
+  color: var(--muted) !important;
+  min-width: 0;
+}
+#game-ui .world-status #location-time-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 6px 10px !important;
+}
+#game-ui .world-status .location-badge {
+  color: var(--gold) !important;
+  font-weight: 700 !important;
+}
+#game-ui .world-status .world-date,
+#game-ui .world-status .time-indicator,
+#game-ui .world-status .world-weather {
+  color: #c8bfd8 !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+}
+
 #game-ui .inventory-grid,
 #game-ui #inventory-grid,
 #game-ui #food-grid {
@@ -787,8 +835,8 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .action-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 #game-ui .action-buttons {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)) !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
   justify-content: center !important;
   gap: 10px !important;
   margin: 16px 0 10px !important;
@@ -796,13 +844,14 @@ textarea { min-height: 96px; resize: vertical; }
 #game-ui .action-buttons .action-btn,
 #game-ui #game-content > .action-buttons .action-btn,
 #game-ui .game-panel .action-buttons button.action-btn {
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: none !important;
+  /* No máximo 3 por linha: cada botão ocupa 1/3 da largura útil */
+  flex: 1 1 calc((100% - 20px) / 3) !important;
+  width: auto !important;
+  min-width: 130px !important;
+  max-width: calc((100% - 20px) / 3) !important;
   height: 50px !important;
   min-height: 50px !important;
   max-height: 50px !important;
-  flex: none !important;
   padding: 0 12px !important;
   font-size: 13px !important;
   line-height: 1.15 !important;
@@ -1401,7 +1450,10 @@ textarea { min-height: 96px; resize: vertical; }
             </div>
 
             <div class="game-panel">
-                <h3 class="panel-title">🗺️ Mundo</h3>
+                <div class="panel-header">
+                    <h3 class="panel-title">🗺️ Mundo</h3>
+                    <div class="world-status" id="world-status"></div>
+                </div>
                 <div id="game-content">
                     <!-- Dynamic content based on location -->
                 </div>
@@ -2921,37 +2973,48 @@ textarea { min-height: 96px; resize: vertical; }
             document.getElementById('bonus-defense').textContent = bonuses.defenseBonus;
             
             const locationName = LOCATIONS[gameState.location]?.name || gameState.location;
-            
-            const playerInfoDiv = document.getElementById('player-info');
+
+            // Barra de status do mundo no topo do painel "🗺️ Mundo":
+            // localização · dia · clima.
+            const worldStatus = document.getElementById('world-status');
             let locationTimeContainer = document.getElementById('location-time-container');
 
-            if (!locationTimeContainer) {
+            if (worldStatus && !locationTimeContainer) {
                 locationTimeContainer = document.createElement('div');
                 locationTimeContainer.id = 'location-time-container';
-                locationTimeContainer.style.display = 'flex';
-                locationTimeContainer.style.gap = '10px';
-                locationTimeContainer.style.alignItems = 'center';
-                
+
                 // Criar o badge de localização
-                const newLocationBadge = document.createElement('div');
+                const newLocationBadge = document.createElement('span');
                 newLocationBadge.className = 'location-badge';
                 newLocationBadge.id = 'current-location';
-                
+
+                // Criar a data (o "dia" do calendário)
+                const dateEl = document.createElement('span');
+                dateEl.className = 'world-date';
+                dateEl.id = 'world-date';
+
                 // Criar o indicador de horário
-                const timeIndicator = document.createElement('div');
+                const timeIndicator = document.createElement('span');
                 timeIndicator.className = 'time-indicator';
                 timeIndicator.id = 'time-indicator';
-                
+
+                // Criar o indicador de clima (preenchido por systems.js)
+                const weatherEl = document.createElement('span');
+                weatherEl.className = 'world-weather';
+                weatherEl.id = 'world-weather';
+
                 locationTimeContainer.appendChild(newLocationBadge);
+                locationTimeContainer.appendChild(dateEl);
                 locationTimeContainer.appendChild(timeIndicator);
-                
-                // Inserir no início do playerInfoDiv
-                playerInfoDiv.insertBefore(locationTimeContainer, playerInfoDiv.firstChild);
+                locationTimeContainer.appendChild(weatherEl);
+
+                worldStatus.appendChild(locationTimeContainer);
             }
 
-            const locationBadge = document.getElementById('current-location'), timeIndicator = document.getElementById('time-indicator');
-            
-            if (locationBadge) { locationBadge.textContent = locationName; }
+            const locationBadge = document.getElementById('current-location'), timeIndicator = document.getElementById('time-indicator'), worldDate = document.getElementById('world-date');
+
+            if (locationBadge) { locationBadge.textContent = `📍 ${locationName}`; }
+            if (worldDate) { worldDate.textContent = `📅 ${getShortDate()}`; }
             if (timeIndicator) { timeIndicator.innerHTML = `<span class="time-icon">${gameState.timeOfDay === 'day' ? '☀️' : '🌙'}</span><span class="time-text">${gameState.timeOfDay === 'day' ? 'Dia' : 'Noite'}</span>`; }
             
             const manaStat = document.querySelector('.stat:nth-child(2)');

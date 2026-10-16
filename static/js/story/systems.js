@@ -709,21 +709,12 @@ function TB_updateHud() {
     if (typeof gameState === 'undefined' || !gameState.character) return;
     TB_ensureHud();
 
-    // Clima no HUD
-    const stats = document.querySelector('.player-stats');
-    if (stats && !document.getElementById('tb-weather')) {
-        const w = document.createElement('div');
-        w.className = 'stat';
-        w.id = 'tb-weather';
-        w.innerHTML = '<div class="stat-value" id="tb-weather-icon">🌤️</div><div class="stat-label">Clima</div>';
-        stats.appendChild(w);
-    }
-    const wi = document.getElementById('tb-weather-icon');
-    if (wi) {
+    // Clima no topo do painel "🗺️ Mundo" (junto de localização e dia)
+    const weatherEl = document.getElementById('world-weather');
+    if (weatherEl) {
         const weather = TB_weather();
-        wi.textContent = weather.icon;
-        const label = document.getElementById('tb-weather-icon').parentElement;
-        if (label) label.title = weather.name;
+        weatherEl.textContent = `${weather.icon} ${weather.name}`;
+        weatherEl.title = weather.name;
     }
 
     // Tracker de missão
