@@ -85,6 +85,21 @@ def journal():
     return render_template('web/journal.html', username=username)
 
 
+@bp.route('/settings')
+def settings():
+    username = get_current_user()
+    if not username:
+        return redirect('/login')
+
+    account = load_accounts().get(username, {})
+    admin_level = int(account.get('admin_level', account.get('level', 0)) or 0)
+    return render_template(
+        'web/settings.html',
+        username=username,
+        admin_level=admin_level,
+    )
+
+
 @bp.route('/game/<game_id>')
 @login_required
 def game(username, game_id):

@@ -26,3 +26,16 @@ def app():
 @pytest.fixture()
 def client(app):
     return app.test_client()
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    """Zera o rate limiter (em memória) entre testes.
+
+    Sem isso, os registros/logins de todos os testes compartilham o mesmo
+    balde por IP e os últimos acabam bloqueados por excesso de tentativas.
+    """
+    from twilight.routes import auth as auth_routes
+    auth_routes._attempts.clear()
+    yield
+    auth_routes._attempts.clear()

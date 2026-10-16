@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle — Configurações</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+
+:root {
+  --bg-0: #07060f;
+  --bg-1: #0e0b1a;
+  --bg-2: #16122a;
+  --panel: rgba(18, 14, 36, 0.72);
+  --panel-solid: #141026;
+  --panel-2: rgba(28, 22, 52, 0.85);
+  --border: rgba(255, 215, 120, 0.18);
+  --border-strong: rgba(255, 215, 120, 0.42);
+  --gold: #f0c14b;
+  --gold-2: #ffb347;
+  --gold-dim: rgba(240, 193, 75, 0.15);
+  --cyan: #5ee7ff;
+  --violet: #9b7bff;
+  --magenta: #ff5ec8;
+  --rose: #ff6b8a;
+  --green: #3ddc97;
+  --red: #ff4d6d;
+  --text: #f4f0ff;
+  --muted: #a39bb8;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+  --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
+  --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(155,123,255,.28), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,94,200,.14), transparent 50%),
+    radial-gradient(800px 400px at 50% 100%, rgba(94,231,255,.08), transparent 50%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 40%, #120b22);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%, rgba(240,193,75,.5), transparent),
+    radial-gradient(1px 1px at 10% 70%, rgba(94,231,255,.4), transparent);
+  opacity: .5;
+}
+@keyframes fade-up { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } 50% { box-shadow: 0 0 18px rgba(61,220,151,.25); } }
+
+.swal2-popup {
+  background: #16122a !important; color: var(--text) !important;
+  border: 1px solid var(--border) !important; border-radius: 18px !important;
+}
+
+body { padding: 0; }
+.journal-container {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 18px 16px 60px; animation: fade-up .45s ease;
+}
+.game-header {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  padding: 16px 18px; margin-bottom: 16px;
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+}
+.game-title {
+  font-family: var(--font-display); font-size: 1.35rem; font-weight: 700;
+  color: var(--gold); display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.game-title a {
+  font-family: var(--font-ui); font-size: .78rem !important; margin-left: 0 !important;
+  color: var(--muted) !important; text-decoration: none !important;
+  padding: 5px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1);
+}
+.game-title a:hover { color: var(--gold) !important; border-color: var(--border); }
+.game-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.user-badge {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.08);
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; font-weight: 800; font-size: .95rem;
+}
+.logout-btn {
+  padding: 9px 14px; border: none; border-radius: 11px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: .85rem;
+  background: rgba(255,77,109,.15); color: #ff8fa3; border: 1px solid rgba(255,77,109,.35);
+  transition: .2s;
+}
+.logout-btn:hover { background: rgba(255,77,109,.28); color: #fff; }
+
+.action-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+}
+.action-btn {
+  padding: 11px 16px; border: none; border-radius: 12px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: .9rem;
+  background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  color: #1a1020; box-shadow: 0 6px 18px rgba(240,193,75,.22); transition: .15s;
+}
+.action-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.action-btn.secondary {
+  background: rgba(155,123,255,.15); color: #d4c8ff;
+  border: 1px solid rgba(155,123,255,.3); box-shadow: none;
+}
+
+.stats-row {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px; margin-bottom: 20px;
+}
+.stat-card {
+  padding: 16px; border-radius: 16px; text-align: center;
+  background: var(--panel-2); border: 1px solid rgba(255,255,255,.06);
+  transition: border-color .2s;
+}
+.stat-card:hover { border-color: var(--border); }
+.stat-icon { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; }
+.stat-number {
+  font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--text);
+}
+.stat-label { color: var(--muted); font-size: .78rem; margin-top: 4px; letter-spacing: .04em; text-transform: uppercase; }
+
+.chronicle { display: flex; flex-direction: column; gap: 14px; }
+.empty-chronicle {
+  text-align: center; padding: 48px 20px; border-radius: 18px;
+  background: var(--panel); border: 1px dashed rgba(240,193,75,.3); color: var(--muted);
+}
+.empty-chronicle i { font-size: 2.4rem; color: var(--gold); opacity: .7; }
+
+.chronicle-entry {
+  padding: 20px; border-radius: 18px;
+  background: var(--panel); border: 1px solid rgba(255,255,255,.06);
+  box-shadow: 0 12px 36px rgba(0,0,0,.25);
+  border-left: 3px solid rgba(240,193,75,.5);
+  transition: border-color .2s, transform .15s;
+}
+.chronicle-entry:hover { border-color: var(--border); transform: translateX(2px); }
+.chronicle-entry.roadmap {
+  border-left-color: var(--violet);
+  background: linear-gradient(135deg, rgba(155,123,255,.12), var(--panel));
+  border-color: rgba(155,123,255,.25);
+}
+.badge-roadmap {
+  background: rgba(155,123,255,.2) !important;
+  color: #d4c8ff !important;
+  border: 1px solid rgba(155,123,255,.4) !important;
+}
+.roadmap-banner {
+  display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 10px 14px; margin-bottom: 14px; border-radius: 12px;
+  background: rgba(155,123,255,.1); border: 1px solid rgba(155,123,255,.3);
+  color: #d4c8ff; font-size: .88rem; font-weight: 600;
+}
+.roadmap-banner.visible { display: flex; }
+.filter-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.filter-chip {
+  padding: 7px 12px; border-radius: 999px; cursor: pointer; font-size: .8rem; font-weight: 700;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(0,0,0,.25); color: var(--muted);
+  font-family: inherit; transition: .15s;
+}
+.filter-chip:hover { border-color: var(--border); color: var(--gold); }
+.filter-chip.active {
+  background: var(--gold-dim); color: var(--gold); border-color: var(--border);
+}
+.filter-chip.active.roadmap-chip {
+  background: rgba(155,123,255,.2); color: #d4c8ff; border-color: rgba(155,123,255,.4);
+}
+.entry-header {
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 10px;
+}
+.version-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 999px; font-weight: 700; font-size: .85rem;
+  background: var(--gold-dim); color: var(--gold); border: 1px solid var(--border);
+}
+.entry-date { color: var(--muted); font-size: .85rem; }
+.entry-title {
+  font-family: var(--font-display); font-size: 1.25rem; color: var(--text); margin-bottom: 8px;
+}
+.entry-desc { color: var(--muted); line-height: 1.6; margin-bottom: 14px; }
+
+.features-tome { display: grid; gap: 10px; margin: 12px 0; }
+.feature-arcane {
+  display: flex; gap: 12px; padding: 12px; border-radius: 12px;
+  background: rgba(155,123,255,.08); border: 1px solid rgba(155,123,255,.18);
+}
+.feature-icon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(240,193,75,.12); color: var(--gold);
+}
+.feature-text h4 { color: var(--gold); margin-bottom: 4px; font-size: .95rem; }
+.feature-text p { color: var(--muted); font-size: .88rem; margin: 0; line-height: 1.45; }
+
+.fix-list { list-style: none; margin: 10px 0; display: flex; flex-direction: column; gap: 6px; }
+.fix-list li {
+  padding: 8px 12px; border-radius: 10px; font-size: .9rem; color: #d8d0eb;
+  background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.05);
+}
+.fix-list li i { color: var(--green); margin-right: 8px; }
+.fix-list li .fa-bug { color: var(--rose); }
+
+.badge-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.badge {
+  padding: 4px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700;
+  background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid rgba(255,255,255,.08);
+}
+.badge-major {
+  background: rgba(240,193,75,.15); color: var(--gold); border-color: rgba(240,193,75,.35);
+}
+
+.admin-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.small-btn {
+  padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: .8rem;
+  background: rgba(91,140,255,.2); color: #a8c4ff; border: 1px solid rgba(91,140,255,.35);
+}
+.small-btn:hover { background: rgba(91,140,255,.35); color: #fff; }
+.small-btn.danger {
+  background: rgba(255,77,109,.15); color: #ff8fa3; border-color: rgba(255,77,109,.35);
+}
+.small-btn.danger:hover { background: rgba(255,77,109,.3); color: #fff; }
+
+/* modal form pieces used in SweetAlert HTML */
+.tw-form { text-align: left; }
+.tw-field { margin-bottom: 12px; }
+.tw-field label {
+  display: block; color: var(--muted); font-size: .78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px;
+}
+.tw-field input, .tw-field select, .tw-field textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.35);
+  color: var(--text); font-family: inherit; font-size: .95rem;
+}
+.dynamic-row {
+  display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 6px; margin-bottom: 8px; align-items: center;
+}
+.dynamic-row input {
+  padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.35); color: var(--text); font-family: inherit;
+}
+.remove-row {
+  padding: 6px 8px; border: none; border-radius: 8px; cursor: pointer;
+  background: rgba(255,77,109,.2); color: #ff8fa3;
+}
+.add-btn {
+  margin-top: 6px; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer;
+  background: rgba(61,220,151,.15); color: var(--green); font-weight: 700; font-family: inherit;
+}
+@media (max-width: 640px) {
+  .dynamic-row { grid-template-columns: 1fr; }
+  .game-title { font-size: 1.1rem; }
+}
+
+/* ---------- Configurações ---------- */
+.panel {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 22px; box-shadow: var(--shadow); backdrop-filter: blur(14px);
+  animation: fade-up .35s ease both;
+}
+.section-title {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem;
+  color: var(--gold); letter-spacing: .02em;
+}
+.section-title.danger { color: var(--red); }
+.muted { color: var(--muted); font-size: .92rem; }
+.info-grid {
+  display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.info-item {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 14px;
+  background: var(--panel-2); border: 1px solid rgba(255,255,255,.06); border-radius: var(--radius-sm);
+}
+.info-label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; }
+.info-value { color: var(--text); font-weight: 600; word-break: break-word; }
+.form-grid {
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-group label { color: var(--muted); font-size: .86rem; font-weight: 600; }
+.input-group input[type="password"],
+.input-group input[type="text"],
+.input-group input[type="number"] {
+  padding: 11px 13px; border-radius: var(--radius-sm); font-family: inherit; font-size: .95rem;
+  background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12); color: var(--text);
+  transition: border-color .18s, box-shadow .18s;
+}
+.input-group input:focus {
+  outline: none; border-color: var(--border-strong);
+  box-shadow: 0 0 0 3px rgba(240,193,75,.12);
+}
+.checkbox-row label { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 500; cursor: pointer; }
+.checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--gold); }
+.danger-panel { border-color: rgba(255,77,109,.4); }
+.action-btn.danger {
+  background: linear-gradient(135deg, #ff4d6d, #c9184a); color: #fff;
+  border: 1px solid rgba(255,77,109,.5); box-shadow: 0 8px 20px rgba(255,77,109,.22);
+}
+.action-btn.danger:hover { filter: brightness(1.06); }
+.action-btn[disabled] { opacity: .6; cursor: not-allowed; }
+
+    </style>
+</head>
+<body>
+
+<div class="journal-container">
+  <div class="game-header">
+    <div class="game-title">
+      <i class="fas fa-scroll"></i>
+      <span>Configurações</span>
+      <a href="/">⚔️ Voltar à Batalha</a>
+    </div>
+    <div class="game-info">
+      <div class="user-badge" id="userBadge">
+        <div class="user-avatar" id="userAvatar">T</div>
+        <span id="userName">Carregando...</span>
+      </div>
+      <button class="logout-btn" id="logoutBtn" type="button">
+        <i class="fas fa-door-open"></i> Sair
+      </button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3 class="section-title" style="margin-bottom:6px">Conta</h3>
+    <div class="info-grid">
+      <div class="info-item"><span class="info-label">Usuário</span><span class="info-value" id="accountUsername">-</span></div>
+      <div class="info-item"><span class="info-label">Membro desde</span><span class="info-value" id="accountCreated">-</span></div>
+      <div class="info-item"><span class="info-label">Admin Level</span><span class="info-value" id="accountAdminLevel">0</span></div>
+      <div class="info-item"><span class="info-label">Partida atual</span><span class="info-value" id="accountCurrentGame">-</span></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3 class="section-title" style="margin-bottom:8px">Alterar senha</h3>
+    <div class="form-grid">
+      <div class="input-group">
+        <label for="oldPassword">Senha atual</label>
+        <input type="password" id="oldPassword" autocomplete="current-password">
+      </div>
+      <div class="input-group">
+        <label for="newPassword">Nova senha</label>
+        <input type="password" id="newPassword" autocomplete="new-password">
+      </div>
+      <div class="input-group">
+        <label for="newPassword2">Confirmar nova senha</label>
+        <input type="password" id="newPassword2" autocomplete="new-password">
+      </div>
+    </div>
+    <button class="action-btn" id="changePwdBtn" type="button" style="margin-top:10px">
+      <i class="fas fa-key"></i> Alterar senha
+    </button>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3 class="section-title" style="margin-bottom:8px">Preferências de sala</h3>
+    <div class="form-grid">
+      <div class="input-group">
+        <label for="prefMaxPlayers">Máx. de jogadores padrão (2–12)</label>
+        <input type="number" id="prefMaxPlayers" min="2" max="12" step="1">
+      </div>
+      <div class="input-group checkbox-row">
+        <label><input type="checkbox" id="prefPrivate"> 🔒 Sala privada por padrão</label>
+      </div>
+      <div class="input-group checkbox-row">
+        <label><input type="checkbox" id="prefSpectators"> 👁️ Permitir espectadores por padrão</label>
+      </div>
+      <div class="input-group checkbox-row">
+        <label><input type="checkbox" id="prefChat"> 💬 Chat ativo por padrão</label>
+      </div>
+    </div>
+    <button class="action-btn secondary" id="savePrefsBtn" type="button" style="margin-top:10px">
+      <i class="fas fa-save"></i> Salvar preferências
+    </button>
+  </div>
+
+  {# Contas de staff não podem ser excluídas por aqui (o backend também bloqueia). #}
+  {% if admin_level < 1 %}
+  <div class="panel danger-panel" style="margin-bottom:16px">
+    <h3 class="section-title danger" style="margin-bottom:8px">Zona de perigo</h3>
+    <p class="muted">Excluir sua conta removerá permanentemente seu usuário, senha e dados associados.</p>
+    <div class="form-grid" style="margin-top:10px">
+      <div class="input-group">
+        <label for="deletePassword">Senha atual</label>
+        <input type="password" id="deletePassword" autocomplete="current-password">
+      </div>
+      <div class="input-group">
+        <label for="deleteConfirm">Digite APAGAR para confirmar</label>
+        <input type="text" id="deleteConfirm" placeholder="APAGAR" autocomplete="off">
+      </div>
+    </div>
+    <button class="action-btn danger" id="deleteAccountBtn" type="button" style="margin-top:10px">
+      <i class="fas fa-trash-alt"></i> Excluir conta permanentemente
+    </button>
+  </div>
+  {% endif %}
+</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const $ = (id) => document.getElementById(id);
+
+        const swalBase = { background: '#16122a', color: '#f4f0ff', confirmButtonColor: '#f0c14b' };
+        const toast = (icon, title) => Swal.fire(Object.assign({ icon, title, timer: 1800, showConfirmButton: false }, swalBase));
+
+        function setUserBadge(username) {
+            const nameEl = $('userName');
+            const avatarEl = $('userAvatar');
+            if (nameEl) nameEl.textContent = username || '-';
+            if (avatarEl) avatarEl.textContent = (username || '?').charAt(0).toUpperCase();
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        // ---- Carregar dados da conta ----
+        function loadAccount() {
+            fetch('/api/account')
+                .then((r) => r.json())
+                .then((data) => {
+                    if (!data.success) return;
+                    const acc = data.account || {};
+                    setUserBadge(acc.username);
+                    $('accountUsername').textContent = acc.username || '-';
+                    $('accountCreated').textContent = formatDate(acc.created_at);
+                    $('accountAdminLevel').textContent = acc.admin_level || 0;
+                    $('accountCurrentGame').textContent = acc.current_game || '—';
+
+                    const prefs = acc.preferences || {};
+                    $('prefMaxPlayers').value = prefs.max_players || 6;
+                    $('prefPrivate').checked = !!prefs.private;
+                    $('prefSpectators').checked = prefs.allow_spectators !== false;
+                    $('prefChat').checked = prefs.chat_enabled !== false;
+                })
+                .catch(() => {});
+        }
+
+        // ---- Trocar senha ----
+        $('changePwdBtn').addEventListener('click', function () {
+            const oldPassword = $('oldPassword').value;
+            const newPassword = $('newPassword').value;
+            const newPassword2 = $('newPassword2').value;
+
+            if (!oldPassword || !newPassword) {
+                return Swal.fire(Object.assign({ icon: 'warning', title: 'Preencha todos os campos' }, swalBase));
+            }
+            if (newPassword !== newPassword2) {
+                return Swal.fire(Object.assign({ icon: 'warning', title: 'As senhas novas não coincidem' }, swalBase));
+            }
+
+            fetch('/api/account/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ current_password: oldPassword, new_password: newPassword }),
+            })
+                .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+                .then(({ ok, d }) => {
+                    if (ok && d.success) {
+                        $('oldPassword').value = '';
+                        $('newPassword').value = '';
+                        $('newPassword2').value = '';
+                        return toast('success', d.message || 'Senha alterada!');
+                    }
+                    Swal.fire(Object.assign({ icon: 'error', title: d.message || 'Não foi possível alterar a senha' }, swalBase));
+                })
+                .catch(() => Swal.fire(Object.assign({ icon: 'error', title: 'Erro de conexão' }, swalBase)));
+        });
+
+        // ---- Salvar preferências ----
+        $('savePrefsBtn').addEventListener('click', function () {
+            const maxPlayers = parseInt($('prefMaxPlayers').value, 10);
+            if (isNaN(maxPlayers) || maxPlayers < 2 || maxPlayers > 12) {
+                return Swal.fire(Object.assign({ icon: 'warning', title: 'Máx. de jogadores deve ser entre 2 e 12' }, swalBase));
+            }
+            const preferences = {
+                max_players: maxPlayers,
+                private: $('prefPrivate').checked,
+                allow_spectators: $('prefSpectators').checked,
+                chat_enabled: $('prefChat').checked,
+            };
+            fetch('/api/account/preferences', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ preferences }),
+            })
+                .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+                .then(({ ok, d }) => {
+                    if (ok && d.success) return toast('success', 'Preferências salvas!');
+                    Swal.fire(Object.assign({ icon: 'error', title: d.message || 'Erro ao salvar' }, swalBase));
+                })
+                .catch(() => Swal.fire(Object.assign({ icon: 'error', title: 'Erro de conexão' }, swalBase)));
+        });
+
+        // ---- Excluir conta ----
+        // O painel não é renderizado para contas de staff (admin_level >= 1).
+        const deleteAccountBtn = $('deleteAccountBtn');
+        if (deleteAccountBtn) deleteAccountBtn.addEventListener('click', function () {
+            const password = $('deletePassword').value;
+            const confirmText = $('deleteConfirm').value.trim();
+            if (!password) {
+                return Swal.fire(Object.assign({ icon: 'warning', title: 'Informe sua senha atual' }, swalBase));
+            }
+            if (confirmText !== 'APAGAR') {
+                return Swal.fire(Object.assign({ icon: 'warning', title: 'Digite APAGAR para confirmar' }, swalBase));
+            }
+            Swal.fire(Object.assign({
+                title: 'Excluir conta?',
+                text: 'Esta ação é permanente e não pode ser desfeita.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sim, excluir',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#ff4d6d',
+            }, swalBase)).then((result) => {
+                if (!result.isConfirmed) return;
+                fetch('/api/account/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: password, confirm: confirmText }),
+                })
+                    .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
+                    .then(({ ok, d }) => {
+                        if (ok && d.success) {
+                            Swal.fire(Object.assign({ icon: 'success', title: 'Conta excluída', timer: 1500, showConfirmButton: false }, swalBase))
+                                .then(() => { window.location.href = '/'; });
+                            return;
+                        }
+                        Swal.fire(Object.assign({ icon: 'error', title: d.message || 'Erro ao excluir' }, swalBase));
+                    })
+                    .catch(() => Swal.fire(Object.assign({ icon: 'error', title: 'Erro de conexão' }, swalBase)));
+            });
+        });
+
+        // ---- Sair ----
+        $('logoutBtn').addEventListener('click', function () {
+            fetch('/api/logout', { method: 'POST' }).then(() => { window.location.href = '/'; });
+        });
+
+        loadAccount();
+    });
+    </script>
+</body>
+</html>

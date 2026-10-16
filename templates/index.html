@@ -146,6 +146,14 @@ body::before {
   transition: .2s;
 }
 #logout-btn:hover { background: rgba(255,77,109,.3); color: #fff; }
+.chip-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.chip-link {
+  text-decoration: none; color: var(--gold); font-weight: 600; font-size: .86rem;
+  padding: 8px 14px; border-radius: 10px; white-space: nowrap;
+  background: rgba(240,193,75,.12); border: 1px solid rgba(240,193,75,.35);
+  transition: .2s;
+}
+.chip-link:hover { background: rgba(240,193,75,.22); color: #fff; }
 
 .active-game-banner {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
@@ -401,7 +409,10 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
 
       <div class="user-chip">
         <div class="who">👤 Logado como <strong id="logged-username">Carregando...</strong></div>
-        <button type="button" id="logout-btn">Sair</button>
+        <div class="chip-actions">
+          <a class="chip-link" href="/settings">⚙️ Config</a>
+          <button type="button" id="logout-btn">Sair</button>
+        </div>
       </div>
 
       <div id="active-game-banner" class="active-game-banner" style="display:none" role="status">
@@ -422,6 +433,7 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
       </div>
 
       <div class="nav-links">
+        <a href="/settings">⚙️ Configurações</a>
         <a href="/rules">📜 Regras</a>
         <a href="/lore">📖 Lore</a>
         <a href="/journal">📔 Journal</a>
@@ -564,6 +576,7 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
             let currentUsername = null;
             let availableModifiers = []; // Armazenar modificadores disponíveis
             let savedPresets = []; // Predefinições salvas localmente
+            let roomPrefs = null; // Preferências de sala salvas em /settings
             
             // Carregar predefinições do localStorage
             function loadPresets() {
@@ -981,6 +994,18 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 });
             })();
             
+            // Carregar preferências de sala salvas (página /settings)
+            function loadRoomPrefs() {
+                fetch('/api/account')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.success && data.account && data.account.preferences) {
+                            roomPrefs = data.account.preferences;
+                        }
+                    })
+                    .catch(() => { roomPrefs = null; });
+            }
+
             // Resetar formulário do modal
             function resetModalForm() {
                 document.getElementById('create-max-players').value = '6';
@@ -994,6 +1019,16 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                 });
                 updateModifiersSelectedBadge();
                 setModifiersCollapsed(true);
+
+                // Aplicar preferências salvas (se houver)
+                if (roomPrefs) {
+                    if (roomPrefs.max_players) {
+                        document.getElementById('create-max-players').value = roomPrefs.max_players;
+                    }
+                    document.getElementById('create-private').checked = !!roomPrefs.private;
+                    document.getElementById('create-allow-spectators').checked = roomPrefs.allow_spectators !== false;
+                    document.getElementById('create-chat-enabled').checked = roomPrefs.chat_enabled !== false;
+                }
             }
             
             function showActiveGameBanner(gameId) {
@@ -1025,6 +1060,7 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
                     
                     // Carregar modificadores após autenticação
                     loadModifiers();
+                    loadRoomPrefs();
                 })
                 .catch(() => {
                     location.reload();

@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 from twilight.auth.service import (
     clear_user_game,
     create_token,
+    delete_account,
     get_current_user,
     hash_password,
     load_accounts,
@@ -221,5 +222,157 @@ def api_auth_status():
             'admin_level': admin_level,
         }
     })
+
+
+# --------------------------------------------------------------------------
+# Configurações da conta (página /settings)
+# --------------------------------------------------------------------------
+MIN_PASSWORD_LEN = 4
+# Chaves aceitas nas preferências de sala (mesmas do modal de criar sala).
+_PREF_BOOL_KEYS = ('private', 'allow_spectators', 'chat_enabled')
+_DEFAULT_ROOM_PREFS = {
+    'max_players': 6,
+    'private': False,
+    'allow_spectators': True,
+    'chat_enabled': True,
+}
+
+
+def _require_auth_json():
+    """Retorna o usuário logado ou uma resposta 401 pronta."""
+    username = get_current_user()
+    if not username:
+        return None, (jsonify({'success': False, 'message': 'Não autenticado'}), 401)
+    return username, None
+
+
+@bp.route('/api/account')
+def get_account():
+    username, err = _require_auth_json()
+    if err:
+        return err
+
+    account = load_accounts().get(username, {})
+    prefs = account.get('room_preferences')
+    if not isinstance(prefs, dict):
+        prefs = {}
+    # Mescla com os defaults para o cliente nunca receber campos faltando.
+    preferences = dict(_DEFAULT_ROOM_PREFS)
+    preferences.update({k: v for k, v in prefs.items() if k in _DEFAULT_ROOM_PREFS})
+
+    return jsonify({
+        'success': True,
+        'account': {
+            'username': username,
+            'created_at': account.get('created_at'),
+            'current_game': account.get('current_game'),
+            'admin_level': int(account.get('admin_level', account.get('level', 0)) or 0),
+            'preferences': preferences,
+        },
+    })
+
+
+@bp.route('/api/account/change-password', methods=['POST'])
+def change_password():
+    username, err = _require_auth_json()
+    if err:
+        return err
+
+    data = request.json or {}
+    current_password = (data.get('current_password') or '').strip()
+    new_password = (data.get('new_password') or '').strip()
+
+    # Mesmo rate limit do login, por IP+usuário.
+    key = f'pwd:{_client_ip()}:{username}'
+    if _too_many(key, _LOGIN_WINDOW, _MAX_FAILED_LOGINS):
+        return jsonify({'success': False, 'message': 'Muitas tentativas. Aguarde alguns minutos.'}), 429
+
+    account = load_accounts().get(username, {})
+    if not account or not verify_password(current_password, account.get('password', '')):
+        _record(key)
+        return jsonify({'success': False, 'message': 'Senha atual incorreta'}), 400
+
+    if len(new_password) < MIN_PASSWORD_LEN:
+        return jsonify({
+            'success': False,
+            'message': f'A nova senha deve ter pelo menos {MIN_PASSWORD_LEN} caracteres',
+        }), 400
+    if new_password == current_password:
+        return jsonify({'success': False, 'message': 'A nova senha deve ser diferente da atual'}), 400
+
+    update_account(username, {'password': hash_password(new_password)})
+    return jsonify({'success': True, 'message': 'Senha alterada com sucesso'})
+
+
+@bp.route('/api/account/preferences', methods=['POST'])
+def save_preferences():
+    username, err = _require_auth_json()
+    if err:
+        return err
+
+    data = request.json or {}
+    prefs = data.get('preferences')
+    if not isinstance(prefs, dict):
+        return jsonify({'success': False, 'message': 'Preferências inválidas'}), 400
+
+    clean = dict(_DEFAULT_ROOM_PREFS)
+
+    if 'max_players' in prefs:
+        try:
+            max_players = int(prefs['max_players'])
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'message': 'Máximo de jogadores inválido'}), 400
+        if not 2 <= max_players <= 12:
+            return jsonify({'success': False, 'message': 'Máximo de jogadores deve ser entre 2 e 12'}), 400
+        clean['max_players'] = max_players
+
+    for k in _PREF_BOOL_KEYS:
+        if k in prefs:
+            clean[k] = bool(prefs[k])
+
+    if not update_account(username, {'room_preferences': clean}):
+        return jsonify({'success': False, 'message': 'Conta não encontrada'}), 404
+    return jsonify({'success': True, 'preferences': clean})
+
+
+@bp.route('/api/account/delete', methods=['POST'])
+def delete_own_account():
+    username, err = _require_auth_json()
+    if err:
+        return err
+
+    data = request.json or {}
+    password = (data.get('password') or '').strip()
+    confirm = (data.get('confirm') or '').strip()
+
+    if confirm != 'APAGAR':
+        return jsonify({'success': False, 'message': 'Confirmação inválida. Digite APAGAR.'}), 400
+
+    account = load_accounts().get(username, {})
+    admin_level = int(account.get('admin_level', account.get('level', 0)) or 0)
+    if admin_level >= 1:
+        return jsonify({
+            'success': False,
+            'message': 'Contas de administrador não podem ser excluídas por aqui.',
+        }), 403
+
+    if not account or not verify_password(password, account.get('password', '')):
+        return jsonify({'success': False, 'message': 'Senha incorreta'}), 400
+
+    # Evita deixar um "fantasma" numa partida em andamento.
+    current_game = account.get('current_game')
+    if current_game and current_game in games:
+        return jsonify({
+            'success': False,
+            'message': 'Saia da partida em andamento antes de excluir a conta.',
+        }), 409
+
+    # Sai da partida atual (se houver) e remove a conta.
+    clear_user_game(username, current_game)
+    delete_account(username)
+
+    response = jsonify({'success': True, 'message': 'Conta excluída'})
+    response.delete_cookie('auth_token')
+    return response
 
 
