@@ -10,6 +10,80 @@ from twilight.storage.story_saves import get_user_save_file
 
 bp = Blueprint('story', __name__)
 
+# Limites de sanidade para o modo história (o cliente é autoritativo, então
+# valores absurdos vindos do localStorage são higienizados aqui).
+_MAX_LEVEL = 200
+_MAX_GOLD = 10_000_000
+_MAX_EXP = 100_000_000
+_MAX_STAT = 1_000_000
+_MAX_INVENTORY_SLOTS = 60
+_MAX_NAME_LEN = 60
+
+
+def _coerce_int(value, default, lo=None, hi=None):
+    """Converte para int com limites; tipos inesperados caem no default."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    n = int(value)
+    if lo is not None and n < lo:
+        n = lo
+    if hi is not None and n > hi:
+        n = hi
+    return n
+
+
+def validate_and_normalize_save(save_data):
+    """Valida e normaliza um save do modo história no servidor.
+
+    O cliente monta o save livremente (localStorage), então o servidor não pode
+    confiar em nenhum número. Esta função:
+      * rejeita saves estruturalmente inválidos (retorna None + motivo);
+      * normaliza tipos e limita campos numéricos a faixas plausíveis;
+      * mantém a coerência vida <= vida máxima e isDead == (vida <= 0).
+
+    Retorna (save_normalizado, None) ou (None, mensagem_de_erro).
+    """
+    if not isinstance(save_data, dict):
+        return None, 'Save inválido'
+
+    character = save_data.get('character')
+    if not isinstance(character, dict):
+        return None, 'Save sem personagem válido'
+
+    name = str(character.get('name') or '').strip()
+    if not name:
+        return None, 'Personagem sem nome'
+    character['name'] = name[:_MAX_NAME_LEN]
+
+    max_life = _coerce_int(character.get('maxLife'), 1, lo=1, hi=_MAX_STAT)
+    max_mana = _coerce_int(character.get('maxMana'), 0, lo=0, hi=_MAX_STAT)
+    character['maxLife'] = max_life
+    character['maxMana'] = max_mana
+    character['life'] = _coerce_int(character.get('life'), max_life, lo=0, hi=max_life)
+    character['mana'] = _coerce_int(character.get('mana'), max_mana, lo=0, hi=max_mana)
+    character['level'] = _coerce_int(character.get('level'), 1, lo=1, hi=_MAX_LEVEL)
+    character['exp'] = _coerce_int(character.get('exp'), 0, lo=0, hi=_MAX_EXP)
+    character['gold'] = _coerce_int(character.get('gold'), 0, lo=0, hi=_MAX_GOLD)
+
+    if not isinstance(save_data.get('inventory'), list):
+        save_data['inventory'] = []
+    save_data['inventory'] = save_data['inventory'][:_MAX_INVENTORY_SLOTS]
+
+    if not isinstance(save_data.get('equipment'), dict):
+        save_data['equipment'] = {}
+
+    if not isinstance(save_data.get('location'), str) or not save_data['location']:
+        save_data['location'] = 'home'
+
+    if 'activeQuest' in save_data and save_data['activeQuest'] is not None \
+            and not isinstance(save_data['activeQuest'], dict):
+        save_data['activeQuest'] = None
+
+    # Consistência: morte é exatamente vida <= 0.
+    save_data['isDead'] = bool(character['life'] <= 0)
+
+    return save_data, None
+
 
 def _atomic_json_write(path, data):
     """Escreve JSON via arquivo temporário + os.replace (escrita atômica)."""
@@ -30,6 +104,11 @@ def api_save_game(username):
 
     if not save_data or not isinstance(save_data, dict):
         return jsonify({'success': False, 'message': 'Dados de save vazios'}), 400
+
+    # Valida e normaliza no servidor (o cliente é autoritativo).
+    save_data, error = validate_and_normalize_save(save_data)
+    if error:
+        return jsonify({'success': False, 'message': error}), 400
 
     # Limite de tamanho (evita encher o volume com payloads gigantes)
     try:

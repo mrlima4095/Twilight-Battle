@@ -1457,6 +1457,9 @@ textarea { min-height: 96px; resize: vertical; }
         <div class="combat-log" id="combat-log"></div>
     </div>
 
+    <!-- Dados de missões (carregado antes do motor principal) -->
+    <script src="/static/js/story/quests.js"></script>
+
     <script>
         // Game State
         let gameState = {
@@ -2774,57 +2777,8 @@ textarea { min-height: 96px; resize: vertical; }
             }
         };
         
-        const QUESTS = {
-            royal_hunt: {
-                id: 'royal_hunt',
-                name: '🌲 A Caçada Real',
-                description: 'O Rei pede sua ajuda para eliminar as ameaças nas florestas do reino.',
-                repeatable: false,
-                currentStage: 0,
-                stages: [
-                    {
-                        name: 'Falar com o Capitão',
-                        description: 'Vá até o Salão Principal e converse com o Capitão da Guarda para obter mais informações sobre a ameaça.',
-                        type: 'talk_to_npc',
-                        target: 'captain',
-                        required: 1,
-                        progress: 0,
-                        hints: '🗡️ O Capitão fica no Salão Principal do castelo.',
-                        onComplete: () => {
-                            addLog('📜 Missão atualizada: O Capitão informou que lobos gigantes estão atacando os campos!');
-                        }
-                    },
-                    {
-                        name: 'Derrotar Lobos',
-                        description: 'Derrote 3 Lobos na Floresta Sombria para reduzir a ameaça.',
-                        type: 'kill_creature',
-                        target: 'wolf',
-                        required: 3,
-                        progress: 0,
-                        hints: '🐺 Lobos podem ser encontrados na Floresta Sombria (saia pelo Portão Principal e vá para o norte).',
-                        onProgress: (current, required) => {
-                            if (current === 1) addLog(`⚔️ Você derrotou seu primeiro lobo! Faltam ${required - current}.`);
-                            else if (current === required) addLog(`✨ Todos os lobos foram derrotados! Volte ao Capitão.`);
-                        }
-                    },
-                    {
-                        name: 'Reportar ao Capitão',
-                        description: 'Retorne ao Capitão da Guarda para receber sua recompensa.',
-                        type: 'talk_to_npc',
-                        target: 'captain',
-                        required: 1,
-                        progress: 0,
-                        hints: '🏰 O Capitão está no Salão Principal aguardando seu retorno.',
-                        onComplete: () => {
-                            addLog('👑 O Capitão ficou impressionado com sua bravura!');
-                        }
-                    }
-                ],
-                rewards: [
-                    { gold: 10, exp: 25, item: 'dagger', itemQty: 1 },
-                ]
-            }
-        }
+        // As missões (const QUESTS) agora vivem em /static/js/story/quests.js,
+        // carregado antes deste script para manter o motor desacoplado dos dados.
 
         const LIBRARY_BOOKS = {
             // Livros de História
@@ -9047,5 +9001,8 @@ textarea { min-height: 96px; resize: vertical; }
             }, 300000);
         });
     </script>
+
+    <!-- Sistemas de jogo (encontros, missões, bestiário, conquistas, clima) -->
+    <script src="/static/js/story/systems.js"></script>
 </body>
 </html>
