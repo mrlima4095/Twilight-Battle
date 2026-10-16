@@ -1,9 +1,8 @@
 """Motor da partida multiplayer (classe Game)."""
 import random
+import time
 from random import shuffle
 import uuid
-
-from flask_socketio import emit
 
 from twilight.cards.deck import create_deck, get_random_disguise
 from twilight.cards.definitions import CARDS
@@ -32,6 +31,10 @@ class Game:
         self.finished = False  # True quando há vencedor — trava ações
         self.finished_at = None  # timestamp do fim (para cleanup da sala)
         self.winner = None
+        # Reaper: atividade para detectar salas abandonadas / turnos travados
+        self.created_at = time.time()
+        self.last_action_at = self.created_at
+        self.empty_since = None  # quando todos os humanos desconectaram
         self.current_turn = 0  # Índice na lista players
         self.time_of_day = "day"
         self.time_cycle = 0
@@ -392,17 +395,6 @@ class Game:
             'toggle_time': 1
         }
 
-        def get_player_runes_count(self, username):
-            player = self.player_data.get(username)
-            if not player:
-                return 0
-            
-            runes_count = 0
-            for card in player.get('hand', []):
-                if card and (card.get('type') == 'rune' or card.get('id') == 'runa'):
-                    runes_count += 1
-            return runes_count
-
     def get_player_talismans_count(self, username):
         player = self.player_data.get(username)
         if not player:
@@ -653,22 +645,31 @@ class Game:
             # guardar slot resolvido para o bloco de colocação
             position_index = slot_name
         
-        # Remover carta da mão
+        else:
+            return {'success': False, 'message': 'Tipo de posição inválido'}
+        
+        # IMPORTANTE: validar a posição ANTES de remover a carta da mão,
+        # senão uma jogada inválida faz a carta desaparecer do jogo.
+        if position_type == 'attack':
+            if position_index < 0 or position_index >= len(player['attack_bases']):
+                return {'success': False, 'message': 'Posição de ataque inválida'}
+            if player['attack_bases'][position_index] is not None:
+                return {'success': False, 'message': 'Posição de ataque ocupada'}
+        
+        elif position_type == 'defense':
+            if position_index < 0 or position_index >= len(player['defense_bases']):
+                return {'success': False, 'message': 'Posição de defesa inválida'}
+            if player['defense_bases'][position_index] is not None:
+                return {'success': False, 'message': 'Posição de defesa ocupada'}
+        
+        # Remover carta da mão (após todas as validações)
         player['hand'].pop(card_index)
         
         # Colocar carta no local apropriado
         if position_type == 'attack':
-            if position_index >= len(player['attack_bases']):
-                return {'success': False, 'message': 'Posição de ataque inválida'}
-            if player['attack_bases'][position_index] is not None:
-                return {'success': False, 'message': 'Posição de ataque ocupada'}
             player['attack_bases'][position_index] = card_to_play
         
         elif position_type == 'defense':
-            if position_index >= len(player['defense_bases']):
-                return {'success': False, 'message': 'Posição de defesa inválida'}
-            if player['defense_bases'][position_index] is not None:
-                return {'success': False, 'message': 'Posição de defesa ocupada'}
             player['defense_bases'][position_index] = card_to_play
         
         elif position_type == 'equipment':
@@ -1085,7 +1086,7 @@ class Game:
                                 break
                     
                     if not has_elf_in_defense:
-                        damage_log.append(f"⚠️ Oráculo não pode ser usado: requer um Elfo em modo de defesa")
+                        damage_log.append("⚠️ Oráculo não pode ser usado: requer um Elfo em modo de defesa")
                         oracle_index = -1
 
             # Verificar Talismã da Imortalidade no alvo
@@ -1136,7 +1137,7 @@ class Game:
                         used_talisman['uses_left'] = 2
                         self.deck.append(used_talisman)
                         shuffle(self.deck)
-                        damage_log.append(f"🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
+                        damage_log.append("🔄 Talismã da Imortalidade se esgotou e voltou para o deck!")
                 else:
                     player_killed = True
                     self.process_player_death(target_username)
@@ -1936,9 +1937,11 @@ class Game:
                 has_mago_negro = True
                 break
         
+        # Localizar a carta de ritual, mas NÃO consumir ainda: só depois de
+        # validar as condições (senão a carta some em um ritual que falhou).
+        ritual_index = -1
         if not has_mago_negro:
             ritual_card = None
-            ritual_index = -1
             for i, card in enumerate(player['hand']):
                 if card['id'] == ritual_id:
                     ritual_card = card
@@ -1947,22 +1950,26 @@ class Game:
             
             if not ritual_card:
                 return {'success': False, 'message': 'Você não tem esta carta de ritual'}
-            
-            player['hand'].pop(ritual_index)
         
         if ritual_id == 'ritual_157':
             if not target_username:
                 return {'success': False, 'message': 'Selecione um alvo para o Ritual 157'}
+            if target_username not in self.player_data:
+                return {'success': False, 'message': 'Alvo inválido'}
             
             can_cast, message = RitualManager.check_ritual_157(self, username)
             if not can_cast:
                 return {'success': False, 'message': message}
             
+            if ritual_index >= 0:
+                player['hand'].pop(ritual_index)
             result = RitualManager.execute_ritual_157(self, username, target_username)
             
         elif ritual_id == 'ritual_amor':
             if not target_username:
                 return {'success': False, 'message': 'Selecione o alvo da profecia'}
+            if target_username not in self.player_data:
+                return {'success': False, 'message': 'Alvo inválido'}
             
             can_cast, message = RitualManager.check_ritual_amor(self, username)
             if not can_cast:
@@ -1976,6 +1983,8 @@ class Game:
             if not has_profecia:
                 return {'success': False, 'message': 'O alvo não possui nenhuma profecia ativa'}
             
+            if ritual_index >= 0:
+                player['hand'].pop(ritual_index)
             result = RitualManager.execute_ritual_amor(self, username, target_username)
         
         else:
@@ -2653,7 +2662,7 @@ class Game:
                     break
             
             if is_night and has_mage:
-                broadcast_system_message(self.game_id, f'⚡ Armadilha Cheat ativada! O dano será transferido para o próximo jogador!')
+                broadcast_system_message(self.game_id, '⚡ Armadilha Cheat ativada! O dano será transferido para o próximo jogador!')
                 return {
                     'type': 'cheat_pass_damage',
                     'cancel_attack': True,
@@ -2664,7 +2673,7 @@ class Game:
             else:
                 effects.append({
                     'type': 'failed',
-                    'message': f'⚠️ Armadilha Cheat falhou! Precisa ser noite e ter um mago em campo.'
+                    'message': '⚠️ Armadilha Cheat falhou! Precisa ser noite e ter um mago em campo.'
                 })
                 return {
                     'type': 'trap_failed',

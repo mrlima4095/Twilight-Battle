@@ -211,7 +211,8 @@ body {
 
     <p class="info-text">Seus dados são armazenados com segurança</p>
     <div class="auth-links">
-      <a href="/rules">📜 Regras</a>
+      <a href="/">🏠 Início</a>
+      · <a href="/rules">📜 Regras</a>
       · <a href="/help">❓ Ajuda</a>
     </div>
   </div>
@@ -354,6 +355,12 @@ body {
             document.getElementById('register-confirm').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') registerBtn.click();
             });
+
+            // Deep link: /login?tab=register já abre na aba de registro.
+            const params = new URLSearchParams(window.location.search);
+            if ((params.get('tab') || '').toLowerCase() === 'register') {
+                registerTab.click();
+            }
         });
     </script>
 </body>

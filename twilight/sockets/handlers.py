@@ -6,18 +6,14 @@ from flask_socketio import emit, join_room, leave_room
 
 from twilight.config import now_sp_str
 from twilight.auth.service import (
-    clear_game_from_all_accounts,
     clear_user_game,
     get_current_user,
-    load_accounts,
-    save_accounts,
     update_user_game,
 )
 from twilight.extensions import socketio
-from twilight.game.chat import add_chat_message, broadcast_system_message, censor_text
-from twilight.game.engine import Game
-from twilight.game.session import close_game, schedule_close_finished_game
-from twilight.state import chat_messages, games, players
+from twilight.game.chat import add_chat_message, broadcast_system_message
+from twilight.game.session import close_game
+from twilight.state import chat_messages, games
 
 
 def _emit_game_over_and_rematch(game_id, game, winner, winner_name):
@@ -75,7 +71,7 @@ def handle_disconnect():
 
 @socketio.on('join_game')
 def handle_join_game(data):
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     username = get_current_user()
     if not username:
         emit('error', {'message': 'Usuário não autenticado'})
@@ -84,6 +80,7 @@ def handle_join_game(data):
         emit('error', {'message': 'Jogo não encontrado'})
         return
     game = games[game_id]
+    game.last_action_at = time.time()
 
     # Se já começou e o usuário não está no jogo, não permite
     if game.started and username not in game.player_data:
@@ -181,7 +178,7 @@ def handle_join_game(data):
 @socketio.on('leave_game')
 def handle_leave_game(data):
     """Jogador sai voluntariamente do jogo"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     # Obter username do token
     username = get_current_user()
@@ -242,7 +239,7 @@ def handle_leave_game(data):
 
 @socketio.on('get_game_state')
 def handle_get_game_state(data):
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
@@ -346,7 +343,7 @@ def handle_get_game_state(data):
 @socketio.on('get_graveyard')
 def handle_get_graveyard(data):
     """Retorna lista de cartas no cemitério"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
 
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
@@ -369,7 +366,7 @@ def handle_get_graveyard(data):
 @socketio.on('get_spells')
 def handle_get_spells(data):
     """Retorna lista de feitiços disponíveis para o jogador"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
@@ -389,20 +386,21 @@ def handle_get_spells(data):
 @socketio.on('get_rituals')
 def handle_get_rituals(data):
     """Retorna lista de rituais disponíveis para o jogador"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     if game_id not in games:
         emit('error', {'message': 'Jogo não encontrado'})
         return
     
     game = games[game_id]
-    player_id = request.sid
+    # player_data é indexado por username (não pelo socket id)
+    username = game.get_player_by_socket(request.sid) or get_current_user()
     
-    if player_id not in game.player_data:
+    if not username or username not in game.player_data:
         emit('error', {'message': 'Jogador não encontrado'})
         return
     
-    rituals = game.get_available_rituals(player_id)
+    rituals = game.get_available_rituals(username) or []
     
     emit('rituals_list', {
         'rituals': rituals,
@@ -412,7 +410,7 @@ def handle_get_rituals(data):
 @socketio.on('spectate_game')
 def handle_spectate_game(data):
     """Entrar como espectador em um jogo em andamento"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     # Obter username do token
     username = get_current_user()
@@ -476,7 +474,7 @@ def handle_spectate_game(data):
 @socketio.on('reconnect_game')
 def handle_reconnect_game(data):
     """Gerencia reconexão de jogadores"""
-    game_id = data['game_id']
+    game_id = (data or {}).get('game_id')
     
     # Obter username do token
     username = get_current_user()
@@ -489,6 +487,7 @@ def handle_reconnect_game(data):
         return
     
     game = games[game_id]
+    game.last_action_at = time.time()
     
     # Tentar reconectar
     result = game.reconnect_player(request.sid, username)
@@ -546,8 +545,8 @@ def handle_reconnect_game(data):
 @socketio.on('ping_game')
 def handle_ping_game(data):
     """Mantém a conexão ativa e verifica se jogador ainda está no jogo"""
-    game_id = data['game_id']
-    player_id = data['player_id']
+    game_id = (data or {}).get('game_id')
+    player_id = (data or {}).get('player_id')
     
     if game_id in games:
         game = games[game_id]
@@ -560,32 +559,32 @@ def handle_ping_game(data):
 @socketio.on('send_chat_message')
 def handle_send_chat_message(data):
     """Envia mensagem de chat para a sala"""
-    game_id = data.get('game_id')
-    message = data.get('message', '').strip()
+    game_id = (data or {}).get('game_id')
+    message = (data or {}).get('message', '').strip()
     
     if not game_id or not message:
         emit('chat_error', {'message': 'Mensagem vazia'})
         return
     
-    if not games[game_id].chat_enabled:
+    # Sala precisa existir ANTES de acessar atributos dela
+    if game_id not in games:
+        emit('chat_error', {'message': 'Sala não encontrada'})
+        return
+    
+    game = games[game_id]
+    
+    if not game.chat_enabled:
         emit('chat_error', {'message': 'Chat desabilitado nesta sala'})
         return
-
-    # Obter username
-    username = get_current_user()
-    if not username:
-        # Tentar obter do socket mapping
-        for gid, game in games.items():
-            if gid == game_id:
-                username = game.get_player_by_socket(request.sid)
-                break
     
+    username = get_current_user() or game.get_player_by_socket(request.sid)
     if not username:
         emit('chat_error', {'message': 'Usuário não identificado'})
         return
     
-    if game_id not in games:
-        emit('chat_error', {'message': 'Sala não encontrada'})
+    # Só quem está na sala (jogador ou espectador) pode conversar
+    if username not in game.player_data:
+        emit('chat_error', {'message': 'Você não está nesta sala'})
         return
     
     # Limitar tamanho da mensagem
@@ -606,10 +605,20 @@ def handle_send_chat_message(data):
 
 @socketio.on('get_chat_history')
 def handle_get_chat_history(data):
-    """Retorna o histórico de mensagens do chat"""
-    game_id = data.get('game_id')
+    """Retorna o histórico de mensagens do chat (só para quem está na sala)"""
+    game_id = (data or {}).get('game_id')
     
     if not game_id:
+        emit('chat_history', {'messages': []})
+        return
+    
+    username = get_current_user()
+    if not username:
+        emit('chat_history', {'messages': []})
+        return
+    
+    game = games.get(game_id)
+    if not game or username not in game.player_data:
         emit('chat_history', {'messages': []})
         return
     
@@ -618,9 +627,9 @@ def handle_get_chat_history(data):
 
 @socketio.on('player_action')
 def handle_player_action(data):
-    game_id = data['game_id']
-    action = data['action']
-    params = data.get('params', {})
+    game_id = (data or {}).get('game_id')
+    action = (data or {}).get('action')
+    params = (data or {}).get('params', {}) or {}
     
     # Verificar autenticação
     username = get_current_user()
@@ -835,6 +844,8 @@ def handle_player_action(data):
             result = {'success': True, 'next_turn': next_player_name}
         
         if result and result.get('success'):
+            # Atividade: alimenta o timeout de turno do reaper
+            game.last_action_at = time.time()
             # Registrar ação para primeira rodada (exceto end_turn)
             first_round_ended = False
             if action != 'end_turn':
@@ -847,23 +858,46 @@ def handle_player_action(data):
                     'message': '🎉 PRIMEIRA RODADA CONCLUÍDA! Todos já jogaram, ataques liberados!'
                 }, room=game_id)
             
-            # Resultado público sob névoa: remove detalhes de combate que vazam o board
-            emit_result = result
-            if fog and action == 'attack' and isinstance(result, dict):
-                emit_result = dict(result)
-                emit_result['fog'] = True
-                # client usa isso + papel (atacante/defensor) para montar o Swal
-
-            # Emitir ação com todas as informações para o log
-            emit('action_success', {
+            # Resultado público sob névoa: os detalhes de combate (poder, dano,
+            # vida, cartas destruídas) só vão para quem atacou e quem foi
+            # atacado. O restante da sala recebe uma versão sem esses dados —
+            # antes o payload completo era emitido para todos (vazamento real,
+            # não só de UI).
+            base_payload = {
                 'player_id': player_name,
                 'player_name': player_name,
                 'action': action,
-                'result': emit_result,
                 'log_message': log_message,
                 'timestamp': timestamp,
                 'fog': fog,
-            }, room=game_id)
+            }
+            if fog and action == 'attack' and isinstance(result, dict):
+                sensitive = (
+                    'total_attack', 'damage_to_player', 'target_life',
+                    'cards_destroyed', 'cards_damaged', 'trap_effects',
+                    'reflected_damage',
+                )
+                stripped = {k: v for k, v in result.items() if k not in sensitive}
+                stripped['fog'] = True
+
+                target_name = (
+                    result.get('target')
+                    or result.get('target_name')
+                    or result.get('original_target')
+                )
+                target_sid = game.get_socket_id(target_name) if target_name else None
+                involved_sids = [sid for sid in (request.sid, target_sid) if sid]
+
+                socketio.emit(
+                    'action_success',
+                    dict(base_payload, result=stripped),
+                    room=game_id,
+                    skip_sid=involved_sids,
+                )
+                for sid in involved_sids:
+                    socketio.emit('action_success', dict(base_payload, result=result), to=sid)
+            else:
+                emit('action_success', dict(base_payload, result=result), room=game_id)
             
             # Só emite game_over UMA vez por partida
             already_emitted = getattr(game, '_game_over_emitted', False)

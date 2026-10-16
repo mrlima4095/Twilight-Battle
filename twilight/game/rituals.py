@@ -116,7 +116,9 @@ class RitualManager:
     @staticmethod
     def get_available_rituals(game, player_id):
         """Retorna lista de rituais disponíveis baseado nas condições"""
-        player = game.player_data[player_id]
+        player = game.player_data.get(player_id)
+        if not player:
+            return []
         available_rituals = []
         
         # Verificar se tem carta do ritual na mão (para magos comuns)
@@ -161,4 +163,5 @@ class RitualManager:
                 
                 available_rituals.append(ritual)
         
+        return available_rituals
 

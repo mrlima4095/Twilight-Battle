@@ -1,12 +1,11 @@
 """API do journal / diário do reino."""
 import time
-import uuid
 
 from flask import Blueprint, jsonify, request
 
 from twilight.auth.service import get_current_user, load_accounts, login_required
 from twilight.config import now_sp_iso
-from twilight.storage.journal import load_journal, save_journal
+from twilight.storage.journal import delete_journal_entry, load_journal, save_journal
 
 bp = Blueprint('journal', __name__)
 
@@ -195,7 +194,7 @@ def api_journal_delete(username, entry_id):
         return jsonify({'success': False, 'message': 'Entrada não encontrada'}), 404
     
     removed = entries.pop(entry_index)
-    save_journal(entries)
+    delete_journal_entry(entry_id)
     
     return jsonify({'success': True, 'removed': removed})
 

@@ -1,11 +1,11 @@
 """Listagem, criação e start de partidas."""
 import random
 import string
-import uuid
+import time
 
 from flask import Blueprint, jsonify, request
 
-from twilight.auth.service import get_current_user, update_user_game
+from twilight.auth.service import get_current_user, login_required
 from twilight.cards.definitions import MODIFIERS
 from twilight.extensions import socketio
 from twilight.game.ai import TUTORIAL_BOT_NAME, TUTORIAL_TIPS, add_tutorial_bot, schedule_bot_turn
@@ -141,13 +141,14 @@ def start_game(game_id):
         game.finished_at = None
         game.winner = None
         game._game_over_emitted = False
+        game.last_action_at = time.time()
         if getattr(game, 'tutorial', False):
             broadcast_system_message(
                 game_id,
                 '🎓 Tutorial: você treina contra o Mentor (fácil). Siga as dicas no painel!',
             )
         else:
-            broadcast_system_message(game_id, f'🎮 O jogo começou! Que comece a batalha! ⚔️')
+            broadcast_system_message(game_id, '🎮 O jogo começou! Que comece a batalha! ⚔️')
         socketio.emit('game_started', {
             'game_id': game_id,
             'tutorial': bool(getattr(game, 'tutorial', False)),
@@ -191,8 +192,9 @@ def check_start_permission(game_id):
 
 
 @bp.route('/api/cleanup-games', methods=['POST'])
-def cleanup_games():
-    """Remove salas finished/vazias que ficariam eternas na memória."""
+@login_required
+def cleanup_games(username):
+    """Remove salas finished/vazias. Exige login (não é mais público)."""
     from twilight.game.session import cleanup_stale_games
     result = cleanup_stale_games()
     return jsonify({'success': True, **result})

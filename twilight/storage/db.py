@@ -5,7 +5,7 @@ import json
 import os
 import sqlite3
 import threading
-from typing import Any, Optional
+from typing import Any
 
 from twilight.config import (
     ACCOUNTS_FILE,
@@ -65,6 +65,8 @@ def init_db() -> None:
                     ON journal_entries(date);
                 """
             )
+            # Migra contas/journal do JSON legado (uma vez, se as tabelas vazias)
+            _migrate_from_json_if_needed(conn)
             conn.commit()
         finally:
             conn.close()
@@ -141,22 +143,90 @@ def load_accounts() -> dict:
             conn.close()
 
 
+def upsert_account(username: str, data: dict) -> None:
+    """Insere/atualiza UMA conta (sem tocar nas demais)."""
+    _ensure_init()
+    with _lock:
+        conn = _connect()
+        try:
+            row = _account_to_row(username, data or {})
+            conn.execute(
+                """
+                INSERT INTO accounts (username, password, created_at, current_game, admin_level, meta_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(username) DO UPDATE SET
+                    password = excluded.password,
+                    created_at = excluded.created_at,
+                    current_game = excluded.current_game,
+                    admin_level = excluded.admin_level,
+                    meta_json = excluded.meta_json
+                """,
+                row,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def update_account(username: str, updates: dict) -> bool:
+    """
+    Aplica `updates` numa única conta de forma atômica.
+
+    O read-modify-write acontece inteiro sob o mesmo lock, então chamadas
+    concorrentes (check-auth, update_user_game, story save, admin...) não se
+    sobrescrevem nem apagam outras contas.
+    """
+    _ensure_init()
+    with _lock:
+        conn = _connect()
+        try:
+            row = conn.execute(
+                'SELECT username, password, created_at, current_game, admin_level, meta_json '
+                'FROM accounts WHERE username = ?',
+                (username,),
+            ).fetchone()
+            if row is None:
+                return False
+            data = _row_to_account(row)
+            data.update(updates or {})
+            new_row = _account_to_row(row['username'], data)
+            conn.execute(
+                'UPDATE accounts SET password = ?, created_at = ?, current_game = ?, '
+                'admin_level = ?, meta_json = ? WHERE username = ?',
+                new_row[1:] + (row['username'],),
+            )
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+
+def delete_account(username: str) -> bool:
+    """Remove UMA conta (não mexe nas demais)."""
+    _ensure_init()
+    with _lock:
+        conn = _connect()
+        try:
+            cur = conn.execute('DELETE FROM accounts WHERE username = ?', (username,))
+            conn.commit()
+            return cur.rowcount > 0
+        finally:
+            conn.close()
+
+
 def save_accounts(accounts: dict) -> None:
-    """Substitui o conjunto de contas (API compatível com o JSON antigo)."""
+    """
+    Upsert em lote (compatível com a antiga API de JSON).
+
+    Só grava/atualiza o que recebeu — NÃO remove contas ausentes do dict, para
+    não apagar dados quando duas requisições concorrentes fazem
+    load → modify → save. Para remover use delete_account().
+    """
     _ensure_init()
     accounts = accounts or {}
     with _lock:
         conn = _connect()
         try:
-            existing = {
-                r[0]
-                for r in conn.execute('SELECT username FROM accounts').fetchall()
-            }
-            incoming = set(accounts.keys())
-            # remove deletados
-            for uname in existing - incoming:
-                conn.execute('DELETE FROM accounts WHERE username = ?', (uname,))
-            # upsert
             for uname, data in accounts.items():
                 row = _account_to_row(uname, data or {})
                 conn.execute(
@@ -175,6 +245,7 @@ def save_accounts(accounts: dict) -> None:
             conn.commit()
         finally:
             conn.close()
+
 
 
 def _entry_to_dict(row: sqlite3.Row) -> dict:
@@ -255,17 +326,12 @@ def load_journal() -> list:
 
 
 def save_journal(entries: list) -> None:
+    """Upsert em lote do journal (NÃO remove entradas ausentes)."""
     _ensure_init()
     entries = entries or []
     with _lock:
         conn = _connect()
         try:
-            existing = {
-                r[0] for r in conn.execute('SELECT id FROM journal_entries').fetchall()
-            }
-            incoming = {str(e.get('id')) for e in entries if e and e.get('id') is not None}
-            for eid in existing - incoming:
-                conn.execute('DELETE FROM journal_entries WHERE id = ?', (eid,))
             for entry in entries:
                 if not entry or entry.get('id') is None:
                     continue
@@ -291,6 +357,19 @@ def save_journal(entries: list) -> None:
                     row,
                 )
             conn.commit()
+        finally:
+            conn.close()
+
+
+def delete_journal_entry(entry_id: str) -> bool:
+    """Remove UMA entrada do journal."""
+    _ensure_init()
+    with _lock:
+        conn = _connect()
+        try:
+            cur = conn.execute('DELETE FROM journal_entries WHERE id = ?', (str(entry_id),))
+            conn.commit()
+            return cur.rowcount > 0
         finally:
             conn.close()
 

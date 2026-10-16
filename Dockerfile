@@ -4,6 +4,12 @@
 
 FROM python:3.11-slim-bookworm
 
+# Recomendado definir no Coolify (ver .env.example):
+#   SECRET_KEY, JWT_SECRET (segredos fortes), SECURE_COOKIES=true,
+#   CORS_ALLOWED_ORIGINS, WEBHOOK_SECRET (só se for usar o webhook de deploy)
+# Se SECRET_KEY/JWT_SECRET não forem definidos, a app GERA e persiste em
+# /app/data/.secret_key e /app/data/.jwt_secret (volume montado) — nunca
+# usa segredo público do repositório.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=5000 \

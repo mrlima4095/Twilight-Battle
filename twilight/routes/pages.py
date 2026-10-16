@@ -17,7 +17,8 @@ bp = Blueprint('pages', __name__)
 def index():
     username = get_current_user()
     if not username:
-        return render_template('security/auth.html')
+        # Visitante não logado: mostra a landing de apresentação do jogo.
+        return render_template('landing.html')
 
     # Limpa ponteiro se a sala morreu; NÃO força a página da partida aqui —
     # o jogador pode abrir o lobby em outra aba e voltar com o link/código.
@@ -31,6 +32,14 @@ def index():
         'index.html',
         active_game_id=current_game if current_game in games else None,
     )
+
+
+@bp.route('/login')
+def login_page():
+    """Formulário de login/registro (visitantes). Usuários logados vão ao início."""
+    if get_current_user():
+        return redirect('/')
+    return render_template('security/auth.html')
 
 
 @bp.route('/rules')
@@ -72,7 +81,7 @@ def story_help():
 def journal():
     username = get_current_user()
     if not username:
-        return redirect('/')
+        return redirect('/login')
     return render_template('web/journal.html', username=username)
 
 

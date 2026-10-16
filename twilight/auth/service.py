@@ -2,7 +2,7 @@
 import hashlib
 import hmac
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import jwt
@@ -13,7 +13,13 @@ from twilight.config import (
     JWT_EXPIRATION_HOURS,
     JWT_SECRET,
 )
-from twilight.storage.db import load_accounts, save_accounts
+from twilight.storage.db import (  # noqa: F401  (delete_account/save_accounts/upsert_account são re-exportados)
+    delete_account,
+    load_accounts,
+    save_accounts,
+    update_account,
+    upsert_account,
+)
 
 # reexport para imports legados: from twilight.auth.service import load_accounts
 def hash_password(password):
@@ -35,13 +41,14 @@ def verify_password(password, hashed):
             100000
         ).hex()
         return hmac.compare_digest(check_hash, password_hash)
-    except:
+    except Exception:
         return False
 def create_token(username):
+    now = datetime.now(timezone.utc)
     payload = {
         'username': username,
-        'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS),
-        'iat': datetime.utcnow()
+        'exp': now + timedelta(hours=JWT_EXPIRATION_HOURS),
+        'iat': now
     }
     return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 def verify_token(token):
@@ -61,10 +68,7 @@ def get_current_user():
 
 def update_user_game(username, game_id):
     """Atualiza o jogo atual do usuário"""
-    accounts = load_accounts()
-    if username in accounts:
-        accounts[username]['current_game'] = game_id
-        save_accounts(accounts)
+    update_account(username, {'current_game': game_id})
 
 def clear_user_game(username, game_id=None):
     """Remove current_game da conta (opcionalmente só se for o game_id)."""
@@ -73,8 +77,7 @@ def clear_user_game(username, game_id=None):
         return
     current = accounts[username].get('current_game')
     if game_id is None or current == game_id:
-        accounts[username]['current_game'] = None
-        save_accounts(accounts)
+        update_account(username, {'current_game': None})
 
 def clear_game_from_all_accounts(game_id, usernames=None):
     """
@@ -84,27 +87,26 @@ def clear_game_from_all_accounts(game_id, usernames=None):
     if not game_id:
         return
     accounts = load_accounts()
-    changed = False
     if usernames is None:
-        # limpa qualquer conta apontando para essa sala
-        for uname, data in accounts.items():
-            if data.get('current_game') == game_id:
-                accounts[uname]['current_game'] = None
-                changed = True
+        targets = [
+            uname for uname, data in accounts.items()
+            if data.get('current_game') == game_id
+        ]
     else:
-        for uname in usernames:
-            if uname in accounts and accounts[uname].get('current_game') == game_id:
-                accounts[uname]['current_game'] = None
-                changed = True
-    if changed:
-        save_accounts(accounts)
+        targets = [
+            uname for uname in usernames
+            if uname in accounts and accounts[uname].get('current_game') == game_id
+        ]
+    # Atualização por conta (atômica), sem reescrever o conjunto inteiro
+    for uname in targets:
+        update_account(uname, {'current_game': None})
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         username = get_current_user()
         if not username:
-            return redirect('/')
+            return redirect('/login')
         return f(username, *args, **kwargs)
     return decorated_function
 

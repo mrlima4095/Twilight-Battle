@@ -20,7 +20,7 @@ def is_super_admin(username):
     if not username:
         return False
     accounts = load_accounts()
-    return accounts[username].get('admin_level', 0) >= 4
+    return accounts.get(username, {}).get('admin_level', 0) >= 4
 
 def admin_required(f):
     """Decorator para rotas que exigem admin"""

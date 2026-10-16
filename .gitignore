@@ -1,2 +1,15 @@
 __pycache__/
+*.pyc
 data/
+
+# Segredos / ambiente local (nunca versionar). Mantém o .env.example.
+.env
+.env.*
+!.env.example
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/

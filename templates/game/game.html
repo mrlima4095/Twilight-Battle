@@ -2237,7 +2237,7 @@ body::before {
             if (playerData.dead) {
                 div.innerHTML = `
                     <div class="opponent-header">
-                        <span class="opponent-name" style="color: #888;">${playerData.name}</span>
+                        <span class="opponent-name" style="color: #888;">${escapeHtml(playerData.name)}</span>
                         <span class="opponent-life" style="color: #666;">💀 0</span>
                     </div>
                     <div style="text-align: center; padding: 20px; color: #666; background: rgba(0,0,0,0.3); border-radius: 10px;">
@@ -2250,7 +2250,7 @@ body::before {
             
             div.innerHTML = `
                 <div class="opponent-header">
-                    <span class="opponent-name">${playerData.name}</span>
+                    <span class="opponent-name">${escapeHtml(playerData.name)}</span>
                     <span class="opponent-life">❤️ ${playerData.life}</span>
                 </div>
                 <div class="opponent-stats">
@@ -4681,7 +4681,7 @@ body::before {
         setInterval(function() {
             if (!gameOverHandled && !gameFinished) requestGameState();
         }, 3000);
-        setInterval(() => { fetch('/api/cleanup-games', { method: 'POST' }).catch(() => {}); }, 60000);
+        // Limpeza de salas abandonadas agora é feita pelo reaper no servidor.
 
         // ------------------------------------------------------------------
         // Tutorial coach — SÓ em partidas com flag tutorial no servidor.

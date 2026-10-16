@@ -1,14 +1,19 @@
 """Painel e APIs administrativas."""
-import json
 import os
 import random
 import uuid
-from datetime import datetime
 
 from flask import Blueprint, jsonify, redirect, render_template, request
 
 from twilight.auth.admin import admin_required, is_admin, is_super_admin
-from twilight.auth.service import get_current_user, load_accounts, login_required, save_accounts
+from twilight.auth.service import (
+    clear_game_from_all_accounts,
+    clear_user_game,
+    delete_account,
+    load_accounts,
+    login_required,
+    update_account,
+)
 from twilight.cards.definitions import CARDS
 from twilight.extensions import socketio
 from twilight.state import games
@@ -88,7 +93,8 @@ def api_admin_delete_user(admin_username, target_username):
         return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
     
     # Remover usuário de qualquer jogo ativo
-    game_id = accounts[target_username].get('current_game')
+    accounts = load_accounts()
+    game_id = accounts.get(target_username, {}).get('current_game')
     if game_id and game_id in games:
         game = games[game_id]
         if target_username in game.player_data:
@@ -99,8 +105,7 @@ def api_admin_delete_user(admin_username, target_username):
     if os.path.exists(save_file):
         os.remove(save_file)
     
-    del accounts[target_username]
-    save_accounts(accounts)
+    delete_account(target_username)
     
     return jsonify({'success': True, 'message': f'Usuário {target_username} deletado'})
 
@@ -121,8 +126,7 @@ def api_admin_set_level(admin_username, target_username):
     if target_username not in accounts:
         return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
     
-    accounts[target_username]['admin_level'] = level
-    save_accounts(accounts)
+    update_account(target_username, {'admin_level': level})
     
     return jsonify({'success': True, 'message': f'Nível de admin de {target_username} alterado para {level}'})
 
@@ -171,27 +175,14 @@ def api_admin_force_end(admin_username, game_id):
     if game_id not in games:
         return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
     
-    game = games[game_id]
-    
     # Notificar todos os jogadores
     socketio.emit('game_force_ended', {
         'message': f'Admin {admin_username} encerrou o jogo',
         'admin': admin_username
     }, room=game_id)
     
-    # Limpar referências dos jogadores
-    accounts = load_accounts()
-    for username in game.players:
-        if username in accounts and accounts[username].get('current_game') == game_id:
-            accounts[username]['current_game'] = None
-    
-    # Remover espectadores também
-    for username, data in game.player_data.items():
-        if data.get('spectator', False) and username in accounts:
-            if accounts[username].get('current_game') == game_id:
-                accounts[username]['current_game'] = None
-    
-    save_accounts(accounts)
+    # Limpar referências dos jogadores e espectadores (atômico por conta)
+    clear_game_from_all_accounts(game_id)
     
     # Remover o jogo
     del games[game_id]
@@ -274,10 +265,7 @@ def api_admin_kick_player(admin_username, game_id, target_username):
     success, was_creator, winner = game.remove_player(target_username)
     
     # Limpar jogo atual da conta
-    accounts = load_accounts()
-    if target_username in accounts and accounts[target_username].get('current_game') == game_id:
-        accounts[target_username]['current_game'] = None
-        save_accounts(accounts)
+    clear_user_game(target_username, game_id)
     
     # Notificar sala
     socketio.emit('player_kicked', {
@@ -289,7 +277,7 @@ def api_admin_kick_player(admin_username, game_id, target_username):
     if was_creator and game_id in games:
         # Criador foi removido, fechar jogo
         socketio.emit('room_closed', {
-            'message': f'O criador foi removido pelo admin. A sala foi fechada.'
+            'message': 'O criador foi removido pelo admin. A sala foi fechada.'
         }, room=game_id)
         del games[game_id]
         return jsonify({'success': True, 'message': f'Jogador {target_username} removido e sala fechada'})

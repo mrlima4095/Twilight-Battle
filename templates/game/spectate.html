@@ -353,6 +353,12 @@ body { padding: 0; }
             }
         }
         
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = (text === null || text === undefined) ? '' : String(text);
+            return div.innerHTML;
+        }
+
         function updateSpectatorsList() {
             if (!gameState || !gameState.spectators) return;
             
@@ -367,7 +373,7 @@ body { padding: 0; }
             gameState.spectators.forEach(spectator => {
                 const span = document.createElement('span');
                 span.className = 'spectator-item';
-                span.innerHTML = `👁️ ${spectator.name}`;
+                span.innerHTML = `👁️ ${escapeHtml(spectator.name)}`;
                 container.appendChild(span);
             });
         }
@@ -404,7 +410,7 @@ body { padding: 0; }
             
             div.innerHTML = `
                 <div class="opponent-header">
-                    <span class="opponent-name">${playerData.name}</span>
+                    <span class="opponent-name">${escapeHtml(playerData.name)}</span>
                     <span class="opponent-life">❤️ ${playerData.life}</span>
                 </div>
                 <div class="opponent-stats">
@@ -455,14 +461,14 @@ body { padding: 0; }
                 
                 slot.innerHTML = `
                     <div style="font-size: 16px;">${getTypeIcon(card.type)}</div>
-                    <strong>${card.name.substring(0, 8)}</strong>
+                    <strong>${escapeHtml((card.name || '').substring(0, 8))}</strong>
                     ${card.life ? `<small>❤️${card.life}</small>` : ''}
                     ${card.attack ? `<small>⚔️${card.attack}</small>` : ''}
                     ${equippedItems}
                     <div class="card-tooltip">
-                        <strong>${card.name}</strong><br>
-                        Tipo: ${card.type}<br>
-                        ${card.description}<br>
+                        <strong>${escapeHtml(card.name)}</strong><br>
+                        Tipo: ${escapeHtml(card.type)}<br>
+                        ${escapeHtml(card.description)}<br>
                         ${card.life ? `Vida: ${card.life}` : ''}
                         ${card.attack ? ` | Ataque: ${card.attack}` : ''}
                         ${card.blocked ? '<br><span style="color: #ff4444;">🚫 BLOQUEADO</span>' : ''}
@@ -617,8 +623,8 @@ body { padding: 0; }
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 24px;">${icon}</span>
                             <div>
-                                <strong style="color: #ffd700; font-size: 16px;">${card.name}</strong>
-                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${card.type}</span>
+                                <strong style="color: #ffd700; font-size: 16px;">${escapeHtml(card.name)}</strong>
+                                <span style="color: #a8a8a8; margin-left: 10px; font-size: 12px;">${escapeHtml(card.type)}</span>
                             </div>
                         </div>
                         <div>

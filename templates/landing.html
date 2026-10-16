@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twilight Battle — Duelo de Cartas Multiplayer no Reino do Crepúsculo</title>
+    <meta name="description" content="Twilight Battle é um RPG de cartas multiplayer (2 a 12 jogadores) com ciclo dia/noite, armadilhas, equipamento e Modo História. Monte sua legião e seja o último de pé.">
+    <meta property="og:title" content="Twilight Battle — Duelo de Cartas no Reino do Crepúsculo">
+    <meta property="og:description" content="Duelos de cartas em tempo real, 64 cartas, ciclo dia/noite e Modo História. Crie sua conta grátis.">
+    <meta property="og:type" content="website">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+:root {
+  --bg-0: #07060f;
+  --bg-1: #0e0b1a;
+  --bg-2: #16122a;
+  --panel: rgba(18, 14, 36, 0.72);
+  --border: rgba(255, 215, 120, 0.18);
+  --border-strong: rgba(255, 215, 120, 0.42);
+  --gold: #f0c14b;
+  --gold-2: #ffb347;
+  --gold-dim: rgba(240, 193, 75, 0.15);
+  --cyan: #5ee7ff;
+  --violet: #9b7bff;
+  --magenta: #ff5ec8;
+  --green: #3ddc97;
+  --red: #ff4d6d;
+  --text: #f4f0ff;
+  --muted: #a39bb8;
+  --shadow: 0 20px 60px rgba(0,0,0,.45);
+  --radius: 18px;
+  --font-ui: "Outfit", system-ui, sans-serif;
+  --font-display: "Cinzel", "Times New Roman", serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-ui);
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(155,123,255,.28), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(255,94,200,.14), transparent 50%),
+    radial-gradient(800px 400px at 50% 100%, rgba(94,231,255,.08), transparent 50%),
+    linear-gradient(160deg, var(--bg-0), var(--bg-1) 40%, #120b22);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1px 1px at 70% 20%, rgba(255,255,255,.35), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,.3), transparent),
+    radial-gradient(1.5px 1.5px at 85% 60%, rgba(240,193,75,.5), transparent),
+    radial-gradient(1px 1px at 10% 70%, rgba(94,231,255,.4), transparent);
+  opacity: .5;
+  animation: twinkle 8s ease-in-out infinite alternate;
+}
+@keyframes twinkle { from { opacity: .3; } to { opacity: .65; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(240,193,75,.0); } 50% { box-shadow: 0 0 34px rgba(240,193,75,.3); } }
+
+a { color: inherit; }
+
+/* ---------- Barra de navegação ---------- */
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: rgba(10, 8, 20, 0.72);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1120px; margin: 0 auto;
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 18px;
+}
+.brand {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+  letter-spacing: .05em; text-decoration: none; white-space: nowrap;
+  background: linear-gradient(120deg, #fff6d0, var(--gold), var(--gold-2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.nav-links { display: flex; gap: 4px; margin-left: auto; align-items: center; flex-wrap: wrap; }
+.nav-links a {
+  text-decoration: none; color: var(--muted); font-size: .9rem; font-weight: 600;
+  padding: 8px 12px; border-radius: 10px; transition: .18s;
+}
+.nav-links a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.nav-cta {
+  display: flex; gap: 8px; align-items: center;
+}
+.nav-cta a {
+  text-decoration: none; font-weight: 700; font-size: .88rem;
+  padding: 9px 16px; border-radius: 10px; white-space: nowrap; transition: .18s;
+}
+.btn-ghost {
+  color: var(--text); border: 1px solid var(--border); background: rgba(255,255,255,.03);
+}
+.btn-ghost:hover { border-color: var(--border-strong); background: rgba(240,193,75,.08); }
+.btn-gold {
+  color: #1a1020; background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  box-shadow: 0 8px 22px rgba(240,193,75,.26);
+}
+.btn-gold:hover { transform: translateY(-1px); filter: brightness(1.05); }
+
+/* ---------- Estrutura ---------- */
+.wrap { position: relative; z-index: 1; max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+section { padding: 56px 0; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--gold-dim); border: 1px solid var(--border);
+  color: var(--gold); font-size: .76rem; letter-spacing: .14em; text-transform: uppercase;
+  margin-bottom: 16px;
+}
+h2.section-title {
+  font-family: var(--font-display); font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+  color: var(--text); margin-bottom: 10px; letter-spacing: .02em;
+}
+.section-lead { color: var(--muted); max-width: 60ch; margin-bottom: 28px; font-weight: 300; }
+
+/* ---------- Hero ---------- */
+.hero { text-align: center; padding: 72px 0 40px; }
+.hero h1 {
+  font-family: var(--font-display); font-weight: 700;
+  font-size: clamp(2.6rem, 7vw, 4.4rem);
+  letter-spacing: .03em; line-height: 1.05;
+  background: linear-gradient(120deg, #fff6d0, var(--gold), var(--gold-2), #fff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  text-shadow: 0 0 50px rgba(240,193,75,.18);
+}
+.hero .tagline {
+  color: var(--muted); margin: 16px auto 0; max-width: 640px;
+  font-size: clamp(1rem, 2.2vw, 1.2rem); font-weight: 300;
+}
+.hero .tagline strong { color: var(--text); font-weight: 600; }
+.hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+.hero-actions a {
+  text-decoration: none; font-weight: 800; font-size: 1rem;
+  padding: 15px 28px; border-radius: 14px; transition: .18s;
+}
+.hero-actions .btn-gold { font-size: 1.02rem; padding: 15px 30px; }
+.hero-actions .btn-ghost { padding: 15px 24px; }
+.hero-actions a:hover { transform: translateY(-2px); }
+
+.stat-row {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 14px;
+  margin-top: 46px;
+}
+.stat {
+  min-width: 150px; padding: 18px 22px; border-radius: 16px;
+  background: var(--panel); border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.stat .num {
+  font-family: var(--font-display); font-size: 1.7rem; color: var(--gold);
+  line-height: 1.1;
+}
+.stat .lbl { color: var(--muted); font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; margin-top: 4px; }
+
+/* ---------- Cartões / grid ---------- */
+.grid { display: grid; gap: 18px; }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) { .grid.cols-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--panel); backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.07); border-radius: var(--radius);
+  padding: 24px; box-shadow: var(--shadow); position: relative; overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+.card:hover { transform: translateY(-4px); border-color: var(--border-strong); }
+.card::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,120,.5), transparent);
+  opacity: 0; transition: opacity .2s;
+}
+.card:hover::before { opacity: 1; }
+.card .icon { font-size: 1.9rem; display: block; margin-bottom: 12px; }
+.card h3 { font-family: var(--font-display); color: var(--gold); font-size: 1.12rem; margin-bottom: 8px; }
+.card p { color: #cfc6e2; font-size: .94rem; }
+.card.feature-cyan h3 { color: var(--cyan); }
+.card.feature-violet h3 { color: #d4c8ff; }
+
+/* ---------- Passos ---------- */
+.steps { counter-reset: step; display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 780px) { .steps { grid-template-columns: 1fr; } }
+.step {
+  position: relative; padding: 24px 22px; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid rgba(255,255,255,.07); box-shadow: var(--shadow);
+}
+.step::before {
+  counter-increment: step; content: counter(step);
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 10px; margin-bottom: 14px;
+  color: #1a1020; background: linear-gradient(135deg, var(--gold), var(--gold-2));
+  box-shadow: 0 6px 16px rgba(240,193,75,.28);
+}
+.step h3 { color: var(--text); font-size: 1.04rem; margin-bottom: 6px; }
+.step p { color: var(--muted); font-size: .92rem; }
+
+/* ---------- Modos ---------- */
+.modes { display: grid; gap: 18px; grid-template-columns: 1.2fr 1fr; }
+@media (max-width: 820px) { .modes { grid-template-columns: 1fr; } }
+.mode {
+  padding: 28px; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+  border-left: 3px solid rgba(240,193,75,.5);
+}
+.mode.story { border-left-color: rgba(155,123,255,.6); }
+.mode h3 { font-family: var(--font-display); font-size: 1.25rem; color: var(--gold); margin-bottom: 10px; }
+.mode.story h3 { color: #d4c8ff; }
+.mode p { color: #cfc6e2; }
+.mode ul { margin: 12px 0 0 18px; color: var(--muted); font-size: .92rem; }
+.mode li { margin-bottom: 6px; }
+.mode .mode-cta { display: inline-block; margin-top: 16px; font-weight: 700; color: var(--cyan); text-decoration: none; }
+.mode .mode-cta:hover { text-decoration: underline; }
+
+/* ---------- Lore teaser ---------- */
+.lore-teaser {
+  padding: 34px; border-radius: 22px;
+  background:
+    radial-gradient(600px 300px at 0% 0%, rgba(155,123,255,.18), transparent 60%),
+    var(--panel);
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+}
+.lore-teaser h2 { font-family: var(--font-display); color: var(--gold); font-size: 1.5rem; margin-bottom: 14px; }
+.lore-teaser p { color: #ddd6ef; font-size: 1.02rem; max-width: 72ch; }
+.lore-teaser p + p { margin-top: 12px; }
+.lore-teaser .lore-link { display: inline-block; margin-top: 18px; font-weight: 700; color: var(--cyan); text-decoration: none; }
+.lore-teaser .lore-link:hover { text-decoration: underline; }
+
+/* ---------- CTA final ---------- */
+.final-cta {
+  text-align: center; padding: 56px 28px; border-radius: 24px;
+  background:
+    radial-gradient(700px 320px at 50% 0%, rgba(240,193,75,.14), transparent 60%),
+    var(--panel);
+  border: 1px solid var(--border-strong); box-shadow: var(--shadow);
+}
+.final-cta h2 { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.3rem); margin-bottom: 12px; }
+.final-cta p { color: var(--muted); max-width: 52ch; margin: 0 auto 26px; }
+.final-cta .hero-actions { margin-top: 0; }
+
+/* ---------- Rodapé ---------- */
+footer {
+  border-top: 1px solid rgba(255,255,255,.07); margin-top: 40px; padding: 34px 0 50px;
+}
+.footer-inner {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+}
+.footer-inner .brand { font-size: .95rem; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 6px; }
+.footer-links a {
+  color: var(--muted); text-decoration: none; font-size: .86rem;
+  padding: 6px 10px; border-radius: 8px;
+}
+.footer-links a:hover { color: var(--text); background: rgba(255,255,255,.05); }
+.footer-note { color: #6b6480; font-size: .78rem; width: 100%; margin-top: 8px; }
+
+@media (max-width: 720px) {
+  .nav-links { display: none; }
+  section { padding: 42px 0; }
+  .hero { padding: 52px 0 28px; }
+}
+    </style>
+</head>
+<body>
+
+<!-- Navegação -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/">✦ Twilight Battle</a>
+    <div class="nav-links">
+      <a href="#jogo">O jogo</a>
+      <a href="#como-jogar">Como jogar</a>
+      <a href="#modos">Modos</a>
+      <a href="/rules">Regras</a>
+      <a href="/lore">Lore</a>
+      <a href="/help">Ajuda</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn-ghost" href="/login">Entrar</a>
+      <a class="btn-gold" href="/login?tab=register">Criar conta</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- Hero -->
+  <header class="hero">
+    <span class="eyebrow">✦ RPG de cartas · multiplayer em tempo real</span>
+    <h1>Twilight Battle</h1>
+    <p class="tagline">
+      Onde a noite e o dia decidem seu destino. Monte sua legião, arme ciladas
+      e seja o <strong>último de pé</strong> no Reino do Crepúsculo.
+    </p>
+    <div class="hero-actions">
+      <a class="btn-gold" href="/login?tab=register">Jogar grátis</a>
+      <a class="btn-ghost" href="#jogo">Descobrir o jogo</a>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="num">2–12</div><div class="lbl">Jogadores por sala</div></div>
+      <div class="stat"><div class="num">64</div><div class="lbl">Cartas para dominar</div></div>
+      <div class="stat"><div class="num">17</div><div class="lbl">Modificadores de sala</div></div>
+      <div class="stat"><div class="num">1200</div><div class="lbl">Vida inicial</div></div>
+    </div>
+  </header>
+
+  <!-- O jogo -->
+  <section id="jogo">
+    <span class="eyebrow">O jogo</span>
+    <h2 class="section-title">Um duelo de cartas onde a estratégia vence a sorte</h2>
+    <p class="section-lead">
+      Twilight Battle é um jogo de cartas multiplayer em tempo real. Cada duelista
+      monta sua legião de criaturas, equipa o herói, esconde armadilhas na defesa
+      e usa feitiços, rituais e profecias para derrubar os rivais. Vence quem
+      sobreviver — todos contra todos.
+    </p>
+
+    <div class="grid cols-3">
+      <div class="card">
+        <span class="icon">⚔️</span>
+        <h3>Duelos todos contra todos</h3>
+        <p>Salas de 2 a 12 jogadores. Crie uma sala pública ou privada, compartilhe o código e mostre quem manda no reino.</p>
+      </div>
+      <div class="card feature-cyan">
+        <span class="icon">🌗</span>
+        <h3>Ciclo dia &amp; noite</h3>
+        <p>A cada 24 turnos o mundo vira. Vampiros e zumbis queimam ao sol; à noite, eles mostram as presas. Planeje em torno do relógio.</p>
+      </div>
+      <div class="card feature-violet">
+        <span class="icon">🕳️</span>
+        <h3>Armadilhas disfarçadas</h3>
+        <p>O que parece uma tropa comum pode ser um Poço Sem Fundo. Bater cego custa caro — e virar o ataque do rival é a melhor defesa.</p>
+      </div>
+      <div class="card">
+        <span class="icon">🔰</span>
+        <h3>Equipamento profundo</h3>
+        <p>Equipe na criatura para ganhar poder de campo, ou no herói para habilitar habilidades. Cada peça importa onde você a coloca.</p>
+      </div>
+      <div class="card feature-cyan">
+        <span class="icon">🔮</span>
+        <h3>Feitiços, rituais e runas</h3>
+        <p>Traga um mago ao campo e libere feitiços devastadores. Junte 4 runas para reviver lendas do cemitério.</p>
+      </div>
+      <div class="card feature-violet">
+        <span class="icon">✨</span>
+        <h3>17 modificadores</h3>
+        <p>Hardcore, Sangria, Névoa de Guerra, Caça ao Rei e muito mais. Ajuste a sala para o estilo do seu grupo.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Como jogar -->
+  <section id="como-jogar">
+    <span class="eyebrow">Como jogar</span>
+    <h2 class="section-title">Em três passos</h2>
+    <p class="section-lead">Sem downloads. Roda direto no navegador, no PC ou no celular.</p>
+
+    <div class="steps">
+      <div class="step">
+        <h3>Crie sua conta</h3>
+        <p>Um usuário e uma senha. Sem e-mail, sem enrolação — sua progressão fica salva.</p>
+      </div>
+      <div class="step">
+        <h3>Treine com o Mentor</h3>
+        <p>O tutorial coloca você 1v1 contra uma IA fácil, com dicas na tela e ciclo acelerado.</p>
+      </div>
+      <div class="step">
+        <h3>Entre na batalha</h3>
+        <p>Crie uma sala ou use um código de 6 caracteres. Baixe cartas, arme o campo e ataque.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modos -->
+  <section id="modos">
+    <span class="eyebrow">Modos de jogo</span>
+    <h2 class="section-title">Duas jornadas, um reino</h2>
+    <p class="section-lead">Escolha o duelo rápido entre amigos ou a campanha solo por uma coroa.</p>
+
+    <div class="modes">
+      <div class="mode">
+        <h3>🃏 Multiplayer — Duelo de Cartas</h3>
+        <p>Partidas em tempo real de 2 a 12 jogadores. Salas com código, espectadores, chat e rematch no mesmo lobby.</p>
+        <ul>
+          <li>Campo com bases de ataque e defesa</li>
+          <li>Armadilhas, disfarces e Névoa de Guerra</li>
+          <li>Modificadores que mudam as regras por completo</li>
+        </ul>
+        <a class="mode-cta" href="/rules">Ver regras do duelo →</a>
+      </div>
+      <div class="mode story">
+        <h3>📖 Modo História — RPG</h3>
+        <p>Uma campanha ambientada no Reino do Crepúsculo. Explore, evolua e escreva o seu capítulo na crônica da Aurora.</p>
+        <ul>
+          <li>Jornada single-player com progressão</li>
+          <li>Mundo e lore originais</li>
+          <li>Journal da Aurora a cada descoberta</li>
+        </ul>
+        <a class="mode-cta" href="/story/rules">Ver regras do RPG →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lore -->
+  <section id="lore">
+    <div class="lore-teaser">
+      <span class="eyebrow">A crônica</span>
+      <h2>O Reino do Crepúsculo</h2>
+      <p>
+        Um deus tirano caiu. Dois irmãos ergueram dois reinos. Séculos de guerra
+        dividiram o mundo entre a luz da <strong>Aurora</strong> e a penumbra do
+        <strong>Crepúsculo</strong> — e a trégua nunca dura.
+      </p>
+      <p>
+        Agora a guerra dorme de olho aberto, e a era seguinte começa quando
+        <em>você</em> dá o primeiro passo.
+      </p>
+      <a class="lore-link" href="/lore">Ler a lore completa →</a>
+    </div>
+  </section>
+
+  <!-- CTA final -->
+  <section>
+    <div class="final-cta">
+      <h2>Pronto para erguer sua legião?</h2>
+      <p>Criar conta é grátis e leva segundos. Entre na batalha e desafie o reino.</p>
+      <div class="hero-actions">
+        <a class="btn-gold" href="/login?tab=register">Criar conta grátis</a>
+        <a class="btn-ghost" href="/login">Já tenho conta</a>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap footer-inner">
+    <span class="brand">✦ Twilight Battle</span>
+    <nav class="footer-links">
+      <a href="/rules">Regras</a>
+      <a href="/lore">Lore</a>
+      <a href="/help">Ajuda</a>
+      <a href="/story/rules">Regras do RPG</a>
+      <a href="/story/help">Ajuda do RPG</a>
+      <a href="/login">Entrar</a>
+    </nav>
+    <p class="footer-note">Twilight Battle · multiplayer em tempo real · feito para jogar no navegador</p>
+  </div>
+</footer>
+
+</body>
+</html>

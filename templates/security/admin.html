@@ -582,6 +582,30 @@ input:focus, select:focus, textarea:focus {
         let allCards = [];
         let currentTargetPlayer = null;
         let pendingUser = null;
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = (text === null || text === undefined) ? '' : String(text);
+            return div.innerHTML;
+        }
+        function escapeAttr(text) {
+            return escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        // Escapa um valor para uso como argumento literal dentro de
+        // onclick="fn('...')": primeiro para string JS, depois para o atributo
+        // HTML. Sem isso um nome com aspas quebraria o atributo (XSS).
+        function jsArg(text) {
+            const s = String(text === null || text === undefined ? '' : text)
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/\r/g, '\\r')
+                .replace(/\n/g, '\\n');
+            return s
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
         
         function showMessage(message, isError = false) {
             const msgDiv = document.getElementById('message');
@@ -633,23 +657,30 @@ input:focus, select:focus, textarea:focus {
                 const tbody = document.getElementById('users-tbody');
                 if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Nenhum usuário encontrado</td></tr>'; return; }
                 tbody.innerHTML = users.map(user => `
-                    <tr data-username="${user.username}">
-                        <td><strong>${user.username}</strong></td>
+                    <tr data-username="${escapeAttr(user.username)}">
+                        <td><strong>${escapeHtml(user.username)}</strong></td>
                         <td>${new Date(user.created_at).toLocaleDateString()}</td>
                         <td><span class="badge" style="background: ${user.admin_level >= 1 ? 'rgba(240,193,75,.15)' : 'rgba(255,255,255,.06)'}; color: ${user.admin_level >= 1 ? 'var(--gold)' : 'var(--muted)'}; border: 1px solid ${user.admin_level >= 1 ? 'var(--border)' : 'transparent'}">Lvl ${user.admin_level}</span></td>
-                        <td>${user.current_game || '-'}</td>
+                        <td>${escapeHtml(user.current_game || '-')}</td>
                         <td class="${user.game_info?.is_dead ? 'status-dead' : 'status-alive'}">${user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline'}</td>
-                        <td>${user.admin_level < 4 ? `<button class="btn btn-primary btn-sm" onclick="openLevelModal('${user.username}', ${user.admin_level})" type="button">👑 Nível</button> <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.username}')" type="button">🗑️</button>` : '—'}</td>
+                        <td>${user.admin_level < 4 ? `<button class="btn btn-primary btn-sm js-level" data-username="${escapeAttr(user.username)}" data-level="${user.admin_level}" type="button">👑 Nível</button> <button class="btn btn-danger btn-sm js-delete" data-username="${escapeAttr(user.username)}" type="button">🗑️</button>` : '—'}</td>
                     </tr>
                 `).join('');
+                // Listeners (sem onclick inline com nome interpolado → evita XSS)
+                tbody.querySelectorAll('.js-level').forEach(btn => {
+                    btn.addEventListener('click', () => openLevelModal(btn.dataset.username, parseInt(btn.dataset.level, 10)));
+                });
+                tbody.querySelectorAll('.js-delete').forEach(btn => {
+                    btn.addEventListener('click', () => deleteUser(btn.dataset.username));
+                });
             } catch (error) { console.error(error); }
         }
         
         function filterUsers() { const search = document.getElementById('user-search').value.toLowerCase(); document.querySelectorAll('#users-tbody tr').forEach(row => { row.style.display = row.getAttribute('data-username')?.toLowerCase().includes(search) ? '' : 'none'; }); }
         
         function openLevelModal(username, level) { pendingUser = username; document.getElementById('level-username').textContent = username; document.getElementById('level-select').value = level; document.getElementById('level-modal').style.display = 'flex'; }
-        async function saveAdminLevel() { try { await fetchAPI(`/api/admin/user/${pendingUser}/admin-level`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: parseInt(document.getElementById('level-select').value) })}); showMessage(`Nível alterado`); closeModal('level-modal'); loadUsers(); } catch(error) { console.error(error); } }
-        async function deleteUser(username) { if (!confirm(`Deletar "${username}"?`)) return; await fetchAPI(`/api/admin/user/${username}`, { method: 'DELETE' }); showMessage(`Usuário deletado`); loadUsers(); loadDashboard(); }
+        async function saveAdminLevel() { try { await fetchAPI(`/api/admin/user/${encodeURIComponent(pendingUser)}/admin-level`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: parseInt(document.getElementById('level-select').value) })}); showMessage(`Nível alterado`); closeModal('level-modal'); loadUsers(); } catch(error) { console.error(error); } }
+        async function deleteUser(username) { if (!confirm(`Deletar "${username}"?`)) return; await fetchAPI(`/api/admin/user/${encodeURIComponent(username)}`, { method: 'DELETE' }); showMessage(`Usuário deletado`); loadUsers(); loadDashboard(); }
         
         // Jogos
         async function loadGames() {
@@ -665,18 +696,18 @@ input:focus, select:focus, textarea:focus {
                 }
                 container.innerHTML = games.map(game => `
                     <div class="game-card">
-                        <h4>🎮 ${game.id} ${game.private ? '🔒' : '🌐'}</h4>
-                        <p>Criador: ${game.creator} · ${game.started ? '▶️ Em andamento' : '⏸️ Lobby'} · ${game.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite'} · Turno: ${game.current_turn || '-'}</p>
+                        <h4>🎮 ${escapeHtml(game.id)} ${game.private ? '🔒' : '🌐'}</h4>
+                        <p>Criador: ${escapeHtml(game.creator)} · ${game.started ? '▶️ Em andamento' : '⏸️ Lobby'} · ${game.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite'} · Turno: ${escapeHtml(game.current_turn || '-')}</p>
                         <p>Jogadores: ${game.player_count}/${game.max_players} · Deck: ${game.deck_count} · Cemitério: ${game.graveyard_count}</p>
-                        <div class="player-list">${game.players.map(p => `<div class="player-item"><span>${p.username}</span><span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀' : `${p.life}❤️`}</span><span>📚 ${p.hand_count}</span></div>`).join('')}</div>
+                        <div class="player-list">${game.players.map(p => `<div class="player-item"><span>${escapeHtml(p.username)}</span><span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀' : `${p.life}❤️`}</span><span>📚 ${p.hand_count}</span></div>`).join('')}</div>
                         <div class="flex-row" style="margin-top:12px;margin-bottom:0">
-                            <button class="btn btn-primary btn-sm" onclick="selectGameForControl('${game.id}')" type="button">🎮 Controlar</button>
-                            <button class="btn btn-warning btn-sm" onclick="syncGame('${game.id}')" type="button">🔄 Sincronizar</button>
-                            <button class="btn btn-danger btn-sm" onclick="forceEndGame('${game.id}')" type="button">⛔ Encerrar</button>
+                            <button class="btn btn-primary btn-sm" onclick="selectGameForControl('${jsArg(game.id)}')" type="button">🎮 Controlar</button>
+                            <button class="btn btn-warning btn-sm" onclick="syncGame('${jsArg(game.id)}')" type="button">🔄 Sincronizar</button>
+                            <button class="btn btn-danger btn-sm" onclick="forceEndGame('${jsArg(game.id)}')" type="button">⛔ Encerrar</button>
                         </div>
                     </div>
                 `).join('');
-                select.innerHTML = '<option value="">Selecione um jogo</option>' + games.map(g => `<option value="${g.id}">${g.id} (${g.player_count} jogadores)</option>`).join('');
+                select.innerHTML = '<option value="">Selecione um jogo</option>' + games.map(g => `<option value="${escapeAttr(g.id)}">${escapeHtml(g.id)} (${g.player_count} jogadores)</option>`).join('');
             } catch (error) { console.error(error); }
         }
         
@@ -691,7 +722,7 @@ input:focus, select:focus, textarea:focus {
                 const data = await fetchAPI(`/api/admin/game/${currentGameId}/state`);
                 currentGameState = data.game;
                 document.getElementById('game-control-panel').style.display = 'block';
-                document.getElementById('control-game-title').innerHTML = `🎮 Jogo: ${currentGameId}`;
+                document.getElementById('control-game-title').innerHTML = `🎮 Jogo: ${escapeHtml(currentGameId)}`;
                 document.getElementById('control-game-status').innerHTML = currentGameState.started ? '▶️ Em andamento' : '⏸️ Aguardando';
                 document.getElementById('control-game-time').innerHTML = currentGameState.time_of_day === 'day' ? '☀️ Dia' : '🌙 Noite';
                 document.getElementById('control-game-turn').innerHTML = `👑 Turno: ${currentGameState.current_turn || '?'}`;
@@ -701,17 +732,17 @@ input:focus, select:focus, textarea:focus {
                 const playersDiv = document.getElementById('control-players-list');
                 playersDiv.innerHTML = Object.entries(currentGameState.player_data).map(([uname, p]) => `
                     <div class="player-card">
-                        <h4>${p.name} (${uname}) <span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀 MORTO' : `❤️ ${p.life}`}</span></h4>
+                        <h4>${escapeHtml(p.name)} (${escapeHtml(uname)}) <span class="${p.dead ? 'status-dead' : 'status-alive'}">${p.dead ? '💀 MORTO' : `❤️ ${p.life}`}</span></h4>
                         <div class="flex-row" style="margin-bottom: 0.5rem;">
-                            <button class="btn btn-primary btn-sm" onclick="openGiveCardModal('${uname}')" type="button">📦 Dar carta</button>
-                            <button class="btn btn-warning btn-sm" onclick="openModifyLifeModal('${uname}')" type="button">❤️ Vida</button>
-                            <button class="btn btn-danger btn-sm" onclick="openRemoveCardModal('${uname}', ${JSON.stringify(p.hand).replace(/"/g, '&quot;')})" type="button">🗑️ Remover</button>
-                            <button class="btn btn-info btn-sm" onclick="openFieldModal('${uname}')" type="button">🏟️ Campo</button>
-                            ${p.dead ? `<button class="btn btn-success btn-sm" onclick="revivePlayer('${uname}')" type="button">✨ Reviver</button>` : `<button class="btn btn-danger btn-sm" onclick="killPlayer('${uname}')" type="button">💀 Matar</button>`}
+                            <button class="btn btn-primary btn-sm" onclick="openGiveCardModal('${jsArg(uname)}')" type="button">📦 Dar carta</button>
+                            <button class="btn btn-warning btn-sm" onclick="openModifyLifeModal('${jsArg(uname)}')" type="button">❤️ Vida</button>
+                            <button class="btn btn-danger btn-sm" onclick="openRemoveCardModal('${jsArg(uname)}', ${escapeAttr(JSON.stringify(p.hand))})" type="button">🗑️ Remover</button>
+                            <button class="btn btn-info btn-sm" onclick="openFieldModal('${jsArg(uname)}')" type="button">🏟️ Campo</button>
+                            ${p.dead ? `<button class="btn btn-success btn-sm" onclick="revivePlayer('${jsArg(uname)}')" type="button">✨ Reviver</button>` : `<button class="btn btn-danger btn-sm" onclick="killPlayer('${jsArg(uname)}')" type="button">💀 Matar</button>`}
                         </div>
-                        <div><strong>📚 Mão (${p.hand.length}):</strong> <div class="hand-cards">${p.hand.map(c => `<span class="hand-card" onclick="selectHandCard('${uname}', '${c.instance_id}', '${c.name}')">${c.name}</span>`).join('') || '<span style="color:var(--muted)">(vazia)</span>'}</div></div>
-                        <div style="margin-top:8px"><strong>⚔️ Ataque:</strong> ${p.attack_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'attack', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
-                        <div style="margin-top:6px"><strong>🛡️ Defesa:</strong> ${p.defense_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${uname}', 'defense', ${i})">${c ? c.name : `[${i}]`}</span>`).join('')}</div>
+                        <div><strong>📚 Mão (${p.hand.length}):</strong> <div class="hand-cards">${p.hand.map(c => `<span class="hand-card" onclick="selectHandCard('${jsArg(uname)}', '${jsArg(c.instance_id)}', '${jsArg(c.name)}')">${escapeHtml(c.name)}</span>`).join('') || '<span style="color:var(--muted)">(vazia)</span>'}</div></div>
+                        <div style="margin-top:8px"><strong>⚔️ Ataque:</strong> ${p.attack_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${jsArg(uname)}', 'attack', ${i})">${c ? escapeHtml(c.name) : `[${i}]`}</span>`).join('')}</div>
+                        <div style="margin-top:6px"><strong>🛡️ Defesa:</strong> ${p.defense_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${jsArg(uname)}', 'defense', ${i})">${c ? escapeHtml(c.name) : `[${i}]`}</span>`).join('')}</div>
                     </div>
                 `).join('');
             } catch (error) { console.error(error); }
@@ -740,7 +771,7 @@ input:focus, select:focus, textarea:focus {
         async function killPlayer(username) { if (!confirm(`Matar ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/kill`, { method: 'POST' }); showMessage(`${username} morto`); loadGameControlState(); }
         async function revivePlayer(username) { await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/revive`, { method: 'POST' }); showMessage(`${username} revivido`); loadGameControlState(); }
         
-        function openSetTurnModal() { const select = document.getElementById('set-turn-select'); select.innerHTML = currentGameState.players.map(p => `<option value="${p}">${p}</option>`).join(''); openModal('set-turn-modal'); }
+        function openSetTurnModal() { const select = document.getElementById('set-turn-select'); select.innerHTML = currentGameState.players.map(p => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join(''); openModal('set-turn-modal'); }
         async function submitSetTurn() { const target = document.getElementById('set-turn-select').value; await fetchAPI(`/api/admin/game/${currentGameId}/set-turn`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target }) }); showMessage(`Turno alterado para ${target}`); closeModal('set-turn-modal'); loadGameControlState(); }
         
         // Cartas
@@ -751,16 +782,16 @@ input:focus, select:focus, textarea:focus {
         
         // Ações de jogador
         let currentGivePlayer = null;
-        async function openGiveCardModal(username) { currentGivePlayer = username; document.getElementById('give-card-player').textContent = username; document.getElementById('give-card-game').textContent = currentGameId; if (allCards.length === 0) await loadCards(); const select = document.getElementById('give-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name} (${c.type})</option>`).join(''); openModal('give-card-modal'); }
+        async function openGiveCardModal(username) { currentGivePlayer = username; document.getElementById('give-card-player').textContent = username; document.getElementById('give-card-game').textContent = currentGameId; if (allCards.length === 0) await loadCards(); const select = document.getElementById('give-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)} (${escapeHtml(c.type)})</option>`).join(''); openModal('give-card-modal'); }
         async function submitGiveCard() { const cardId = document.getElementById('give-card-select').value; const quantity = parseInt(document.getElementById('give-card-quantity').value); if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentGivePlayer}/give-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_id: cardId, quantity: quantity }) }); showMessage(`${quantity}x carta(s) dada(s)`); closeModal('give-card-modal'); loadGameControlState(); }
         
         function openModifyLifeModal(username) { currentTargetPlayer = username; document.getElementById('modify-life-player').textContent = username; document.getElementById('modify-life-delta').value = 0; document.getElementById('modify-life-exact').value = ''; openModal('modify-life-modal'); }
         async function submitModifyLife() { const delta = parseInt(document.getElementById('modify-life-delta').value) || 0; const exact = document.getElementById('modify-life-exact').value; const body = exact ? { new_life: parseInt(exact) } : { delta: delta }; await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/modify-life`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); showMessage(`Vida modificada`); closeModal('modify-life-modal'); loadGameControlState(); }
         
-        function openRemoveCardModal(username, hand) { currentTargetPlayer = username; const select = document.getElementById('remove-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + (hand || []).map(c => `<option value="${c.instance_id}">${c.name}</option>`).join(''); if ((hand || []).length === 0) select.innerHTML = '<option value="">Mão vazia</option>'; openModal('remove-card-modal'); }
+        function openRemoveCardModal(username, hand) { currentTargetPlayer = username; const select = document.getElementById('remove-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + (hand || []).map(c => `<option value="${escapeAttr(c.instance_id)}">${escapeHtml(c.name)}</option>`).join(''); if ((hand || []).length === 0) select.innerHTML = '<option value="">Mão vazia</option>'; openModal('remove-card-modal'); }
         async function submitRemoveCard() { const cardId = document.getElementById('remove-card-select').value; if (!cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/remove-card`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ card_instance_id: cardId }) }); showMessage(`Carta removida`); closeModal('remove-card-modal'); loadGameControlState(); }
         
-        function openFieldModal(username) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; if (allCards.length === 0) loadCards(); const select = document.getElementById('field-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); document.getElementById('field-action').onchange = function() { document.getElementById('field-card-group').style.display = this.value === 'set' ? 'block' : 'none'; }; document.getElementById('field-action').dispatchEvent(new Event('change')); openModal('field-modal'); }
+        function openFieldModal(username) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; if (allCards.length === 0) loadCards(); const select = document.getElementById('field-card-select'); select.innerHTML = '<option value="">Selecione uma carta</option>' + allCards.map(c => `<option value="${escapeAttr(c.id)}">${escapeHtml(c.name)}</option>`).join(''); document.getElementById('field-action').onchange = function() { document.getElementById('field-card-group').style.display = this.value === 'set' ? 'block' : 'none'; }; document.getElementById('field-action').dispatchEvent(new Event('change')); openModal('field-modal'); }
         async function submitFieldModify() { const action = document.getElementById('field-action').value; const positionType = document.getElementById('field-position-type').value; const positionIndex = parseInt(document.getElementById('field-position-index').value); const cardId = action === 'set' ? document.getElementById('field-card-select').value : null; if (action === 'set' && !cardId) { showMessage('Selecione uma carta', true); return; } await fetchAPI(`/api/admin/game/${currentGameId}/player/${currentTargetPlayer}/field`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: action, position_type: positionType, position_index: positionIndex, card_id: cardId }) }); showMessage(`Campo modificado`); closeModal('field-modal'); loadGameControlState(); }
         
         function editFieldSlot(username, type, index) { currentTargetPlayer = username; document.getElementById('field-player').textContent = username; document.getElementById('field-position-type').value = type; document.getElementById('field-position-index').value = index; document.getElementById('field-action').value = 'set'; document.getElementById('field-action').dispatchEvent(new Event('change')); if (allCards.length === 0) loadCards(); openModal('field-modal'); }
