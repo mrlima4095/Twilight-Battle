@@ -39,6 +39,13 @@ const SV_SANITY_MAX_FUMBLE = 0.6;        // chance de falha com sanidade 0
 const SV_SANITY_MIN_DAMAGE = 0.55;       // multiplicador de dano com sanidade 0
 const SV_ALCOHOL = { beer: 9, wine: 14 };
 
+// A sede baixa e a falta de sono também desgastam a mente:
+const SV_THIRST_SANITY_AT = 40;          // sede abaixo disso começa a turvar a mente
+const SV_THIRST_SANITY_MAX = 0.22;       // dreno máximo de sanidade por tick (sede 0)
+const SV_SLEEP_FLIPS_LIMIT = 2;          // viradas de dia/noite sem dormir até pesar
+const SV_SLEEP_SANITY_STEP = 0.10;       // dreno por tick, por virada além do limite
+const SV_SLEEP_SANITY_MAX = 0.40;        // teto do dreno por falta de sono
+
 // Quanto cada comida/bebida devolve de Fome e Sede.
 // Itens fora da tabela usam uma estimativa pelo tipo (comida/bebida) e cura.
 const SV_NUTRITION = {
@@ -76,12 +83,13 @@ const SV_LEVELS = [
 function SV_ensureState() {
     if (typeof gameState === 'undefined' || !gameState) return;
     if (!gameState.survival || typeof gameState.survival !== 'object') {
-        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0 };
+        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0, flipsSinceSleep: 0 };
     }
     const s = gameState.survival;
     if (typeof s.hunger !== 'number' || !isFinite(s.hunger)) s.hunger = SV_MAX;
     if (typeof s.thirst !== 'number' || !isFinite(s.thirst)) s.thirst = SV_MAX;
     if (typeof s.sanity !== 'number' || !isFinite(s.sanity)) s.sanity = SV_MAX;
+    if (typeof s.flipsSinceSleep !== 'number' || !isFinite(s.flipsSinceSleep)) s.flipsSinceSleep = 0;
     s.hunger = Math.max(0, Math.min(SV_MAX, s.hunger));
     s.thirst = Math.max(0, Math.min(SV_MAX, s.thirst));
     s.sanity = Math.max(0, Math.min(SV_MAX, s.sanity));
@@ -94,6 +102,7 @@ function SV_ensureState() {
     s.flags.hunger = s.flags.hunger || {};
     s.flags.thirst = s.flags.thirst || {};
     s.flags.sanity = s.flags.sanity || {};
+    s.flags.extra = s.flags.extra || {};
 }
 
 // Marca (em silêncio) os limites que o valor atual já cruzou — evita uma
@@ -106,7 +115,7 @@ function SV_seedFlags(key, s) {
 
 function SV_reset() {
     if (typeof gameState === 'undefined' || !gameState) return;
-    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0, flags: { hunger: {}, thirst: {}, sanity: {} } };
+    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0, flipsSinceSleep: 0, flags: { hunger: {}, thirst: {}, sanity: {}, extra: {} } };
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -225,6 +234,39 @@ function SV_warnFor(key, label, s, msgs) {
     }
 }
 
+// Quanto a sede baixa e a falta de sono drenam da sanidade a cada tick.
+function SV_sanityDrain() {
+    const s = gameState.survival;
+    let drain = 0;
+
+    const thirstLow = s.thirst < SV_THIRST_SANITY_AT;
+    if (thirstLow) {
+        drain += ((SV_THIRST_SANITY_AT - s.thirst) / SV_THIRST_SANITY_AT) * SV_THIRST_SANITY_MAX;
+    }
+    const flipsOver = Math.max(0, (s.flipsSinceSleep || 0) - SV_SLEEP_FLIPS_LIMIT);
+    const noSleep = flipsOver > 0;
+    if (noSleep) {
+        drain += Math.min(SV_SLEEP_SANITY_MAX, flipsOver * SV_SLEEP_SANITY_STEP);
+    }
+
+    // Avisa apenas uma vez ao entrar em cada situação (e rearma ao sair).
+    s.flags.extra = s.flags.extra || {};
+    if (thirstLow && !s.flags.extra.thirstSanity) {
+        s.flags.extra.thirstSanity = true;
+        addLog('🧠 A sede turva sua mente — beba água! (🧠 Sanidade caindo)');
+    } else if (!thirstLow) {
+        s.flags.extra.thirstSanity = false;
+    }
+    if (noSleep && !s.flags.extra.sleepSanity) {
+        s.flags.extra.sleepSanity = true;
+        addLog('🧠 Você está há muito tempo sem dormir — a mente se desgasta. (🧠 Sanidade caindo)');
+    } else if (!noSleep) {
+        s.flags.extra.sleepSanity = false;
+    }
+
+    return drain;
+}
+
 // ══════════════════════════════════════════════════════════════════════
 // 4. TICK DE TEMPO (decaimento contínuo)
 // ══════════════════════════════════════════════════════════════════════
@@ -235,7 +277,8 @@ function SV_tick() {
     SV_ensureState();
 
     SV_spend(SV_HUNGER_PER_TICK, SV_THIRST_PER_TICK);
-    SV_applySanity(SV_SANITY_REGEN_PER_TICK);
+    // Sanidade: recupera devagar, mas a sede baixa e a falta de sono pesam mais.
+    SV_applySanity(SV_SANITY_REGEN_PER_TICK - SV_sanityDrain());
 
     const s = gameState.survival;
     if (!s) return;
@@ -376,13 +419,34 @@ useFood = function (index) {
 };
 
 // toggleTimeOfDay: cada virada de dia/noite pesa na fome/sede
-// (dormir avança ciclos, então descansar também custa).
+// (dormir avança ciclos, então descansar também custa) e conta como um
+// período a mais sem dormir.
 const SV_origToggleTimeOfDay = toggleTimeOfDay;
 toggleTimeOfDay = function () {
     const r = SV_origToggleTimeOfDay.apply(this, arguments);
     try {
         SV_spend(SV_NIGHT_COST.hunger, SV_NIGHT_COST.thirst);
         SV_applySanity(SV_SANITY_DAWN); // uma nova virada de dia clareia a mente
+        SV_ensureState();
+        const s = gameState.survival;
+        if (s) s.flipsSinceSleep = (s.flipsSinceSleep || 0) + 1;
+    } catch (e) { /* noop */ }
+    return r;
+};
+
+// completeSleep: dormir zera o "tempo sem dormir" e acalma a mente.
+const SV_origCompleteSleep = completeSleep;
+completeSleep = function () {
+    const r = SV_origCompleteSleep.apply(this, arguments);
+    try {
+        SV_ensureState();
+        const s = gameState.survival;
+        if (s) {
+            s.flipsSinceSleep = 0;
+            s.flags.extra = s.flags.extra || {};
+            s.flags.extra.sleepSanity = false;
+        }
+        SV_applySanity(6); // uma boa noite de sono clareia os pensamentos
     } catch (e) { /* noop */ }
     return r;
 };

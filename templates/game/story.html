@@ -881,6 +881,7 @@ textarea { min-height: 96px; resize: vertical; }
 .location-title { text-align: center; }
 .location-description {
   color: #c8bfd8; line-height: 1.65; font-size: .93rem; margin-bottom: 12px;
+  text-align: center;
 }
 .action-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 #game-ui .action-buttons {
@@ -969,11 +970,13 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-node.water.current .wm-disc { fill: #4a9bd6; stroke: #fff; }
 .world-map-stage {
   position: relative; flex: 1 1 auto; min-height: 240px; overflow: hidden;
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
 }
+.world-map-stage:active { cursor: grabbing; }
 .world-map {
   position: absolute; inset: 0;
   display: block; width: 100%; height: 100%; min-width: 0; max-height: none;
-  touch-action: manipulation;
+  touch-action: none;
 }
 .world-map .wm-edge { stroke: rgba(240,193,75,.16); stroke-width: 5; stroke-linecap: round; }
 .world-map .wm-edge.active {
@@ -1032,6 +1035,32 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .world-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .world-map-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* ===== Luz (dia/noite) e clima sobre o mapa ===== */
+.world-map .wm-tint, .world-map .wm-weather { pointer-events: none; }
+.world-map .wm-weather > g,
+.world-map .wm-weather > rect { display: none; }
+.world-map .wm-flash { fill: #e6eeff; opacity: 0; }
+.world-map .wm-rain line { stroke: rgba(176,210,255,.42); stroke-width: 1.4; stroke-linecap: round; }
+.world-map .wm-snow circle { fill: rgba(238,246,255,.8); }
+.world-map .wm-fog ellipse { fill: rgba(214,226,236,.16); }
+.world-map.wm-w-rain .wm-rain,
+.world-map.wm-w-storm .wm-rain { display: block; animation: wm-rainfall .9s linear infinite; }
+.world-map.wm-w-storm .wm-rain line { stroke: rgba(206,228,255,.6); }
+.world-map.wm-w-storm .wm-rain { animation-duration: .55s; }
+.world-map.wm-w-storm .wm-flash { display: block; animation: wm-lightning 7.5s linear infinite; }
+.world-map.wm-w-snow .wm-snow { display: block; animation: wm-snowfall 7s linear infinite; }
+.world-map.wm-w-fog .wm-fog { display: block; animation: wm-fogdrift 16s ease-in-out infinite alternate; }
+@keyframes wm-rainfall { from { transform: translateY(-880px); } to { transform: translateY(0); } }
+@keyframes wm-snowfall { from { transform: translateY(-880px); } to { transform: translateY(0); } }
+@keyframes wm-fogdrift { from { transform: translateX(-45px); } to { transform: translateX(45px); } }
+@keyframes wm-lightning {
+  0%, 91%, 100% { opacity: 0; }
+  92% { opacity: .5; }
+  93% { opacity: 0; }
+  95% { opacity: .32; }
+  96.5% { opacity: 0; }
+}
 
 /* Modo mapa: o painel central não rola; o mapa se ajusta ao espaço disponível. */
 #game-ui .game-panel #game-content.map-mode {
@@ -1300,10 +1329,48 @@ textarea { min-height: 96px; resize: vertical; }
      damos ao mapa uma altura fixa confortável (sem rolagem). */
   #game-ui #game-content.map-mode .world-map-stage { min-height: 320px; }
   .race-selector { grid-template-columns: 1fr; }
+
+  /* Inventário / Comidas em telas estreitas: slots compactos e sem
+     sobreposição (o grid deixa de esticar as linhas e passa a usar
+     quadradinhos de tamanho fixo). */
+  #game-ui .inventory-grid,
+  #game-ui #inventory-grid,
+  #game-ui #food-grid {
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)) !important;
+    grid-auto-rows: 46px !important;
+    align-content: start !important;
+    gap: 6px !important;
+    max-height: 240px !important;
+  }
+  #game-ui #inventory-grid .inventory-slot,
+  #game-ui #food-grid .inventory-slot {
+    aspect-ratio: auto !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    padding: 3px !important;
+    font-size: 9px !important;
+    border-radius: 9px !important;
+  }
+  #game-ui #inventory-grid .inventory-slot .item-name,
+  #game-ui #food-grid .inventory-slot .item-name {
+    font-size: 9px !important; line-height: 1.1 !important;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+  }
+  #game-ui #food-grid { margin-bottom: 4px !important; }
 }
 @media (max-width: 520px) {
   .title-content { padding: 28px 18px 22px; }
   #game-ui.game-container { padding: 10px 8px 28px; }
+  #game-ui .inventory-grid,
+  #game-ui #inventory-grid,
+  #game-ui #food-grid {
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)) !important;
+    grid-auto-rows: 40px !important;
+  }
+  #game-ui #inventory-grid .inventory-slot,
+  #game-ui #food-grid .inventory-slot {
+    height: 40px !important; min-height: 40px !important;
+  }
 }
 </style>
 </head>
@@ -1607,7 +1674,7 @@ textarea { min-height: 96px; resize: vertical; }
                 <div class="save-load-buttons">
                     <button class="profile-btn" id="profile-button" type="button" onclick="showProfile()" title="Perfil">👤</button>
                     <button class="save-btn" id="save-btn" type="button" onclick="saveGame()">💾 Salvar</button>
-                    <button class="load-btn" id="load-btn" type="button" onclick="loadGame()">📂 Load</button>
+                    <button class="load-btn" id="load-btn" type="button" onclick="loadGame()">📂 Carregar</button>
                     <button class="menu-btn" type="button" onclick="returnToTitle()">🏠 Menu</button>
                 </div>
             </div>
@@ -2528,6 +2595,84 @@ textarea { min-height: 96px; resize: vertical; }
             return parts.join('');
         }
 
+        // Cores do terreno conforme o período: mais claro de dia, azulado/escuro à noite.
+        function tbMapGroundColors() {
+            const night = typeof gameState !== 'undefined' && gameState && gameState.timeOfDay === 'night';
+            return night
+                ? { c0: '#22415f', c1: '#152744', c2: '#080e20', glow: 'rgba(120,170,255,.10)' }
+                : { c0: '#40804c', c1: '#2a5c33', c2: '#12331b', glow: 'rgba(255,236,170,.10)' };
+        }
+
+        // Parâmetros de iluminação (dia/noite) e clima atual do mapa.
+        function tbMapLightParams() {
+            const night = typeof gameState !== 'undefined' && gameState && gameState.timeOfDay === 'night';
+            const w = (typeof TB_weather === 'function' && TB_weather()) || { id: 'clear' };
+            let alpha = night ? 0.46 : 0.06;
+            if (w.id === 'storm') alpha += 0.16;
+            else if (w.id === 'snow') alpha += 0.12;
+            else if (w.id === 'fog') alpha += 0.10;
+            else if (w.id === 'rain') alpha += 0.08;
+            return { night, weather: w.id || 'clear', color: night ? '#0a1030' : '#fff6d8', alpha: Math.min(0.7, alpha) };
+        }
+
+        // Camada de clima do mapa: chuva, neve, neblina e relâmpago (tempestade).
+        // Cada efeito fica sempre no SVG; o CSS mostra só o clima ativo.
+        function renderMapWeather() {
+            const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
+            let seed = 424242;
+            const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+
+            // Grupo periódico de altura H (desenha o "clone" H acima) => loop sem salto.
+            let rain = '';
+            for (let i = 0; i < 150; i++) {
+                const x = Math.round(rnd() * (W + 60)) - 30;
+                const y = Math.round(rnd() * H);
+                const len = 10 + rnd() * 14;
+                rain += `<line x1="${x}" y1="${y}" x2="${x - 5}" y2="${y + len}" />`;
+                rain += `<line x1="${x}" y1="${y - H}" x2="${x - 5}" y2="${y - H + len}" />`;
+            }
+            let snow = '';
+            for (let i = 0; i < 120; i++) {
+                const x = Math.round(rnd() * W);
+                const y = Math.round(rnd() * H);
+                const r = (0.9 + rnd() * 1.6).toFixed(1);
+                snow += `<circle cx="${x}" cy="${y}" r="${r}" />`;
+                snow += `<circle cx="${x}" cy="${y - H}" r="${r}" />`;
+            }
+            let fog = '';
+            for (let i = 0; i < 11; i++) {
+                const x = Math.round(rnd() * W);
+                const y = Math.round(rnd() * H);
+                fog += `<ellipse cx="${x}" cy="${y}" rx="${(95 + rnd() * 130).toFixed(0)}" ry="${(52 + rnd() * 72).toFixed(0)}" />`;
+            }
+
+            return `<g class="wm-weather" aria-hidden="true">`
+                + `<g class="wm-rain">${rain}</g>`
+                + `<g class="wm-snow">${snow}</g>`
+                + `<g class="wm-fog" filter="url(#wm-soft)">${fog}</g>`
+                + `<rect class="wm-flash" x="0" y="0" width="${W}" height="${H}" />`
+                + `</g>`;
+        }
+
+        // Atualiza a luz e o clima do mapa JÁ desenhado (sem redesenhar tudo),
+        // para o dia/noite mudar ao vivo enquanto o mapa está aberto.
+        function tbMapSyncLight() {
+            const svg = document.querySelector('svg.world-map');
+            if (!svg) return;
+            const lp = tbMapLightParams();
+            const gc = tbMapGroundColors();
+            const rect = svg.querySelector('.wm-tint-rect');
+            if (rect) { rect.setAttribute('fill', lp.color); rect.setAttribute('opacity', lp.alpha.toFixed(2)); }
+            const stops = svg.querySelectorAll('#wm-ground stop');
+            if (stops.length === 3) {
+                stops[0].setAttribute('stop-color', gc.c0);
+                stops[1].setAttribute('stop-color', gc.c1);
+                stops[2].setAttribute('stop-color', gc.c2);
+            }
+            svg.classList.toggle('wm-time-night', lp.night);
+            ['clear', 'rain', 'fog', 'storm', 'snow'].forEach(id => svg.classList.toggle('wm-w-' + id, lp.weather === id));
+        }
+
         // viewBox focado no local atual + caminhos diretos (zoom "só o que é perto").
         function getFocusViewBox(locId) {
             const here = WORLD_MAP_NODES[locId];
@@ -2561,7 +2706,14 @@ textarea { min-height: 96px; resize: vertical; }
             walks.forEach(w => { if (!walkByTarget[w.target]) walkByTarget[w.target] = w; });
 
             const focus = getFocusViewBox(locId);
-            const focusAttr = `${focus.x.toFixed(1)} ${focus.y.toFixed(1)} ${focus.w.toFixed(1)} ${focus.h.toFixed(1)}`;
+            const computedFocus = `${focus.x.toFixed(1)} ${focus.y.toFixed(1)} ${focus.w.toFixed(1)} ${focus.h.toFixed(1)}`;
+            // Mantém o enquadramento (zoom/arrasto) escolhido pelo jogador
+            // enquanto ele não mudar de local.
+            const stored = (typeof gameState !== 'undefined' && gameState && gameState._mapView && gameState._mapView.loc === locId)
+                ? gameState._mapView.vb : null;
+            const focusAttr = stored || computedFocus;
+            const lp = tbMapLightParams();
+            const gc = tbMapGroundColors();
 
             let edgesSvg = '';
             getWorldEdges().forEach(([a, b]) => {
@@ -2597,8 +2749,8 @@ textarea { min-height: 96px; resize: vertical; }
             });
 
             const hint = walks.length
-                ? '🚶 Toque em um local iluminado para caminhar até ele'
-                : '🚶 Daqui não há caminhos — volte por onde veio';
+                ? '🚶 Toque num local iluminado para caminhar · arraste para mover · pinça para o zoom'
+                : '🚶 Daqui não há caminhos · arraste e aproxime para explorar o mapa';
 
             return `
                 <div class="world-map-wrap">
@@ -2611,18 +2763,20 @@ textarea { min-height: 96px; resize: vertical; }
                         </span>
                     </div>
                     <div class="world-map-stage">
-                    <svg class="world-map" data-focus="${focusAttr}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa ao redor de ${here.name}">
+                    <svg class="world-map wm-time-${lp.night ? 'night' : 'day'} wm-w-${lp.weather}" data-focus="${computedFocus}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa ao redor de ${here.name}">
                         <defs>
                             <radialGradient id="wm-ground" cx="50%" cy="42%" r="78%">
-                                <stop offset="0%" stop-color="#2f5f39" />
-                                <stop offset="55%" stop-color="#1e4026" />
-                                <stop offset="100%" stop-color="#0e2114" />
+                                <stop offset="0%" stop-color="${gc.c0}" />
+                                <stop offset="55%" stop-color="${gc.c1}" />
+                                <stop offset="100%" stop-color="${gc.c2}" />
                             </radialGradient>
                             <filter id="wm-soft" x="-30%" y="-30%" width="160%" height="160%">
                                 <feGaussianBlur stdDeviation="22" />
                             </filter>
                         </defs>
                         <g class="wm-bg">${renderMapAmbience()}</g>
+                        <g class="wm-tint"><rect class="wm-tint-rect" x="0" y="0" width="${WORLD_MAP_VIEWBOX.w}" height="${WORLD_MAP_VIEWBOX.h}" fill="${lp.color}" opacity="${lp.alpha.toFixed(2)}" /></g>
+                        ${renderMapWeather()}
                         <g class="wm-edges">${edgesSvg}</g>
                         <g class="wm-nodes">${nodesSvg}</g>
                     </svg>
@@ -2642,27 +2796,172 @@ textarea { min-height: 96px; resize: vertical; }
             return { x: p[0], y: p[1], w: p[2], h: p[3] };
         }
 
-        // Ajusta o zoom (mantém o centro; limita entre ½ e ~1,8× do foco).
-        function tbMapZoom(factor) {
+        // ── Zoom e arrasto do mapa (mouse, toque e pinça) ──────────────
+        function tbMapVB(svg) {
+            const vb = svg.viewBox.baseVal;
+            return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
+        }
+
+        function tbMapScale(svg, vb) {
+            const r = svg.getBoundingClientRect();
+            if (!r.width || !r.height || !vb.w || !vb.h) return 1;
+            return Math.min(r.width / vb.w, r.height / vb.h) || 1;
+        }
+
+        function tbMapClampVB(x, y, w, h) {
+            const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
+            if (w >= W) x = (W - w) / 2; else x = Math.max(0, Math.min(x, W - w));
+            if (h >= H) y = (H - h) / 2; else y = Math.max(0, Math.min(y, H - h));
+            return { x, y };
+        }
+
+        // Guarda o enquadramento atual para ele sobreviver a um redesenho do mapa.
+        function tbMapStoreView(svg) {
+            if (typeof gameState === 'undefined' || !gameState || !gameState.character) return;
+            gameState._mapView = { loc: gameState.location, vb: svg.getAttribute('viewBox') };
+        }
+
+        function tbMapApplyVB(svg, x, y, w, h) {
+            const c = tbMapClampVB(x, y, w, h);
+            svg.setAttribute('viewBox', `${c.x.toFixed(1)} ${c.y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+            tbMapStoreView(svg);
+        }
+
+        // Zoom ancorado num ponto da tela (clientX/Y). Sem ponto, usa o centro.
+        function tbMapZoomAt(factor, clientX, clientY) {
             const svg = document.querySelector('svg.world-map');
             if (!svg) return;
-            const vb = svg.viewBox.baseVal;
-            const focus = parseFocusAttr(svg.getAttribute('data-focus'));
-            if (!focus || !vb || !vb.width) return;
-            const minW = focus.w * 0.5;
-            const maxW = Math.min(WORLD_MAP_VIEWBOX.w, focus.w * 1.8);
-            const w = Math.max(minW, Math.min(maxW, vb.width * factor));
-            const h = w * (vb.height / vb.width);
-            const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
-            svg.setAttribute('viewBox', `${(cx - w / 2).toFixed(1)} ${(cy - h / 2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+            const vb = tbMapVB(svg);
+            if (!vb.w) return;
+            const ratio = vb.h / vb.w;
+            const focus = svg._focus || vb;
+            const minW = Math.max(120, focus.w * 0.4);
+            const maxW = WORLD_MAP_VIEWBOX.w;
+            const w = Math.max(minW, Math.min(maxW, vb.w * factor));
+            const h = w * ratio;
+            let fx = 0.5, fy = 0.5;
+            if (typeof clientX === 'number' && typeof clientY === 'number') {
+                const r = svg.getBoundingClientRect();
+                const scale = tbMapScale(svg, vb);
+                const cw = vb.w * scale, ch = vb.h * scale;
+                fx = Math.max(0, Math.min(1, (clientX - r.left - (r.width - cw) / 2) / cw));
+                fy = Math.max(0, Math.min(1, (clientY - r.top - (r.height - ch) / 2) / ch));
+            }
+            tbMapApplyVB(svg, vb.x + fx * (vb.w - w), vb.y + fy * (vb.h - h), w, h);
+        }
+
+        // Botões ＋ / － do mapa.
+        function tbMapZoom(factor) { tbMapZoomAt(factor); }
+
+        // Arrasta o mapa em pixels de tela.
+        function tbMapPanBy(dxPx, dyPx) {
+            const svg = document.querySelector('svg.world-map');
+            if (!svg) return;
+            const vb = tbMapVB(svg);
+            const scale = tbMapScale(svg, vb);
+            tbMapApplyVB(svg, vb.x - dxPx / scale, vb.y - dyPx / scale, vb.w, vb.h);
         }
 
         // Volta o enquadramento para o local atual.
         function tbMapRecenter() {
             const svg = document.querySelector('svg.world-map');
             if (!svg) return;
+            if (typeof gameState !== 'undefined' && gameState) gameState._mapView = null;
             const focus = svg.getAttribute('data-focus');
             if (focus) svg.setAttribute('viewBox', focus);
+        }
+
+        function tbMapPointerDown(e) {
+            const stage = e.currentTarget;
+            stage._pts = stage._pts || new Map();
+            stage._pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (stage._pts.size === 1) {
+                stage._start = { x: e.clientX, y: e.clientY };
+                stage._last = { x: e.clientX, y: e.clientY };
+                stage._dragMoved = false;
+            } else if (stage._pts.size === 2) {
+                const p = [...stage._pts.values()];
+                stage._lastDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+                stage._dragMoved = true;
+            }
+            try { stage.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+        }
+
+        function tbMapPointerMove(e) {
+            const stage = e.currentTarget;
+            const pts = stage._pts;
+            if (!pts || !pts.has(e.pointerId)) return;
+            pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (pts.size >= 2) {
+                const p = [...pts.values()];
+                const dist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+                const midX = (p[0].x + p[1].x) / 2, midY = (p[0].y + p[1].y) / 2;
+                if (stage._lastDist) tbMapZoomAt(stage._lastDist / dist, midX, midY);
+                stage._lastDist = dist;
+                stage._dragMoved = true;
+                return;
+            }
+
+            if (!stage._start) return;
+            const tx = e.clientX - stage._start.x, ty = e.clientY - stage._start.y;
+            if (!stage._dragMoved) {
+                if (Math.hypot(tx, ty) < 6) return; // ainda é um toque/clique
+                stage._dragMoved = true;
+                tbMapPanBy(tx, ty);                 // aplica o deslocamento acumulado
+            } else {
+                tbMapPanBy(e.clientX - stage._last.x, e.clientY - stage._last.y);
+            }
+            stage._last = { x: e.clientX, y: e.clientY };
+        }
+
+        function tbMapPointerUp(e) {
+            const stage = e.currentTarget;
+            if (stage._pts) stage._pts.delete(e.pointerId);
+            if (stage._pts && stage._pts.size < 2) stage._lastDist = 0;
+            if (stage._pts && stage._pts.size === 1) {
+                // Soltou um dos dedos: o que ficou continua arrastando, sem "pulo".
+                const p = [...stage._pts.values()][0];
+                stage._start = { x: p.x, y: p.y };
+                stage._last = { x: p.x, y: p.y };
+                stage._dragMoved = true;
+            }
+            if (!stage._pts || stage._pts.size === 0) {
+                // Mantém o "arrastou" por um instante para engolir o clique fantasma.
+                clearTimeout(stage._dragTimer);
+                stage._dragTimer = setTimeout(() => { stage._dragMoved = false; }, 400);
+            }
+        }
+
+        // Impede que um arrasto vire um "clique" que caminha até um local.
+        function tbMapClickGuard(e) {
+            const stage = e.currentTarget;
+            if (stage._dragMoved) { e.preventDefault(); e.stopPropagation(); }
+        }
+
+        function tbMapWheel(e) {
+            e.preventDefault();
+            tbMapZoomAt(e.deltaY < 0 ? 0.88 : 1.12, e.clientX, e.clientY);
+        }
+
+        // Liga os controles de zoom/arrasto ao mapa recém-renderizado.
+        function tbInitWorldMap() {
+            const stage = document.querySelector('.world-map-stage');
+            if (!stage) return;
+            const svg = stage.querySelector('svg.world-map');
+            if (svg) svg._focus = parseFocusAttr(svg.getAttribute('data-focus')) || tbMapVB(svg);
+            if (!stage._mapReady) {
+                stage._mapReady = true;
+                stage._pts = new Map();
+                stage.addEventListener('pointerdown', tbMapPointerDown);
+                stage.addEventListener('pointermove', tbMapPointerMove);
+                stage.addEventListener('pointerup', tbMapPointerUp);
+                stage.addEventListener('pointercancel', tbMapPointerUp);
+                stage.addEventListener('click', tbMapClickGuard, true);
+                stage.addEventListener('wheel', tbMapWheel, { passive: false });
+            }
+            if (!window._tbMapLightTimer) window._tbMapLightTimer = setInterval(tbMapSyncLight, 1500);
+            tbMapSyncLight();
         }
 
         // "Caminha" até um local: anima o destino e só então executa o movimento.
@@ -4059,6 +4358,7 @@ textarea { min-height: 96px; resize: vertical; }
             }
             
             content.innerHTML = html;
+            if (content.querySelector('.world-map')) tbInitWorldMap();
         }
         function updateInventoryGrid() {
             const grid = document.getElementById('inventory-grid');
