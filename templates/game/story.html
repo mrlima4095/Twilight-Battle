@@ -781,6 +781,14 @@ textarea { min-height: 96px; resize: vertical; }
   background: rgba(240,193,75,.28); border-radius: 99px;
 }
 
+/* 🍖 Comidas: mostra as linhas inteiras (sem scroll interno). Se faltar espaço,
+   o próprio painel de equipamento rola, mas nunca "some" uma linha de slot. */
+#game-ui #food-grid {
+  flex: 0 0 auto !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
 .inventory-slot {
   aspect-ratio: 1; min-height: 0; border-radius: 12px; padding: 6px;
   background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08);
@@ -1073,19 +1081,19 @@ textarea { min-height: 96px; resize: vertical; }
    flex-direction: column;
 }
 #game-content.chest-open .chest-container {
-   flex: 1 1 auto;
-   min-height: 0;
+   flex: 0 0 auto;
    display: flex;
    flex-direction: column;
 }
 #game-content.chest-open #chest-grid {
-   flex: 1 1 auto !important;
+   flex: 0 0 auto !important;
    min-height: 0;
-   grid-template-rows: repeat(3, minmax(0, 1fr));
+   grid-template-rows: none !important;
+   grid-auto-rows: max-content !important;
 }
 #game-content.chest-open #chest-grid .inventory-slot {
    max-height: none !important;
-   height: 100% !important;
+   height: auto !important;
 }
 .chest-toolbar {
   display: flex;
@@ -3748,32 +3756,12 @@ textarea { min-height: 96px; resize: vertical; }
                 else if (targetSlot) {
                     const targetIndex = targetSlot.dataset.index;
                     const targetSource = targetSlot.dataset.source || 'inventory';
+                    const fromSource = touchDraggedSource || originalSource || 'inventory';
                     
-                    if (targetIndex && targetIndex != touchDraggedIndex) {
-                        if (touchDraggedSource === 'inventory' && targetSource === 'inventory') {
-                            const temp = gameState.inventory[targetIndex];
-                            gameState.inventory[targetIndex] = gameState.inventory[touchDraggedIndex];
-                            gameState.inventory[touchDraggedIndex] = temp;
-                        } 
-                        else if (touchDraggedSource === 'inventory' && targetSource === 'chest') {
-                            if (!gameState.chest) gameState.chest = Array(18).fill(null);
-                            const temp = gameState.chest[targetIndex];
-                            gameState.chest[targetIndex] = gameState.inventory[touchDraggedIndex];
-                            gameState.inventory[touchDraggedIndex] = temp;
-                            addLog('📦 Item movido para o baú.');
-                        }
-                        else if (touchDraggedSource === 'chest' && targetSource === 'inventory') {
-                            const temp = gameState.inventory[targetIndex];
-                            gameState.inventory[targetIndex] = gameState.chest[touchDraggedIndex];
-                            gameState.chest[touchDraggedIndex] = temp;
-                            addLog('📦 Item retirado do baú.');
-                        }
-                        else if (touchDraggedSource === 'chest' && targetSource === 'chest') {
-                            const temp = gameState.chest[targetIndex];
-                            gameState.chest[targetIndex] = gameState.chest[touchDraggedIndex];
-                            gameState.chest[touchDraggedIndex] = temp;
-                        }
-                        
+                    const moved = tbMoveItem(fromSource, touchDraggedIndex, targetSource, targetIndex);
+                    if (moved) {
+                        if (fromSource === 'chest' && targetSource !== 'chest') addLog('📦 Item retirado do baú.');
+                        else if (targetSource === 'chest' && fromSource !== 'chest') addLog('📦 Item movido para o baú.');
                         updateUI();
                     }
                 }
@@ -3876,39 +3864,21 @@ textarea { min-height: 96px; resize: vertical; }
             
             event.preventDefault();
             const targetSlot = event.target.closest('.inventory-slot');
-            if (!targetSlot) return;
+            if (!targetSlot) { draggedItemIndex = null; draggedItemSource = null; return; }
             
             const targetIndex = targetSlot.dataset.index;
             const targetSource = targetSlot.dataset.source || 'inventory';
             
-            if (draggedItemIndex === null || targetIndex === draggedItemIndex) {
-                draggedItemIndex = null;
-                draggedItemSource = null;
-                return;
-            }
-    
-            if (draggedItemSource === 'chest') {
-                if (!gameState.chest) gameState.chest = Array(18).fill(null);
-                const temp = gameState.inventory[targetIndex];
-                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
-                gameState.chest[draggedItemIndex] = temp;
-                addLog('📦 Item retirado do baú.');
-                if (gameState.chestOpen) updateGameContent();
-            }
-            else if (draggedItemSource === 'inventory' && targetSource === 'inventory') {
-                const temp = gameState.inventory[targetIndex];
-                gameState.inventory[targetIndex] = gameState.inventory[draggedItemIndex];
-                gameState.inventory[draggedItemIndex] = temp;
-            }
-            else if (draggedItemSource === 'inventory' && targetSource === 'chest') {
-                if (!gameState.chest) gameState.chest = Array(18).fill(null);
-                const temp = gameState.chest[targetIndex];
-                gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
-                gameState.inventory[draggedItemIndex] = temp;
-                addLog('📦 Item movido para o baú.');
+            if (draggedItemIndex === null) return;
+            
+            const fromSource = draggedItemSource || 'inventory';
+            const moved = tbMoveItem(fromSource, draggedItemIndex, targetSource, targetIndex);
+            if (moved) {
+                if (fromSource === 'chest' && targetSource !== 'chest') addLog('📦 Item retirado do baú.');
+                else if (targetSource === 'chest' && fromSource !== 'chest') addLog('📦 Item movido para o baú.');
+                updateUI();
             }
             
-            updateUI();
             draggedItemIndex = null;
             draggedItemSource = null;
         }
@@ -3941,41 +3911,8 @@ textarea { min-height: 96px; resize: vertical; }
             draggedItemSource = 'chest';
         }
         function handleChestDrop(event) {
-            if (gameState.isDead) return;
-            
-            event.preventDefault();
-            const targetSlot = event.target.closest('.inventory-slot');
-            if (!targetSlot) return;
-            
-            const targetIndex = targetSlot.dataset.index;
-            const targetSource = targetSlot.dataset.source || 'inventory';
-            
-            if (draggedItemIndex === null) return;
-    
-            if (!gameState.chest) gameState.chest = Array(18).fill(null);
-            if (!gameState.inventory) gameState.inventory = Array(18).fill(null);
-    
-            if (draggedItemSource === 'inventory' && targetSource === 'chest') {
-                const temp = gameState.chest[targetIndex];
-                gameState.chest[targetIndex] = gameState.inventory[draggedItemIndex];
-                gameState.inventory[draggedItemIndex] = temp;
-                addLog('📦 Item movido para o baú.');
-            }
-            else if (draggedItemSource === 'chest' && targetSource === 'inventory') {
-                const temp = gameState.inventory[targetIndex];
-                gameState.inventory[targetIndex] = gameState.chest[draggedItemIndex];
-                gameState.chest[draggedItemIndex] = temp;
-                addLog('📦 Item retirado do baú.');
-            }
-            else if (draggedItemSource === 'chest' && targetSource === 'chest') {
-                const temp = gameState.chest[targetIndex];
-                gameState.chest[targetIndex] = gameState.chest[draggedItemIndex];
-                gameState.chest[draggedItemIndex] = temp;
-            }
-            
-            updateUI();
-            draggedItemIndex = null;
-            draggedItemSource = null;
+            // O destino (baú) usa a mesma lógica de mover/empilhar/permutar.
+            handleDrop(event);
         }
     
         // ========== CHEST FUNCTIONS ==========
@@ -4001,16 +3938,16 @@ textarea { min-height: 96px; resize: vertical; }
             if (!item) return;
     
             if (item.type === 'food') {
-                for (let i = 0; i < 18; i++) {
-                    if (!gameState.inventory[i]) {
-                        gameState.inventory[i] = gameState.chest[index];
-                        gameState.chest[index] = null;
-                        addLog(`📦 ${item.name} movido para o inventário.`);
-                        updateUI();
-                        return;
-                    }
+                const qty = item.quantity || 1;
+                const leftover = tbPutItem(gameState.inventory, item, qty);
+                if (leftover < qty) {
+                    if (leftover <= 0) { gameState.chest[index] = null; }
+                    else { item.quantity = leftover; }
+                    addLog(`📦 ${item.name} movido para o inventário.`);
+                    updateUI();
+                } else {
+                    addLog('❌ Inventário cheio!');
                 }
-                addLog('❌ Inventário cheio!');
             }
         }
         function organizeChest() {
@@ -4018,87 +3955,142 @@ textarea { min-height: 96px; resize: vertical; }
             if (!gameState.chest) gameState.chest = Array(18).fill(null);
             
             const items = gameState.chest.filter(item => item !== null);
-            gameState.chest = Array(18).fill(null);
-            
-            for (let i = 0; i < items.length; i++) { gameState.chest[i] = items[i]; }
+            const rebuilt = Array(18).fill(null);
+            for (let i = 0; i < items.length; i++) {
+                // Reorganiza juntando as pilhas iguais (até o máximo por pilha).
+                tbPutItem(rebuilt, items[i], items[i].quantity || 1);
+            }
+            gameState.chest = rebuilt;
             
             updateUI();
             addLog('📦 Baú organizado!');
         }
     
+        // ========== EMPILHAMENTO (STACKING) ==========
+        // Itens "iguais" (mesmo JSON interno, ignorando apenas a quantidade) podem
+        // ser juntados numa única pilha. O máximo por pilha é TB_MAX_STACK (64),
+        // a menos que o item defina seu próprio "maxStack".
+        const TB_MAX_STACK = 64;
+
+        // JSON com as chaves ordenadas, para comparar dois itens de forma estável.
+        function tbStableStringify(value) {
+            if (Array.isArray(value)) return '[' + value.map(tbStableStringify).join(',') + ']';
+            if (value && typeof value === 'object') {
+                return '{' + Object.keys(value).sort()
+                    .map(k => JSON.stringify(k) + ':' + tbStableStringify(value[k])).join(',') + '}';
+            }
+            const json = JSON.stringify(value);
+            return json === undefined ? 'null' : json;
+        }
+        // "Assinatura" do item: tudo, menos o campo quantity.
+        function tbItemKey(item) {
+            if (!item) return null;
+            const copy = JSON.parse(JSON.stringify(item));
+            delete copy.quantity;
+            return tbStableStringify(copy);
+        }
+        function tbMaxStack(item) {
+            if (item && typeof item.maxStack === 'number' && item.maxStack > 0) return item.maxStack;
+            return TB_MAX_STACK;
+        }
+        // Equipamentos (com "slot") não empilham: equipar move a pilha inteira.
+        function tbCanStack(item) {
+            return !!item && !item.slot;
+        }
+        // É possível juntar `from` dentro de `to`?
+        function tbCanMerge(to, from) {
+            if (!to || !from) return false;
+            if (!tbCanStack(to) || !tbCanStack(from)) return false;
+            if (tbItemKey(to) !== tbItemKey(from)) return false;
+            return (to.quantity || 1) < tbMaxStack(to);
+        }
+        // Coloca `qty` unidades de `item` no array `arr`, juntando pilhas iguais
+        // e respeitando o máximo por pilha. Retorna quantas unidades NÃO couberam.
+        function tbPutItem(arr, item, qty) {
+            const base = JSON.parse(JSON.stringify(item));
+            delete base.quantity;
+            if (qty == null) qty = item.quantity || 1;
+
+            if (tbCanStack(base)) {
+                // 1) Junta em pilhas existentes com espaço
+                for (let i = 0; i < arr.length && qty > 0; i++) {
+                    if (arr[i] && tbItemKey(arr[i]) === tbItemKey(base)) {
+                        const space = tbMaxStack(arr[i]) - (arr[i].quantity || 1);
+                        const move = Math.min(space, qty);
+                        if (move > 0) { arr[i].quantity = (arr[i].quantity || 1) + move; qty -= move; }
+                    }
+                }
+                // 2) Cria novas pilhas em slots vazios
+                for (let i = 0; i < arr.length && qty > 0; i++) {
+                    if (!arr[i]) {
+                        const move = Math.min(tbMaxStack(base), qty);
+                        arr[i] = { ...JSON.parse(JSON.stringify(base)), quantity: move };
+                        qty -= move;
+                    }
+                }
+            } else {
+                // Item único (ex.: equipamento): 1 por slot
+                for (let i = 0; i < arr.length && qty > 0; i++) {
+                    if (!arr[i]) { arr[i] = { ...JSON.parse(JSON.stringify(base)), quantity: 1 }; qty -= 1; }
+                }
+            }
+            return qty;
+        }
+        // Move / empilha / permuta entre inventário e baú.
+        function tbMoveItem(fromSource, fromIndex, toSource, toIndex) {
+            fromIndex = parseInt(fromIndex, 10);
+            toIndex = parseInt(toIndex, 10);
+            if (isNaN(fromIndex) || isNaN(toIndex)) return false;
+            if (!gameState.chest) gameState.chest = Array(18).fill(null);
+
+            const fromArr = fromSource === 'chest' ? gameState.chest : gameState.inventory;
+            const toArr = toSource === 'chest' ? gameState.chest : gameState.inventory;
+            if (fromSource === toSource && fromIndex === toIndex) return false;
+
+            const fromItem = fromArr[fromIndex];
+            if (!fromItem) return false;
+            const toItem = toArr[toIndex];
+
+            // 1) Junta pilhas no slot de destino
+            if (toItem && tbCanMerge(toItem, fromItem)) {
+                const space = tbMaxStack(toItem) - (toItem.quantity || 1);
+                const move = Math.min(space, fromItem.quantity || 1);
+                toItem.quantity = (toItem.quantity || 1) + move;
+                const left = (fromItem.quantity || 1) - move;
+                if (left <= 0) fromArr[fromIndex] = null; else fromItem.quantity = left;
+                return true;
+            }
+            // 2) Slot vazio: só move
+            if (!toItem) { toArr[toIndex] = fromItem; fromArr[fromIndex] = null; return true; }
+            // 3) Caso contrário, permuta
+            toArr[toIndex] = fromItem; fromArr[fromIndex] = toItem;
+            return true;
+        }
+
         // ========== INVENTORY FUNCTIONS ==========
         function addItemToInventory(itemId, quantity = 1) {
             if (gameState.isDead) return;
             
             const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
+            item.id = itemId;
             
-            for (let i = 0; i < quantity; i++) {
-                let added = false;
-                
-                for (let j = 0; j < 18; j++) {
-                    if (gameState.inventory[j] && gameState.inventory[j].id === itemId && gameState.inventory[j].consumable) {
-                        gameState.inventory[j].quantity = (gameState.inventory[j].quantity || 1) + 1;
-                        added = true;
-                        break;
-                    }
-                }
-                
-                if (!added) {
-                    for (let j = 0; j < 18; j++) {
-                        if (!gameState.inventory[j]) {
-                            gameState.inventory[j] = { ...item, id: itemId, quantity: item.consumable ? 1 : 1 };
-                            break;
-                        }
-                    }
-                }
-            }
+            tbPutItem(gameState.inventory, item, quantity);
             
             updateUI();
             trigger('item_acquired', { itemId: itemId });
         }
         function addItemToChest(itemId, quantity = 1) {
-            if (gameState.isDead) { return; }
+            if (gameState.isDead) { return false; }
             if (!gameState.chest) { gameState.chest = Array(18).fill(null); }
             
             const item = JSON.parse(JSON.stringify(ITEMS[itemId]));
             item.id = itemId;
             
-            for (let i = 0; i < quantity; i++) {
-                let added = false;
-                
-                // Tentar empilhar com itens existentes (apenas consumíveis)
-                if (item.consumable) {
-                    for (let j = 0; j < 18; j++) {
-                        if (gameState.chest[j] && gameState.chest[j].id === itemId && gameState.chest[j].consumable) {
-                            gameState.chest[j].quantity = (gameState.chest[j].quantity || 1) + 1;
-                            added = true;
-                            break;
-                        }
-                    }
-                }
-                
-                // Se não empilhou, encontrar slot vazio
-                if (!added) {
-                    for (let j = 0; j < 18; j++) {
-                        if (!gameState.chest[j]) {
-                            gameState.chest[j] = { 
-                                ...item, 
-                                id: itemId, 
-                                quantity: item.consumable ? 1 : 1 
-                            };
-                            added = true;
-                            break;
-                        }
-                    }
-                }
-                
-                if (!added) {return false;
-                }
-            }
+            const leftover = tbPutItem(gameState.chest, item, quantity);
             
             if (gameState.chestOpen) { updateUI(); }
             
-            return true;
+            return leftover === 0;
         }
 
         function removeItemFromInventory(index) {
@@ -4185,14 +4177,14 @@ textarea { min-height: 96px; resize: vertical; }
             if (gameState.isDead) return;
             
             if (gameState.equipment[slot]) {
-                for (let i = 0; i < 18; i++) {
-                    if (!gameState.inventory[i]) {
-                        gameState.inventory[i] = gameState.equipment[slot];
-                        gameState.equipment[slot] = null;
-                        addLog(`📦 ${gameState.inventory[i].name} guardado no inventário.`);
-                        updateUI();
-                        break;
-                    }
+                const item = gameState.equipment[slot];
+                const leftover = tbPutItem(gameState.inventory, item);
+                if (leftover === 0) {
+                    gameState.equipment[slot] = null;
+                    addLog(`📦 ${item.name} guardado no inventário.`);
+                    updateUI();
+                } else {
+                    addLog('❌ Inventário cheio!');
                 }
             }
         }

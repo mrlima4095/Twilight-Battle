@@ -45,6 +45,7 @@
 - Dente de Lobo
 - Domesticar Lobo
 - ✅ Validação/normalização de saves no servidor (anti-cheat básico)
+- ✅ Juntar itens iguais em pilhas (até 64) no inventário e no baú — arrastar sobre outra pilha igual ou 📦 Organizar
 
 ### Conquistas
 > ✅ Implementadas no sistema de conquistas (todas abaixo, exceto
