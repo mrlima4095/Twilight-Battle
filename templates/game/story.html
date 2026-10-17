@@ -964,6 +964,14 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-tree rect { fill: #3a2a1c; opacity: .7; }
 .world-map .wm-tree polygon { fill: #235c31; opacity: .75; }
 .world-map .wm-bush { fill: #2f7a3f; opacity: .5; }
+/* Lago Sagrado: a "bola" azul grande atrás dos nós da clareira / dentro do lago */
+.world-map .wm-lakes { pointer-events: none; }
+.world-map .wm-lake {
+  fill: rgba(30,84,142,.9);
+  stroke: rgba(140,205,245,.5); stroke-width: 2.5;
+}
+.world-map .wm-lake-hi { fill: rgba(66,148,206,.4); }
+.world-map .wm-lake-shine { fill: rgba(206,238,255,.55); }
 /* Nós de água (lago, rio...) */
 .world-map .wm-node.water .wm-disc { fill: rgba(38,92,150,.95); stroke: rgba(130,195,240,.6); }
 .world-map .wm-node.water.reachable .wm-disc { fill: rgba(46,112,178,.98); stroke: var(--gold); }
@@ -2183,7 +2191,7 @@ textarea { min-height: 96px; resize: vertical; }
                 ]
             },
             sacred_lake_interior: {
-                name: 'Dentro do Lago Sagrado',
+                name: 'Dentro do Lago',
                 description: 'Você mergulha nas águas cristalinas do lago sagrado. Uma luz azulada envolve seu corpo, e você sente uma energia ancestral fluindo através de você. Bolhas de luz dançam ao redor, purificando sua alma.',
                 actions: [
                     { name: '💧 Pegar água', action: 'fillBottle' },
@@ -2394,6 +2402,9 @@ textarea { min-height: 96px; resize: vertical; }
         // das ações de movimento de cada local (funções que chamam go('...')),
         // então o mapa nunca mostra um caminho que não existe de verdade.
         const WORLD_MAP_VIEWBOX = { w: 1040, h: 880 };
+        // Margem extra de terreno desenhada além do conteúdo, para nunca
+        // aparecer o "fim" do mapa quando o jogador arrasta até as beiradas.
+        const WORLD_MAP_BLEED = 340;
         const WORLD_MAP_NODES = {
             // Reino da Aurora
             great_hall:               { x: 660, y: 150, icon: '🏰', name: 'Palácio da Aurora', big: true, palace: true },
@@ -2416,8 +2427,8 @@ textarea { min-height: 96px; resize: vertical; }
             back_forest_trail_south:  { x: 135, y: 555, icon: '🌿', name: 'Trilha Sul' },
             abandoned_cemetery_gate:  { x: 95,  y: 385, icon: '🪦', name: 'Portão do Cemitério' },
             abandoned_cemetery:       { x: 95,  y: 315, icon: '⚰️', name: 'Cemitério' },
-            sacred_lake:              { x: 120, y: 615, icon: '💧', name: 'Lago Sagrado', water: true },
-            sacred_lake_interior:     { x: 120, y: 690, icon: '🌊', name: 'Dentro do Lago', water: true },
+            sacred_lake:              { x: 108, y: 552, icon: '💧', name: 'Clareira do Lago Sagrado' },
+            sacred_lake_interior:     { x: 120, y: 655, icon: '🌊', name: 'Dentro do Lago', water: true },
             // Arredores a leste (planície / trilha do rio / ruínas)
             outside:                  { x: 720, y: 480, icon: '🌅', name: 'Planície da Aurora' },
             north_trail_start:        { x: 800, y: 435, icon: '🚶', name: 'Início da Trilha' },
@@ -2512,10 +2523,12 @@ textarea { min-height: 96px; resize: vertical; }
         // manchas de terreno, rios (seguindo sob as pontes), muralha, mato e estrelas.
         function renderMapAmbience() {
             const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
+            const B = WORLD_MAP_BLEED;
             const parts = [];
-            parts.push(`<rect class="wm-terrain" x="0" y="0" width="${W}" height="${H}" />`);
+            parts.push(`<rect class="wm-terrain" x="${-B}" y="${-B}" width="${W + B * 2}" height="${H + B * 2}" />`);
 
             // 1) Manchas base de terreno: vila, campo, floresta, água, ruínas, cemitério.
+            //    As últimas são da "sobra" (fora do conteúdo) para o mapa nunca acabar.
             const blobs = [
                 [525, 320, 250, 190, 'town'],
                 [205, 345, 145, 120, 'field'],
@@ -2527,13 +2540,31 @@ textarea { min-height: 96px; resize: vertical; }
                 [880, 390, 150, 78, 'water'],
                 [975, 262, 120, 95, 'ruins'],
                 [95, 345, 110, 105, 'cemetery'],
-                [660, 790, 175, 90, 'forest']
+                [660, 790, 175, 90, 'forest'],
+                // Sobra de terreno além das beiradas do conteúdo.
+                [-60, 140, 170, 200, 'forest'],
+                [-70, 720, 190, 180, 'forest'],
+                [520, -140, 320, 130, 'field'],
+                [520, 1030, 340, 140, 'field'],
+                [1110, 150, 180, 200, 'forest'],
+                [1120, 700, 190, 180, 'forest'],
+                [1110, 640, 150, 90, 'water'],
+                [-80, 430, 140, 120, 'cemetery'],
+                [980, 1010, 170, 120, 'ruins']
             ];
             parts.push(`<g class="wm-blobs" filter="url(#wm-soft)">`);
             blobs.forEach(([cx, cy, rx, ry, kind]) => {
                 parts.push(`<ellipse class="wm-blob wm-blob-${kind}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" />`);
             });
             parts.push(`</g>`);
+
+            // 1.1) Lago Sagrado: uma grande "bola" azul atrás dos nós do lago.
+            //      A Clareira fica na margem e "Dentro do Lago" fica no meio dela.
+            parts.push(`<g class="wm-lakes">`
+                + `<circle class="wm-lake" cx="120" cy="655" r="66" />`
+                + `<circle class="wm-lake-hi" cx="112" cy="646" r="46" />`
+                + `<circle class="wm-lake-shine" cx="100" cy="632" r="14" />`
+                + `</g>`);
 
             // 2) Rios. O oeste desce sob a Ponte Oeste até o Lago Sagrado; o leste
             //    corre sob a Margem do Rio / ponte e segue para o sul.
@@ -2585,9 +2616,12 @@ textarea { min-height: 96px; resize: vertical; }
             parts.push(`<g class="wm-vegetation">${veg}</g>`);
 
             // 4) Pontos de luz / vaga-lumes (mesma semente => mesmo mapa sempre).
+            //    Cobrem também a sobra de terreno além das beiradas.
             parts.push(`<g class="wm-stars">`);
-            for (let i = 0; i < 95; i++) {
-                const x = (rnd() * W).toFixed(1), y = (rnd() * H).toFixed(1), r = (rnd() * 1.1 + 0.35).toFixed(2);
+            for (let i = 0; i < 130; i++) {
+                const x = (-B + rnd() * (W + B * 2)).toFixed(1);
+                const y = (-B + rnd() * (H + B * 2)).toFixed(1);
+                const r = (rnd() * 1.1 + 0.35).toFixed(2);
                 parts.push(`<circle class="wm-star" cx="${x}" cy="${y}" r="${r}" />`);
             }
             parts.push(`</g>`);
@@ -2650,7 +2684,7 @@ textarea { min-height: 96px; resize: vertical; }
                 + `<g class="wm-rain">${rain}</g>`
                 + `<g class="wm-snow">${snow}</g>`
                 + `<g class="wm-fog" filter="url(#wm-soft)">${fog}</g>`
-                + `<rect class="wm-flash" x="0" y="0" width="${W}" height="${H}" />`
+                + `<rect class="wm-flash" x="${-WORLD_MAP_BLEED}" y="${-WORLD_MAP_BLEED}" width="${W + WORLD_MAP_BLEED * 2}" height="${H + WORLD_MAP_BLEED * 2}" />`
                 + `</g>`;
         }
 
@@ -2673,8 +2707,29 @@ textarea { min-height: 96px; resize: vertical; }
             ['clear', 'rain', 'fog', 'storm', 'snow'].forEach(id => svg.classList.toggle('wm-w-' + id, lp.weather === id));
         }
 
+        // Folga extra mantida entre o enquadramento e a beirada do terreno, para
+        // que a "borda" do mapa nunca entre na tela.
+        const WORLD_MAP_EDGE = 120;
+
+        // Encaixa um retângulo na proporção do painel (mantendo o centro). Com
+        // preserveAspectRatio="slice" isso evita cortar o que interessa.
+        function tbMapFitAspect(rect, ar) {
+            if (!ar || !isFinite(ar) || ar <= 0) return rect;
+            const cx = rect.x + rect.w / 2, cy = rect.y + rect.h / 2;
+            let w = rect.w, h = rect.h;
+            if (w / h < ar) w = h * ar; else h = w / ar;
+            return { x: cx - w / 2, y: cy - h / 2, w, h };
+        }
+
+        function tbMapStageAspect() {
+            if (typeof document === 'undefined') return 0;
+            const stage = document.querySelector('.world-map-stage');
+            if (!stage || !stage.clientWidth || !stage.clientHeight) return 0;
+            return stage.clientWidth / stage.clientHeight;
+        }
+
         // viewBox focado no local atual + caminhos diretos (zoom "só o que é perto").
-        function getFocusViewBox(locId) {
+        function getFocusViewBox(locId, ar) {
             const here = WORLD_MAP_NODES[locId];
             if (!here) return { x: 0, y: 0, w: WORLD_MAP_VIEWBOX.w, h: WORLD_MAP_VIEWBOX.h };
             const pts = [here];
@@ -2691,10 +2746,14 @@ textarea { min-height: 96px; resize: vertical; }
             const minW = 380, minH = 320;
             if (w < minW) { x -= (minW - w) / 2; w = minW; }
             if (h < minH) { y -= (minH - h) / 2; h = minH; }
-            // Prende dentro dos limites do mundo.
+            // Encaixa na proporção do painel e prende dentro do terreno (com
+            // folga), para a beirada do mapa nunca aparecer na tela.
+            const fit = tbMapFitAspect({ x, y, w, h }, ar);
+            x = fit.x; y = fit.y; w = fit.w; h = fit.h;
             const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
-            if (w >= W) { x = 0; w = W; } else { x = Math.max(0, Math.min(x, W - w)); }
-            if (h >= H) { y = 0; h = H; } else { y = Math.max(0, Math.min(y, H - h)); }
+            const B = WORLD_MAP_BLEED, E = WORLD_MAP_EDGE;
+            if (w >= W + B * 2 - E * 2) x = -B + E; else x = Math.max(-B + E, Math.min(x, W + B - E - w));
+            if (h >= H + B * 2 - E * 2) y = -B + E; else y = Math.max(-B + E, Math.min(y, H + B - E - h));
             return { x, y, w, h };
         }
 
@@ -2705,7 +2764,7 @@ textarea { min-height: 96px; resize: vertical; }
             const walkByTarget = {};
             walks.forEach(w => { if (!walkByTarget[w.target]) walkByTarget[w.target] = w; });
 
-            const focus = getFocusViewBox(locId);
+            const focus = getFocusViewBox(locId, tbMapStageAspect());
             const computedFocus = `${focus.x.toFixed(1)} ${focus.y.toFixed(1)} ${focus.w.toFixed(1)} ${focus.h.toFixed(1)}`;
             // Mantém o enquadramento (zoom/arrasto) escolhido pelo jogador
             // enquanto ele não mudar de local.
@@ -2763,7 +2822,7 @@ textarea { min-height: 96px; resize: vertical; }
                         </span>
                     </div>
                     <div class="world-map-stage">
-                    <svg class="world-map wm-time-${lp.night ? 'night' : 'day'} wm-w-${lp.weather}" data-focus="${computedFocus}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa ao redor de ${here.name}">
+                    <svg class="world-map wm-time-${lp.night ? 'night' : 'day'} wm-w-${lp.weather}" data-focus="${computedFocus}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Mapa ao redor de ${here.name}">
                         <defs>
                             <radialGradient id="wm-ground" cx="50%" cy="42%" r="78%">
                                 <stop offset="0%" stop-color="${gc.c0}" />
@@ -2775,7 +2834,7 @@ textarea { min-height: 96px; resize: vertical; }
                             </filter>
                         </defs>
                         <g class="wm-bg">${renderMapAmbience()}</g>
-                        <g class="wm-tint"><rect class="wm-tint-rect" x="0" y="0" width="${WORLD_MAP_VIEWBOX.w}" height="${WORLD_MAP_VIEWBOX.h}" fill="${lp.color}" opacity="${lp.alpha.toFixed(2)}" /></g>
+                        <g class="wm-tint"><rect class="wm-tint-rect" x="${-WORLD_MAP_BLEED}" y="${-WORLD_MAP_BLEED}" width="${WORLD_MAP_VIEWBOX.w + WORLD_MAP_BLEED * 2}" height="${WORLD_MAP_VIEWBOX.h + WORLD_MAP_BLEED * 2}" fill="${lp.color}" opacity="${lp.alpha.toFixed(2)}" /></g>
                         ${renderMapWeather()}
                         <g class="wm-edges">${edgesSvg}</g>
                         <g class="wm-nodes">${nodesSvg}</g>
@@ -2802,16 +2861,37 @@ textarea { min-height: 96px; resize: vertical; }
             return { x: vb.x, y: vb.y, w: vb.width, h: vb.height };
         }
 
-        function tbMapScale(svg, vb) {
-            const r = svg.getBoundingClientRect();
-            if (!r.width || !r.height || !vb.w || !vb.h) return 1;
-            return Math.min(r.width / vb.w, r.height / vb.h) || 1;
+        // Pixels de tela por unidade do mapa (lida direto da matriz de tela,
+        // então funciona com qualquer preserveAspectRatio).
+        function tbMapPxPerUnit(svg) {
+            const ctm = svg.getScreenCTM && svg.getScreenCTM();
+            return (ctm && Math.abs(ctm.a)) || 1;
         }
 
+        function tbMapClientToUser(svg, cx, cy) {
+            const ctm = svg.getScreenCTM && svg.getScreenCTM();
+            if (!ctm) return null;
+            try {
+                if (typeof DOMPoint === 'function') {
+                    const p = new DOMPoint(cx, cy).matrixTransform(ctm.inverse());
+                    return { x: p.x, y: p.y };
+                }
+                const p = svg.createSVGPoint();
+                p.x = cx; p.y = cy;
+                const q = p.matrixTransform(ctm.inverse());
+                return { x: q.x, y: q.y };
+            } catch (e) { return null; }
+        }
+
+        // Mantém o enquadramento dentro do terreno (que passa das beiradas),
+        // com uma folga extra, para nunca aparecer o "fim" do mapa.
         function tbMapClampVB(x, y, w, h) {
+            const B = WORLD_MAP_BLEED, E = WORLD_MAP_EDGE;
             const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
-            if (w >= W) x = (W - w) / 2; else x = Math.max(0, Math.min(x, W - w));
-            if (h >= H) y = (H - h) / 2; else y = Math.max(0, Math.min(y, H - h));
+            if (w >= W + B * 2 - E * 2) x = -B + E;
+            else x = Math.max(-B + E, Math.min(x, W + B - E - w));
+            if (h >= H + B * 2 - E * 2) y = -B + E;
+            else y = Math.max(-B + E, Math.min(y, H + B - E - h));
             return { x, y };
         }
 
@@ -2836,16 +2916,19 @@ textarea { min-height: 96px; resize: vertical; }
             const ratio = vb.h / vb.w;
             const focus = svg._focus || vb;
             const minW = Math.max(120, focus.w * 0.4);
-            const maxW = WORLD_MAP_VIEWBOX.w;
+            const B = WORLD_MAP_BLEED, E = WORLD_MAP_EDGE;
+            const PW = WORLD_MAP_VIEWBOX.w + B * 2 - E * 2;
+            const PH = WORLD_MAP_VIEWBOX.h + B * 2 - E * 2;
+            const maxW = Math.max(minW, Math.min(PW, PH / ratio));
             const w = Math.max(minW, Math.min(maxW, vb.w * factor));
             const h = w * ratio;
             let fx = 0.5, fy = 0.5;
             if (typeof clientX === 'number' && typeof clientY === 'number') {
-                const r = svg.getBoundingClientRect();
-                const scale = tbMapScale(svg, vb);
-                const cw = vb.w * scale, ch = vb.h * scale;
-                fx = Math.max(0, Math.min(1, (clientX - r.left - (r.width - cw) / 2) / cw));
-                fy = Math.max(0, Math.min(1, (clientY - r.top - (r.height - ch) / 2) / ch));
+                const anchor = tbMapClientToUser(svg, clientX, clientY);
+                if (anchor) {
+                    fx = Math.max(0, Math.min(1, (anchor.x - vb.x) / vb.w));
+                    fy = Math.max(0, Math.min(1, (anchor.y - vb.y) / vb.h));
+                }
             }
             tbMapApplyVB(svg, vb.x + fx * (vb.w - w), vb.y + fy * (vb.h - h), w, h);
         }
@@ -2858,7 +2941,7 @@ textarea { min-height: 96px; resize: vertical; }
             const svg = document.querySelector('svg.world-map');
             if (!svg) return;
             const vb = tbMapVB(svg);
-            const scale = tbMapScale(svg, vb);
+            const scale = tbMapPxPerUnit(svg) || 1;
             tbMapApplyVB(svg, vb.x - dxPx / scale, vb.y - dyPx / scale, vb.w, vb.h);
         }
 
@@ -2868,7 +2951,20 @@ textarea { min-height: 96px; resize: vertical; }
             if (!svg) return;
             if (typeof gameState !== 'undefined' && gameState) gameState._mapView = null;
             const focus = svg.getAttribute('data-focus');
-            if (focus) svg.setAttribute('viewBox', focus);
+            if (focus) {
+                svg.setAttribute('viewBox', focus);
+                const parsed = parseFocusAttr(focus);
+                if (parsed) svg._focus = parsed;
+            }
+        }
+
+        // Só "captura" o ponteiro quando o arrasto realmente começa — assim um
+        // simples toque/clique continua chegando no nó (trocar de localização).
+        function tbMapCapture(stage, e) {
+            if (stage._captured && stage._captured.has(e.pointerId)) return;
+            try { stage.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+            stage._captured = stage._captured || new Set();
+            stage._captured.add(e.pointerId);
         }
 
         function tbMapPointerDown(e) {
@@ -2883,8 +2979,8 @@ textarea { min-height: 96px; resize: vertical; }
                 const p = [...stage._pts.values()];
                 stage._lastDist = Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
                 stage._dragMoved = true;
+                tbMapCapture(stage, e);
             }
-            try { stage.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
         }
 
         function tbMapPointerMove(e) {
@@ -2900,6 +2996,7 @@ textarea { min-height: 96px; resize: vertical; }
                 if (stage._lastDist) tbMapZoomAt(stage._lastDist / dist, midX, midY);
                 stage._lastDist = dist;
                 stage._dragMoved = true;
+                tbMapCapture(stage, e);
                 return;
             }
 
@@ -2908,6 +3005,7 @@ textarea { min-height: 96px; resize: vertical; }
             if (!stage._dragMoved) {
                 if (Math.hypot(tx, ty) < 6) return; // ainda é um toque/clique
                 stage._dragMoved = true;
+                tbMapCapture(stage, e);
                 tbMapPanBy(tx, ty);                 // aplica o deslocamento acumulado
             } else {
                 tbMapPanBy(e.clientX - stage._last.x, e.clientY - stage._last.y);
@@ -2919,6 +3017,7 @@ textarea { min-height: 96px; resize: vertical; }
             const stage = e.currentTarget;
             if (stage._pts) stage._pts.delete(e.pointerId);
             if (stage._pts && stage._pts.size < 2) stage._lastDist = 0;
+            if (stage._captured) stage._captured.delete(e.pointerId);
             if (stage._pts && stage._pts.size === 1) {
                 // Soltou um dos dedos: o que ficou continua arrastando, sem "pulo".
                 const p = [...stage._pts.values()][0];
@@ -2936,7 +3035,11 @@ textarea { min-height: 96px; resize: vertical; }
         // Impede que um arrasto vire um "clique" que caminha até um local.
         function tbMapClickGuard(e) {
             const stage = e.currentTarget;
-            if (stage._dragMoved) { e.preventDefault(); e.stopPropagation(); }
+            if (stage._dragMoved) {
+                e.preventDefault();
+                e.stopPropagation();
+                stage._dragMoved = false; // o próximo toque já vale
+            }
         }
 
         function tbMapWheel(e) {
@@ -2949,7 +3052,20 @@ textarea { min-height: 96px; resize: vertical; }
             const stage = document.querySelector('.world-map-stage');
             if (!stage) return;
             const svg = stage.querySelector('svg.world-map');
-            if (svg) svg._focus = parseFocusAttr(svg.getAttribute('data-focus')) || tbMapVB(svg);
+            if (svg) {
+                svg._focus = parseFocusAttr(svg.getAttribute('data-focus')) || tbMapVB(svg);
+                // Reencaixa o enquadramento inicial na proporção real do painel:
+                // o mapa pode ter sido montado antes do layout existir.
+                const stored = (typeof gameState !== 'undefined' && gameState) ? gameState._mapView : null;
+                const loc = (typeof gameState !== 'undefined' && gameState) ? gameState.location : null;
+                if (loc && (!stored || stored.loc !== loc)) {
+                    const focus = getFocusViewBox(loc, tbMapStageAspect());
+                    const vbs = `${focus.x.toFixed(1)} ${focus.y.toFixed(1)} ${focus.w.toFixed(1)} ${focus.h.toFixed(1)}`;
+                    svg.setAttribute('viewBox', vbs);
+                    svg.setAttribute('data-focus', vbs);
+                    svg._focus = focus;
+                }
+            }
             if (!stage._mapReady) {
                 stage._mapReady = true;
                 stage._pts = new Map();
