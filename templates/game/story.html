@@ -922,6 +922,16 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-blob-ruins { fill: rgba(132,120,132,.20); }
 .world-map .wm-blob-cemetery { fill: rgba(96,86,120,.32); }
 .world-map .wm-star { fill: rgba(255,255,255,.45); }
+/* Elementos de relevo: rios (seguem sob as pontes), muralha e mato */
+.world-map .wm-rivers, .world-map .wm-vegetation { pointer-events: none; }
+.world-map .wm-river { fill: none; stroke: #275f9e; stroke-width: 20; stroke-linecap: round; stroke-linejoin: round; opacity: .55; }
+.world-map .wm-river-hi { fill: none; stroke: #4a9bd6; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; opacity: .5; }
+.world-map .wm-wall { fill: none; stroke: #6b6878; stroke-width: 13; stroke-linecap: round; stroke-linejoin: round; opacity: .5; }
+.world-map .wm-wall-inner { fill: none; stroke: #c2bdd0; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .42; }
+.world-map .wm-tower { fill: #8a8698; stroke: #c2bdd0; stroke-width: 1.5; opacity: .55; }
+.world-map .wm-tree rect { fill: #3a2a1c; opacity: .7; }
+.world-map .wm-tree polygon { fill: #2f5a38; opacity: .72; }
+.world-map .wm-bush { fill: #3f6b42; opacity: .5; }
 .world-map-stage {
   position: relative; flex: 1 1 auto; min-height: 240px; overflow: hidden;
 }
@@ -2290,38 +2300,94 @@ textarea { min-height: 96px; resize: vertical; }
             return edges;
         }
 
-        // Céu/terreno de fundo + elementos decorativos (determinísticos).
+        // Céu/terreno de fundo + elementos decorativos (determinísticos):
+        // manchas de terreno, rios (seguindo sob as pontes), muralha, mato e estrelas.
         function renderMapAmbience() {
             const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
-            let out = `<rect class="wm-terrain" x="0" y="0" width="${W}" height="${H}" />`;
-            // Manchas de terreno: campo, floresta, água, vila, ruínas, cemitério.
+            const parts = [];
+            parts.push(`<rect class="wm-terrain" x="0" y="0" width="${W}" height="${H}" />`);
+
+            // 1) Manchas base de terreno: vila, campo, floresta, água, ruínas, cemitério.
             const blobs = [
-                [525, 330, 250, 185, 'town'],
-                [205, 340, 145, 120, 'field'],
-                [120, 470, 190, 210, 'forest'],
-                [885, 300, 205, 230, 'forest'],
-                [125, 640, 125, 95, 'water'],
-                [880, 385, 140, 72, 'water'],
+                [525, 320, 250, 190, 'town'],
+                [205, 345, 145, 120, 'field'],
                 [430, 505, 175, 90, 'field'],
-                [975, 260, 120, 95, 'ruins'],
-                [95, 345, 110, 105, 'cemetery'],
-                [805, 470, 150, 95, 'field']
+                [805, 470, 150, 95, 'field'],
+                [140, 480, 165, 185, 'forest'],
+                [925, 230, 170, 190, 'forest'],
+                [125, 640, 125, 95, 'water'],
+                [880, 390, 150, 78, 'water'],
+                [975, 262, 120, 95, 'ruins'],
+                [95, 345, 110, 105, 'cemetery']
             ];
-            out += `<g class="wm-blobs" filter="url(#wm-soft)">`;
+            parts.push(`<g class="wm-blobs" filter="url(#wm-soft)">`);
             blobs.forEach(([cx, cy, rx, ry, kind]) => {
-                out += `<ellipse class="wm-blob wm-blob-${kind}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" />`;
+                parts.push(`<ellipse class="wm-blob wm-blob-${kind}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" />`);
             });
-            out += `</g>`;
-            // Estrelas / pontos de luz (mesma semente => mesmo mapa sempre).
+            parts.push(`</g>`);
+
+            // 2) Rios. O oeste desce sob a Ponte Oeste até o Lago Sagrado; o leste
+            //    corre sob a Margem do Rio / ponte e segue para o sul.
+            const rivers = [
+                'M 300 30 C 330 150, 360 265, 380 348 C 392 408, 348 470, 296 516 C 248 560, 188 598, 150 622 C 130 636, 124 664, 128 712',
+                'M 856 40 C 840 165, 794 262, 800 348 C 806 400, 848 372, 890 380 C 940 390, 962 408, 975 420 C 992 436, 1004 472, 1006 508 C 1008 548, 962 582, 914 618 L 886 712'
+            ];
+            parts.push(`<g class="wm-rivers">`);
+            rivers.forEach(d => {
+                parts.push(`<path class="wm-river" d="${d}" />`);
+                parts.push(`<path class="wm-river-hi" d="${d}" />`);
+            });
+            parts.push(`</g>`);
+
+            // 3) Vegetação (mato): árvores e arbustos nas florestas e margens.
             let seed = 20261017;
             const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-            out += `<g class="wm-stars">`;
+            const tree = (x, y, s) => {
+                const tw = 6.5 * s, th = 12 * s;
+                return `<g class="wm-tree">`
+                    + `<rect x="${(x - 1.1 * s).toFixed(1)}" y="${y.toFixed(1)}" width="${(2.2 * s).toFixed(1)}" height="${(5 * s).toFixed(1)}" rx="0.6" />`
+                    + `<polygon points="${x.toFixed(1)},${(y - th).toFixed(1)} ${(x - tw).toFixed(1)},${y.toFixed(1)} ${(x + tw).toFixed(1)},${y.toFixed(1)}" />`
+                    + `</g>`;
+            };
+            const forests = [
+                [140, 480, 100, 140],   // floresta a oeste
+                [928, 226, 95, 125],    // floresta sombria (leste)
+                [858, 252, 52, 66],     // beira da floresta
+                [255, 606, 95, 62],     // margem do Lago Sagrado
+                [500, 620, 130, 55],    // mato ao sul
+                [838, 560, 95, 58]      // mato a leste-sul
+            ];
+            let veg = '';
+            forests.forEach(([cx, cy, rx, ry]) => {
+                const count = Math.round((rx * ry) / 480);
+                for (let i = 0; i < count; i++) {
+                    const ang = rnd() * Math.PI * 2;
+                    const rad = Math.sqrt(rnd());
+                    const x = cx + Math.cos(ang) * rad * rx;
+                    const y = cy + Math.sin(ang) * rad * ry;
+                    const s = 0.75 + rnd() * 0.7;
+                    if (rnd() < 0.62) veg += tree(x, y, s);
+                    else veg += `<circle class="wm-bush" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(2.4 + rnd() * 2.2).toFixed(1)}" />`;
+                }
+            });
+            parts.push(`<g class="wm-vegetation">${veg}</g>`);
+
+            // 4) Muralha do reino (com abertura no Portão Principal, ao sul).
+            const wall = 'M 560 462 L 374 452 Q 344 449 344 420 L 344 130 Q 344 96 384 90 L 692 74 Q 794 70 798 130 L 802 300 Q 804 362 762 402 L 664 452 L 646 461';
+            parts.push(`<path class="wm-wall" d="${wall}" />`);
+            parts.push(`<path class="wm-wall-inner" d="${wall}" />`);
+            [[384, 90], [692, 74], [798, 130], [802, 300], [762, 402], [374, 452], [344, 420], [344, 130]]
+                .forEach(([x, y]) => parts.push(`<circle class="wm-tower" cx="${x}" cy="${y}" r="6.5" />`));
+
+            // 5) Estrelas / pontos de luz (mesma semente => mesmo mapa sempre).
+            parts.push(`<g class="wm-stars">`);
             for (let i = 0; i < 95; i++) {
                 const x = (rnd() * W).toFixed(1), y = (rnd() * H).toFixed(1), r = (rnd() * 1.1 + 0.35).toFixed(2);
-                out += `<circle class="wm-star" cx="${x}" cy="${y}" r="${r}" />`;
+                parts.push(`<circle class="wm-star" cx="${x}" cy="${y}" r="${r}" />`);
             }
-            out += `</g>`;
-            return out;
+            parts.push(`</g>`);
+
+            return parts.join('');
         }
 
         // viewBox focado no local atual + caminhos diretos (zoom "só o que é perto").
