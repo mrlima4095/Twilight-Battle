@@ -467,6 +467,7 @@ createCharacter = function () {
 
 const SV_WATER_LOCATIONS = [
     'sacred_lake', 'sacred_lake_interior', 'home', 'farmlands', 'river_bank', 'swim_in_river',
+    'south_village_square',
 ];
 
 function SV_hasWaterSource() {

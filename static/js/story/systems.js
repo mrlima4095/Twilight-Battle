@@ -46,6 +46,7 @@ const TB_ENCOUNTERS = {
     east_wilds: { chance: 0.6, table: ['goblin', 'orc', 'bat', 'wolf'] },
     north_trail_middle: { chance: 0.3, table: ['wolf', 'bat'] },
     south_trade_route: { chance: 0.25, table: ['goblin', 'bat'] },
+    south_mine: { chance: 0.45, table: ['bat', 'goblin', 'orc'] },
 };
 
 // Clima: muda a cada amanhecer conforme a estação.

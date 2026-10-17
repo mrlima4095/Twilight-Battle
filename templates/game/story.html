@@ -2312,6 +2312,7 @@ textarea { min-height: 96px; resize: vertical; }
                 allowsStations: true,
                 actions: [
                     { name: '🚶 Seguir para o Leste', action: 'continueEastFromRuins' },
+                    { name: '🔙 Voltar pela Margem do Rio', action: 'goRiverBank' },
                     { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' }
                 ]
             },
@@ -2339,9 +2340,10 @@ textarea { min-height: 96px; resize: vertical; }
             },
             south_villages: {
                 name: 'Aldeias do Sul',
-                description: 'Você chega a uma região com pequenas aldeias comerciais. Mercadores viajam entre elas levando mercadorias para todo o reino. O local é pacífico e próspero.',
+                description: 'Três aldeias irmãs dividem este vale: os Pomares, a Forja e o Comércio. Uma praça de terra batida com um poço de pedra liga os caminhos, e casas de telha vermelha se espalham entre hortas, currais e carroças.',
                 allowsStations: true,
                 actions: [
+                    { name: '🏛️ Visitar a Praça da Aldeia', action: 'goSouthVillageSquare' },
                     { name: '🌳 Ir para a Aldeia dos Pomares', action: 'goSouthVillageOrchard' },
                     { name: '⚒️ Ir para a Aldeia da Forja', action: 'goSouthVillageForge' },
                     { name: '🏪 Ir para a Aldeia do Comércio', action: 'goSouthVillageMarket' },
@@ -2349,31 +2351,101 @@ textarea { min-height: 96px; resize: vertical; }
                     { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' }
                 ]
             },
-            south_village_orchard: {
-                name: 'Aldeia dos Pomares',
-                description: 'Uma aldeia cercada de macieiras e pereiras. O cheiro doce das frutas maduras paira no ar e os moradores colhem cestos cheios.',
+            south_village_square: {
+                name: 'Praça da Aldeia',
+                description: 'O coração das três aldeias: um poço de pedra, bancos de madeira e um velho carvalho onde os moradores trocam notícias. Crianças correm entre as casas e o cheiro de pão recém-assado vem de algum fogão próximo.',
                 allowsStations: true,
                 actions: [
-                    { name: '💬 Falar com a Fazendeira Rosa', action: 'talkToVillagerRosa' },
+                    { name: '💬 Falar com a Anciã Beatriz', action: 'talkToElderBeatriz' },
+                    { name: '💬 Falar com a Menina Nina', action: 'talkToGirlNina' },
+                    { name: '⛲ Beber água do poço', action: 'drinkWater' },
+                    { name: '💧 Pegar água', action: 'fillBottle' },
                     { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            south_village_orchard: {
+                name: 'Aldeia dos Pomares',
+                description: 'Uma aldeia cercada de macieiras e pereiras. O cheiro doce das frutas maduras paira no ar, cestos de colheita se empilham nas portas e os moradores conversam entre as fileiras de árvores.',
+                allowsStations: true,
+                actions: [
+                    { name: '🍎 Colher frutas nos pomares', action: 'pickFruit' },
+                    { name: '💬 Falar com a Fazendeira Rosa', action: 'talkToVillagerRosa' },
+                    { name: '💬 Falar com o Carroceiro Tomás', action: 'talkToCarterTomas' },
+                    { name: '🏡 Entrar na Casa de Fazenda', action: 'enterOrchardFarmhouse' },
+                    { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            orchard_farmhouse: {
+                name: 'Casa de Fazenda dos Pomares',
+                description: 'Um cômodo grande e quente, com fogão a lenha, potes de compota nas prateleiras e um cheiro adocicado de maçã assada. Um gato dorme sobre o tapete de retalhos.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com a Doceira Amélia', action: 'talkToBakerAmelia' },
+                    { name: '🥧 Comer uma fatia de torta', action: 'eatApplePie' },
+                    { name: '🔙 Sair da Casa', action: 'exitOrchardFarmhouse' }
                 ]
             },
             south_village_forge: {
                 name: 'Aldeia da Forja',
-                description: 'O tilintar do martelo sobre o ferro ecoa pela aldeia. A forja do ferreiro arde dia e noite, aquecendo as casas ao redor.',
+                description: 'O tilintar do martelo sobre o ferro ecoa pela aldeia. A forja do ferreiro arde dia e noite, aquecendo as casas ao redor; pilhas de lenha e barras de metal se acumulam junto à oficina. Um caminho de cascalho desce para o sul, rumo à mina.',
                 allowsStations: true,
                 actions: [
                     { name: '💬 Falar com o Ferreiro Bruno', action: 'talkToVillagerBruno' },
+                    { name: '🔥 Visitar o Interior da Forja', action: 'enterForgeWorkshop' },
+                    { name: '⛏️ Descer até a Mina de Ferro', action: 'goSouthMine' },
                     { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            forge_workshop: {
+                name: 'Interior da Forja',
+                description: 'O calor aqui é sufocante. Bigornas, tenazes e martelos pendem das paredes, e a fornalha cospe faíscas a cada golpe. Um aprendiz bombeia o fole sem parar.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com o Aprendiz Ivo', action: 'talkToApprenticeIvo' },
+                    { name: '🔥 Aquecer-se junto à fornalha', action: 'warmByForge' },
+                    { name: '🔙 Sair da Forja', action: 'exitForgeWorkshop' }
+                ]
+            },
+            south_mine: {
+                name: 'Mina de Ferro',
+                description: 'A encosta foi aberta em túneis escorados por vigas de madeira. Vagonetes enferrujados e um cheiro de terra molhada tomam o lugar; ao fundo, o brilho laranja das tochas revela veios de ferro na rocha.',
+                allowsStations: true,
+                actions: [
+                    { name: '⛏️ Extrair minério de ferro', action: 'mineIronOre' },
+                    { name: '💬 Falar com o Capataz Joaquim', action: 'talkToForemanJoaquim' },
+                    { name: '🛣️ Seguir para a Estrada do Sul', action: 'goSouthRoad' },
+                    { name: '🔙 Voltar para a Aldeia da Forja', action: 'returnToForgeVillage' }
                 ]
             },
             south_village_market: {
                 name: 'Aldeia do Comércio',
-                description: 'Barracas coloridas vendem de tudo um pouco. Mercadores apregoam suas mercadorias em voz alta e o ouro troca de mãos rapidamente.',
+                description: 'Barracas coloridas vendem de tudo um pouco. Mercadores apregoam em voz alta, carroças descarregam caixotes e o ouro troca de mãos rapidamente. Ao fundo, uma estalagem de dois andares recebe os viajantes.',
                 allowsStations: true,
                 actions: [
                     { name: '💬 Falar com a Mercadora Dora', action: 'talkToVillagerDora' },
+                    { name: '🏪 Visitar as Barracas', action: 'enterMarketStalls' },
+                    { name: '🏨 Entrar na Estalagem do Sul', action: 'enterVillageInn' },
                     { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            market_stalls: {
+                name: 'Barracas do Comércio',
+                description: 'Um corredor de toldos listrados: pão quente de um lado; tecidos, ervas e ferramentas do outro. Cada barraca tem seu pregoeiro, e o ar cheira a especiaria e fumaça.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com a Padeira Clara', action: 'talkToBakerClara' },
+                    { name: '💬 Falar com o Mercador Damião', action: 'talkToTraderDamiao' },
+                    { name: '🔙 Sair das Barracas', action: 'exitMarketStalls' }
+                ]
+            },
+            village_inn: {
+                name: 'Estalagem do Sul',
+                description: 'Um salão de vigas escuras com mesas compridas, uma lareira acesa e escadas que levam aos quartos. Viajantes cansados trocam histórias em voz baixa enquanto a estalajadeira serve caldo quente.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com a Estalajadeira Helena', action: 'talkToInnkeeperHelena' },
+                    { name: '🛏️ Alugar um quarto (5 💰)', action: 'rentInnRoom' },
+                    { name: '🔙 Sair da Estalagem', action: 'exitVillageInn' }
                 ]
             },
             south_road: {
@@ -2381,6 +2453,7 @@ textarea { min-height: 96px; resize: vertical; }
                 description: 'Uma estrada de terra batida que segue para o sul depois das aldeias. A cada passo o verde dá lugar a um cinza morno — e, ao longe, as tochas dos Portões do Crepúsculo começam a brilhar.',
                 allowsStations: true,
                 actions: [
+                    { name: '⛏️ Atalho para a Mina de Ferro', action: 'goSouthMine' },
                     { name: '🌑 Seguir até os Portões do Crepúsculo', action: 'goTwilightGate' },
                     { name: '🔙 Voltar às Aldeias do Sul', action: 'goSouthVillages' }
                 ]
@@ -2424,11 +2497,11 @@ textarea { min-height: 96px; resize: vertical; }
             // Arredores a oeste (trilha dos fundos / floresta / cemitério)
             outside_back:             { x: 230, y: 480, icon: '🌲', name: 'Trilha dos Fundos' },
             back_forest_trail_north:  { x: 135, y: 430, icon: '🌲', name: 'Trilha Norte' },
-            back_forest_trail_south:  { x: 135, y: 555, icon: '🌿', name: 'Trilha Sul' },
+            back_forest_trail_south:  { x: 205, y: 560, icon: '🌿', name: 'Trilha Sul' },
             abandoned_cemetery_gate:  { x: 95,  y: 385, icon: '🪦', name: 'Portão do Cemitério' },
             abandoned_cemetery:       { x: 95,  y: 315, icon: '⚰️', name: 'Cemitério' },
-            sacred_lake:              { x: 108, y: 552, icon: '💧', name: 'Clareira do Lago Sagrado' },
-            sacred_lake_interior:     { x: 120, y: 655, icon: '🌊', name: 'Dentro do Lago', water: true },
+            sacred_lake:              { x: 96,  y: 596, icon: '💧', name: 'Clareira do Lago Sagrado', labelAbove: true },
+            sacred_lake_interior:     { x: 118, y: 690, icon: '🌊', name: 'Dentro do Lago', water: true },
             // Arredores a leste (planície / trilha do rio / ruínas)
             outside:                  { x: 720, y: 480, icon: '🌅', name: 'Planície da Aurora' },
             north_trail_start:        { x: 800, y: 435, icon: '🚶', name: 'Início da Trilha' },
@@ -2446,6 +2519,7 @@ textarea { min-height: 96px; resize: vertical; }
             south_village_orchard:    { x: 520, y: 668, icon: '🌳', name: 'Aldeia dos Pomares' },
             south_village_forge:      { x: 650, y: 692, icon: '⚒️', name: 'Aldeia da Forja' },
             south_village_market:     { x: 795, y: 655, icon: '🏪', name: 'Aldeia do Comércio' },
+            south_mine:               { x: 545, y: 800, icon: '⛏️', name: 'Mina de Ferro' },
             south_road:               { x: 650, y: 755, icon: '🛣️', name: 'Estrada do Sul' },
             twilight_gate:            { x: 660, y: 820, icon: '🌑', name: 'Portões do Crepúsculo' },
             east_plains:              { x: 850, y: 520, icon: '🌾', name: 'Planície Leste' }
@@ -2559,17 +2633,16 @@ textarea { min-height: 96px; resize: vertical; }
             parts.push(`</g>`);
 
             // 1.1) Lago Sagrado: uma grande "bola" azul atrás dos nós do lago.
-            //      A Clareira fica na margem e "Dentro do Lago" fica no meio dela.
-            parts.push(`<g class="wm-lakes">`
-                + `<circle class="wm-lake" cx="120" cy="655" r="66" />`
-                + `<circle class="wm-lake-hi" cx="112" cy="646" r="46" />`
-                + `<circle class="wm-lake-shine" cx="100" cy="632" r="14" />`
+            //      Fica no meio da clareira e é onde o rio do oeste termina.
+            const LAKE = { x: 118, y: 690, r: 60 };
+            parts.push(`<g class="wm-blobs" filter="url(#wm-soft)">`
+                + `<ellipse class="wm-blob wm-blob-water" cx="${LAKE.x}" cy="${LAKE.y}" rx="${LAKE.r + 10}" ry="${LAKE.r + 6}" />`
                 + `</g>`);
 
-            // 2) Rios. O oeste desce sob a Ponte Oeste até o Lago Sagrado; o leste
-            //    corre sob a Margem do Rio / ponte e segue para o sul.
+            // 2) Rios. O oeste desce sob a Ponte Oeste e TERMINA no Lago Sagrado;
+            //    o leste corre sob a Margem do Rio / ponte e segue para o sul.
             const rivers = [
-                'M 300 30 C 330 150, 360 265, 380 348 C 392 408, 348 470, 296 516 C 248 560, 188 598, 150 622 C 130 636, 124 664, 132 790',
+                'M 300 30 C 330 150, 360 265, 380 348 C 392 408, 348 470, 296 516 C 248 560, 186 600, 150 624 C 138 638, 128 654, 122 672',
                 'M 856 40 C 840 165, 794 262, 800 348 C 806 400, 848 372, 890 380 C 940 390, 962 408, 975 420 C 992 436, 1004 472, 1006 508 C 1008 548, 962 582, 914 618 L 900 790'
             ];
             parts.push(`<g class="wm-rivers">`);
@@ -2578,6 +2651,14 @@ textarea { min-height: 96px; resize: vertical; }
                 parts.push(`<path class="wm-river-hi" d="${d}" />`);
             });
             parts.push(`</g>`);
+
+            // 2.1) A "bola" azul do Lago Sagrado, desenhada DEPOIS do rio, para
+            //      o rio do oeste terminar (visualmente) dentro do lago.
+            parts.push(`<g class="wm-lakes">`
+                + `<circle class="wm-lake" cx="${LAKE.x}" cy="${LAKE.y}" r="${LAKE.r}" />`
+                + `<circle class="wm-lake-hi" cx="${LAKE.x - 8}" cy="${LAKE.y - 9}" r="${LAKE.r - 14}" />`
+                + `<circle class="wm-lake-shine" cx="${LAKE.x - 20}" cy="${LAKE.y - 26}" r="13" />`
+                + `</g>`);
 
             // 3) Vegetação (mato): árvores e arbustos nas florestas e margens.
             let seed = 20261017;
@@ -2593,7 +2674,7 @@ textarea { min-height: 96px; resize: vertical; }
                 [140, 480, 100, 140],   // floresta a oeste
                 [928, 226, 95, 125],    // floresta sombria (leste)
                 [858, 252, 52, 66],     // beira da floresta
-                [255, 606, 95, 62],     // margem do Lago Sagrado
+                [272, 588, 88, 56],    // mato na margem do Lago Sagrado
                 [500, 620, 130, 55],    // mato ao sul
                 [838, 560, 95, 58],     // mato a leste-sul
                 [852, 508, 80, 48],     // bosques da Planície Leste (madeira)
@@ -2803,7 +2884,7 @@ textarea { min-height: 96px; resize: vertical; }
                     + (isCurrent ? `<circle class="wm-ring" cx="${n.x}" cy="${n.y}" r="${r + 4}" />` : '')
                     + `<circle class="wm-disc" cx="${n.x}" cy="${n.y}" r="${r}" />`
                     + `<text class="wm-emoji" x="${n.x}" y="${n.y + 1}">${n.icon}</text>`
-                    + `<text class="wm-name" x="${n.x}" y="${n.y + r + 14}">${n.name}</text>`
+                    + `<text class="wm-name" x="${n.x}" y="${n.labelAbove ? n.y - r - 8 : n.y + r + 14}">${n.name}</text>`
                     + `</g>`;
             });
 
@@ -3148,6 +3229,7 @@ textarea { min-height: 96px; resize: vertical; }
             iron_shield: { name: 'Escudo de Ferro', type: 'shield', slot: 'offhand', attack: 0, defense: 75, durability: 150, maxDurability: 150, description: 'Proteção reforçada' },
             // Foods
             apple: { name: 'Maçã', type: 'food', heal: 50, description: 'Recupera 50 de vida.', consumable: true },
+            apple_pie: { name: 'Torta de Maçã', type: 'food', heal: 45, description: 'Mata a fome e esquenta o corpo. Recupera 45 de vida.', consumable: true },
             bread: { name: 'Pão', type: 'food', heal: 75, description: 'Recupera 75 de vida.', consumable: true },
             fish: { name: 'Peixe Fresco', type: 'food', heal: 60, description: 'Recupera 60 de vida.', consumable: true },
             cooked_fish: { name: 'Peixe Assado', type: 'food', heal: 85, description: 'Peixe fresco assado no fogo, suculento e saboroso.', consumable: true },
@@ -3194,6 +3276,7 @@ textarea { min-height: 96px; resize: vertical; }
             leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
             wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true },
+            iron_ore: { name: 'Minério de Ferro', type: 'material', consumable: true, description: 'Rocha bruta com veios de ferro. Pode ser fundida em uma fornalha.' },
             wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
             string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
@@ -3505,6 +3588,226 @@ textarea { min-height: 96px; resize: vertical; }
                 canSellToNPC: true,
                 dayBehavior: { homeChance: 0.9, alwaysAwake: true },
                 nightBehavior: { homeChance: 0.9, sleepChance: 0.7 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            elderBeatriz: {
+                id: 'elderBeatriz',
+                name: 'Beatriz',
+                title: 'Anciã da Praça',
+                emoji: '👵',
+                location: 'south_village_square',
+                locationName: 'Praça da Aldeia',
+                greeting: function() {
+                    return `Chegue mais perto, ${gameState.character.gender === 'masculino' ? 'meu filho' : 'minha filha'}. Sente-se à sombra do carvalho e descanse os pés.`;
+                },
+                farewell: 'Vá com calma pela estrada, e beba água antes de partir.',
+                topics: [
+                    { name: '🏘️ As três aldeias', message: 'Os Pomares alimentam, a Forja constrói e o Comércio vende. Se uma adoece, as três sentem.' },
+                    { name: '🌳 O carvalho', message: 'Este carvalho já viu três gerações de casamentos e outras tantas despedidas.' },
+                    { name: '⛏️ A mina', message: 'Meu filho trabalha na mina, ao sul. Cascalho escorregadio, aquele caminho — desça com cuidado.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.95, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.8 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            girlNina: {
+                id: 'girlNina',
+                name: 'Nina',
+                title: 'Menina da Praça',
+                emoji: '👧',
+                location: 'south_village_square',
+                locationName: 'Praça da Aldeia',
+                greeting: function() {
+                    return `Oi! Você é viajante, né? Já viu o lago que brilha? Eu ainda não, a vovó não deixa.`;
+                },
+                farewell: 'Tchau! Se achar uma pedra brilhante, me mostra?',
+                topics: [
+                    { name: '🍎 Frutas', message: 'A Rosa deixa eu pegar as maçãs que caem no chão. As de cima são do Tomás.' },
+                    { name: '💧 O poço', message: 'A água do poço é geladinha! Só não pode puxar o balde sozinho.' },
+                    { name: '⚒️ A forja', message: 'O tio Bruno deixa a forja quente a noite inteira. A gente dorme com a janela aberta!' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.85, alwaysAwake: true },
+                nightBehavior: { homeChance: 1, sleepChance: 0.95 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            carterTomas: {
+                id: 'carterTomas',
+                name: 'Tomás',
+                title: 'Carroceiro',
+                emoji: '🧑‍🌾',
+                location: 'south_village_orchard',
+                locationName: 'Aldeia dos Pomares',
+                greeting: function() {
+                    return `Opa, ${gameState.character.gender === 'masculino' ? 'companheiro' : 'companheira'}! Chegou na época da colheita. Enquanto a carroça não enche, cate o que quiser.`;
+                },
+                farewell: 'Boa estrada! Se for ao Comércio, diga que a fruta veio daqui.',
+                topics: [
+                    { name: '🐴 A carroça', message: 'Levo cestos de fruta até a Praça Principal duas vezes por semana. A estrada é longa, mas o preço compensa.' },
+                    { name: '🍎 A colheita', message: 'Maçã boa é a que cai sozinha. O resto a gente deixa amadurecer no pé.' },
+                    { name: '🏘️ Aldeias irmãs', message: 'Pomares, Forja e Comércio. Um dá a fruta, o outro o ferro, o terceiro vende os dois.' }
+                ],
+                shopItems: [
+                    { id: 'apple', price: 2 },
+                    { id: 'lemon', price: 2 },
+                    { id: 'cenoura', price: 2 }
+                ],
+                canSellToNPC: true,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.6 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            bakerAmelia: {
+                id: 'bakerAmelia',
+                name: 'Amélia',
+                title: 'Doceira',
+                emoji: '👩‍🍳',
+                location: 'orchard_farmhouse',
+                locationName: 'Casa de Fazenda dos Pomares',
+                greeting: function() {
+                    return `Entre, entre! Acabei de tirar uma torta do forno. Sente-se, ${gameState.character.gender === 'masculino' ? 'moço' : 'moça'}, que o cheiro já é meia refeição.`;
+                },
+                farewell: 'Leve uma fatia para a estrada. Ninguém caminha bem de barriga vazia!',
+                topics: [
+                    { name: '🥧 A torta', message: 'Massa fina, maçã em lascas e uma pitada de canela. O segredo é o forno de lenha, nunca o de carvão.' },
+                    { name: '🍎 As frutas', message: 'Compro tudo da Rosa e do Tomás. Fruta da aldeia não precisa nem de açúcar.' },
+                    { name: '🐱 O gato', message: 'O Miado dorme no tapete desde filhote. Enquanto ele ronronar, a casa está em paz.' }
+                ],
+                shopItems: [
+                    { id: 'apple_pie', price: 6 },
+                    { id: 'bread', price: 4 }
+                ],
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.95, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.75 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            apprenticeIvo: {
+                id: 'apprenticeIvo',
+                name: 'Ivo',
+                title: 'Aprendiz de Ferreiro',
+                emoji: '🧑‍🔧',
+                location: 'forge_workshop',
+                locationName: 'Interior da Forja',
+                greeting: function() {
+                    return `Cuidado com as faíscas! Sou Ivo, aprendo com o mestre Bruno. Segura isso aqui um instante? Não, brincadeira.`;
+                },
+                farewell: 'Se achar minério na mina, traga que a gente funde!',
+                topics: [
+                    { name: '⚒️ Aprendizado', message: 'Comecei bombeando o fole. Dizem que quem aguenta o calor, aguenta qualquer coisa.' },
+                    { name: '⛏️ A mina', message: 'O Joaquim é o capataz lá embaixo. Ele marca cada veio de ferro na parede do túnel.' },
+                    { name: '🔥 A fornalha', message: 'Ela nunca apaga. Se apagar, leva um dia inteiro para esquentar de novo.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.7 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            foremanJoaquim: {
+                id: 'foremanJoaquim',
+                name: 'Joaquim',
+                title: 'Capataz da Mina',
+                emoji: '👷',
+                location: 'south_mine',
+                locationName: 'Mina de Ferro',
+                greeting: function() {
+                    return `Capacete na cabeça e lanternas acesas, forasteiro. A mina não perdoa distração. Quer lascar rocha?`;
+                },
+                farewell: 'Devagar na subida. Cascalho solto já derrubou gente grande.',
+                topics: [
+                    { name: '⛏️ O trabalho', message: 'Marcamos o minério bom com fita vermelha. O resto é pedra que só cansa o braço.' },
+                    { name: '🏗️ Destino do ferro', message: 'Daqui sai ferro para a forja de Bruno, que vira arado na primavera e lâmina no inverno.' },
+                    { name: '🌑 Ao sul', message: 'A estrada continua para os Portões do Crepúsculo. Eu não passo da placa. Ninguém aqui passa.' }
+                ],
+                shopItems: [
+                    { id: 'iron_ore', price: 8 },
+                    { id: 'wooden_spoon', price: 3 }
+                ],
+                canSellToNPC: true,
+                dayBehavior: { homeChance: 0.85, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.6 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            bakerClara: {
+                id: 'bakerClara',
+                name: 'Clara',
+                title: 'Padeira',
+                emoji: '👩‍🍳',
+                location: 'market_stalls',
+                locationName: 'Barracas do Comércio',
+                greeting: function() {
+                    return `Cheiro de pão quente é o melhor convite que existe. Leve dois, o segundo sai mais barato que o arrependimento.`;
+                },
+                farewell: 'Volte antes do anoitecer, que a fornada da manhã acaba rápido!',
+                topics: [
+                    { name: '🥖 O pão', message: 'Massa de véspera, forno de manhã. Pão é só paciência com farinha.' },
+                    { name: '🏪 As barracas', message: 'Aqui cada um cuida do seu posto. O Damião cuida dos tecidos e reclama do meu preço.' },
+                    { name: '🏨 A estalagem', message: 'Se for dormir, vá à estalagem da Helena. Caldo quente e cama seca, o que mais se quer?' }
+                ],
+                shopItems: [
+                    { id: 'bread', price: 4 },
+                    { id: 'apple_pie', price: 6 },
+                    { id: 'coffee', price: 4 }
+                ],
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.95, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.95, sleepChance: 0.8 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            traderDamiao: {
+                id: 'traderDamiao',
+                name: 'Damião',
+                title: 'Mercador de Tecidos',
+                emoji: '🧑‍💼',
+                location: 'market_stalls',
+                locationName: 'Barracas do Comércio',
+                greeting: function() {
+                    return `Tecido fino, linha resistente, lã da melhor. Compro e vendo — e hoje estou de bom humor, aproveite.`;
+                },
+                farewell: 'Bom negócio! Volte quando tiver algo no inventário.',
+                topics: [
+                    { name: '🧵 Tecidos', message: 'A Isadora tece no reino e eu revendo aqui. A linha dela não arrebenta nem na pior tempestade.' },
+                    { name: '💰 Preços', message: 'Preço justo é aquele em que os dois lados voltam. Por isso meus fregueses voltam.' },
+                    { name: '🛤️ Estradas', message: 'Carroça que atrasa é mercadoria que estraga. Por isso pago bem por quem vigia a estrada do sul.' }
+                ],
+                shopItems: [
+                    { id: 'cloth', price: 10 },
+                    { id: 'string', price: 4 },
+                    { id: 'wool', price: 5 },
+                    { id: 'leather', price: 8 }
+                ],
+                canSellToNPC: true,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.7 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            innkeeperHelena: {
+                id: 'innkeeperHelena',
+                name: 'Helena',
+                title: 'Estalajadeira',
+                emoji: '👩‍🦰',
+                location: 'village_inn',
+                locationName: 'Estalagem do Sul',
+                greeting: function() {
+                    return `Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} à Estalagem do Sul! Tem caldo quente na mesa e quartos no andar de cima.`;
+                },
+                farewell: 'Durma bem. Se precisar acordar cedo, é só me chamar.',
+                topics: [
+                    { name: '🛏️ Os quartos', message: 'Cinco moedas a noite: colchão de palha, cobertor de lã e cama seca. Banho é no tacho, atrás.' },
+                    { name: '🍲 O caldo', message: 'Feito com o que sobrou da feira. Vassoura boa é aquela que varre a cozinha inteira.' },
+                    { name: '🌙 A noite', message: 'Depois do anoitecer as barracas fecham e a aldeia fica quieta. Dormir aqui restaura as forças.' }
+                ],
+                shopItems: [
+                    { id: 'coffee', price: 4 },
+                    { id: 'bread', price: 4 }
+                ],
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.95, alwaysAwake: true },
+                nightBehavior: { homeChance: 1, sleepChance: 0.35 },
                 baseState: { isHome: true, isSleeping: false, lastUpdate: null }
             },
             woodcutterTeo: {
@@ -7110,6 +7413,7 @@ textarea { min-height: 96px; resize: vertical; }
         function goNorthTrailStart() { go('north_trail_start', '🚶 Você entra na trilha que leva ao norte.'); }
         function goNorthTrailMiddle() { go('north_trail_middle', '🌊 Você continua pela trilha e chega à margem do Rio da aurora.'); }
         function goRiverBank() { go('river_bank', '🏞️ Você decide caminhar pela margem do rio, desviando da ponte.'); }
+        function goNorthTrailEnd() { go('east_ruins_path', '🥾 Você continua pela margem até o caminho leste, contornando as ruínas.'); }
         function goAcrossBridge() { go('across_bridge', '🌉 Você atravessa a antiga ponte de madeira e chega a uma planície com ruínas antigas.'); }
         function swimInRiver() { go('swim_in_river', '💧 Você mergulha nas águas geladas do Rio da Aurora.'); }
         function exitRiver() { go('river_bank', '🏊 Você sai do rio, se sentindo revigorado e renovado.'); }
@@ -7151,6 +7455,106 @@ textarea { min-height: 96px; resize: vertical; }
         function goSouthRoad() { go('south_road', '🛣️ Você segue pela estrada de terra rumo ao sul, deixando as aldeias para trás.'); }
         function goTwilightGate() { go('twilight_gate', '🌑 Você cruza a fronteira e chega aos Portões do Crepúsculo.'); }
         function returnToSouthVillages() { go('south_villages', '🏘️ Você volta ao centro das Aldeias do Sul.'); }
+
+        // ── Aldeias do Sul: sublocalidades (praça, casas, forja, barracas, estalagem) ──
+        function goSouthVillageSquare() { go('south_village_square', '🏛️ Você chega à praça da aldeia, onde os moradores se reúnem ao redor do poço.'); }
+        function enterOrchardFarmhouse() { go('orchard_farmhouse', '🏡 Você entra na casa de fazenda, e o cheiro de torta de maçã toma o ar.'); }
+        function exitOrchardFarmhouse() { go('south_village_orchard', '🌳 Você sai da casa e volta para entre as macieiras.'); }
+        function enterForgeWorkshop() { go('forge_workshop', '🔥 Você entra na forja e o calor bate no seu rosto.'); }
+        function exitForgeWorkshop() { go('south_village_forge', '⚒️ Você sai da forja e volta para a aldeia.'); }
+        function enterMarketStalls() { go('market_stalls', '🏪 Você caminha por entre os toldos coloridos das barracas.'); }
+        function exitMarketStalls() { go('south_village_market', '🏪 Você deixa as barracas e volta à rua movimentada.'); }
+        function enterVillageInn() { go('village_inn', '🏨 Você empurra a porta da Estalagem do Sul.'); }
+        function exitVillageInn() { go('south_village_market', '🚪 Você sai da estalagem para a rua da aldeia.'); }
+        function goSouthMine() { go('south_mine', '⛏️ Você desce o caminho de cascalho até a entrada da mina.'); }
+        function returnToForgeVillage() { go('south_village_forge', '⚒️ Você sobe de volta para a Aldeia da Forja.'); }
+
+        // Colher frutas nos pomares (comida grátis, mas cansa).
+        let _lastPick = 0;
+        function pickFruit() {
+            if (gameState.isDead) return;
+            const now = Date.now();
+            if (now - _lastPick < 1500) return;
+            _lastPick = now;
+            const frutas = ['apple', 'apple', 'apple', 'lemon'];
+            const id = frutas[Math.floor(Math.random() * frutas.length)];
+            if (typeof SV_spend === 'function') SV_spend(1, 1);
+            addItemToInventory(id, 1);
+            addLog(`🍎 Você colhe ${(ITEMS[id] && ITEMS[id].name || 'fruta').toLowerCase()} nos pomares.`);
+        }
+
+        // Torta quente da casa de fazenda: enche a barriga na hora.
+        function eatApplePie() {
+            if (gameState.isDead) return;
+            const before = gameState.character.life;
+            gameState.character.life = Math.min(gameState.character.maxLife, before + 45);
+            if (typeof SV_apply === 'function') SV_apply(30, 5);
+            addLog(`🥧 Você come uma fatia generosa de torta de maçã. ❤️ Vida +${gameState.character.life - before}`);
+        }
+
+        // A fornalha esquenta e clareia a cabeça.
+        function warmByForge() {
+            if (gameState.isDead) return;
+            if (typeof SV_applySanity === 'function') SV_applySanity(4);
+            addLog('🔥 Você se aquece junto à fornalha de Bruno. A mente clareia um pouco. (+4 sanidade)');
+        }
+
+        // Extrair minério de ferro na mina ao sul da Aldeia da Forja.
+        let _lastMine = 0;
+        function mineIronOre() {
+            if (gameState.isDead) return;
+            const now = Date.now();
+            if (now - _lastMine < 1600) return;
+            _lastMine = now;
+            if (typeof SV_spend === 'function') SV_spend(1.6, 2);
+            const qty = Math.random() < 0.3 ? 2 : 1;
+            addItemToInventory('iron_ore', qty);
+            addLog(`⛏️ Você lasca a rocha e recolhe ${qty}x Minério de Ferro.`);
+        }
+
+        // Alugar um quarto na Estalagem do Sul (custa 5 moedas e deixa dormir).
+        function rentInnRoom() {
+            if (gameState.isDead || gameState.isSleeping) return;
+            if (!canSleep()) {
+                Swal.fire({
+                    title: '😴 Cedo demais',
+                    text: gameState.timeOfDay === 'day'
+                        ? 'Você não está cansado o suficiente para dormir durante o dia!'
+                        : 'Você não consegue dormir agora.',
+                    icon: 'warning',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    iconColor: '#ffd700'
+                });
+                return;
+            }
+            const cost = 5;
+            if ((gameState.character.gold || 0) < cost) {
+                addLog(`🛏️ Você precisa de ${cost} moedas para alugar um quarto na estalagem.`);
+                Swal.fire({
+                    title: '🪙 Moedas insuficientes',
+                    text: `Alugar um quarto custa ${cost} moedas de ouro.`,
+                    icon: 'error',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    background: '#1a1a2e',
+                    color: '#fff'
+                });
+                return;
+            }
+            gameState.character.gold -= cost;
+            addLog(`🛏️ Você paga ${cost} moedas de ouro e aluga um quarto na Estalagem do Sul.`);
+            updateUI();
+            startSleep();
+        }
 
         // Cortar árvores na Planície Leste para conseguir madeira.
         let _lastChop = 0;
@@ -8745,6 +9149,15 @@ textarea { min-height: 96px; resize: vertical; }
         async function talkToVillagerRosa() { return talkToNPC('villagerRosa'); }
         async function talkToVillagerBruno() { return talkToNPC('villagerBruno'); }
         async function talkToVillagerDora() { return talkToNPC('villagerDora'); }
+        async function talkToElderBeatriz() { return talkToNPC('elderBeatriz'); }
+        async function talkToGirlNina() { return talkToNPC('girlNina'); }
+        async function talkToCarterTomas() { return talkToNPC('carterTomas'); }
+        async function talkToBakerAmelia() { return talkToNPC('bakerAmelia'); }
+        async function talkToApprenticeIvo() { return talkToNPC('apprenticeIvo'); }
+        async function talkToForemanJoaquim() { return talkToNPC('foremanJoaquim'); }
+        async function talkToBakerClara() { return talkToNPC('bakerClara'); }
+        async function talkToTraderDamiao() { return talkToNPC('traderDamiao'); }
+        async function talkToInnkeeperHelena() { return talkToNPC('innkeeperHelena'); }
         async function talkToWoodcutterTeo() { return talkToNPC('woodcutterTeo'); }
         async function talkToShepherdLia() { return talkToNPC('shepherdLia'); }
         async function talkToLibrarian() { return talkToNPC('librarian'); }
