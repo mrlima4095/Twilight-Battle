@@ -141,6 +141,27 @@ def test_save_clamps_absurd_values(client):
     assert loaded['isDead'] is False
 
 
+def test_save_normalizes_survival(client):
+    """Fome/sede ficam presos em 0..100 e usam o padrão 'cheio' quando ausentes."""
+    _register(client, 'story_survival')
+    save = _valid_save()
+    save['survival'] = {'hunger': 9999, 'thirst': -20}
+
+    r = client.post('/api/save-game', json={'save_data': save})
+    assert r.status_code == 200
+    assert r.get_json()['success'] is True
+
+    loaded = client.get('/api/load-game').get_json()['save_data']
+    assert loaded['survival']['hunger'] == 100
+    assert loaded['survival']['thirst'] == 0
+
+    # Save antigo, sem o campo → servidor injeta o padrão cheio.
+    from twilight.routes.story import validate_and_normalize_save
+    ok, err = validate_and_normalize_save(_valid_save())
+    assert err is None
+    assert ok['survival'] == {'hunger': 100, 'thirst': 100}
+
+
 def test_save_normalizes_death_consistency(client):
     _register(client, 'story_death')
     # Vida zero mas marcado como vivo → servidor força morte.

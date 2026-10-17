@@ -28,6 +28,7 @@
 - Mercante Viajante
 - Festival sazonal
 - ✅ Clima (e estações) — muda encontros/dano e aparece no HUD
+- ✅ Sistema de fome e sede (🍗/💧) com barras no HUD, comida/bebida e dano por inanição
 - Invasões noturnas a aldeias
 - ✅ Implementar as habilidades (uma por raça, com mana)
 - ✅ Estatisticas

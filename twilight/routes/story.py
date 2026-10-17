@@ -18,6 +18,7 @@ _MAX_EXP = 100_000_000
 _MAX_STAT = 1_000_000
 _MAX_INVENTORY_SLOTS = 60
 _MAX_NAME_LEN = 60
+_MAX_SURVIVAL = 100
 
 
 def _coerce_int(value, default, lo=None, hi=None):
@@ -64,6 +65,14 @@ def validate_and_normalize_save(save_data):
     character['level'] = _coerce_int(character.get('level'), 1, lo=1, hi=_MAX_LEVEL)
     character['exp'] = _coerce_int(character.get('exp'), 0, lo=0, hi=_MAX_EXP)
     character['gold'] = _coerce_int(character.get('gold'), 0, lo=0, hi=_MAX_GOLD)
+
+    # Sobrevivência (fome/sede): sempre 0..100, com o padrão "cheio".
+    survival = save_data.get('survival')
+    if not isinstance(survival, dict):
+        survival = {}
+    survival['hunger'] = _coerce_int(survival.get('hunger'), _MAX_SURVIVAL, lo=0, hi=_MAX_SURVIVAL)
+    survival['thirst'] = _coerce_int(survival.get('thirst'), _MAX_SURVIVAL, lo=0, hi=_MAX_SURVIVAL)
+    save_data['survival'] = survival
 
     if not isinstance(save_data.get('inventory'), list):
         save_data['inventory'] = []
