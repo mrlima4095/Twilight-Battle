@@ -29,12 +29,12 @@ const QUESTS = {
         stages: [
             {
                 name: 'Falar com o Capitão',
-                description: 'Vá até o Salão Principal e converse com o Capitão da Guarda para obter mais informações sobre a ameaça.',
+                description: 'Vá até o Palácio da Aurora e converse com o Capitão da Guarda para obter mais informações sobre a ameaça.',
                 type: 'talk_to_npc',
                 target: 'captain',
                 required: 1,
                 progress: 0,
-                hints: '🗡️ O Capitão fica no Salão Principal do castelo.',
+                hints: '🗡️ O Capitão fica no Palácio da Aurora do castelo.',
                 onComplete: () => {
                     addLog('📜 Missão atualizada: O Capitão informou que lobos gigantes estão atacando os campos!');
                 }
@@ -59,7 +59,7 @@ const QUESTS = {
                 target: 'captain',
                 required: 1,
                 progress: 0,
-                hints: '🏰 O Capitão está no Salão Principal aguardando seu retorno.',
+                hints: '🏰 O Capitão está no Palácio da Aurora aguardando seu retorno.',
                 onComplete: () => {
                     addLog('👑 O Capitão ficou impressionado com sua bravura!');
                 }
@@ -213,12 +213,12 @@ const QUESTS = {
             },
             {
                 name: 'O briefing do Capitão',
-                description: 'Fale com o Capitão da Guarda no Salão Principal.',
+                description: 'Fale com o Capitão da Guarda no Palácio da Aurora.',
                 type: 'talk_to_npc',
                 target: 'captain',
                 required: 1,
                 progress: 0,
-                hints: '🗡️ O Capitão fica no Salão Principal.',
+                hints: '🗡️ O Capitão fica no Palácio da Aurora.',
                 onComplete: () => {
                     addLog('🗡️ Capitão Aldric: "Goblins nas ruínas. Orcs na Floresta Sombria. E algo gigante ao norte."');
                     addLog('💡 Comece pelas ruínas antigas, além da ponte norte.');
@@ -295,7 +295,7 @@ const QUESTS = {
                 target: 'black_mage',
                 required: 1,
                 progress: 0,
-                hints: '🌑 Pegue a Estrada Comercial Sul → Portão do Crepúsculo → Cidadela. Prepare-se bem.',
+                hints: '🌑 Rota: Estrada Comercial Sul → Aldeias do Sul → Estrada do Sul → Portões do Crepúsculo → Cidadela. Prepare-se bem.',
                 onProgress: (current, required) => {
                     if (current >= required) {
                         addLog('🌑 O Mago Negro se desfaz em sombra e cinza. O céu clareia.');

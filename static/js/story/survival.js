@@ -30,6 +30,15 @@ const SV_NIGHT_COST = { hunger: 5, thirst: 6 };
 const SV_STARVE_DAMAGE = 0.015;    // fração da vida máxima por tick com fome 0
 const SV_DEHYDRATE_DAMAGE = 0.02;  // fração da vida máxima por tick com sede 0
 
+// Sanidade (🧠): 0–100. Cai com bebidas alcoólicas e turva a mente —
+// magias podem falhar e o desempenho em combate piora.
+const SV_SANITY_REGEN_PER_TICK = 0.06;   // recuperação lenta com o tempo
+const SV_SANITY_DAWN = 10;               // clareia a mente a cada virada de dia
+const SV_SANITY_FUMBLE_AT = 70;          // abaixo disso, magias podem falhar
+const SV_SANITY_MAX_FUMBLE = 0.6;        // chance de falha com sanidade 0
+const SV_SANITY_MIN_DAMAGE = 0.55;       // multiplicador de dano com sanidade 0
+const SV_ALCOHOL = { beer: 9, wine: 14 };
+
 // Quanto cada comida/bebida devolve de Fome e Sede.
 // Itens fora da tabela usam uma estimativa pelo tipo (comida/bebida) e cura.
 const SV_NUTRITION = {
@@ -67,20 +76,24 @@ const SV_LEVELS = [
 function SV_ensureState() {
     if (typeof gameState === 'undefined' || !gameState) return;
     if (!gameState.survival || typeof gameState.survival !== 'object') {
-        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, manaDebt: 0 };
+        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0 };
     }
     const s = gameState.survival;
     if (typeof s.hunger !== 'number' || !isFinite(s.hunger)) s.hunger = SV_MAX;
     if (typeof s.thirst !== 'number' || !isFinite(s.thirst)) s.thirst = SV_MAX;
+    if (typeof s.sanity !== 'number' || !isFinite(s.sanity)) s.sanity = SV_MAX;
     s.hunger = Math.max(0, Math.min(SV_MAX, s.hunger));
     s.thirst = Math.max(0, Math.min(SV_MAX, s.thirst));
+    s.sanity = Math.max(0, Math.min(SV_MAX, s.sanity));
     if (!s.flags || typeof s.flags !== 'object') {
-        s.flags = { hunger: {}, thirst: {} };
+        s.flags = { hunger: {}, thirst: {}, sanity: {} };
         SV_seedFlags('hunger', s);
         SV_seedFlags('thirst', s);
+        SV_seedFlags('sanity', s);
     }
     s.flags.hunger = s.flags.hunger || {};
     s.flags.thirst = s.flags.thirst || {};
+    s.flags.sanity = s.flags.sanity || {};
 }
 
 // Marca (em silêncio) os limites que o valor atual já cruzou — evita uma
@@ -93,7 +106,7 @@ function SV_seedFlags(key, s) {
 
 function SV_reset() {
     if (typeof gameState === 'undefined' || !gameState) return;
-    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, manaDebt: 0, flags: { hunger: {}, thirst: {} } };
+    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX, manaDebt: 0, flags: { hunger: {}, thirst: {}, sanity: {} } };
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -117,6 +130,27 @@ function SV_apply(hungerDelta, thirstDelta, opts) {
 function SV_spend(hunger, thirst) {
     if (typeof gameState === 'undefined' || !gameState || !gameState.character || gameState.isDead) return;
     SV_apply(-(hunger || 0), -(thirst || 0));
+}
+
+// Aplica um delta de sanidade (+ recupera, - gasta) e atualiza HUD/avisos.
+function SV_applySanity(delta) {
+    SV_ensureState();
+    if (!gameState.character || gameState.isDead) return;
+    const s = gameState.survival;
+    s.sanity = Math.max(0, Math.min(SV_MAX, s.sanity + (delta || 0)));
+    SV_checkThresholds();
+    SV_updateHud();
+}
+
+// Efeitos da sanidade no combate: chance de falha em magias e multiplicador de dano.
+function SV_sanityEffects() {
+    SV_ensureState();
+    const sanity = (gameState.survival && gameState.survival.sanity) || 0;
+    const fumbleChance = sanity >= SV_SANITY_FUMBLE_AT
+        ? 0
+        : Math.min(SV_SANITY_MAX_FUMBLE, ((SV_SANITY_FUMBLE_AT - sanity) / SV_SANITY_FUMBLE_AT) * SV_SANITY_MAX_FUMBLE);
+    const damageMult = Math.max(SV_SANITY_MIN_DAMAGE, Math.min(1, SV_SANITY_MIN_DAMAGE + sanity * ((1 - SV_SANITY_MIN_DAMAGE) / SV_MAX)));
+    return { sanity, fumbleChance, damageMult };
 }
 
 // Gasta mana em frações acumuladas (ex.: andar 0,5 por passo → 1 a cada 2 passos),
@@ -162,15 +196,16 @@ function SV_applyNutrition(item) {
     else addLog(`💧 Sede +${thirst}`);
 }
 
-// Avisos por faixa (uma vez cada) quando Fome/Sede cruzam os limites.
+// Avisos por faixa (uma vez cada) quando Fome/Sede/Sanidade cruzam os limites.
 function SV_checkThresholds() {
     const s = gameState.survival;
     if (!s) return;
-    SV_warnFor('hunger', '🍗 Sua fome', s);
-    SV_warnFor('thirst', '💧 Sua sede', s);
+    SV_warnFor('hunger', '🍗 Sua fome', s, { zero: 'Você está faminto e perde vida.', hint: 'Coma algo!' });
+    SV_warnFor('thirst', '💧 Sua sede', s, { zero: 'Você está desidratado e perde vida.', hint: 'Beba algo!' });
+    SV_warnFor('sanity', '🧠 Sua sanidade', s, { zero: 'Sua mente se perde: magias falham e o combate fica instável.', hint: 'Durma ou evite bebidas alcoólicas!' });
 }
 
-function SV_warnFor(key, label, s) {
+function SV_warnFor(key, label, s, msgs) {
     const value = s[key];
     const flags = s.flags[key];
     for (const lvl of SV_LEVELS) {
@@ -178,13 +213,9 @@ function SV_warnFor(key, label, s) {
             if (!flags[lvl.flag]) {
                 flags[lvl.flag] = true;
                 if (lvl.value === 0) {
-                    addLog(`${lvl.icon} ${label} chegou a ZERO! ${
-                        key === 'hunger' ? 'Você está faminto e perde vida.' : 'Você está desidratado e perde vida.'
-                    }`);
+                    addLog(`${lvl.icon} ${label} chegou a ZERO! ${msgs.zero}`);
                 } else {
-                    addLog(`${lvl.icon} ${label} está em ${Math.floor(value)}/100. ${
-                        key === 'hunger' ? 'Coma algo!' : 'Beba algo!'
-                    }`);
+                    addLog(`${lvl.icon} ${label} está em ${Math.floor(value)}/100. ${msgs.hint}`);
                 }
             }
         } else {
@@ -204,6 +235,7 @@ function SV_tick() {
     SV_ensureState();
 
     SV_spend(SV_HUNGER_PER_TICK, SV_THIRST_PER_TICK);
+    SV_applySanity(SV_SANITY_REGEN_PER_TICK);
 
     const s = gameState.survival;
     if (!s) return;
@@ -260,7 +292,7 @@ function SV_ensureHud() {
     if (host && !document.getElementById('sv-bars')) {
         const bars = document.createElement('div');
         bars.id = 'sv-bars';
-        bars.innerHTML = SV_barHtml('hunger', '🍗 Fome') + SV_barHtml('thirst', '💧 Sede');
+        bars.innerHTML = SV_barHtml('hunger', '🍗 Fome') + SV_barHtml('thirst', '💧 Sede') + SV_barHtml('sanity', '🧠 Sanidade');
         host.appendChild(bars);
     }
 }
@@ -276,9 +308,10 @@ function SV_barHtml(id, label) {
 function SV_updateHud() {
     if (typeof gameState === 'undefined' || !gameState || !gameState.character) return;
     SV_ensureHud();
-    const s = gameState.survival || { hunger: SV_MAX, thirst: SV_MAX };
+    const s = gameState.survival || { hunger: SV_MAX, thirst: SV_MAX, sanity: SV_MAX };
     SV_renderStat('hunger', s.hunger);
     SV_renderStat('thirst', s.thirst);
+    SV_renderStat('sanity', s.sanity);
 }
 
 function SV_renderStat(id, value) {
@@ -326,13 +359,18 @@ attack = function () {
     return r;
 };
 
-// useFood: aplica nutrição (fome/sede) além da cura original.
+// useFood: aplica nutrição (fome/sede) além da cura original e, no caso de
+// bebidas alcoólicas, baixa a sanidade (a mente fica confusa).
 const SV_origUseFood = useFood;
 useFood = function (index) {
     const item = (gameState.inventory && gameState.inventory[index]) || null;
     const r = SV_origUseFood.apply(this, arguments);
     try {
         if (item && (item.type === 'food' || item.type === 'drink')) SV_applyNutrition(item);
+        if (item && SV_ALCOHOL[item.id]) {
+            SV_applySanity(-SV_ALCOHOL[item.id]);
+            addLog(`🍺 O álcool turva sua mente (🧠 Sanidade −${SV_ALCOHOL[item.id]}). Magias podem falhar!`);
+        }
     } catch (e) { /* noop */ }
     return r;
 };
@@ -342,7 +380,10 @@ useFood = function (index) {
 const SV_origToggleTimeOfDay = toggleTimeOfDay;
 toggleTimeOfDay = function () {
     const r = SV_origToggleTimeOfDay.apply(this, arguments);
-    try { SV_spend(SV_NIGHT_COST.hunger, SV_NIGHT_COST.thirst); } catch (e) { /* noop */ }
+    try {
+        SV_spend(SV_NIGHT_COST.hunger, SV_NIGHT_COST.thirst);
+        SV_applySanity(SV_SANITY_DAWN); // uma nova virada de dia clareia a mente
+    } catch (e) { /* noop */ }
     return r;
 };
 

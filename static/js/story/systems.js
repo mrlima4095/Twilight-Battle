@@ -76,7 +76,7 @@ const TB_ACHIEVEMENTS = [
     { id: 'viajante', name: 'Viajante', icon: '🧭', desc: 'Visite 20 locais diferentes.', check: s => Object.keys(s.locations || {}).length >= 20 },
     { id: 'aguas_sagradas', name: 'Águas Sagradas', icon: '💧', desc: 'Visite o Lago Sagrado.', check: s => !!(s.locations || {}).sacred_lake },
     { id: 'terras_selvagens', name: 'Terras Selvagens', icon: '🌲', desc: 'Visite a Floresta Sombria.', check: s => !!(s.locations || {}).dark_forest },
-    { id: 'atravessando_fronteiras', name: 'Atravessando Fronteiras', icon: '🌑', desc: 'Chegue ao Portão do Crepúsculo.', check: s => !!(s.locations || {}).twilight_gate },
+    { id: 'atravessando_fronteiras', name: 'Atravessando Fronteiras', icon: '🌑', desc: 'Chegue aos Portões do Crepúsculo.', check: s => !!(s.locations || {}).twilight_gate },
     { id: 'mestre_dos_mapas', name: 'Mestre dos Mapas', icon: '🗺️', desc: 'Complete a missão do cartógrafo Pedro.', check: s => (gameState.completedQuests || []).includes('pedro_map') },
     { id: 'fortuna_modesta', name: 'Fortuna Modesta', icon: '💰', desc: 'Tenha 250 de ouro.', check: s => gameState.character && gameState.character.gold >= 250 },
     { id: 'magnata', name: 'Magnata da Aurora', icon: '💎', desc: 'Tenha 1000 de ouro.', check: s => gameState.character && gameState.character.gold >= 1000 },
@@ -223,15 +223,8 @@ if (typeof LOCATIONS !== 'undefined') {
             { name: '🔙 Voltar ao Cemitério', action: 'goCemetery' },
         ],
     };
-    LOCATIONS.twilight_gate = {
-        name: 'Portão do Crepúsculo',
-        description: 'A fronteira do Reino do Crepúsculo. Estradas queimadas, estandartes escuros e um sol que parece nunca aquecer de verdade.',
-        allowsStations: true,
-        actions: [
-            { name: '🌑 Avançar até a Cidadela', action: 'enterTwilightCitadel' },
-            { name: '🔙 Voltar para as Aldeias do Sul', action: 'goSouthVillages' },
-        ],
-    };
+    // Nota: "Estrada do Sul" (south_road) e "Portões do Crepúsculo" (twilight_gate)
+    // são nós do mapa e vivem em story.html, junto dos demais nós do mundo.
     LOCATIONS.twilight_citadel = {
         name: 'Cidadela do Crepúsculo',
         description: 'A fortaleza do Mago Negro. Sombra escorre pelas paredes como água suja, e a própria luz parece pedir licença para entrar.',
@@ -255,12 +248,6 @@ if (typeof LOCATIONS !== 'undefined') {
             { name: '🌲 Entrar na Floresta Sombria', action: 'goDarkForest' },
             { name: '🐉 Subir ao Pico do Dragão', action: 'goDragonPeak' },
             { name: '🔙 Voltar para as Ruínas', action: 'goAcrossBridge' },
-        ];
-    }
-    if (LOCATIONS.south_villages) {
-        LOCATIONS.south_villages.actions = [
-            { name: '🌑 Seguir para o Portão do Crepúsculo', action: 'goTwilightGate' },
-            { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' },
         ];
     }
     if (LOCATIONS.great_hall && LOCATIONS.great_hall.actions) {
@@ -443,7 +430,6 @@ function goNorthForestEdge() { go('north_forest_edge', '🌲 Você desce para a 
 function goDragonPeak() { go('dragon_peak', '🐉 Você escala o Pico do Dragão. O rugido fica mais perto a cada passo.'); }
 function goCemetery() { go('abandoned_cemetery', '🪦 Você volta para o cemitério.'); }
 function goEastRuinsPath() { go('east_ruins_path', '➡️ Você retorna ao Caminho Leste das Ruínas.'); }
-function goTwilightGate() { go('twilight_gate', '🌑 Você cruza a fronteira para o Reino do Crepúsculo.'); }
 
 function openMausoleum() { go('cemetery_mausoleum', '⚰️ A porta de pedra range enquanto você entra no mausoléu.'); }
 function goCemeteryGraves() { go('cemetery_graves', '🛣️ Você segue entre as covas, a névoa engolindo seus passos.'); }
@@ -961,7 +947,43 @@ searchRuins = function () {
 };
 
 // ══════════════════════════════════════════════════════════════════════
-// 12. BOOT
+// 12. RESET AO CRIAR PERSONAGEM
+// ══════════════════════════════════════════════════════════════════════
+
+// Um herói novo não deve herdar o progresso do anterior: dia/estações/ano,
+// missões, bestiário, conquistas, clima e estatísticas voltam ao estado inicial.
+function TB_resetProgress() {
+    if (typeof gameState === 'undefined' || !gameState) return;
+    gameState.dayCount = 1;
+    gameState.seasonCount = 1;
+    gameState.yearCount = 1540;
+    gameState.timeOfDay = 'day';
+    gameState.isSleeping = false;
+    gameState.activeQuest = null;
+    gameState.completedQuests = [];
+    gameState.ending = null;
+    gameState.stats = null;          // TB_ensureState recria o formato padrão
+    gameState.achievements = {};
+    gameState.bestiary = {};
+    gameState.weather = null;        // TB_ensureState sorteia um clima novo
+    gameState._evasionActive = false;
+    gameState.learnedAbilities = [];
+    gameState.library = { reputation: 50, hasMembership: false, loans: [] };
+    TB_ensureState();
+}
+
+const TB_origCreateCharacter = createCharacter;
+createCharacter = function () {
+    const r = TB_origCreateCharacter.apply(this, arguments);
+    try {
+        TB_resetProgress();
+        if (typeof updateUI === 'function') updateUI();
+    } catch (e) { /* noop */ }
+    return r;
+};
+
+// ══════════════════════════════════════════════════════════════════════
+// 13. BOOT
 // ══════════════════════════════════════════════════════════════════════
 
 (function TB_boot() {

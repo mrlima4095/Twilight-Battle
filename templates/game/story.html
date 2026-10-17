@@ -325,13 +325,25 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .action-btn.disabled, .action-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
-/* Indicador de local onde dá para montar estações */
-.station-hint {
-  display: flex; align-items: center; gap: 8px; margin: 12px 0 0;
-  padding: 8px 12px; border-radius: 12px; font-size: .78rem; color: var(--muted);
-  background: rgba(240,193,75,.07); border: 1px dashed rgba(240,193,75,.35);
+/* Badge 🔧 ao lado do nome do local onde dá para montar estações */
+.station-badge {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 8px; width: 26px; height: 26px; border-radius: 50%;
+  font-size: .8rem; vertical-align: middle; cursor: help;
+  background: rgba(240,193,75,.14); border: 1px solid rgba(240,193,75,.5);
+  transition: background .15s ease, transform .15s ease;
 }
-.station-hint span { flex: 1; }
+.station-badge:hover, .station-badge:focus-visible { background: rgba(240,193,75,.32); transform: scale(1.06); outline: none; }
+.station-badge::after {
+  content: attr(data-hint);
+  position: absolute; top: 135%; left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: 230px; text-align: left;
+  padding: 8px 10px; border-radius: 10px; font-size: .72rem; font-weight: 400; line-height: 1.4;
+  color: #f4f0ff; background: rgba(14,11,28,.97); border: 1px solid rgba(240,193,75,.45);
+  box-shadow: 0 12px 30px rgba(0,0,0,.5);
+  opacity: 0; pointer-events: none; transition: opacity .15s ease; z-index: 30;
+}
+.station-badge:hover::after, .station-badge:focus-visible::after { opacity: 1; }
 
 /* Painel de golpes/habilidades durante o combate */
 .combat-moves {
@@ -866,6 +878,7 @@ textarea { min-height: 96px; resize: vertical; }
 .location-title, .location-name {
   font-family: var(--font-display); color: var(--gold); margin-bottom: 8px; font-size: 1.15rem;
 }
+.location-title { text-align: center; }
 .location-description {
   color: #c8bfd8; line-height: 1.65; font-size: .93rem; margin-bottom: 12px;
 }
@@ -950,12 +963,7 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-tree rect { fill: #3a2a1c; opacity: .7; }
 .world-map .wm-tree polygon { fill: #235c31; opacity: .75; }
 .world-map .wm-bush { fill: #2f7a3f; opacity: .5; }
-/* Marco do mapa (Entrada do Castelo) e nós de água */
-.world-map .wm-node.landmark { cursor: default; }
-.world-map .wm-node.landmark .wm-disc { fill: rgba(46,38,66,.97); stroke: var(--gold); stroke-width: 2.5; }
-.world-map .wm-node.landmark .wm-emoji { font-size: 30px; }
-.world-map .wm-node.landmark .wm-name { fill: #f7ecc9; font-weight: 800; font-size: 13px; }
-.world-map .wm-edge.castle { stroke: rgba(200,176,120,.35); stroke-width: 4; stroke-dasharray: 5 7; }
+/* Nós de água (lago, rio...) */
 .world-map .wm-node.water .wm-disc { fill: rgba(38,92,150,.95); stroke: rgba(130,195,240,.6); }
 .world-map .wm-node.water.reachable .wm-disc { fill: rgba(46,112,178,.98); stroke: var(--gold); }
 .world-map .wm-node.water.current .wm-disc { fill: #4a9bd6; stroke: #fff; }
@@ -998,6 +1006,13 @@ textarea { min-height: 96px; resize: vertical; }
   transform-box: fill-box; transform-origin: center;
   animation: wm-pulse 1.8s ease-out infinite;
 }
+/* Palácio da Aurora: nó maior e destacado no topo do castelo. */
+.world-map .wm-node.palace .wm-disc { fill: rgba(52,42,74,.97); stroke: rgba(240,193,75,.75); stroke-width: 2.5; stroke-dasharray: none; }
+.world-map .wm-node.palace .wm-emoji { font-size: 30px; }
+.world-map .wm-node.palace .wm-name { fill: #f7ecc9; font-weight: 800; font-size: 13px; }
+.world-map .wm-node.palace.reachable .wm-disc { fill: rgba(74,52,20,.98); stroke: var(--gold); }
+.world-map .wm-node.palace.current .wm-disc { fill: var(--gold); stroke: #fff; }
+.world-map .wm-node.palace.current .wm-name { fill: #fff; }
 .world-map .wm-node.walking .wm-disc { animation: wm-step .26s ease-in-out; }
 @keyframes wm-pulse {
   0%   { transform: scale(.8);  opacity: .8; }
@@ -1962,6 +1977,7 @@ textarea { min-height: 96px; resize: vertical; }
                     { name: '🍺 Cerveja (5💰)', action: 'buyBeer' },
                     { name: '🍷 Vinho Tinto (15💰)', action: 'buyWine' },
                     { name: '☕ Café Quente (8💰)', action: 'buyCoffee' },
+                    { name: '💧 Garrafa d\'Água (3💰)', action: 'buyWaterBottle' },
                     { name: '🗣️ Ouvir Histórias', action: 'listenStories' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
@@ -1970,7 +1986,7 @@ textarea { min-height: 96px; resize: vertical; }
                 name: 'Pátio do Castelo',
                 description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
                 actions: [
-                    { name: '🚪 Entrar no Salão Principal', action: 'goGreatHall' },
+                    { name: '🏰 Entrar no Palácio da Aurora', action: 'goGreatHall' },
                     { name: '📚 Visitar Biblioteca Real', action: 'goLibrary' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
                 ]
@@ -1987,8 +2003,8 @@ textarea { min-height: 96px; resize: vertical; }
                 ]
             },
             great_hall: {
-                name: 'Salão Principal',
-                description: 'Um vasto salão decorado com tapeçarias que contam a história do reino. Nobres e cavaleiros circulam por aqui.',
+                name: 'Palácio da Aurora',
+                description: 'O majestoso palácio da Aurora, coração do reino. Tapeçarias contam a sua história e nobres e cavaleiros circulam por aqui.',
                 actions: [
                     { name: '🗡️ Falar com o Capitão da Guarda', action: 'talkToCaptain' },
                     { name: '📜 Ver Quadro de Missões', action: 'showQuestBoard' },
@@ -2001,7 +2017,7 @@ textarea { min-height: 96px; resize: vertical; }
                 description: 'A majestosa sala onde o Rei da Aurora recebe seus súditos.',
                 actions: [
                     { name: '👑 Falar com o Rei', action: 'talkToKing' },
-                    { name: '🚪 Voltar para o Salão', action: 'goGreatHall' }
+                    { name: '🚪 Voltar para o Palácio da Aurora', action: 'goGreatHall' }
                 ]
             },
             west_bridge: {
@@ -2254,6 +2270,7 @@ textarea { min-height: 96px; resize: vertical; }
                     { name: '🌳 Ir para a Aldeia dos Pomares', action: 'goSouthVillageOrchard' },
                     { name: '⚒️ Ir para a Aldeia da Forja', action: 'goSouthVillageForge' },
                     { name: '🏪 Ir para a Aldeia do Comércio', action: 'goSouthVillageMarket' },
+                    { name: '🛣️ Seguir pela Estrada do Sul', action: 'goSouthRoad' },
                     { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' }
                 ]
             },
@@ -2283,19 +2300,36 @@ textarea { min-height: 96px; resize: vertical; }
                     { name: '💬 Falar com a Mercadora Dora', action: 'talkToVillagerDora' },
                     { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
                 ]
+            },
+            south_road: {
+                name: 'Estrada do Sul',
+                description: 'Uma estrada de terra batida que segue para o sul depois das aldeias. A cada passo o verde dá lugar a um cinza morno — e, ao longe, as tochas dos Portões do Crepúsculo começam a brilhar.',
+                allowsStations: true,
+                actions: [
+                    { name: '🌑 Seguir até os Portões do Crepúsculo', action: 'goTwilightGate' },
+                    { name: '🔙 Voltar às Aldeias do Sul', action: 'goSouthVillages' }
+                ]
+            },
+            twilight_gate: {
+                name: 'Portões do Crepúsculo',
+                description: 'A fronteira do Reino do Crepúsculo. Estradas queimadas, estandartes escuros e um sol que parece nunca aquecer de verdade.',
+                allowsStations: true,
+                actions: [
+                    { name: '🌑 Avançar até a Cidadela', action: 'enterTwilightCitadel' },
+                    { name: '🔙 Voltar pela Estrada do Sul', action: 'goSouthRoad' }
+                ]
             }
         };
 
         // ===== Mapa do Mundo =====
-        // Posições de cada local no mapa (viewBox 0 0 1040 740) + ícone e rótulo.
+        // Posições de cada local no mapa (viewBox 0 0 1040 880) + ícone e rótulo.
         // As *ligações* (caminhos) NÃO ficam aqui: são derivadas automaticamente
         // das ações de movimento de cada local (funções que chamam go('...')),
         // então o mapa nunca mostra um caminho que não existe de verdade.
-        const WORLD_MAP_VIEWBOX = { w: 1040, h: 740 };
+        const WORLD_MAP_VIEWBOX = { w: 1040, h: 880 };
         const WORLD_MAP_NODES = {
             // Reino da Aurora
-            castle_entrance:          { x: 660, y: 100, icon: '🏰', name: 'Entrada do Castelo', big: true, landmark: true },
-            great_hall:               { x: 660, y: 180, icon: '🚪', name: 'Salão Principal' },
+            great_hall:               { x: 660, y: 150, icon: '🏰', name: 'Palácio da Aurora', big: true, palace: true },
             library:                  { x: 520, y: 165, icon: '📚', name: 'Biblioteca' },
             castle_gate:              { x: 660, y: 245, icon: '🏰', name: 'Pátio do Castelo' },
             market:                   { x: 720, y: 265, icon: '🍖', name: 'Mercado' },
@@ -2330,10 +2364,12 @@ textarea { min-height: 96px; resize: vertical; }
             dark_forest:              { x: 980, y: 160, icon: '🌑', name: 'Floresta Sombria' },
             // Sul
             south_trade_route:        { x: 600, y: 545, icon: '🛤️', name: 'Estrada Sul' },
-            south_villages:           { x: 650, y: 630, icon: '🏘️', name: 'Aldeias do Sul' },
-            south_village_orchard:    { x: 540, y: 672, icon: '🌳', name: 'Aldeia dos Pomares' },
-            south_village_forge:      { x: 660, y: 698, icon: '⚒️', name: 'Aldeia da Forja' },
-            south_village_market:     { x: 778, y: 656, icon: '🏪', name: 'Aldeia do Comércio' },
+            south_villages:           { x: 650, y: 625, icon: '🏘️', name: 'Aldeias do Sul' },
+            south_village_orchard:    { x: 520, y: 668, icon: '🌳', name: 'Aldeia dos Pomares' },
+            south_village_forge:      { x: 650, y: 692, icon: '⚒️', name: 'Aldeia da Forja' },
+            south_village_market:     { x: 795, y: 655, icon: '🏪', name: 'Aldeia do Comércio' },
+            south_road:               { x: 650, y: 755, icon: '🛣️', name: 'Estrada do Sul' },
+            twilight_gate:            { x: 660, y: 820, icon: '🌑', name: 'Portões do Crepúsculo' },
             east_plains:              { x: 850, y: 520, icon: '🌾', name: 'Planície Leste' }
         };
         // Locais internos (casa, taberna, moinho...): mantêm a tela de botões.
@@ -2423,7 +2459,8 @@ textarea { min-height: 96px; resize: vertical; }
                 [125, 640, 125, 95, 'water'],
                 [880, 390, 150, 78, 'water'],
                 [975, 262, 120, 95, 'ruins'],
-                [95, 345, 110, 105, 'cemetery']
+                [95, 345, 110, 105, 'cemetery'],
+                [660, 790, 175, 90, 'forest']
             ];
             parts.push(`<g class="wm-blobs" filter="url(#wm-soft)">`);
             blobs.forEach(([cx, cy, rx, ry, kind]) => {
@@ -2434,8 +2471,8 @@ textarea { min-height: 96px; resize: vertical; }
             // 2) Rios. O oeste desce sob a Ponte Oeste até o Lago Sagrado; o leste
             //    corre sob a Margem do Rio / ponte e segue para o sul.
             const rivers = [
-                'M 300 30 C 330 150, 360 265, 380 348 C 392 408, 348 470, 296 516 C 248 560, 188 598, 150 622 C 130 636, 124 664, 128 712',
-                'M 856 40 C 840 165, 794 262, 800 348 C 806 400, 848 372, 890 380 C 940 390, 962 408, 975 420 C 992 436, 1004 472, 1006 508 C 1008 548, 962 582, 914 618 L 886 712'
+                'M 300 30 C 330 150, 360 265, 380 348 C 392 408, 348 470, 296 516 C 248 560, 188 598, 150 622 C 130 636, 124 664, 132 790',
+                'M 856 40 C 840 165, 794 262, 800 348 C 806 400, 848 372, 890 380 C 940 390, 962 408, 975 420 C 992 436, 1004 472, 1006 508 C 1008 548, 962 582, 914 618 L 900 790'
             ];
             parts.push(`<g class="wm-rivers">`);
             rivers.forEach(d => {
@@ -2462,7 +2499,8 @@ textarea { min-height: 96px; resize: vertical; }
                 [500, 620, 130, 55],    // mato ao sul
                 [838, 560, 95, 58],     // mato a leste-sul
                 [852, 508, 80, 48],     // bosques da Planície Leste (madeira)
-                [515, 688, 46, 20]      // pomares das aldeias do sul
+                [515, 688, 46, 20],     // pomares das aldeias do sul
+                [660, 785, 150, 72]     // mato na estrada rumo aos Portões do Crepúsculo
             ];
             let veg = '';
             forests.forEach(([cx, cy, rx, ry]) => {
@@ -2532,12 +2570,6 @@ textarea { min-height: 96px; resize: vertical; }
                 const active = (a === locId || b === locId) ? ' active' : '';
                 edgesSvg += `<line class="wm-edge${active}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" />`;
             });
-            // O marco "Entrada do Castelo" não é um caminho andável: liga-o
-            // visualmente ao Salão Principal para não ficar solto no mapa.
-            if (WORLD_MAP_NODES.castle_entrance && WORLD_MAP_NODES.great_hall) {
-                const A = WORLD_MAP_NODES.castle_entrance, B = WORLD_MAP_NODES.great_hall;
-                edgesSvg += `<line class="wm-edge castle" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" />`;
-            }
 
             let nodesSvg = '';
             Object.keys(WORLD_MAP_NODES).forEach(id => {
@@ -2547,11 +2579,11 @@ textarea { min-height: 96px; resize: vertical; }
                 let base;
                 if (isCurrent) base = 'current';
                 else if (walk) base = 'reachable';
-                else if (n.landmark) base = 'landmark';
                 else base = 'dim';
                 const cls = base
                     + (INDOOR_LOCATIONS.has(id) ? ' indoor' : '')
-                    + (n.water ? ' water' : '');
+                    + (n.water ? ' water' : '')
+                    + (n.palace ? ' palace' : '');
                 const r = n.big ? 30 : 20;
                 const handle = walk
                     ? ` onclick="tbWalkTo('${walk.fnName}', '${id}')" role="button" tabindex="0"`
@@ -2659,10 +2691,23 @@ textarea { min-height: 96px; resize: vertical; }
             return out;
         }
 
-        // Indicador de que o local permite montar estações.
-        function renderStationIndicator(location) {
+        // Badge 🔧 no nome do local: passe o mouse (ou toque) para saber que dá
+        // para montar estações ali usando uma estação do inventário.
+        function renderStationBadge(location) {
             if (!location || !location.allowsStations) return '';
-            return `<div class="station-hint">🔧 <span>Local para montar estações — use uma estação do inventário (bancada, fornalha…).</span></div>`;
+            const hint = 'Aqui você pode montar estações: use uma estação do inventário (bancada, fornalha, cama…).';
+            return `<span class="station-badge" role="button" tabindex="0" aria-label="${hint}" data-hint="${hint}"`
+                + ` onclick="showStationInfo()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showStationInfo();}">🔧</span>`;
+        }
+
+        // Textinho ao clicar na badge 🔧.
+        function showStationInfo() {
+            StoryModal.fire({
+                title: '🔧 Estações',
+                html: '<p style="text-align:center">Você pode montar estações aqui.</p>'
+                    + '<p style="text-align:center;color:#a39bb8">Use uma <strong>estação do inventário</strong> (bancada, fornalha, cama…) para colocá-la. As já montadas viram botões amarelos junto das ações.</p>',
+                icon: 'info', showConfirmButton: false, showCloseButton: true, width: '460px',
+            });
         }
 
         const ITEMS = {
@@ -2712,9 +2757,9 @@ textarea { min-height: 96px; resize: vertical; }
             cooked_chicken: { name: 'Frango Assado', type: 'food', heal: 75, description: 'Recupera 75 de vida.' },
             // |
             // | Drinks
-            beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true },
-            wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true },
-            coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true },
+            beer: { name: 'Cerveja', type: 'drink', heal: 20, mana: 10, description: 'Recupera 20 de vida e 10 de mana', consumable: true, givesEmptyCup: 'copo_vazio' },
+            wine: { name: 'Vinho Tinto', type: 'drink', heal: 30, mana: 5, description: 'Recupera 30 de vida e 5 de mana', consumable: true, givesEmptyCup: 'taca_vazia' },
+            coffee: { name: 'Café Quente', type: 'drink', heal: 15, mana: 20, description: 'Recupera 15 de vida e 20 de mana', consumable: true, givesEmptyCup: 'copo_vazio' },
             // Magic
             
             // Tools
@@ -2766,6 +2811,9 @@ textarea { min-height: 96px; resize: vertical; }
 
             bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.' },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, givesEmptyBottle: true },
+            // Sobras das bebidas da taverna: podem ser descartadas (clique ou lixeira).
+            copo_vazio: { name: 'Copo Vazio', type: 'junk', description: 'Um copo de vidro vazio. Clique nele (ou arraste para a lixeira) para descartar.' },
+            taca_vazia: { name: 'Taça Vazia', type: 'junk', description: 'Uma taça de vidro vazia. Clique nela (ou arraste para a lixeira) para descartar.' },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
             sleeping_bag: { 
@@ -3916,7 +3964,7 @@ textarea { min-height: 96px; resize: vertical; }
             }
             
             let html = `
-                <h2 class="location-title">${location.name}</h2>
+                <h2 class="location-title">${location.name}${renderStationBadge(location)}</h2>
                 <div class="location-description">${location.description}</div>
             `;
             
@@ -3987,7 +4035,6 @@ textarea { min-height: 96px; resize: vertical; }
                 // as interações locais (falar com NPC, pegar água, explorar...).
                 content.classList.add('map-mode');
                 html += renderWorldMap(gameState.location);
-                html += renderStationIndicator(location);
 
                 const interactions = getLocalInteractions(gameState.location);
                 const stationBtns = location.allowsStations ? renderPlacedStations(gameState.location) : '';
@@ -4000,7 +4047,6 @@ textarea { min-height: 96px; resize: vertical; }
                     html += `</div>`;
                 }
             } else {
-                html += renderStationIndicator(location);
                 html += `<div class="action-buttons">`;
                 location.actions.forEach(action => {
                     if (!action.action) return;
@@ -4084,7 +4130,7 @@ textarea { min-height: 96px; resize: vertical; }
             grid.innerHTML = '';
     
             gameState.inventory.forEach((item, index) => {
-                if (item && item.type === 'food') {
+                if (item && (item.type === 'food' || item.type === 'drink')) {
                     const slot = document.createElement('div');
                     slot.className = `inventory-slot has-item food-item ${gameState.isDead ? 'disabled' : ''}`;
                     slot.innerHTML = `
@@ -4202,6 +4248,11 @@ textarea { min-height: 96px; resize: vertical; }
             gameState.combatLog = [];
             gameState.isDead = false;
             gameState.timeOfDay = 'day';
+            gameState.dayCount = 1;
+            gameState.seasonCount = 1;
+            gameState.yearCount = 1540;
+            gameState.activeQuest = null;
+            gameState.completedQuests = [];
             gameState.isSleeping = false;
             gameState.sleepTimeout = null;
             gameState.location = 'home';
@@ -4300,6 +4351,25 @@ textarea { min-height: 96px; resize: vertical; }
         }
         // ** Close Modal
         function cancelCharacterCreation() { document.getElementById('character-creation-modal').classList.remove('active'); document.getElementById('title-screen').style.display = 'flex'; }
+
+        // Tecla Esc fecha modais/overlays abertos (diálogos, loja, sistema, NPC...).
+        document.addEventListener('keydown', function (event) {
+            if (event.key !== 'Escape' && event.key !== 'Esc') return;
+            if (typeof Swal !== 'undefined' && Swal && typeof Swal.isVisible === 'function' && Swal.isVisible()) {
+                event.preventDefault(); Swal.close(); return;
+            }
+            if (document.querySelector('.submodal.active')) { event.preventDefault(); closeSubmodal(); return; }
+            const sys = document.getElementById('system-modal');
+            if (sys && sys.classList.contains('active')) { event.preventDefault(); StoryModal.close(); return; }
+            const npc = document.getElementById('npc-modal');
+            if (npc && npc.classList.contains('active')) { event.preventDefault(); closeNPCModal(); return; }
+            const farewell = document.getElementById('farewell-modal');
+            if (farewell && farewell.classList.contains('active')) { event.preventDefault(); closeFarewellModal(); return; }
+            const edit = document.getElementById('edit-profile-modal');
+            if (edit && edit.classList.contains('active')) { event.preventDefault(); closeEditProfile(); return; }
+            const profile = document.getElementById('profile-modal');
+            if (profile && profile.classList.contains('active')) { event.preventDefault(); closeProfile(); return; }
+        });
         // Profile Screen
         function showProfile() {
             if (!gameState.character || gameState.isDead) return;
@@ -4850,9 +4920,31 @@ textarea { min-height: 96px; resize: vertical; }
             if (item.useEffect && typeof window[item.useEffect] === 'function') { window[item.useEffect](); return; }
             if (item.type === 'station') { useStationItem(item.id); }
             else if (item.type === 'food' || item.type === 'drink') { useFood(index); }
+            else if (item.type === 'junk') { discardItem(index); }
             else if (item.id === 'clock') { showTimeRemaining(); }
             else if (item.type === 'book') { openBook(index); }
             else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
+        }
+
+        // Descartar itens inúteis (copos, taças vazias...).
+        function discardItem(index) {
+            if (gameState.isDead) return;
+            const item = gameState.inventory[index];
+            if (!item) return;
+            StoryModal.fire({
+                title: '🗑️ Descartar',
+                html: `<p style="text-align:center">Descartar <strong>${item.name}</strong>?</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '🗑️ Descartar',
+                cancelButtonText: 'Cancelar',
+            }).then(res => {
+                if (!res.isConfirmed) return;
+                const current = gameState.inventory[index];
+                if (!current || current.id !== item.id) return;
+                removeItemFromInventory(index);
+                addLog(`🗑️ Você descartou ${item.name}.`);
+            });
         }
         function useFood(index) {
             if (gameState.isDead) return;
@@ -4873,12 +4965,17 @@ textarea { min-height: 96px; resize: vertical; }
             }
             
             const givesEmptyBottle = item.givesEmptyBottle === true;
+            const givesEmptyCup = item.givesEmptyCup;
     
             removeItemFromInventory(index);
             
             if (givesEmptyBottle) {
                 addItemToInventory('bottle', 1);
                 addLog(`♻️ Você recuperou a garrafa vazia.`);
+            }
+            if (givesEmptyCup && ITEMS[givesEmptyCup]) {
+                addItemToInventory(givesEmptyCup, 1);
+                addLog(`♻️ Você ficou com ${ITEMS[givesEmptyCup].name}. Pode descartá-lo quando quiser.`);
             }
 
             updateUI();
@@ -6565,7 +6662,7 @@ textarea { min-height: 96px; resize: vertical; }
         function goToMainGate() { go('main_gate', '🚪 Você se aproxima do imponente Portão Principal.'); }
         function goCastleGate() { go('castle_gate', '🏰 Você entra no pátio do castelo.'); }
         function goLibrary() { if (gameState.timeOfDay === 'day') { go('library', '📚 Você entra na majestosa Biblioteca Real.'); } else { addLog('🌙 A Biblioteca Real está fechada. Volte durante o dia!'); Swal.fire({ title: '🔒 Biblioteca Fechada', text: 'A Biblioteca Real fecha ao anoitecer. Volte durante o dia!', icon: 'info', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, background: '#1a1a2e', color: '#fff' }); } }
-        function goGreatHall() { go('great_hall', '🚪 Você entra no majestoso Salão Principal.'); }
+        function goGreatHall() { go('great_hall', '🏰 Você entra no Palácio da Aurora.'); }
         function goThroneRoom() { go('throne_room', '👑 Você entra na Sala do Trono.'); }
         function goWestBridge() { go('west_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
         function goFarmlands() { go('farmlands', '🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
@@ -6635,6 +6732,8 @@ textarea { min-height: 96px; resize: vertical; }
         function goSouthVillageOrchard() { go('south_village_orchard', '🌳 Você segue para a Aldeia dos Pomares, entre macieiras carregadas.'); }
         function goSouthVillageForge() { go('south_village_forge', '⚒️ Você segue para a Aldeia da Forja, guiado pelo tilintar do martelo.'); }
         function goSouthVillageMarket() { go('south_village_market', '🏪 Você segue para a Aldeia do Comércio, onde as barracas fervilham.'); }
+        function goSouthRoad() { go('south_road', '🛣️ Você segue pela estrada de terra rumo ao sul, deixando as aldeias para trás.'); }
+        function goTwilightGate() { go('twilight_gate', '🌑 Você cruza a fronteira e chega aos Portões do Crepúsculo.'); }
         function returnToSouthVillages() { go('south_villages', '🏘️ Você volta ao centro das Aldeias do Sul.'); }
 
         // Cortar árvores na Planície Leste para conseguir madeira.
@@ -7085,6 +7184,7 @@ textarea { min-height: 96px; resize: vertical; }
         function buyBeer() { buyDrink('beer', 5); }
         function buyWine() { buyDrink('wine', 15); }
         function buyCoffee() { if (gameState.isDead) return; buyDrink('coffee', 8); }
+        function buyWaterBottle() { buyDrink('water_bottle', 3); }
         
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
@@ -8369,6 +8469,13 @@ textarea { min-height: 96px; resize: vertical; }
         }
 
         // ========== COMBAT ==========
+        // Sanidade baixa deixa o herói instável: reduz o dano em combate.
+        // (A sanidade vive em survival.js; se o módulo não estiver carregado, 1.0.)
+        function tbSanityDamageMult() {
+            try { if (typeof SV_sanityEffects === 'function') return SV_sanityEffects().damageMult; } catch (e) { /* noop */ }
+            return 1;
+        }
+
         function attack() {
             if (gameState.isDead || !gameState.currentEnemy) return;
         
@@ -8395,7 +8502,7 @@ textarea { min-height: 96px; resize: vertical; }
                 
                 if (arrowIndex !== -1) {
                     // Tem flecha - usa dano fixo de 75 da flecha
-                    damage = 75;
+                    damage = Math.max(1, Math.round(75 * tbSanityDamageMult()));
                     attackType = "🏹 Ataque com Arco";
                     
                     // Consumir uma flecha
@@ -8416,6 +8523,8 @@ textarea { min-height: 96px; resize: vertical; }
             } else {
                 // Ataque normal com outras armas
                 damage = Math.max(1, playerAttack - gameState.currentEnemy.defense + Math.floor(Math.random() * 20));
+                const sm = tbSanityDamageMult();
+                if (sm < 1) damage = Math.max(1, Math.round(damage * sm));
                 attackType = "⚔️ Ataque corpo a corpo";
             }
             
@@ -8554,9 +8663,22 @@ textarea { min-height: 96px; resize: vertical; }
                 SV_spend(SV_COMBAT_COST.hunger, SV_COMBAT_COST.thirst);
             }
 
+            // Sanidade baixa: magias podem falhar (a mana se perde) e o dano/cura caem.
+            let sanityMult = 1;
+            if (typeof SV_sanityEffects === 'function') {
+                const eff = SV_sanityEffects();
+                sanityMult = eff.damageMult;
+                if (cost > 0 && Math.random() < eff.fumbleChance) {
+                    addLog(`🌀 Sua mente está confusa (Sanidade ${Math.round(eff.sanity)}/100) — ${ability.name} se desfaz no ar! A mana foi perdida.`);
+                    tbEnemyCounter();
+                    updateUI();
+                    return;
+                }
+            }
+
             // Habilidade de cura
             if (ability.type === 'heal') {
-                const amount = Math.round(gameState.character.maxLife * (ability.heal || 0.25));
+                const amount = Math.round(gameState.character.maxLife * (ability.heal || 0.25) * sanityMult);
                 const before = gameState.character.life;
                 gameState.character.life = Math.min(gameState.character.maxLife, gameState.character.life + amount);
                 addLog(`${ability.icon} ${ability.name}: você recupera ${gameState.character.life - before} de vida!`);
@@ -8578,7 +8700,7 @@ textarea { min-height: 96px; resize: vertical; }
                 }
                 const arrow = gameState.inventory[arrowIndex];
                 if (arrow.quantity > 1) arrow.quantity--; else gameState.inventory[arrowIndex] = null;
-                tbResolvePlayerStrike(75, `🏹 ${ability.name}`);
+                tbResolvePlayerStrike(Math.max(1, Math.round(75 * sanityMult)), `🏹 ${ability.name}`);
                 return;
             }
 
@@ -8586,7 +8708,7 @@ textarea { min-height: 96px; resize: vertical; }
             const race = RACES[gameState.character.race];
             const base = ((race && race.baseAttack) || 0) + calculateEquipmentBonuses().attackBonus;
             const raw = base * (ability.min + Math.random() * (ability.max - ability.min));
-            const damage = Math.max(1, Math.round(raw) - gameState.currentEnemy.defense);
+            const damage = Math.max(1, Math.round(raw * sanityMult) - gameState.currentEnemy.defense);
             tbResolvePlayerStrike(damage, `${ability.icon} ${ability.name}`);
         }
 
@@ -8613,8 +8735,10 @@ textarea { min-height: 96px; resize: vertical; }
             }
 
             trigger('kill', { creatureId: gameState.currentEnemy.id });
+            const defeatedId = gameState.currentEnemy.id;
             gameState.currentEnemy = null;
             gameState.combatPanelOpen = null;
+            if (typeof TB_onKill === 'function') { try { TB_onKill(defeatedId); } catch (e) { /* noop */ } }
             checkAndApplyLevelUp(); updateUI();
         }
 
@@ -9068,7 +9192,7 @@ textarea { min-height: 96px; resize: vertical; }
         function showQuestDetails() {
             if (!gameState.activeQuest || !gameState.activeQuest.id) {
                 addLog('📜 Você não tem nenhuma missão ativa no momento.');
-                addLog('💡 Visite o Salão Principal do castelo e veja o Quadro de Missões para aceitar uma!');
+                addLog('💡 Visite o Palácio da Aurora e veja o Quadro de Missões para aceitar uma!');
                 return;
             }
             
