@@ -767,6 +767,12 @@ textarea { min-height: 96px; resize: vertical; }
   min-height: 0 !important;
   padding-right: 2px;
 }
+
+/* Inventário da esquerda deve preencher o espaço (evita faixa branca) */
+#game-ui #inventory-grid {
+  grid-auto-rows: 1fr !important;
+  align-content: stretch !important;
+}
 #game-ui .inventory-grid::-webkit-scrollbar,
 #game-ui #inventory-grid::-webkit-scrollbar,
 #game-ui #food-grid::-webkit-scrollbar,
