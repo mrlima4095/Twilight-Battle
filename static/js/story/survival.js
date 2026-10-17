@@ -24,6 +24,7 @@ const SV_TICK_MS = 5000;
 const SV_HUNGER_PER_TICK = 0.12;   // ~3,5 dias de jogo do cheio ao vazio
 const SV_THIRST_PER_TICK = 0.16;   // ~2,6 dias de jogo do cheio ao vazio
 const SV_TRAVEL_COST = { hunger: 0.5, thirst: 0.7 };
+const SV_TRAVEL_MANA = 0.5;        // mana acumulada por passo (1 mana a cada 2 passos)
 const SV_COMBAT_COST = { hunger: 0.4, thirst: 0.5 };
 const SV_NIGHT_COST = { hunger: 5, thirst: 6 };
 const SV_STARVE_DAMAGE = 0.015;    // fração da vida máxima por tick com fome 0
@@ -66,7 +67,7 @@ const SV_LEVELS = [
 function SV_ensureState() {
     if (typeof gameState === 'undefined' || !gameState) return;
     if (!gameState.survival || typeof gameState.survival !== 'object') {
-        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX };
+        gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, manaDebt: 0 };
     }
     const s = gameState.survival;
     if (typeof s.hunger !== 'number' || !isFinite(s.hunger)) s.hunger = SV_MAX;
@@ -92,7 +93,7 @@ function SV_seedFlags(key, s) {
 
 function SV_reset() {
     if (typeof gameState === 'undefined' || !gameState) return;
-    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, flags: { hunger: {}, thirst: {} } };
+    gameState.survival = { hunger: SV_MAX, thirst: SV_MAX, manaDebt: 0, flags: { hunger: {}, thirst: {} } };
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -116,6 +117,26 @@ function SV_apply(hungerDelta, thirstDelta, opts) {
 function SV_spend(hunger, thirst) {
     if (typeof gameState === 'undefined' || !gameState || !gameState.character || gameState.isDead) return;
     SV_apply(-(hunger || 0), -(thirst || 0));
+}
+
+// Gasta mana em frações acumuladas (ex.: andar 0,5 por passo → 1 a cada 2 passos),
+// mantendo o valor de mana sempre inteiro no HUD.
+function SV_spendMana(amount) {
+    if (typeof gameState === 'undefined' || !gameState || !gameState.character || gameState.isDead) return;
+    if (typeof gameState.character.mana !== 'number' || amount <= 0) return;
+    SV_ensureState();
+    const s = gameState.survival;
+    if (typeof s.manaDebt !== 'number' || !isFinite(s.manaDebt)) s.manaDebt = 0;
+    s.manaDebt += amount;
+    const whole = Math.floor(s.manaDebt);
+    if (whole <= 0) return;
+    s.manaDebt -= whole;
+    const before = gameState.character.mana;
+    gameState.character.mana = Math.max(0, before - whole);
+    if (gameState.character.mana !== before) {
+        const el = document.getElementById('player-mana');
+        if (el) el.textContent = `${gameState.character.mana}/${gameState.character.maxMana}`;
+    }
 }
 
 // Restaura Fome/Sede a partir de um item consumível.
@@ -285,11 +306,15 @@ updateUI = function () {
     return r;
 };
 
-// go: viajar gasta um pouco de fome e sede.
+// go: viajar gasta um pouco de fome, sede e mana.
 const SV_origGo = go;
 go = function () {
     const r = SV_origGo.apply(this, arguments);
-    try { SV_ensureState(); SV_spend(SV_TRAVEL_COST.hunger, SV_TRAVEL_COST.thirst); } catch (e) { /* noop */ }
+    try {
+        SV_ensureState();
+        SV_spend(SV_TRAVEL_COST.hunger, SV_TRAVEL_COST.thirst);
+        SV_spendMana(SV_TRAVEL_MANA);
+    } catch (e) { /* noop */ }
     return r;
 };
 

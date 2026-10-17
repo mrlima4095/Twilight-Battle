@@ -325,6 +325,27 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .action-btn.disabled, .action-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
+/* Indicador de local onde dá para montar estações */
+.station-hint {
+  display: flex; align-items: center; gap: 8px; margin: 12px 0 0;
+  padding: 8px 12px; border-radius: 12px; font-size: .78rem; color: var(--muted);
+  background: rgba(240,193,75,.07); border: 1px dashed rgba(240,193,75,.35);
+}
+.station-hint span { flex: 1; }
+
+/* Painel de golpes/habilidades durante o combate */
+.combat-moves {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+  padding: 12px; border-radius: 14px;
+  background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.08);
+}
+.combat-moves .combat-move {
+  flex: 1 1 calc((100% - 16px) / 3); min-width: 130px;
+  display: flex; flex-direction: column; gap: 2px; align-items: center; justify-content: center;
+  padding: 10px 8px; font-size: .82rem; line-height: 1.2;
+}
+.combat-moves .combat-move small { font-size: .68rem; color: var(--muted); font-weight: 600; }
+
 /* Profile */
 .profile-header { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
 .profile-avatar {
@@ -1659,6 +1680,8 @@ textarea { min-height: 96px; resize: vertical; }
             equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null },
             combatLog: [],
             currentEnemy: null,
+            combatPanelOpen: null,
+            learnedAbilities: [],
             isDead: false,
             selectedRace: null,
             selectedGender: null,
@@ -1836,6 +1859,46 @@ textarea { min-height: 96px; resize: vertical; }
                 icon: '🌸',
                 mana: 100
             }
+        };
+
+        // ===== Habilidades de combate =====
+        // Golpes básicos disponíveis para todas as raças.
+        const BASIC_STRIKES = {
+            soco:    { id: 'soco',    name: 'Soco',    icon: '👊', min: 0.8, max: 1.2, mana: 0, desc: 'Golpe rápido e simples.' },
+            chute:   { id: 'chute',   name: 'Chute',   icon: '🦵', min: 0.9, max: 1.5, mana: 0, desc: 'Chute forte de perto.' },
+            voadora: { id: 'voadora', name: 'Voadora', icon: '🦶', min: 1.2, max: 2.0, mana: 3, desc: 'Salto com os dois pés — dano alto, custa mana.' },
+        };
+        // Golpe especial inerente à raça (sempre disponível em "Lutar").
+        const RACIAL_ABILITY = {
+            elf:     { id: 'elf_esquiva',     name: 'Esquiva Precisa',   icon: '🌀', min: 1.2, max: 1.9, mana: 5,  desc: 'Um corte certeiro logo após esquivar.' },
+            wizard:  { id: 'wizard_fireball', name: 'Bola de Fogo',      icon: '🔥', min: 1.5, max: 2.4, mana: 10, desc: 'Conjura uma esfera flamejante.' },
+            centaur: { id: 'centaur_carga',   name: 'Carga',             icon: '🐎', min: 1.5, max: 2.3, mana: 7,  desc: 'Uma investida devastadora.' },
+            nymph:   { id: 'nymph_petalas',   name: 'Pétalas Cortantes', icon: '🌸', min: 1.0, max: 1.7, mana: 5,  desc: 'Pétalas afiadas dançam ao redor do inimigo.' },
+        };
+        // Golpes que dependem da arma equipada ("armas dão mais golpes e formas de luta").
+        const WEAPON_STRIKES = {
+            sword:   { id: 'w_sword',   name: 'Golpe de Espada', icon: '🗡️', min: 1.2, max: 1.8, mana: 0 },
+            katana:  { id: 'w_katana',  name: 'Corte de Katana', icon: '⚔️', min: 1.3, max: 2.0, mana: 0 },
+            machete: { id: 'w_machete', name: 'Golpe de Facão',  icon: '🔪', min: 1.1, max: 1.7, mana: 0 },
+            dagger:  { id: 'w_dagger',  name: 'Apunhalada',      icon: '🗡️', min: 1.4, max: 2.2, mana: 2 },
+            bow:     { id: 'w_bow',     name: 'Disparo de Arco', icon: '🏹', min: 1.0, max: 1.0, mana: 0, ranged: true },
+        };
+        // Habilidades aprendidas/conquistadas (aparecem no botão "Habilidades").
+        const LEARNABLE_ABILITIES = {
+            golpe_duplo:   { id: 'golpe_duplo',   name: 'Golpe Duplo',         icon: '⚡', min: 1.7, max: 2.5, mana: 6,  desc: 'Dois golpes em sequência.' },
+            investida:     { id: 'investida',     name: 'Investida Giratória', icon: '🌀', min: 1.9, max: 2.9, mana: 10, desc: 'Gira atingindo tudo ao redor.' },
+            flecha_dupla:  { id: 'flecha_dupla',  name: 'Flecha Dupla',        icon: '🏹', min: 1.5, max: 2.3, mana: 8,  desc: 'Duas flechas em rápida sucessão.' },
+            escudo_arcano: { id: 'escudo_arcano', name: 'Escudo Arcano',       icon: '🛡️', min: 0, max: 0, mana: 10, type: 'heal', heal: 0.25, desc: 'Barreira mágica que restaura vida.' },
+            bencao:        { id: 'bencao',        name: 'Bênção da Natureza',  icon: '🌿', min: 0, max: 0, mana: 8,  type: 'heal', heal: 0.3,  desc: 'A natureza cura suas feridas.' },
+            raio:          { id: 'raio',          name: 'Raio Arcano',         icon: '⚡', min: 2.0, max: 3.0, mana: 14, desc: 'Um relâmpago poderoso.' },
+            coice_forte:   { id: 'coice_forte',   name: 'Coice Poderoso',      icon: '🐴', min: 1.8, max: 2.6, mana: 8,  desc: 'Coice capaz de quebrar ossos.' },
+        };
+        // Quais habilidades cada raça aprende ao subir de nível.
+        const RACE_ABILITY_POOL = {
+            elf:     ['flecha_dupla', 'golpe_duplo', 'escudo_arcano'],
+            wizard:  ['raio', 'escudo_arcano', 'investida'],
+            centaur: ['coice_forte', 'investida', 'golpe_duplo'],
+            nymph:   ['bencao', 'golpe_duplo', 'escudo_arcano'],
         };
         const CREATURES = {
             wolf: { id: 'wolf', name: 'Lobo', life: 150, attack: 40, defense: 15, exp: 10, gold: 0, drops: [ 'raw_meat' ] },
@@ -2582,20 +2645,24 @@ textarea { min-height: 96px; resize: vertical; }
             }, 260);
         }
 
-        // Bloco de estações de trabalho montadas no local atual.
+        // Botões das estações montadas no local. Ficam junto com os botões
+        // normais e usam a mesma cor amarela (success), não a cor das ações.
         function renderPlacedStations(locId) {
             const placed = gameState.placedStations && gameState.placedStations[locId];
             if (!placed) return '';
             const entries = Object.entries(placed);
             if (entries.length === 0) return '';
-            let out = `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
-                <h4 style="color: #ffd700; margin-bottom: 10px;">🔧 Estações Montadas:</h4>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+            let out = '';
             entries.forEach(([stationId, station]) => {
-                out += `<button class="action-btn" onclick="openStation('${stationId}')" style="background: #9370db; flex: 0 1 auto;">🔨 ${station.name}</button>`;
+                out += `<button class="action-btn success" onclick="openStation('${stationId}')">🔨 ${station.name}</button>`;
             });
-            out += `</div></div>`;
             return out;
+        }
+
+        // Indicador de que o local permite montar estações.
+        function renderStationIndicator(location) {
+            if (!location || !location.allowsStations) return '';
+            return `<div class="station-hint">🔧 <span>Local para montar estações — use uma estação do inventário (bancada, fornalha…).</span></div>`;
         }
 
         const ITEMS = {
@@ -3829,10 +3896,12 @@ textarea { min-height: 96px; resize: vertical; }
                         </div>
                         
                         <!-- Botões de combate -->
-                        <div style="display: flex; gap: 15px; margin-top: 20px;">
-                            <button class="action-btn danger" onclick="attack()" style="flex: 1; padding: 15px; font-size: 18px;">⚔️ ATACAR</button>
-                            <button class="action-btn warning" onclick="run()" style="flex: 1; padding: 15px; font-size: 18px;">🏃 FUGIR</button>
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px;">
+                            <button class="action-btn danger" onclick="tbToggleStrikes()" style="flex: 1; min-width: 150px; padding: 15px; font-size: 18px;">⚔️ LUTAR</button>
+                            ${tbAvailableAbilities().length > 0 ? `<button class="action-btn" onclick="tbToggleAbilities()" style="flex: 1; min-width: 150px; padding: 15px; font-size: 18px; background: linear-gradient(135deg,#6a3fb5,#4a2a80);">✨ HABILIDADES</button>` : ''}
+                            <button class="action-btn warning" onclick="run()" style="flex: 1; min-width: 150px; padding: 15px; font-size: 18px;">🏃 FUGIR</button>
                         </div>
+                        ${tbCombatMovesHtml()}
                     </div>
                 `;
                 
@@ -3918,30 +3987,29 @@ textarea { min-height: 96px; resize: vertical; }
                 // as interações locais (falar com NPC, pegar água, explorar...).
                 content.classList.add('map-mode');
                 html += renderWorldMap(gameState.location);
+                html += renderStationIndicator(location);
 
                 const interactions = getLocalInteractions(gameState.location);
-                if (interactions.length > 0) {
+                const stationBtns = location.allowsStations ? renderPlacedStations(gameState.location) : '';
+                if (interactions.length > 0 || stationBtns) {
                     html += `<div class="action-buttons">`;
                     interactions.forEach(action => {
                         html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
                     });
+                    html += stationBtns;
                     html += `</div>`;
                 }
-
-                if (location.allowsStations) {
-                    html += renderPlacedStations(gameState.location);
-                }
             } else {
+                html += renderStationIndicator(location);
                 html += `<div class="action-buttons">`;
                 location.actions.forEach(action => {
                     if (!action.action) return;
                     html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
                 });
-                html += `</div>`;
-
                 if (location.allowsStations) {
                     html += renderPlacedStations(gameState.location);
                 }
+                html += `</div>`;
             }
             
             content.innerHTML = html;
@@ -4139,6 +4207,8 @@ textarea { min-height: 96px; resize: vertical; }
             gameState.location = 'home';
             gameState.placedStations = {};
             gameState.learnedRecipes = [];
+            gameState.learnedAbilities = [];
+            gameState.combatPanelOpen = null;
 
             document.getElementById('character-creation-modal').classList.remove('active');
             document.getElementById('death-overlay').classList.remove('active');
@@ -4150,9 +4220,11 @@ textarea { min-height: 96px; resize: vertical; }
             updateUI();
             startCycleTimer();
             
+            const _safeName = String(name).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
             Swal.fire({
-                title: `✨ Olá, <strong>${name}</strong>`,
+                title: '✨ Bem-vindo ao Reino da Aurora!',
                 html: `<div style="text-align: center;">
+                    <p style="font-size: 18px; margin: 0 0 10px;">✨ Olá, <strong>${_safeName}</strong>!</p>
                     <p>Seja ${gameState.selectedGender === 'masculino' ? 'bem-vindo' : 'bem-vinda'} ao <strong style="color: #ffd700;">Reino da Aurora</strong>!</p>
                     <p style="margin-top: 10px;">📜 Sua jornada começa agora.</p>
                     <p style="margin-top: 5px; color: #888;">❤️ ${race.baseLife} Vida | 🔮 ${race.mana} Mana | ⚔️ ${race.baseAttack} Ataque</p>
@@ -8359,41 +8431,11 @@ textarea { min-height: 96px; resize: vertical; }
             }
         
             // Verificar se inimigo morreu
-            if (gameState.currentEnemy.life <= 0) {
-                addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
-                gameState.character.exp += gameState.currentEnemy.exp;
-                gameState.character.gold += gameState.currentEnemy.gold;
-                addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
-                
-                if (Math.random() < 0.4) {
-                    const drops = gameState.currentEnemy.drops;
-                    const drop = drops[Math.floor(Math.random() * drops.length)];
-                    addItemToInventory(drop);
-                    addLog(`🎁 Você pegou ${ITEMS[drop].name} de ${gameState.currentEnemy.name}!`);
-                }
-                
-                trigger('kill', { creatureId: gameState.currentEnemy.id });
-                gameState.currentEnemy = null;
-                checkAndApplyLevelUp(); updateUI();
-                return;
-            }
-            
+            if (gameState.currentEnemy.life <= 0) { tbHandleEnemyDefeat(); return; }
+
             // Inimigo contra-ataca
-            const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
-            
-            addLog(`💢 ${gameState.currentEnemy.name} contra-ataca causando ${enemyBaseDamage} de dano!`);
-            
-            // Usar o sistema de armadura com durabilidade
-            const { totalAbsorbed, remainingDamage } = applyDamageWithArmor(enemyBaseDamage);
-            
-            if (totalAbsorbed > 0) {
-                addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
-            }
-            
-            if (gameState.character.life <= 0) {
-                playerDeath();
-            }
-            
+            tbEnemyCounter();
+
             updateUI();
         }
         function run() {
@@ -8423,6 +8465,184 @@ textarea { min-height: 96px; resize: vertical; }
                 }
                 
                 updateUI();
+            }
+        }
+
+        // ---------- HABILIDADES DE COMBATE ----------
+
+        // Golpes disponíveis agora: básicos + especial da raça + golpes das armas.
+        function tbAvailableStrikes() {
+            const list = Object.values(BASIC_STRIKES).map(s => ({ ...s }));
+            const raceId = gameState.character && gameState.character.race;
+            const racial = RACIAL_ABILITY[raceId];
+            if (racial) list.push({ ...racial });
+            const main = gameState.equipment && gameState.equipment.mainhand;
+            const off = gameState.equipment && gameState.equipment.offhand;
+            [main, off].forEach(w => {
+                if (w && WEAPON_STRIKES[w.id]) list.push({ ...WEAPON_STRIKES[w.id] });
+            });
+            return list;
+        }
+
+        // Habilidades aprendidas/conquistadas.
+        function tbAvailableAbilities() {
+            const global = (gameState.learnedAbilities) || [];
+            return global.map(id => LEARNABLE_ABILITIES[id]).filter(Boolean).map(a => ({ ...a }));
+        }
+
+        // Faixa de dano (antes da defesa do inimigo) que o golpe pode causar.
+        function tbStrikeDamageRange(strike) {
+            const race = RACES[gameState.character && gameState.character.race];
+            const base = ((race && race.baseAttack) || 0) + calculateEquipmentBonuses().attackBonus;
+            return {
+                min: Math.max(1, Math.round(base * strike.min)),
+                max: Math.max(1, Math.round(base * strike.max))
+            };
+        }
+
+        function tbCombatMovesHtml() {
+            const open = gameState.combatPanelOpen;
+            if (open === 'strikes') {
+                const strikes = tbAvailableStrikes();
+                return `<div class="combat-moves">` + strikes.map(s => {
+                    const r = tbStrikeDamageRange(s);
+                    const cost = s.mana ? ` · 🔮 ${s.mana}` : '';
+                    return `<button class="action-btn combat-move" onclick="tbUseAbility('${s.id}')" title="${s.desc || ''}">${s.icon} ${s.name}<small>${r.min}–${r.max} dano${cost}</small></button>`;
+                }).join('') + `</div>`;
+            }
+            if (open === 'abilities') {
+                const abs = tbAvailableAbilities();
+                if (abs.length === 0) return '';
+                return `<div class="combat-moves">` + abs.map(a => {
+                    const r = tbStrikeDamageRange(a);
+                    const cost = a.mana ? ` · 🔮 ${a.mana}` : '';
+                    const dmg = a.type === 'heal' ? 'cura' : `${r.min}–${r.max} dano`;
+                    return `<button class="action-btn combat-move" onclick="tbUseAbility('${a.id}')" title="${a.desc || ''}">${a.icon} ${a.name}<small>${dmg}${cost}</small></button>`;
+                }).join('') + `</div>`;
+            }
+            return '';
+        }
+
+        function tbToggleStrikes() {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+            gameState.combatPanelOpen = gameState.combatPanelOpen === 'strikes' ? null : 'strikes';
+            updateUI();
+        }
+
+        function tbToggleAbilities() {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+            gameState.combatPanelOpen = gameState.combatPanelOpen === 'abilities' ? null : 'abilities';
+            updateUI();
+        }
+
+        function tbUseAbility(id) {
+            if (gameState.isDead || !gameState.currentEnemy) return;
+            const ability = tbAvailableStrikes().find(a => a.id === id) || tbAvailableAbilities().find(a => a.id === id);
+            if (!ability) return;
+
+            // Custo de mana
+            const cost = ability.mana || 0;
+            if (cost > 0 && gameState.character.mana < cost) {
+                addLog(`🔮 Mana insuficiente para ${ability.name}! (precisa de ${cost})`);
+                updateUI();
+                return;
+            }
+            if (cost > 0) gameState.character.mana = Math.max(0, gameState.character.mana - cost);
+
+            // Combate também gasta um pouco de energia (como o ataque normal).
+            if (typeof SV_spend === 'function' && typeof SV_COMBAT_COST !== 'undefined') {
+                SV_spend(SV_COMBAT_COST.hunger, SV_COMBAT_COST.thirst);
+            }
+
+            // Habilidade de cura
+            if (ability.type === 'heal') {
+                const amount = Math.round(gameState.character.maxLife * (ability.heal || 0.25));
+                const before = gameState.character.life;
+                gameState.character.life = Math.min(gameState.character.maxLife, gameState.character.life + amount);
+                addLog(`${ability.icon} ${ability.name}: você recupera ${gameState.character.life - before} de vida!`);
+                tbEnemyCounter();
+                updateUI();
+                return;
+            }
+
+            // Golpe de arco: precisa de flecha
+            if (ability.ranged) {
+                let arrowIndex = -1;
+                for (let i = 0; i < gameState.inventory.length; i++) {
+                    if (gameState.inventory[i] && gameState.inventory[i].id === 'flecha') { arrowIndex = i; break; }
+                }
+                if (arrowIndex === -1) {
+                    addLog(`❌ Seu arco está sem flechas! Compre mais na loja de armas.`);
+                    updateUI();
+                    return;
+                }
+                const arrow = gameState.inventory[arrowIndex];
+                if (arrow.quantity > 1) arrow.quantity--; else gameState.inventory[arrowIndex] = null;
+                tbResolvePlayerStrike(75, `🏹 ${ability.name}`);
+                return;
+            }
+
+            // Golpe comum: dano varia conforme a execução (min–max)
+            const race = RACES[gameState.character.race];
+            const base = ((race && race.baseAttack) || 0) + calculateEquipmentBonuses().attackBonus;
+            const raw = base * (ability.min + Math.random() * (ability.max - ability.min));
+            const damage = Math.max(1, Math.round(raw) - gameState.currentEnemy.defense);
+            tbResolvePlayerStrike(damage, `${ability.icon} ${ability.name}`);
+        }
+
+        function tbResolvePlayerStrike(damage, label) {
+            if (!gameState.currentEnemy) return;
+            gameState.currentEnemy.life -= damage;
+            addLog(`${label}: você causou ${damage} de dano ao ${gameState.currentEnemy.name}!`);
+            if (gameState.currentEnemy.life <= 0) { tbHandleEnemyDefeat(); return; }
+            tbEnemyCounter();
+            updateUI();
+        }
+
+        function tbHandleEnemyDefeat() {
+            addLog(`✨ Você derrotou ${gameState.currentEnemy.name}!`);
+            gameState.character.exp += gameState.currentEnemy.exp;
+            gameState.character.gold += gameState.currentEnemy.gold;
+            addLog(`💰 Ganhou ${gameState.currentEnemy.exp} EXP e ${gameState.currentEnemy.gold} moedas!`);
+
+            if (Math.random() < 0.4) {
+                const drops = gameState.currentEnemy.drops;
+                const drop = drops[Math.floor(Math.random() * drops.length)];
+                addItemToInventory(drop);
+                addLog(`🎁 Você pegou ${ITEMS[drop].name} de ${gameState.currentEnemy.name}!`);
+            }
+
+            trigger('kill', { creatureId: gameState.currentEnemy.id });
+            gameState.currentEnemy = null;
+            gameState.combatPanelOpen = null;
+            checkAndApplyLevelUp(); updateUI();
+        }
+
+        function tbEnemyCounter() {
+            if (!gameState.currentEnemy) return;
+            const enemyBaseDamage = Math.max(1, gameState.currentEnemy.attack + Math.floor(Math.random() * 15));
+            addLog(`💢 ${gameState.currentEnemy.name} contra-ataca causando ${enemyBaseDamage} de dano!`);
+
+            // Usar o sistema de armadura com durabilidade
+            const { totalAbsorbed } = applyDamageWithArmor(enemyBaseDamage);
+            if (totalAbsorbed > 0) {
+                addLog(`🛡️ Sua armadura absorveu ${totalAbsorbed} de dano!`);
+            }
+            if (gameState.character.life <= 0) {
+                playerDeath();
+            }
+        }
+
+        // Aprende uma habilidade da raça a cada nível ganho.
+        function tbGrantLevelAbilities(count) {
+            if (!gameState.character) return;
+            if (!Array.isArray(gameState.learnedAbilities)) gameState.learnedAbilities = [];
+            const pool = RACE_ABILITY_POOL[gameState.character.race] || [];
+            for (let i = 0; i < count; i++) {
+                const next = pool.find(id => LEARNABLE_ABILITIES[id] && !gameState.learnedAbilities.includes(id));
+                if (!next) break;
+                gameState.learnedAbilities.push(next);
+                addLog(`✨ Nova habilidade aprendida: ${LEARNABLE_ABILITIES[next].icon} ${LEARNABLE_ABILITIES[next].name}!`);
             }
         }
 
@@ -8974,6 +9194,8 @@ textarea { min-height: 96px; resize: vertical; }
                 }
             }
             
+            if (levelUpCount > 0) tbGrantLevelAbilities(levelUpCount);
+
             return leveledUp;
         }
         function addExperience(amount) {
