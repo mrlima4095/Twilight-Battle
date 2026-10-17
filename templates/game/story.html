@@ -929,6 +929,15 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-tree rect { fill: #3a2a1c; opacity: .7; }
 .world-map .wm-tree polygon { fill: #235c31; opacity: .75; }
 .world-map .wm-bush { fill: #2f7a3f; opacity: .5; }
+/* Marco do mapa (Entrada do Castelo) e nós de água */
+.world-map .wm-node.landmark { cursor: default; }
+.world-map .wm-node.landmark .wm-disc { fill: rgba(46,38,66,.97); stroke: var(--gold); stroke-width: 2.5; }
+.world-map .wm-node.landmark .wm-emoji { font-size: 30px; }
+.world-map .wm-node.landmark .wm-name { fill: #f7ecc9; font-weight: 800; font-size: 13px; }
+.world-map .wm-edge.castle { stroke: rgba(200,176,120,.35); stroke-width: 4; stroke-dasharray: 5 7; }
+.world-map .wm-node.water .wm-disc { fill: rgba(38,92,150,.95); stroke: rgba(130,195,240,.6); }
+.world-map .wm-node.water.reachable .wm-disc { fill: rgba(46,112,178,.98); stroke: var(--gold); }
+.world-map .wm-node.water.current .wm-disc { fill: #4a9bd6; stroke: #fff; }
 .world-map-stage {
   position: relative; flex: 1 1 auto; min-height: 240px; overflow: hidden;
 }
@@ -2164,9 +2173,12 @@ textarea { min-height: 96px; resize: vertical; }
             },
             east_plains: {
                 name: 'Planície Leste',
-                description: 'A planície se estende infinitamente à sua frente. O vento sopra forte por aqui, e você pode ver rebanhos de animais selvagens ao longe. O caminho parece continuar por muito tempo.',
+                description: 'A planície se estende infinitamente à sua frente. O vento sopra forte por aqui, e você pode ver rebanhos de animais selvagens ao longe. Bosques esparsos cobrem parte do terreno.',
                 allowsStations: true,
                 actions: [
+                    { name: '🪓 Cortar Árvore', action: 'chopWoodEastPlains' },
+                    { name: '💬 Falar com o Lenhador Téo', action: 'talkToWoodcutterTeo' },
+                    { name: '💬 Falar com a Pastora Lia', action: 'talkToShepherdLia' },
                     { name: '➡️ Continuar para o Leste', action: 'continueEast' },
                     { name: '🔙 Voltar para a Planície da Aurora', action: 'returnToOutside' }
                 ]
@@ -2176,7 +2188,37 @@ textarea { min-height: 96px; resize: vertical; }
                 description: 'Você chega a uma região com pequenas aldeias comerciais. Mercadores viajam entre elas levando mercadorias para todo o reino. O local é pacífico e próspero.',
                 allowsStations: true,
                 actions: [
+                    { name: '🌳 Ir para a Aldeia dos Pomares', action: 'goSouthVillageOrchard' },
+                    { name: '⚒️ Ir para a Aldeia da Forja', action: 'goSouthVillageForge' },
+                    { name: '🏪 Ir para a Aldeia do Comércio', action: 'goSouthVillageMarket' },
                     { name: '🔙 Voltar para a Estrada Comercial', action: 'goSouthTradeRoute' }
+                ]
+            },
+            south_village_orchard: {
+                name: 'Aldeia dos Pomares',
+                description: 'Uma aldeia cercada de macieiras e pereiras. O cheiro doce das frutas maduras paira no ar e os moradores colhem cestos cheios.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com a Fazendeira Rosa', action: 'talkToVillagerRosa' },
+                    { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            south_village_forge: {
+                name: 'Aldeia da Forja',
+                description: 'O tilintar do martelo sobre o ferro ecoa pela aldeia. A forja do ferreiro arde dia e noite, aquecendo as casas ao redor.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com o Ferreiro Bruno', action: 'talkToVillagerBruno' },
+                    { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
+                ]
+            },
+            south_village_market: {
+                name: 'Aldeia do Comércio',
+                description: 'Barracas coloridas vendem de tudo um pouco. Mercadores apregoam suas mercadorias em voz alta e o ouro troca de mãos rapidamente.',
+                allowsStations: true,
+                actions: [
+                    { name: '💬 Falar com a Mercadora Dora', action: 'talkToVillagerDora' },
+                    { name: '🔙 Voltar às Aldeias do Sul', action: 'returnToSouthVillages' }
                 ]
             }
         };
@@ -2189,8 +2231,8 @@ textarea { min-height: 96px; resize: vertical; }
         const WORLD_MAP_VIEWBOX = { w: 1040, h: 740 };
         const WORLD_MAP_NODES = {
             // Reino da Aurora
-            throne_room:              { x: 660, y: 110, icon: '👑', name: 'Sala do Trono' },
-            great_hall:               { x: 660, y: 175, icon: '🚪', name: 'Salão Principal' },
+            castle_entrance:          { x: 660, y: 100, icon: '🏰', name: 'Entrada do Castelo', big: true, landmark: true },
+            great_hall:               { x: 660, y: 180, icon: '🚪', name: 'Salão Principal' },
             library:                  { x: 520, y: 165, icon: '📚', name: 'Biblioteca' },
             castle_gate:              { x: 660, y: 245, icon: '🏰', name: 'Pátio do Castelo' },
             market:                   { x: 720, y: 265, icon: '🍖', name: 'Mercado' },
@@ -2210,14 +2252,14 @@ textarea { min-height: 96px; resize: vertical; }
             back_forest_trail_south:  { x: 135, y: 555, icon: '🌿', name: 'Trilha Sul' },
             abandoned_cemetery_gate:  { x: 95,  y: 385, icon: '🪦', name: 'Portão do Cemitério' },
             abandoned_cemetery:       { x: 95,  y: 315, icon: '⚰️', name: 'Cemitério' },
-            sacred_lake:              { x: 120, y: 615, icon: '💧', name: 'Lago Sagrado' },
-            sacred_lake_interior:     { x: 120, y: 690, icon: '🌊', name: 'Dentro do Lago' },
+            sacred_lake:              { x: 120, y: 615, icon: '💧', name: 'Lago Sagrado', water: true },
+            sacred_lake_interior:     { x: 120, y: 690, icon: '🌊', name: 'Dentro do Lago', water: true },
             // Arredores a leste (planície / trilha do rio / ruínas)
             outside:                  { x: 720, y: 480, icon: '🌅', name: 'Planície da Aurora' },
             north_trail_start:        { x: 800, y: 435, icon: '🚶', name: 'Início da Trilha' },
             north_trail_middle:       { x: 800, y: 350, icon: '🌉', name: 'Margem do Rio' },
-            river_bank:               { x: 890, y: 380, icon: '🏞️', name: 'Borda do Rio' },
-            swim_in_river:            { x: 975, y: 420, icon: '🏊', name: 'No Rio' },
+            river_bank:               { x: 890, y: 380, icon: '🏞️', name: 'Borda do Rio', water: true },
+            swim_in_river:            { x: 975, y: 420, icon: '🏊', name: 'No Rio', water: true },
             across_bridge:            { x: 890, y: 300, icon: '🌉', name: 'Além da Ponte' },
             ancient_ruins:            { x: 975, y: 255, icon: '🏛️', name: 'Ruínas Antigas' },
             east_ruins_path:          { x: 990, y: 355, icon: '🥾', name: 'Caminho Leste' },
@@ -2226,6 +2268,9 @@ textarea { min-height: 96px; resize: vertical; }
             // Sul
             south_trade_route:        { x: 600, y: 545, icon: '🛤️', name: 'Estrada Sul' },
             south_villages:           { x: 650, y: 630, icon: '🏘️', name: 'Aldeias do Sul' },
+            south_village_orchard:    { x: 540, y: 672, icon: '🌳', name: 'Aldeia dos Pomares' },
+            south_village_forge:      { x: 660, y: 698, icon: '⚒️', name: 'Aldeia da Forja' },
+            south_village_market:     { x: 778, y: 656, icon: '🏪', name: 'Aldeia do Comércio' },
             east_plains:              { x: 850, y: 520, icon: '🌾', name: 'Planície Leste' }
         };
         // Locais internos (casa, taberna, moinho...): mantêm a tela de botões.
@@ -2352,7 +2397,9 @@ textarea { min-height: 96px; resize: vertical; }
                 [858, 252, 52, 66],     // beira da floresta
                 [255, 606, 95, 62],     // margem do Lago Sagrado
                 [500, 620, 130, 55],    // mato ao sul
-                [838, 560, 95, 58]      // mato a leste-sul
+                [838, 560, 95, 58],     // mato a leste-sul
+                [852, 508, 80, 48],     // bosques da Planície Leste (madeira)
+                [515, 688, 46, 20]      // pomares das aldeias do sul
             ];
             let veg = '';
             forests.forEach(([cx, cy, rx, ry]) => {
@@ -2422,23 +2469,35 @@ textarea { min-height: 96px; resize: vertical; }
                 const active = (a === locId || b === locId) ? ' active' : '';
                 edgesSvg += `<line class="wm-edge${active}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" />`;
             });
+            // O marco "Entrada do Castelo" não é um caminho andável: liga-o
+            // visualmente ao Salão Principal para não ficar solto no mapa.
+            if (WORLD_MAP_NODES.castle_entrance && WORLD_MAP_NODES.great_hall) {
+                const A = WORLD_MAP_NODES.castle_entrance, B = WORLD_MAP_NODES.great_hall;
+                edgesSvg += `<line class="wm-edge castle" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" />`;
+            }
 
             let nodesSvg = '';
             Object.keys(WORLD_MAP_NODES).forEach(id => {
                 const n = WORLD_MAP_NODES[id];
                 const isCurrent = id === locId;
                 const walk = walkByTarget[id];
-                const cls = isCurrent
-                    ? 'current'
-                    : (walk ? 'reachable' : 'dim') + (INDOOR_LOCATIONS.has(id) ? ' indoor' : '');
+                let base;
+                if (isCurrent) base = 'current';
+                else if (walk) base = 'reachable';
+                else if (n.landmark) base = 'landmark';
+                else base = 'dim';
+                const cls = base
+                    + (INDOOR_LOCATIONS.has(id) ? ' indoor' : '')
+                    + (n.water ? ' water' : '');
+                const r = n.big ? 30 : 20;
                 const handle = walk
                     ? ` onclick="tbWalkTo('${walk.fnName}', '${id}')" role="button" tabindex="0"`
                     : '';
                 nodesSvg += `<g class="wm-node ${cls}" data-id="${id}"${handle}>`
-                    + (isCurrent ? `<circle class="wm-ring" cx="${n.x}" cy="${n.y}" r="24" />` : '')
-                    + `<circle class="wm-disc" cx="${n.x}" cy="${n.y}" r="20" />`
+                    + (isCurrent ? `<circle class="wm-ring" cx="${n.x}" cy="${n.y}" r="${r + 4}" />` : '')
+                    + `<circle class="wm-disc" cx="${n.x}" cy="${n.y}" r="${r}" />`
                     + `<text class="wm-emoji" x="${n.x}" y="${n.y + 1}">${n.icon}</text>`
-                    + `<text class="wm-name" x="${n.x}" y="${n.y + 34}">${n.name}</text>`
+                    + `<text class="wm-name" x="${n.x}" y="${n.y + r + 14}">${n.name}</text>`
                     + `</g>`;
             });
 
@@ -2848,6 +2907,119 @@ textarea { min-height: 96px; resize: vertical; }
                 onSleep: () => addLog('🔨 Carlos está descansando após um longo dia de trabalho.'),
                 onAbsent: () => addLog('🌲 Carlos foi para a floresta buscar madeira de qualidade.'),
                 onGreet: () => addLog('🔨 Carlos acena com a mão enquanto lixa uma peça de madeira.')
+            },
+            villagerRosa: {
+                id: 'villagerRosa',
+                name: 'Rosa',
+                title: 'Fazendeira',
+                emoji: '👩‍🌾',
+                location: 'south_village_orchard',
+                locationName: 'Aldeia dos Pomares',
+                greeting: function() {
+                    return `Olá, viajante! Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} aos nossos pomares. As macieiras estão carregadas este ano!`;
+                },
+                farewell: 'Volte quando quiser — sempre temos frutas frescas por aqui!',
+                topics: [
+                    { name: '🍎 Sobre as frutas', message: 'Colhemos maçãs, peras e ameixas. Nada como uma fruta colhida na hora!' },
+                    { name: '🌱 A colheita', message: 'A colheita foi generosa. As aldeias do sul vão passar o inverno bem alimentadas.' },
+                    { name: '🏘️ Sobre as aldeias', message: 'Somos três aldeias irmãs: os Pomares, a Forja e o Comércio. Juntas formamos o sul próspero.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.7 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            villagerBruno: {
+                id: 'villagerBruno',
+                name: 'Bruno',
+                title: 'Ferreiro',
+                emoji: '🧑‍🏭',
+                location: 'south_village_forge',
+                locationName: 'Aldeia da Forja',
+                greeting: function() {
+                    return `Forte e bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'}! Cuidado com as faíscas. Precisa de aço, é comigo mesmo.`;
+                },
+                farewell: 'Que sua lâmina nunca enferruje, amigo!',
+                topics: [
+                    { name: '⚒️ Sobre o ofício', message: 'Trabalho o ferro desde os doze anos. Nada supera o som de uma lâmina bem temperada.' },
+                    { name: '🛡️ Armaduras', message: 'Faço escudos e peitorais para a guarda do reino. Ferro bom é ferro batido muitas vezes.' },
+                    { name: '🪵 Combustível', message: 'A forja devora madeira o dia inteiro. Se trouxer lenha, eu agradeço!' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.85, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.5 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            villagerDora: {
+                id: 'villagerDora',
+                name: 'Dora',
+                title: 'Mercadora',
+                emoji: '🧑‍💼',
+                location: 'south_village_market',
+                locationName: 'Aldeia do Comércio',
+                greeting: function() {
+                    return `Olá, olá! Chegou na hora certa, ${gameState.character.gender === 'masculino' ? 'mocinho' : 'mocinha'}! Dê uma olhada nas minhas mercadorias.`;
+                },
+                farewell: 'Volte sempre! Negócio bom é negócio repetido.',
+                topics: [
+                    { name: '💰 Os negócios', message: 'Compro e vendo de tudo. Se sobrar algo no seu inventário, eu compro por um bom preço.' },
+                    { name: '🛤️ Rotas comerciais', message: 'As carroças do sul levam frutas, ferro e tecido para toda a Aurora.' },
+                    { name: '🏘️ Sobre as aldeias', message: 'Aqui é o coração do comércio do sul. Nada acontece nestas aldeias sem passar pela minha barraca!' }
+                ],
+                shopItems: [
+                    { id: 'apple', price: 3 },
+                    { id: 'bread', price: 5 }
+                ],
+                canSellToNPC: true,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.7 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            woodcutterTeo: {
+                id: 'woodcutterTeo',
+                name: 'Téo',
+                title: 'Lenhador',
+                emoji: '🧔',
+                location: 'east_plains',
+                locationName: 'Planície Leste',
+                greeting: function() {
+                    return `Opa! Veio ajudar a derrubar umas árvores? A planície tem madeira de sobra. Manda ver no machado!`;
+                },
+                farewell: 'Bom trabalho! Ninguém constrói nada sem madeira, viu?',
+                topics: [
+                    { name: '🪓 Como cortar', message: 'Dê golpes firmes e em ângulo. A árvore certa é a que range antes de cair!' },
+                    { name: '🪵 A madeira', message: 'Guardo a lenha para o moinho e para as forjas do sul. Madeira boa nunca sobra.' },
+                    { name: '🌾 A planície', message: 'Aqui sopra um vento forte, mas os bosques nos dão tudo o que precisamos.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.8 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
+            },
+            shepherdLia: {
+                id: 'shepherdLia',
+                name: 'Lia',
+                title: 'Pastora',
+                emoji: '🐑',
+                location: 'east_plains',
+                locationName: 'Planície Leste',
+                greeting: function() {
+                    return `Shhh... não assuste o rebanho. Bem-vind${gameState.character.gender === 'masculino' ? 'o' : 'a'} à planície!`;
+                },
+                farewell: 'Cuide-se por aqui — ao anoitecer aparecem lobos na planície.',
+                topics: [
+                    { name: '🐑 O rebanho', message: 'Cuido de ovelhas e cabras. Lã e leite para as aldeias, e companhia para mim.' },
+                    { name: '🐺 Cuidado à noite', message: 'Lobos rondam quando o sol se põe. Não ande sozinho pela planície à noite.' },
+                    { name: '🌾 A planície leste', message: 'É vasta e selvagem, mas generosa. Só é preciso respeitar seus limites.' }
+                ],
+                shopItems: null,
+                canSellToNPC: false,
+                dayBehavior: { homeChance: 0.9, alwaysAwake: true },
+                nightBehavior: { homeChance: 0.9, sleepChance: 0.75 },
+                baseState: { isHome: true, isSleeping: false, lastUpdate: null }
             },
             artisan: {
                 id: 'artisan',
@@ -6388,6 +6560,22 @@ textarea { min-height: 96px; resize: vertical; }
         function goEastPlains() { go('east_plains', '🌾 Você segue para o leste pela vasta planície.'); }
         function returnToOutside() { go('outside', '🌅 Você retorna à Planície da Aurora, onde o céu se abre novamente.'); }
         function goSouthVillages() { go('south_villages', '🏘️ Você chega às aldeias do sul, um movimentado centro comercial.'); }
+        function goSouthVillageOrchard() { go('south_village_orchard', '🌳 Você segue para a Aldeia dos Pomares, entre macieiras carregadas.'); }
+        function goSouthVillageForge() { go('south_village_forge', '⚒️ Você segue para a Aldeia da Forja, guiado pelo tilintar do martelo.'); }
+        function goSouthVillageMarket() { go('south_village_market', '🏪 Você segue para a Aldeia do Comércio, onde as barracas fervilham.'); }
+        function returnToSouthVillages() { go('south_villages', '🏘️ Você volta ao centro das Aldeias do Sul.'); }
+
+        // Cortar árvores na Planície Leste para conseguir madeira.
+        let _lastChop = 0;
+        function chopWoodEastPlains() {
+            if (gameState.isDead) return;
+            const now = Date.now();
+            if (now - _lastChop < 1500) return; // evita cliques repetidos
+            _lastChop = now;
+            const amount = Math.random() < 0.35 ? 2 : 1;
+            addItemToInventory('wood', amount);
+            addLog(`🪓 Você corta uma árvore da planície e junta ${amount} de Madeira.`);
+        }
         function continueEast() { addLog('🌾 A planície continua se estendendo à sua frente. Você caminha por um tempo, mas decide voltar por enquanto.'); updateUI(); }
 
         // ========== TIME SYSTEM FUNCTIONS ==========
@@ -7966,6 +8154,11 @@ textarea { min-height: 96px; resize: vertical; }
         async function visitWeaver() { return talkToNPC('weaver'); }
         async function visitFarmerHouse1() { return talkToNPC('farmerMiguel'); }
         async function visitFarmerHouse2() { return talkToNPC('farmerAna'); }
+        async function talkToVillagerRosa() { return talkToNPC('villagerRosa'); }
+        async function talkToVillagerBruno() { return talkToNPC('villagerBruno'); }
+        async function talkToVillagerDora() { return talkToNPC('villagerDora'); }
+        async function talkToWoodcutterTeo() { return talkToNPC('woodcutterTeo'); }
+        async function talkToShepherdLia() { return talkToNPC('shepherdLia'); }
         async function talkToLibrarian() { return talkToNPC('librarian'); }
         async function talkToCaptain() { return talkToNPC('captain'); }
         async function talkToKing() { return talkToNPC('king'); }
