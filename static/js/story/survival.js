@@ -211,14 +211,19 @@ function SV_injectStyle() {
     const style = document.createElement('style');
     style.id = 'sv-style';
     style.textContent = `
-#sv-bars { display:flex; gap:10px; width:100%; max-width:340px; margin:6px auto 0; }
-#sv-bars .sv-bar { flex:1; }
-#sv-bars .sv-bar-top { display:flex; justify-content:space-between; font-size:.66rem; color:var(--muted,#a39bb8); margin-bottom:3px; }
-#sv-bars .sv-track { height:6px; border-radius:999px; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08); overflow:hidden; }
+#sv-bars {
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px 22px;
+    width:100%; padding:9px 16px; border-radius:14px;
+    background:linear-gradient(135deg, rgba(16,13,30,.9), rgba(10,8,20,.92));
+    border:1px solid rgba(255,255,255,.1); box-shadow:0 8px 22px rgba(0,0,0,.25);
+}
+#sv-bars .sv-bar { flex:1 1 240px; display:flex; align-items:center; gap:10px; min-width:0; }
+#sv-bars .sv-label { flex:0 0 auto; font-size:.72rem; color:var(--muted,#a39bb8); white-space:nowrap; }
+#sv-bars .sv-pct { flex:0 0 auto; min-width:38px; text-align:right; font-size:.72rem; font-weight:700; color:var(--gold,#f0c14b); font-variant-numeric:tabular-nums; }
+#sv-bars .sv-track { flex:1 1 auto; min-width:50px; height:8px; border-radius:999px; background:rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.08); overflow:hidden; }
 #sv-bars .sv-fill { height:100%; width:100%; border-radius:999px; background:#3ddc97; transition:width .4s ease, background .4s ease; }
 #sv-bars .sv-fill.sv-mid { background:#f0c14b; }
 #sv-bars .sv-fill.sv-low { background:#ff4d6d; animation:pulse 1s ease infinite; }
-#game-ui .stat.sv-critical .stat-value { color:#ff4d6d !important; animation:pulse 1s ease infinite; }
 `;
     document.head.appendChild(style);
 }
@@ -227,32 +232,23 @@ function SV_ensureHud() {
     if (!document.body) return;
     SV_injectStyle();
 
-    const stats = document.querySelector('#game-ui .player-stats');
-    if (stats && !document.getElementById('sv-stat-hunger')) {
-        const mk = (id, label, icon) => {
-            const div = document.createElement('div');
-            div.className = 'stat';
-            div.id = `sv-stat-${id}`;
-            div.innerHTML = `<div class="stat-value" id="sv-${id}-value">100</div><div class="stat-label">${icon} ${label}</div>`;
-            return div;
-        };
-        stats.appendChild(mk('hunger', 'Fome', '🍗'));
-        stats.appendChild(mk('thirst', 'Sede', '💧'));
-    }
-
-    const info = document.querySelector('#game-ui .player-info');
-    if (info && !document.getElementById('sv-bars')) {
+    // Fome/Sede ficam numa faixa própria (largura total) logo abaixo do topo do
+    // HUD, em vez de disputar espaço com os stats. Não duplicamos como "stat".
+    const host = document.querySelector('#game-ui .game-header')
+        || document.querySelector('#game-ui .player-info');
+    if (host && !document.getElementById('sv-bars')) {
         const bars = document.createElement('div');
         bars.id = 'sv-bars';
         bars.innerHTML = SV_barHtml('hunger', '🍗 Fome') + SV_barHtml('thirst', '💧 Sede');
-        info.appendChild(bars);
+        host.appendChild(bars);
     }
 }
 
 function SV_barHtml(id, label) {
     return `<div class="sv-bar">
-        <div class="sv-bar-top"><span>${label}</span><span id="sv-${id}-pct">100%</span></div>
+        <span class="sv-label">${label}</span>
         <div class="sv-track"><div class="sv-fill" id="sv-${id}-fill"></div></div>
+        <span class="sv-pct" id="sv-${id}-pct">100%</span>
     </div>`;
 }
 
@@ -266,9 +262,6 @@ function SV_updateHud() {
 
 function SV_renderStat(id, value) {
     const v = Math.round(value);
-    const valueEl = document.getElementById(`sv-${id}-value`);
-    if (valueEl) valueEl.textContent = `${v}/100`;
-
     const fill = document.getElementById(`sv-${id}-fill`);
     if (fill) {
         fill.style.width = `${Math.max(0, Math.min(100, value))}%`;
@@ -277,9 +270,6 @@ function SV_renderStat(id, value) {
     }
     const pct = document.getElementById(`sv-${id}-pct`);
     if (pct) pct.textContent = `${v}%`;
-
-    const stat = document.getElementById(`sv-stat-${id}`);
-    if (stat) stat.classList.toggle('sv-critical', value <= 20);
 }
 
 // ══════════════════════════════════════════════════════════════════════
