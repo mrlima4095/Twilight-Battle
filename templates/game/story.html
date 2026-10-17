@@ -1740,14 +1740,6 @@ textarea { min-height: 96px; resize: vertical; }
             main_avenue: {
                 name: 'Avenida Principal',
                 description: 'A movimentada avenida central do reino. Lojas e comércios se alinham em ambos os lados.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Vilarejo Norte', icon: '🏘️', action: 'goNorthVillage' },
-                    { name: 'Vilarejo Sul', icon: '🏘️', action: 'goSouthVillage' },
-                    { name: 'Praça Principal', icon: '🏛️', action: 'goToMainSquare' },
-                    { name: 'Ponte Oeste', icon: '🌉', action: 'goWestBridge' },
-                    { name: 'Portão Principal', icon: '🚪', action: 'goToMainGate' }
-                ],
                 actions: [
                     { name: '🏘️ Entrar no Vilarejo Norte', action: 'goNorthVillage' },
                     { name: '🏘️ Entrar no Vilarejo Sul', action: 'goSouthVillage' },
@@ -1759,13 +1751,6 @@ textarea { min-height: 96px; resize: vertical; }
             main_square: {
                 name: 'Praça Principal',
                 description: 'O coração pulsante do reino. Aqui se encontra o mercado, a taberna e o imponente castelo.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Mercado', icon: '🍖', action: 'goMarket' },
-                    { name: 'Taberna', icon: '🍺', action: 'goTavern' },
-                    { name: 'Castelo', icon: '🏰', action: 'goCastleGate' },
-                    { name: 'Avenida', icon: '🛤️', action: 'goToMainAvenue' }
-                ],
                 actions: [
                     { name: '🍖 Mercado de Alimentos', action: 'goMarket' },
                     { name: '🍺 Taberna da Aurora', action: 'goTavern' },
@@ -1799,12 +1784,6 @@ textarea { min-height: 96px; resize: vertical; }
             castle_gate: {
                 name: 'Pátio do Castelo',
                 description: 'Um grande pátio pavimentado com fontes e jardins. Guardas reais patrulham o local.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Salão Principal', icon: '🚪', action: 'goGreatHall' },
-                    { name: 'Biblioteca Real', icon: '📚', action: 'goLibrary' },
-                    { name: 'Praça', icon: '🏛️', action: 'goToMainSquare' }
-                ],
                 actions: [
                     { name: '🚪 Entrar no Salão Principal', action: 'goGreatHall' },
                     { name: '📚 Visitar Biblioteca Real', action: 'goLibrary' },
@@ -1843,11 +1822,6 @@ textarea { min-height: 96px; resize: vertical; }
             west_bridge: {
                 name: 'Ponte Oeste',
                 description: 'Uma ponte de pedra que atravessa o Rio Aurora. Do outro lado, os campos agrícolas se estendem.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Campos', icon: '🌾', action: 'goFarmlands' },
-                    { name: 'Avenida', icon: '🛤️', action: 'goToMainAvenue' }
-                ],
                 actions: [
                     { name: '🌾 Atravessar para os Campos', action: 'goFarmlands' },
                     { name: '🔙 Voltar para a Avenida', action: 'goToMainAvenue' }
@@ -1878,12 +1852,6 @@ textarea { min-height: 96px; resize: vertical; }
             north_village: {
                 name: 'Vilarejo Norte',
                 description: 'Um pequeno vilarejo pacífico com cerca de 30 casas. Os moradores são principalmente artesãos.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Sua Casa', icon: '🏠', action: 'goHome' },
-                    { name: 'Marceneiro', icon: '🔨', action: 'visitCarpenter' },
-                    { name: 'Artesão', icon: '🎨', action: 'visitArtisan' }
-                ],
                 actions: [
                     { name: '🏠 Sua Casa', action: 'goHome' },
                     { name: '🔨 Visitar Marceneiro', action: 'visitCarpenter' },
@@ -1894,12 +1862,6 @@ textarea { min-height: 96px; resize: vertical; }
             south_village: {
                 name: 'Vilarejo Sul',
                 description: 'Vilarejo conhecido pelos tecelões e tintureiros. Tecidos coloridos secam nas varandas.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Tecelã', icon: '🧵', action: 'visitWeaver' },
-                    { name: 'Cartógrafo', icon: '🗺️', action: 'visitCartographer' },
-                    { name: 'Avenida', icon: '🛤️', action: 'goToMainAvenue' }
-                ],
                 actions: [
                     { name: '🧵 Visitar Tecelã', action: 'visitWeaver' },
                     { name: '🗺️ Visitar Cartógrafo', action: 'visitCartographer' },
@@ -1909,11 +1871,6 @@ textarea { min-height: 96px; resize: vertical; }
             main_gate: {
                 name: 'Portão Principal',
                 description: 'O enorme portão de ferro que protege a entrada principal do reino. Guardas vigiam constantemente.',
-                locationType: 'street',
-                mapAreas: [
-                    { name: 'Sair do Reino', icon: '🚪', action: 'leaveKingdom' },
-                    { name: 'Avenida', icon: '🛤️', action: 'goToMainAvenue' }
-                ],
                 actions: [
                     { name: '🚪 Sair do Reino', action: 'leaveKingdom' },
                     { name: '🛤️ Voltar para a Avenida', action: 'goToMainAvenue' }
@@ -3312,22 +3269,11 @@ textarea { min-height: 96px; resize: vertical; }
                     });
                 }, 100);
             } else {
-                if (location.locationType === 'street' && Array.isArray(location.mapAreas) && location.mapAreas.length > 0) {
-                    html += `<div class="location-map" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 15px;">`;
-                    location.mapAreas.forEach(a => {
-                        html += `<button class="action-btn" onclick="${a.action}()" ${gameState.isDead ? 'disabled' : ''} style="flex-direction: column; gap: 4px; min-height: 70px; padding: 10px;">
-                            <span style="font-size: clamp(24px,5vw,32px);">${a.icon || '📍'}</span>
-                            <span style="font-size: clamp(11px,3vw,13px); text-align: center;">${a.name}</span>
-                        </button>`;
-                    });
-                    html += `</div>`;
-                } else {
-                    html += `<div class="action-buttons">`;
-                    location.actions.forEach(action => {
-                        html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
-                    });
-                    html += `</div>`;
-                }
+                html += `<div class="action-buttons">`;
+                location.actions.forEach(action => {
+                    html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+                });
+                html += `</div>`;
                 
                 if (location.allowsStations && gameState.placedStations[gameState.location] && Object.keys(gameState.placedStations[gameState.location]).length > 0) {
                     html += `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
@@ -5896,7 +5842,7 @@ textarea { min-height: 96px; resize: vertical; }
         function goWestBridge() { go('west_bridge', '🌉 Você chega à Ponte Leste, que atravessa o Rio Aurora.'); }
         function goFarmlands() { go('farmlands', '🌾 Você atravessa a ponte e chega aos campos de plantação.'); }
         function goMill() { go('mill', '🏚️ Você chega ao antigo moinho e ao forno comunitário.'); }
-        function goNorthVillage() { go('north_village', '🏘️ Você chega ao Vilarejo Norte. Escolha onde entrar.'); }
+        function goNorthVillage() { go('north_village', '🏘️ Você entra no Vilarejo Norte.'); }
         function goSouthVillage() { go('south_village', '🏘️ Você entra no Vilarejo Sul.'); }
         function goTavern() { go('tavern', '🍺 Você entra na Taberna do Porto.'); }
         function leaveKingdomSecondary() { go('outside', '🚪 Você sai pelo portão secundário e adentra as terras selvagens.'); }
