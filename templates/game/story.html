@@ -891,12 +891,14 @@ textarea { min-height: 96px; resize: vertical; }
 
 /* ===== Mapa do Mundo (navegação entre ruas, trilhas e florestas) ===== */
 .world-map-wrap {
-  margin-top: 14px; border-radius: 16px; overflow-x: auto;
+  margin-top: 14px; border-radius: 16px; overflow: hidden;
+  display: flex; flex-direction: column; min-height: 0;
   background: radial-gradient(120% 120% at 50% 0%, rgba(48,38,86,.55), rgba(8,6,16,.92));
   border: 1px solid rgba(255,255,255,.08);
   box-shadow: inset 0 0 40px rgba(0,0,0,.35);
 }
 .world-map-hint {
+  flex: 0 0 auto;
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 8px 12px; font-size: .78rem; color: var(--muted);
   border-bottom: 1px solid rgba(255,255,255,.06);
@@ -920,8 +922,12 @@ textarea { min-height: 96px; resize: vertical; }
 .world-map .wm-blob-ruins { fill: rgba(132,120,132,.20); }
 .world-map .wm-blob-cemetery { fill: rgba(96,86,120,.32); }
 .world-map .wm-star { fill: rgba(255,255,255,.45); }
+.world-map-stage {
+  position: relative; flex: 1 1 auto; min-height: 240px; overflow: hidden;
+}
 .world-map {
-  display: block; width: 100%; min-width: 560px; height: auto; max-height: 70vh;
+  position: absolute; inset: 0;
+  display: block; width: 100%; height: 100%; min-width: 0; max-height: none;
   touch-action: manipulation;
 }
 .world-map .wm-edge { stroke: rgba(240,193,75,.16); stroke-width: 5; stroke-linecap: round; }
@@ -967,12 +973,24 @@ textarea { min-height: 96px; resize: vertical; }
 }
 @keyframes wm-dash { to { stroke-dashoffset: -44; } }
 .world-map-legend {
+  flex: 0 0 auto;
   display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
   padding: 8px 12px; font-size: .72rem; color: var(--muted);
   border-top: 1px solid rgba(255,255,255,.06);
 }
 .world-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .world-map-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* Modo mapa: o painel central não rola; o mapa se ajusta ao espaço disponível. */
+#game-ui .game-panel #game-content.map-mode {
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 4px 2px 2px;
+}
+#game-ui #game-content.map-mode > * { flex: 0 0 auto; }
+#game-ui #game-content.map-mode .world-map-wrap { flex: 1 1 auto; min-height: 0; }
+#game-ui #game-content.map-mode .action-buttons { margin: 10px 0 2px !important; }
 
 /* Equipment paper-doll style */
 #game-ui .equipment-panel { overflow-y: auto !important; }
@@ -1226,6 +1244,9 @@ textarea { min-height: 96px; resize: vertical; }
   #game-ui #inventory-grid {
     max-height: 340px !important;
   }
+  /* Modo mapa em telas estreitas: painel tem altura automática, então
+     damos ao mapa uma altura fixa confortável (sem rolagem). */
+  #game-ui #game-content.map-mode .world-map-stage { min-height: 320px; }
   .race-selector { grid-template-columns: 1fr; }
 }
 @media (max-width: 520px) {
@@ -2379,6 +2400,7 @@ textarea { min-height: 96px; resize: vertical; }
                             <button type="button" onclick="tbMapRecenter()" title="Centralizar em você" aria-label="Centralizar">🎯</button>
                         </span>
                     </div>
+                    <div class="world-map-stage">
                     <svg class="world-map" data-focus="${focusAttr}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa ao redor de ${here.name}">
                         <defs>
                             <radialGradient id="wm-sky" cx="50%" cy="42%" r="78%">
@@ -2394,6 +2416,7 @@ textarea { min-height: 96px; resize: vertical; }
                         <g class="wm-edges">${edgesSvg}</g>
                         <g class="wm-nodes">${nodesSvg}</g>
                     </svg>
+                    </div>
                     <div class="world-map-legend">
                         <span><i style="background:var(--gold)"></i> Você está aqui</span>
                         <span><i style="background:#8a6d2f"></i> Caminho disponível</span>
@@ -3444,6 +3467,7 @@ textarea { min-height: 96px; resize: vertical; }
         function updateGameContent() {
             const content = document.getElementById('game-content');
             content.classList.remove('chest-open');
+            content.classList.remove('map-mode');
 
             if (gameState.isBookOpen && gameState.openBookIndex !== null) {
                 const book = gameState.inventory[gameState.openBookIndex];
@@ -3664,6 +3688,7 @@ textarea { min-height: 96px; resize: vertical; }
                 // Locais externos (ruas, avenidas, florestas, trilhas...): a
                 // navegação é feita pelo mapa do mundo. Abaixo dele ficam apenas
                 // as interações locais (falar com NPC, pegar água, explorar...).
+                content.classList.add('map-mode');
                 html += renderWorldMap(gameState.location);
 
                 const interactions = getLocalInteractions(gameState.location);
