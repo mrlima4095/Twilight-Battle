@@ -897,9 +897,29 @@ textarea { min-height: 96px; resize: vertical; }
   box-shadow: inset 0 0 40px rgba(0,0,0,.35);
 }
 .world-map-hint {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 8px 12px; font-size: .78rem; color: var(--muted);
-  text-align: center; border-bottom: 1px solid rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
+.world-map-hint-text { flex: 1 1 auto; text-align: center; }
+.world-map-zoom { display: inline-flex; gap: 6px; flex: 0 0 auto; }
+.world-map-zoom button {
+  width: 30px; height: 30px; border-radius: 9px; cursor: pointer;
+  background: rgba(255,255,255,.06); color: var(--gold);
+  border: 1px solid rgba(255,255,255,.14); font-size: 15px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+.world-map-zoom button:hover { background: rgba(240,193,75,.16); border-color: var(--gold); }
+.world-map .wm-bg { pointer-events: none; }
+.world-map .wm-terrain { fill: url(#wm-sky); }
+.world-map .wm-blob { opacity: .55; }
+.world-map .wm-blob-town { fill: rgba(150,120,60,.30); }
+.world-map .wm-blob-field { fill: rgba(120,145,60,.24); }
+.world-map .wm-blob-forest { fill: rgba(38,82,55,.46); }
+.world-map .wm-blob-water { fill: rgba(46,102,160,.38); }
+.world-map .wm-blob-ruins { fill: rgba(132,120,132,.20); }
+.world-map .wm-blob-cemetery { fill: rgba(96,86,120,.32); }
+.world-map .wm-star { fill: rgba(255,255,255,.45); }
 .world-map {
   display: block; width: 100%; min-width: 560px; height: auto; max-height: 70vh;
   touch-action: manipulation;
@@ -2155,7 +2175,7 @@ textarea { min-height: 96px; resize: vertical; }
             west_bridge:              { x: 380, y: 350, icon: '🌉', name: 'Ponte Oeste' },
             main_gate:                { x: 600, y: 415, icon: '🚪', name: 'Portão Principal' },
             farmlands:                { x: 290, y: 385, icon: '🌾', name: 'Campos' },
-            mill:                     { x: 200, y: 335, icon: '🏚️', name: 'Moinho' },
+            // Moinho/forno: NÃO é nó do mapa — entra pela ação "Visitar Moinho" em Campos.
             // Arredores a oeste (trilha dos fundos / floresta / cemitério)
             outside_back:             { x: 230, y: 480, icon: '🌲', name: 'Trilha dos Fundos' },
             back_forest_trail_north:  { x: 135, y: 430, icon: '🌲', name: 'Trilha Norte' },
@@ -2207,25 +2227,29 @@ textarea { min-height: 96px; resize: vertical; }
             return target;
         }
 
-        // Caminhos disponíveis a partir de um local: [{target, fnName, label}]
+        // Caminhos disponíveis a partir de um local: [{target, fnName, label}].
+        // Só conta como caminho se o destino existir no mapa (nós externos).
         function getWalkOptions(locId) {
             const loc = LOCATIONS[locId];
             if (!loc || !Array.isArray(loc.actions)) return [];
             const opts = [];
             loc.actions.forEach(a => {
                 const t = resolveMoveTarget(a.action);
-                if (t && t !== locId) opts.push({ target: t, fnName: a.action, label: a.name });
+                if (t && t !== locId && WORLD_MAP_NODES[t]) opts.push({ target: t, fnName: a.action, label: a.name });
             });
             return opts;
         }
 
-        // Interações locais (não são movimento): falar com NPC, pegar água...
+        // Interações locais (viram botões): falar com NPC, pegar água, ou entrar
+        // em um lugar que não é um nó do mapa (ex.: Moinho, a partir dos Campos).
         function getLocalInteractions(locId) {
             const loc = LOCATIONS[locId];
             if (!loc || !Array.isArray(loc.actions)) return [];
-            return loc.actions.filter(a =>
-                a.action && typeof window[a.action] === 'function' && !resolveMoveTarget(a.action)
-            );
+            return loc.actions.filter(a => {
+                if (!a.action || typeof window[a.action] !== 'function') return false;
+                const t = resolveMoveTarget(a.action);
+                return !t || !WORLD_MAP_NODES[t];
+            });
         }
 
         // Arestas (ligações) do mapa, derivadas das ações de movimento.
@@ -2245,11 +2269,74 @@ textarea { min-height: 96px; resize: vertical; }
             return edges;
         }
 
+        // Céu/terreno de fundo + elementos decorativos (determinísticos).
+        function renderMapAmbience() {
+            const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
+            let out = `<rect class="wm-terrain" x="0" y="0" width="${W}" height="${H}" />`;
+            // Manchas de terreno: campo, floresta, água, vila, ruínas, cemitério.
+            const blobs = [
+                [525, 330, 250, 185, 'town'],
+                [205, 340, 145, 120, 'field'],
+                [120, 470, 190, 210, 'forest'],
+                [885, 300, 205, 230, 'forest'],
+                [125, 640, 125, 95, 'water'],
+                [880, 385, 140, 72, 'water'],
+                [430, 505, 175, 90, 'field'],
+                [975, 260, 120, 95, 'ruins'],
+                [95, 345, 110, 105, 'cemetery'],
+                [805, 470, 150, 95, 'field']
+            ];
+            out += `<g class="wm-blobs" filter="url(#wm-soft)">`;
+            blobs.forEach(([cx, cy, rx, ry, kind]) => {
+                out += `<ellipse class="wm-blob wm-blob-${kind}" cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" />`;
+            });
+            out += `</g>`;
+            // Estrelas / pontos de luz (mesma semente => mesmo mapa sempre).
+            let seed = 20261017;
+            const rnd = () => { seed = (Math.imul(seed, 1103515245) + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+            out += `<g class="wm-stars">`;
+            for (let i = 0; i < 95; i++) {
+                const x = (rnd() * W).toFixed(1), y = (rnd() * H).toFixed(1), r = (rnd() * 1.1 + 0.35).toFixed(2);
+                out += `<circle class="wm-star" cx="${x}" cy="${y}" r="${r}" />`;
+            }
+            out += `</g>`;
+            return out;
+        }
+
+        // viewBox focado no local atual + caminhos diretos (zoom "só o que é perto").
+        function getFocusViewBox(locId) {
+            const here = WORLD_MAP_NODES[locId];
+            if (!here) return { x: 0, y: 0, w: WORLD_MAP_VIEWBOX.w, h: WORLD_MAP_VIEWBOX.h };
+            const pts = [here];
+            getWalkOptions(locId).forEach(w => { const n = WORLD_MAP_NODES[w.target]; if (n) pts.push(n); });
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            pts.forEach(p => {
+                minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+                maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+            });
+            const pad = 115;
+            let x = minX - pad, y = minY - pad;
+            let w = (maxX - minX) + pad * 2, h = (maxY - minY) + pad * 2;
+            // Mínimo para não dar zoom exagerado em locais isolados.
+            const minW = 380, minH = 320;
+            if (w < minW) { x -= (minW - w) / 2; w = minW; }
+            if (h < minH) { y -= (minH - h) / 2; h = minH; }
+            // Prende dentro dos limites do mundo.
+            const W = WORLD_MAP_VIEWBOX.w, H = WORLD_MAP_VIEWBOX.h;
+            if (w >= W) { x = 0; w = W; } else { x = Math.max(0, Math.min(x, W - w)); }
+            if (h >= H) { y = 0; h = H; } else { y = Math.max(0, Math.min(y, H - h)); }
+            return { x, y, w, h };
+        }
+
         function renderWorldMap(locId) {
             const here = WORLD_MAP_NODES[locId];
             if (!here) return '';
+            const walks = getWalkOptions(locId);
             const walkByTarget = {};
-            getWalkOptions(locId).forEach(w => { if (!walkByTarget[w.target]) walkByTarget[w.target] = w; });
+            walks.forEach(w => { if (!walkByTarget[w.target]) walkByTarget[w.target] = w; });
+
+            const focus = getFocusViewBox(locId);
+            const focusAttr = `${focus.x.toFixed(1)} ${focus.y.toFixed(1)} ${focus.w.toFixed(1)} ${focus.h.toFixed(1)}`;
 
             let edgesSvg = '';
             getWorldEdges().forEach(([a, b]) => {
@@ -2278,23 +2365,71 @@ textarea { min-height: 96px; resize: vertical; }
                     + `</g>`;
             });
 
-            const hint = getWalkOptions(locId).length
+            const hint = walks.length
                 ? '🚶 Toque em um local iluminado para caminhar até ele'
                 : '🚶 Daqui não há caminhos — volte por onde veio';
 
             return `
                 <div class="world-map-wrap">
-                    <div class="world-map-hint">${hint}</div>
-                    <svg class="world-map" viewBox="0 0 ${WORLD_MAP_VIEWBOX.w} ${WORLD_MAP_VIEWBOX.h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa do mundo">
+                    <div class="world-map-hint">
+                        <span class="world-map-hint-text">${hint}</span>
+                        <span class="world-map-zoom">
+                            <button type="button" onclick="tbMapZoom(0.8)" title="Aproximar" aria-label="Aproximar">＋</button>
+                            <button type="button" onclick="tbMapZoom(1.25)" title="Afastar" aria-label="Afastar">－</button>
+                            <button type="button" onclick="tbMapRecenter()" title="Centralizar em você" aria-label="Centralizar">🎯</button>
+                        </span>
+                    </div>
+                    <svg class="world-map" data-focus="${focusAttr}" viewBox="${focusAttr}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa ao redor de ${here.name}">
+                        <defs>
+                            <radialGradient id="wm-sky" cx="50%" cy="42%" r="78%">
+                                <stop offset="0%" stop-color="#27214e" />
+                                <stop offset="55%" stop-color="#161232" />
+                                <stop offset="100%" stop-color="#0a0818" />
+                            </radialGradient>
+                            <filter id="wm-soft" x="-30%" y="-30%" width="160%" height="160%">
+                                <feGaussianBlur stdDeviation="22" />
+                            </filter>
+                        </defs>
+                        <g class="wm-bg">${renderMapAmbience()}</g>
                         <g class="wm-edges">${edgesSvg}</g>
                         <g class="wm-nodes">${nodesSvg}</g>
                     </svg>
                     <div class="world-map-legend">
                         <span><i style="background:var(--gold)"></i> Você está aqui</span>
                         <span><i style="background:#8a6d2f"></i> Caminho disponível</span>
-                        <span><i style="background:rgba(255,255,255,.25)"></i> Sem caminho direto</span>
+                        <span><i style="background:rgba(255,255,255,.22)"></i> Ao redor</span>
                     </div>
                 </div>`;
+        }
+
+        function parseFocusAttr(v) {
+            if (!v) return null;
+            const p = v.trim().split(/\s+/).map(Number);
+            if (p.length !== 4 || p.some(n => !isFinite(n))) return null;
+            return { x: p[0], y: p[1], w: p[2], h: p[3] };
+        }
+
+        // Ajusta o zoom (mantém o centro; limita entre ½ e ~1,8× do foco).
+        function tbMapZoom(factor) {
+            const svg = document.querySelector('svg.world-map');
+            if (!svg) return;
+            const vb = svg.viewBox.baseVal;
+            const focus = parseFocusAttr(svg.getAttribute('data-focus'));
+            if (!focus || !vb || !vb.width) return;
+            const minW = focus.w * 0.5;
+            const maxW = Math.min(WORLD_MAP_VIEWBOX.w, focus.w * 1.8);
+            const w = Math.max(minW, Math.min(maxW, vb.width * factor));
+            const h = w * (vb.height / vb.width);
+            const cx = vb.x + vb.width / 2, cy = vb.y + vb.height / 2;
+            svg.setAttribute('viewBox', `${(cx - w / 2).toFixed(1)} ${(cy - h / 2).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+        }
+
+        // Volta o enquadramento para o local atual.
+        function tbMapRecenter() {
+            const svg = document.querySelector('svg.world-map');
+            if (!svg) return;
+            const focus = svg.getAttribute('data-focus');
+            if (focus) svg.setAttribute('viewBox', focus);
         }
 
         // "Caminha" até um local: anima o destino e só então executa o movimento.
