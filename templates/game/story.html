@@ -889,6 +889,71 @@ textarea { min-height: 96px; resize: vertical; }
   color: #fff !important;
 }
 
+/* ===== Mapa do Mundo (navegação entre ruas, trilhas e florestas) ===== */
+.world-map-wrap {
+  margin-top: 14px; border-radius: 16px; overflow-x: auto;
+  background: radial-gradient(120% 120% at 50% 0%, rgba(48,38,86,.55), rgba(8,6,16,.92));
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: inset 0 0 40px rgba(0,0,0,.35);
+}
+.world-map-hint {
+  padding: 8px 12px; font-size: .78rem; color: var(--muted);
+  text-align: center; border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.world-map {
+  display: block; width: 100%; min-width: 560px; height: auto; max-height: 70vh;
+  touch-action: manipulation;
+}
+.world-map .wm-edge { stroke: rgba(240,193,75,.16); stroke-width: 5; stroke-linecap: round; }
+.world-map .wm-edge.active {
+  stroke: rgba(240,193,75,.6); stroke-width: 6;
+  stroke-dasharray: 12 10; animation: wm-dash 1.6s linear infinite;
+}
+.world-map .wm-node { cursor: default; }
+.world-map .wm-node .wm-disc {
+  fill: rgba(18,14,32,.96); stroke: rgba(255,255,255,.18); stroke-width: 2; transition: .15s;
+}
+.world-map .wm-node .wm-emoji {
+  font-size: 20px; text-anchor: middle; dominant-baseline: central; pointer-events: none;
+}
+.world-map .wm-node .wm-name {
+  font-size: 12px; text-anchor: middle; fill: #c8bfd8; pointer-events: none;
+}
+.world-map .wm-node.dim { opacity: .38; }
+.world-map .wm-node.indoor .wm-disc { stroke-dasharray: 2 3; }
+.world-map .wm-node.reachable { cursor: pointer; }
+.world-map .wm-node.reachable .wm-disc { stroke: var(--gold); fill: rgba(60,44,20,.96); }
+.world-map .wm-node.reachable .wm-name { fill: var(--gold); font-weight: 700; }
+.world-map .wm-node.reachable:hover .wm-disc,
+.world-map .wm-node.reachable:focus-visible .wm-disc {
+  filter: drop-shadow(0 0 8px rgba(240,193,75,.85));
+}
+.world-map .wm-node.current .wm-disc { fill: var(--gold); stroke: #fff; }
+.world-map .wm-node.current .wm-name { fill: #fff; font-weight: 800; }
+.world-map .wm-node.current .wm-ring {
+  fill: none; stroke: var(--gold); stroke-width: 2; opacity: .8;
+  transform-box: fill-box; transform-origin: center;
+  animation: wm-pulse 1.8s ease-out infinite;
+}
+.world-map .wm-node.walking .wm-disc { animation: wm-step .26s ease-in-out; }
+@keyframes wm-pulse {
+  0%   { transform: scale(.8);  opacity: .8; }
+  70%  { transform: scale(1.7); opacity: 0; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@keyframes wm-step {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+@keyframes wm-dash { to { stroke-dashoffset: -44; } }
+.world-map-legend {
+  display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
+  padding: 8px 12px; font-size: .72rem; color: var(--muted);
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+.world-map-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.world-map-legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
 /* Equipment paper-doll style */
 #game-ui .equipment-panel { overflow-y: auto !important; }
 #game-ui .equipment-slots { flex: 0 0 auto !important; display: flex; flex-direction: column; gap: 8px; }
@@ -2067,6 +2132,198 @@ textarea { min-height: 96px; resize: vertical; }
                 ]
             }
         };
+
+        // ===== Mapa do Mundo =====
+        // Posições de cada local no mapa (viewBox 0 0 1040 740) + ícone e rótulo.
+        // As *ligações* (caminhos) NÃO ficam aqui: são derivadas automaticamente
+        // das ações de movimento de cada local (funções que chamam go('...')),
+        // então o mapa nunca mostra um caminho que não existe de verdade.
+        const WORLD_MAP_VIEWBOX = { w: 1040, h: 740 };
+        const WORLD_MAP_NODES = {
+            // Reino da Aurora
+            throne_room:              { x: 660, y: 110, icon: '👑', name: 'Sala do Trono' },
+            great_hall:               { x: 660, y: 175, icon: '🚪', name: 'Salão Principal' },
+            library:                  { x: 520, y: 165, icon: '📚', name: 'Biblioteca' },
+            castle_gate:              { x: 660, y: 245, icon: '🏰', name: 'Pátio do Castelo' },
+            market:                   { x: 720, y: 265, icon: '🍖', name: 'Mercado' },
+            main_square:              { x: 560, y: 300, icon: '🏛️', name: 'Praça Principal' },
+            tavern:                   { x: 720, y: 340, icon: '🍺', name: 'Taberna' },
+            main_avenue:              { x: 480, y: 320, icon: '🛤️', name: 'Avenida Principal' },
+            north_village:            { x: 480, y: 235, icon: '🏘️', name: 'Vilarejo Norte' },
+            home:                     { x: 370, y: 190, icon: '🏠', name: 'Sua Casa' },
+            south_village:            { x: 480, y: 420, icon: '🏘️', name: 'Vilarejo Sul' },
+            west_bridge:              { x: 380, y: 350, icon: '🌉', name: 'Ponte Oeste' },
+            main_gate:                { x: 600, y: 415, icon: '🚪', name: 'Portão Principal' },
+            farmlands:                { x: 290, y: 385, icon: '🌾', name: 'Campos' },
+            mill:                     { x: 200, y: 335, icon: '🏚️', name: 'Moinho' },
+            // Arredores a oeste (trilha dos fundos / floresta / cemitério)
+            outside_back:             { x: 230, y: 480, icon: '🌲', name: 'Trilha dos Fundos' },
+            back_forest_trail_north:  { x: 135, y: 430, icon: '🌲', name: 'Trilha Norte' },
+            back_forest_trail_south:  { x: 135, y: 555, icon: '🌿', name: 'Trilha Sul' },
+            abandoned_cemetery_gate:  { x: 95,  y: 385, icon: '🪦', name: 'Portão do Cemitério' },
+            abandoned_cemetery:       { x: 95,  y: 315, icon: '⚰️', name: 'Cemitério' },
+            sacred_lake:              { x: 120, y: 615, icon: '💧', name: 'Lago Sagrado' },
+            sacred_lake_interior:     { x: 120, y: 690, icon: '🌊', name: 'Dentro do Lago' },
+            // Arredores a leste (planície / trilha do rio / ruínas)
+            outside:                  { x: 720, y: 480, icon: '🌅', name: 'Planície da Aurora' },
+            north_trail_start:        { x: 800, y: 435, icon: '🚶', name: 'Início da Trilha' },
+            north_trail_middle:       { x: 800, y: 350, icon: '🌉', name: 'Margem do Rio' },
+            river_bank:               { x: 890, y: 380, icon: '🏞️', name: 'Borda do Rio' },
+            swim_in_river:            { x: 975, y: 420, icon: '🏊', name: 'No Rio' },
+            across_bridge:            { x: 890, y: 300, icon: '🌉', name: 'Além da Ponte' },
+            ancient_ruins:            { x: 975, y: 255, icon: '🏛️', name: 'Ruínas Antigas' },
+            east_ruins_path:          { x: 990, y: 355, icon: '🥾', name: 'Caminho Leste' },
+            north_forest_edge:        { x: 890, y: 215, icon: '🌲', name: 'Beira da Floresta' },
+            dark_forest:              { x: 980, y: 160, icon: '🌑', name: 'Floresta Sombria' },
+            // Sul
+            south_trade_route:        { x: 600, y: 545, icon: '🛤️', name: 'Estrada Sul' },
+            south_villages:           { x: 650, y: 630, icon: '🏘️', name: 'Aldeias do Sul' },
+            east_plains:              { x: 850, y: 520, icon: '🌾', name: 'Planície Leste' }
+        };
+        // Locais internos (casa, taberna, moinho...): mantêm a tela de botões.
+        // Todos os demais (ruas, avenidas, florestas, trilhas) usam o mapa.
+        const INDOOR_LOCATIONS = new Set([
+            'home', 'market', 'tavern', 'library', 'great_hall',
+            'throne_room', 'mill', 'sacred_lake_interior', 'swim_in_river'
+        ]);
+
+        function isOutdoorLocation(locId) {
+            return !!WORLD_MAP_NODES[locId] && !INDOOR_LOCATIONS.has(locId);
+        }
+
+        // Resolve para onde uma ação leva, se ela for de movimento (chama go()).
+        const _moveTargetCache = {};
+        function resolveMoveTarget(fnName) {
+            if (!fnName) return null;
+            if (fnName in _moveTargetCache) return _moveTargetCache[fnName];
+            let target = null;
+            const fn = window[fnName];
+            if (typeof fn === 'function') {
+                const src = Function.prototype.toString.call(fn);
+                const m = src.match(/\bgo\(\s*['"]([^'"]+)['"]/);
+                if (m && LOCATIONS[m[1]]) target = m[1];
+            }
+            _moveTargetCache[fnName] = target;
+            return target;
+        }
+
+        // Caminhos disponíveis a partir de um local: [{target, fnName, label}]
+        function getWalkOptions(locId) {
+            const loc = LOCATIONS[locId];
+            if (!loc || !Array.isArray(loc.actions)) return [];
+            const opts = [];
+            loc.actions.forEach(a => {
+                const t = resolveMoveTarget(a.action);
+                if (t && t !== locId) opts.push({ target: t, fnName: a.action, label: a.name });
+            });
+            return opts;
+        }
+
+        // Interações locais (não são movimento): falar com NPC, pegar água...
+        function getLocalInteractions(locId) {
+            const loc = LOCATIONS[locId];
+            if (!loc || !Array.isArray(loc.actions)) return [];
+            return loc.actions.filter(a =>
+                a.action && typeof window[a.action] === 'function' && !resolveMoveTarget(a.action)
+            );
+        }
+
+        // Arestas (ligações) do mapa, derivadas das ações de movimento.
+        function getWorldEdges() {
+            const seen = {};
+            const edges = [];
+            Object.keys(LOCATIONS).forEach(locId => {
+                if (!WORLD_MAP_NODES[locId]) return;
+                getWalkOptions(locId).forEach(o => {
+                    if (!WORLD_MAP_NODES[o.target]) return;
+                    const key = [locId, o.target].sort().join('~');
+                    if (seen[key]) return;
+                    seen[key] = true;
+                    edges.push([locId, o.target]);
+                });
+            });
+            return edges;
+        }
+
+        function renderWorldMap(locId) {
+            const here = WORLD_MAP_NODES[locId];
+            if (!here) return '';
+            const walkByTarget = {};
+            getWalkOptions(locId).forEach(w => { if (!walkByTarget[w.target]) walkByTarget[w.target] = w; });
+
+            let edgesSvg = '';
+            getWorldEdges().forEach(([a, b]) => {
+                const A = WORLD_MAP_NODES[a], B = WORLD_MAP_NODES[b];
+                if (!A || !B) return;
+                const active = (a === locId || b === locId) ? ' active' : '';
+                edgesSvg += `<line class="wm-edge${active}" x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" />`;
+            });
+
+            let nodesSvg = '';
+            Object.keys(WORLD_MAP_NODES).forEach(id => {
+                const n = WORLD_MAP_NODES[id];
+                const isCurrent = id === locId;
+                const walk = walkByTarget[id];
+                const cls = isCurrent
+                    ? 'current'
+                    : (walk ? 'reachable' : 'dim') + (INDOOR_LOCATIONS.has(id) ? ' indoor' : '');
+                const handle = walk
+                    ? ` onclick="tbWalkTo('${walk.fnName}', '${id}')" role="button" tabindex="0"`
+                    : '';
+                nodesSvg += `<g class="wm-node ${cls}" data-id="${id}"${handle}>`
+                    + (isCurrent ? `<circle class="wm-ring" cx="${n.x}" cy="${n.y}" r="24" />` : '')
+                    + `<circle class="wm-disc" cx="${n.x}" cy="${n.y}" r="20" />`
+                    + `<text class="wm-emoji" x="${n.x}" y="${n.y + 1}">${n.icon}</text>`
+                    + `<text class="wm-name" x="${n.x}" y="${n.y + 34}">${n.name}</text>`
+                    + `</g>`;
+            });
+
+            const hint = getWalkOptions(locId).length
+                ? '🚶 Toque em um local iluminado para caminhar até ele'
+                : '🚶 Daqui não há caminhos — volte por onde veio';
+
+            return `
+                <div class="world-map-wrap">
+                    <div class="world-map-hint">${hint}</div>
+                    <svg class="world-map" viewBox="0 0 ${WORLD_MAP_VIEWBOX.w} ${WORLD_MAP_VIEWBOX.h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Mapa do mundo">
+                        <g class="wm-edges">${edgesSvg}</g>
+                        <g class="wm-nodes">${nodesSvg}</g>
+                    </svg>
+                    <div class="world-map-legend">
+                        <span><i style="background:var(--gold)"></i> Você está aqui</span>
+                        <span><i style="background:#8a6d2f"></i> Caminho disponível</span>
+                        <span><i style="background:rgba(255,255,255,.25)"></i> Sem caminho direto</span>
+                    </div>
+                </div>`;
+        }
+
+        // "Caminha" até um local: anima o destino e só então executa o movimento.
+        function tbWalkTo(fnName, targetId) {
+            if (gameState.isDead || gameState.currentEnemy || gameState.isSleeping) return;
+            const fn = window[fnName];
+            if (typeof fn !== 'function') return;
+            const node = document.querySelector(`svg.world-map .wm-node[data-id="${targetId}"]`);
+            if (node) node.classList.add('walking');
+            window.setTimeout(() => {
+                try { fn(); } catch (e) { console.error(e); }
+            }, 260);
+        }
+
+        // Bloco de estações de trabalho montadas no local atual.
+        function renderPlacedStations(locId) {
+            const placed = gameState.placedStations && gameState.placedStations[locId];
+            if (!placed) return '';
+            const entries = Object.entries(placed);
+            if (entries.length === 0) return '';
+            let out = `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
+                <h4 style="color: #ffd700; margin-bottom: 10px;">🔧 Estações Montadas:</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+            entries.forEach(([stationId, station]) => {
+                out += `<button class="action-btn" onclick="openStation('${stationId}')" style="background: #9370db; flex: 0 1 auto;">🔨 ${station.name}</button>`;
+            });
+            out += `</div></div>`;
+            return out;
+        }
 
         const ITEMS = {
             // Weapons
@@ -3268,23 +3525,34 @@ textarea { min-height: 96px; resize: vertical; }
                         }
                     });
                 }, 100);
+            } else if (isOutdoorLocation(gameState.location)) {
+                // Locais externos (ruas, avenidas, florestas, trilhas...): a
+                // navegação é feita pelo mapa do mundo. Abaixo dele ficam apenas
+                // as interações locais (falar com NPC, pegar água, explorar...).
+                html += renderWorldMap(gameState.location);
+
+                const interactions = getLocalInteractions(gameState.location);
+                if (interactions.length > 0) {
+                    html += `<div class="action-buttons">`;
+                    interactions.forEach(action => {
+                        html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
+                    });
+                    html += `</div>`;
+                }
+
+                if (location.allowsStations) {
+                    html += renderPlacedStations(gameState.location);
+                }
             } else {
                 html += `<div class="action-buttons">`;
                 location.actions.forEach(action => {
+                    if (!action.action) return;
                     html += `<button class="action-btn" onclick="${action.action}()" ${gameState.isDead ? 'disabled' : ''}>${action.name}</button>`;
                 });
                 html += `</div>`;
-                
-                if (location.allowsStations && gameState.placedStations[gameState.location] && Object.keys(gameState.placedStations[gameState.location]).length > 0) {
-                    html += `<div style="margin-top: 15px; border-top: 1px solid #ffd700; padding-top: 15px;">
-                        <h4 style="color: #ffd700; margin-bottom: 10px;">🔧 Estações Montadas:</h4>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
-                    
-                    for (const [stationId, station] of Object.entries(gameState.placedStations[gameState.location])) {
-                        html += `<button class="action-btn" onclick="openStation('${stationId}')" style="background: #9370db; flex: 0 1 auto;">🔨 ${station.name}</button>`;
-                    }
-                    
-                    html += `</div></div>`;
+
+                if (location.allowsStations) {
+                    html += renderPlacedStations(gameState.location);
                 }
             }
             
