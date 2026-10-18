@@ -514,27 +514,33 @@ function mineClimbOut() {
 /* ------------------------------------------------------------------ */
 /*  CORTE DE LENHA (minigame)                                          */
 /* ------------------------------------------------------------------ */
-const TB_CHOP_ZONE = { pedra: 16, ferro: 20, maos: 22 };
+const TB_CHOP_ZONE = { pedra: 16, ferro: 20 };
 
 function tbChopTree() {
     if (gameState.isDead) return;
     const tool = tbFindTool('axe');
-    const power = tool ? (tool.item.chopPower || 1) : 1;
-    const zoneWidth = tool ? (power >= 2 ? TB_CHOP_ZONE.ferro : TB_CHOP_ZONE.pedra) : TB_CHOP_ZONE.maos;
+    if (!tool) {
+        addLog('🪓 Cortar árvore exige um machado. Compre de Bruno na Forja ou crafte um na bancada.');
+        return;
+    }
+    const power = tool.item.chopPower || 1;
+    const zoneWidth = power >= 2 ? TB_CHOP_ZONE.ferro : TB_CHOP_ZONE.pedra;
 
     tbMinigame({
         title: '🪓 Cortando lenha',
-        subtitle: tool ? 'Ritmo firme! Pare o marcador na faixa verde.' : 'Sem machado você só consegue lascar gravetos — acerte o ritmo.',
-        speed: tool ? 0.75 : 1.0,
+        subtitle: 'Ritmo firme! Pare o marcador na faixa verde.',
+        speed: 0.75,
         zoneWidth: zoneWidth
     }).then(res => {
         if (gameState.isDead) return;
-        if (typeof SV_spend === 'function') SV_spend(1.6, 1.4);
-        if (tool) tbDamageTool(tool, 1);
+        // Cortar lenha cansa: gasta fome, sede e mana.
+        if (typeof SV_spend === 'function') SV_spend(2.2, 2.0);
+        if (typeof SV_spendMana === 'function') SV_spendMana(1.5);
+        tbDamageTool(tool, 1);
 
         if (res.success) {
             let qtd = 1 + (res.precision > 0.8 ? 1 : 0);
-            if (tool && power >= 2) qtd += 1;
+            if (power >= 2) qtd += 1;
             addItemToInventory('wood', qtd);
             addLog(`🪓 Você derruba o tronco e junta ${qtd}x Madeira.` + (res.precision > 0.85 ? ' Golpe perfeito!' : ''));
         } else {
