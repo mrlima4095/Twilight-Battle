@@ -67,6 +67,8 @@ const SV_NUTRITION = {
     wine: { hunger: 8, thirst: 22 },
     coffee: { thirst: 32 },
     water_bottle: { thirst: 45 },
+    copo_agua: { thirst: 32 },
+    taca_agua: { thirst: 38 },
 };
 
 const SV_LEVELS = [

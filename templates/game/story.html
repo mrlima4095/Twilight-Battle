@@ -1121,6 +1121,10 @@ textarea { min-height: 96px; resize: vertical; }
   color: var(--muted); font-size: .78rem; line-height: 1.55;
 }
 .equip-summary strong { color: var(--text); }
+.inv-capacity {
+  text-align: center; margin: 6px 0 0; font-size: .72rem; color: var(--muted);
+}
+.inv-capacity strong { color: var(--gold); }
 .food-section-title {
   color: var(--gold); margin: 16px 0 10px; font-family: var(--font-display);
   font-size: .95rem; text-align: center;
@@ -1744,7 +1748,14 @@ textarea { min-height: 96px; resize: vertical; }
                             <span class="item-name" id="offhand-item">Vazio</span>
                         </div>
                     </div>
+                    <div class="equipment-row">
+                        <div class="equipment-slot" id="slot-backpack" onclick="equipItem('backpack')" title="Clique para tirar a mochila">
+                            <span class="slot-label">🎒 Mochila</span>
+                            <span class="item-name" id="backpack-item">Vazio</span>
+                        </div>
+                    </div>
                 </div>
+                <p class="inv-capacity">Espaços: <strong id="inv-capacity">18</strong></p>
                 <h4 class="food-section-title">🍖 Comidas</h4>
                 <div class="inventory-grid" id="food-grid"></div>
                 <div class="equip-summary">
@@ -1767,7 +1778,7 @@ textarea { min-height: 96px; resize: vertical; }
             location: 'home',
             inventory: Array(18).fill(null),
             chest: Array(18).fill(null),
-            equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null },
+            equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null, backpack: null },
             combatLog: [],
             currentEnemy: null,
             combatPanelOpen: null,
@@ -2049,9 +2060,9 @@ textarea { min-height: 96px; resize: vertical; }
                 name: 'Taberna da Aurora',
                 description: 'Um lugar aconchegante com música ao vivo e as melhores bebidas do reino.',
                 actions: [
-                    { name: '🍺 Cerveja (5💰)', action: 'buyBeer' },
-                    { name: '🍷 Vinho Tinto (15💰)', action: 'buyWine' },
-                    { name: '☕ Café Quente (8💰)', action: 'buyCoffee' },
+                    { name: '🍺 Cerveja (5💰 · 4💰 com copo)', action: 'buyBeer' },
+                    { name: '🍷 Vinho Tinto (15💰 · 14💰 com taça)', action: 'buyWine' },
+                    { name: '☕ Café Quente (8💰 · 7💰 com copo)', action: 'buyCoffee' },
                     { name: '💧 Garrafa d\'Água (3💰)', action: 'buyWaterBottle' },
                     { name: '🗣️ Ouvir Histórias', action: 'listenStories' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
@@ -3275,8 +3286,11 @@ textarea { min-height: 96px; resize: vertical; }
             paper: { name: 'Papel', type: 'material', consumable: true, description: 'Folhas de papel em branco.' },
             leather: { name: 'Couro', type: 'material', consumable: true, description: 'Couro de alta qualidade.' },
             book: { name: 'Livro', type: 'book', consumable: false, description: 'Um livro para escrever suas histórias.', title: 'Livro', content: '', signed: false, signer: null, root: false },
-            wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true },
-            iron_ore: { name: 'Minério de Ferro', type: 'material', consumable: true, description: 'Rocha bruta com veios de ferro. Pode ser fundida em uma fornalha.' },
+            wood: { name: 'Madeira', type: 'material', description: 'Madeira comum.', consumable: true, value: 2 },
+            stone: { name: 'Pedra', type: 'material', description: 'Fragmento de rocha dura, útil para ferramentas rústicas.', consumable: true, value: 1 },
+            coal: { name: 'Carvão', type: 'material', description: 'Carvão mineral extraído da mina. Ótimo combustível.', consumable: true, value: 5 },
+            iron_ore: { name: 'Minério de Ferro', type: 'material', consumable: true, description: 'Rocha bruta com veios de ferro. Pode ser fundida em uma fornalha.', value: 8 },
+            iron_ingot: { name: 'Lingote de Ferro', type: 'material', consumable: true, description: 'Ferro refinado na fornalha, pronto para forjar ferramentas.', value: 22 },
             wool: { name: 'Lã', type: 'material', consumable: true, description: 'Lã retirada das ovelhas.' },
             string: { name: 'Linha', type: 'material', consumable: true, description: 'Linha para cozer.' },
             cloth: { name: 'Tecido', type: 'material', consumable: true, description: 'Tecido fino para confecção' },
@@ -3287,6 +3301,14 @@ textarea { min-height: 96px; resize: vertical; }
             wooden_scissors: { name: 'Tesoura de Madeira', type: 'tool', slot: 'mainhand', attack: 5, defense: 0, durability: 30, maxDurability: 30, description: 'Tesoura rústica de madeira, útil para cortar tecidos e ervas.' },
             wooden_spoon: { name: 'Colher de Madeira', type: 'tool', slot: 'mainhand', attack: 3, defense: 0, durability: 40, maxDurability: 40, description: 'Colher de madeira para cozinhar e servir alimentos.' },
             wooden_fork: { name: 'Garfo de Madeira', type: 'tool', slot: 'mainhand', attack: 4, defense: 0, durability: 35, maxDurability: 35, description: 'Garfo rústico de madeira, ideal para refeições camponesas.' },
+
+            // Ferramentas de coleta (picaretas e machados). Cada golpe gasta durabilidade.
+            picareta_pedra: { name: 'Picareta de Pedra', type: 'tool', slot: 'mainhand', toolType: 'pickaxe', minePower: 1, attack: 6, defense: 0, durability: 40, maxDurability: 40, value: 12, description: 'Picareta rústica de pedra. Permite minerar veios na mina.' },
+            picareta_ferro: { name: 'Picareta de Ferro', type: 'tool', slot: 'mainhand', toolType: 'pickaxe', minePower: 2, attack: 9, defense: 0, durability: 110, maxDurability: 110, value: 48, description: 'Picareta afiada de ferro. minera mais rápido e rende mais.' },
+            machado_pedra: { name: 'Machado de Pedra', type: 'tool', slot: 'mainhand', toolType: 'axe', chopPower: 1, attack: 7, defense: 0, durability: 45, maxDurability: 45, value: 12, description: 'Machado rústico de pedra. Derruba árvores com mais eficiência.' },
+            machado_ferro: { name: 'Machado de Ferro', type: 'tool', slot: 'mainhand', toolType: 'axe', chopPower: 2, attack: 10, defense: 0, durability: 120, maxDurability: 120, value: 48, description: 'Machado afiado de ferro. Derruba árvores rapidamente.' },
+            tocha: { name: 'Tocha', type: 'material', consumable: true, value: 3, description: 'Uma tocha acesa. Ilumina as profundezas escuras da mina — cada passo na mina consome um pouco do seu fogo.' },
+
 
             map: { name: 'Mapa', description: 'Mapa', useEffect: 'openMap' },
 
@@ -3309,9 +3331,16 @@ textarea { min-height: 96px; resize: vertical; }
 
             bottle: { name: 'Garrafa', type: 'tool', consumable: true, description: 'Uma garrafa de vidro vazia.' },
             water_bottle: {  name: 'Garrafa d\'Água', type: 'drink', heal: 5, mana: 5, description: 'Garrafa com água pura. Refrescante e hidratante.', consumable: true, givesEmptyBottle: true },
-            // Sobras das bebidas da taverna: podem ser descartadas (clique ou lixeira).
-            copo_vazio: { name: 'Copo Vazio', type: 'junk', description: 'Um copo de vidro vazio. Clique nele (ou arraste para a lixeira) para descartar.' },
-            taca_vazia: { name: 'Taça Vazia', type: 'junk', description: 'Uma taça de vidro vazia. Clique nela (ou arraste para a lixeira) para descartar.' },
+            // Sobras das bebidas da taverna: NÃO se descartam por clique.
+            // Podem ser enchidas em poços/fontes de água (ou jogadas na lixeira).
+            copo_vazio: { name: 'Copo Vazio', type: 'container', fillsTo: 'copo_agua', consumable: false, value: 2, description: 'Um copo de vidro vazio. Clique perto de água (poço, rio, lago, fonte) para enchê-lo. Na taberna, comprar cerveja/café com ele em mãos dá desconto.' },
+            taca_vazia: { name: 'Taça Vazia', type: 'container', fillsTo: 'taca_agua', consumable: false, value: 3, description: 'Uma taça de vidro vazio. Clique perto de água (poço, rio, lago, fonte) para enchê-la. Na taberna, comprar vinho com ela em mãos dá desconto.' },
+            copo_agua: { name: 'Copo com Água', type: 'drink', heal: 4, mana: 2, value: 1, description: 'Água fresca num copo. Mata a sede.', consumable: true, givesEmptyCup: 'copo_vazio' },
+            taca_agua: { name: 'Taça com Água', type: 'drink', heal: 6, mana: 3, value: 1, description: 'Água fresca numa taça. Mata a sede.', consumable: true, givesEmptyCup: 'taca_vazia' },
+
+            // Mochilas: equipáveis no slot 🎒 e somam espaço ao inventário.
+            mochila: { name: 'Mochila de Couro', type: 'backpack', slot: 'backpack', capacity: 9, consumable: false, value: 20, description: 'Uma mochila simples de couro. Equipe-a (clique) para ganhar +9 espaços de inventário.' },
+            mochila_grande: { name: 'Mochila de Aventureiro', type: 'backpack', slot: 'backpack', capacity: 18, consumable: false, value: 55, description: 'Uma mochila reforçada de aventureiro. Equipe-a (clique) para ganhar +18 espaços de inventário.' },
 
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
             sleeping_bag: { 
@@ -3478,6 +3507,71 @@ textarea { min-height: 96px; resize: vertical; }
                 returnsBottle: true,
                 requires_learn: true,
                 learnFrom: 'cookbook'
+            },
+
+            // ===== Ferramentas de coleta e mochilas (craftáveis na bancada) =====
+            tocha: {
+                name: '🔥 4x Tocha',
+                description: 'Uma tocha de madeira e carvão para iluminar a mina.',
+                materials: [ { id: 'wood', quantity: 1 }, { id: 'coal', quantity: 1 } ],
+                result: 'tocha',
+                quantity: 4,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            picareta_pedra: {
+                name: '⛏️ Picareta de Pedra',
+                description: 'Ferramenta rústica para minerar veios na mina.',
+                materials: [ { id: 'wood', quantity: 3 }, { id: 'stone', quantity: 3 } ],
+                result: 'picareta_pedra',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            machado_pedra: {
+                name: '🪓 Machado de Pedra',
+                description: 'Machado rústico para derrubar árvores.',
+                materials: [ { id: 'wood', quantity: 3 }, { id: 'stone', quantity: 2 } ],
+                result: 'machado_pedra',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            picareta_ferro: {
+                name: '⛏️ Picareta de Ferro',
+                description: 'Picareta firme que rende mais minério por veio.',
+                materials: [ { id: 'wood', quantity: 2 }, { id: 'iron_ingot', quantity: 3 } ],
+                result: 'picareta_ferro',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            machado_ferro: {
+                name: '🪓 Machado de Ferro',
+                description: 'Machado afiado que derruba árvores rapidamente.',
+                materials: [ { id: 'wood', quantity: 2 }, { id: 'iron_ingot', quantity: 3 } ],
+                result: 'machado_ferro',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            mochila: {
+                name: '🎒 Mochila de Couro',
+                description: 'Costure couro e linha para ampliar sua carga em +9 espaços.',
+                materials: [ { id: 'leather', quantity: 4 }, { id: 'string', quantity: 8 } ],
+                result: 'mochila',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
+            },
+            mochila_grande: {
+                name: '🎒 Mochila de Aventureiro',
+                description: 'Uma mochila reforçada que amplia sua carga em +18 espaços.',
+                materials: [ { id: 'leather', quantity: 8 }, { id: 'cloth', quantity: 4 }, { id: 'string', quantity: 12 } ],
+                result: 'mochila_grande',
+                quantity: 1,
+                station: 'crafting_table',
+                requires_learn: false
             }
         };
         const FURNACE_RECIPES = {
@@ -3501,6 +3595,13 @@ textarea { min-height: 96px; resize: vertical; }
                 cookTime: 3,
                 resultName: 'Pão',
                 resultDescription: 'Pãozinho gostoso.'
+            },
+            iron_ore: {
+                input: 'iron_ore',
+                result: 'iron_ingot',
+                cookTime: 6,
+                resultName: 'Lingote de Ferro',
+                resultDescription: 'Ferro refinado, pronto para forjar ferramentas.'
             }
         };
         
@@ -3589,8 +3690,15 @@ textarea { min-height: 96px; resize: vertical; }
                     { name: '🛡️ Armaduras', message: 'Faço escudos e peitorais para a guarda do reino. Ferro bom é ferro batido muitas vezes.' },
                     { name: '🪵 Combustível', message: 'A forja devora madeira o dia inteiro. Se trouxer lenha, eu agradeço!' }
                 ],
-                shopItems: null,
-                canSellToNPC: false,
+                shopItems: [
+                    { id: 'crafting_table', price: 25 },
+                    { id: 'picareta_pedra', price: 15 },
+                    { id: 'machado_pedra', price: 15 },
+                    { id: 'picareta_ferro', price: 60 },
+                    { id: 'machado_ferro', price: 60 },
+                    { id: 'tocha', price: 2 }
+                ],
+                canSellToNPC: true,
                 dayBehavior: { homeChance: 0.85, alwaysAwake: true },
                 nightBehavior: { homeChance: 0.9, sleepChance: 0.5 },
                 baseState: { isHome: true, isSleeping: false, lastUpdate: null }
@@ -3808,7 +3916,9 @@ textarea { min-height: 96px; resize: vertical; }
                     { id: 'cloth', price: 10 },
                     { id: 'string', price: 4 },
                     { id: 'wool', price: 5 },
-                    { id: 'leather', price: 8 }
+                    { id: 'leather', price: 8 },
+                    { id: 'mochila', price: 30 },
+                    { id: 'mochila_grande', price: 95 }
                 ],
                 canSellToNPC: true,
                 dayBehavior: { homeChance: 0.9, alwaysAwake: true },
@@ -4810,10 +4920,12 @@ textarea { min-height: 96px; resize: vertical; }
             if (content.querySelector('.world-map')) tbInitWorldMap();
         }
         function updateInventoryGrid() {
+            if (typeof tbEnsureInventorySize === 'function') tbEnsureInventorySize();
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
 
-            for (let i = 0; i < 18; i++) {
+            const total = tbInventoryCapacity();
+            for (let i = 0; i < total; i++) {
                 const item = gameState.inventory[i], slot = document.createElement('div');
                 slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
                 slot.setAttribute('data-index', i);
@@ -4895,7 +5007,9 @@ textarea { min-height: 96px; resize: vertical; }
             for (let slot in gameState.equipment) {
                 const item = gameState.equipment[slot];
                 const displayElement = document.getElementById(`${slot}-item`);
-                
+                const element = document.getElementById(`slot-${slot}`);
+                if (!displayElement || !element) continue;
+
                 if (item) {
                     if (item.durability !== undefined) {
                         const durabilityPercent = (item.durability / item.maxDurability) * 100;
@@ -4911,12 +5025,17 @@ textarea { min-height: 96px; resize: vertical; }
                     displayElement.textContent = 'Vazio';
                 }
                 
-                const element = document.getElementById(`slot-${slot}`);
                 element.className = `equipment-slot ${item ? 'has-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
                 
                 // Adicionar tooltip com informações de durabilidade
                 if (item && item.durability !== undefined) { element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`; } 
                 else if (item) { element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`; }
+            }
+
+            const capEl = document.getElementById('inv-capacity');
+            if (capEl) {
+                const bp = tbBackpackItem();
+                capEl.textContent = tbInventoryCapacity() + (bp ? ` (base 18 + ${bp.capacity} da mochila)` : '');
             }
         }
         // ** Calculate Bonuses
@@ -4978,7 +5097,7 @@ textarea { min-height: 96px; resize: vertical; }
             
             gameState.inventory = Array(18).fill(null);
             gameState.chest = Array(18).fill(null);
-            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null };
+            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null, backpack: null };
             gameState.character = {
                 name: name,
                 race: gameState.selectedRace,
@@ -5525,6 +5644,138 @@ textarea { min-height: 96px; resize: vertical; }
         // a menos que o item defina seu próprio "maxStack".
         const TB_MAX_STACK = 64;
 
+        // ========== MOCHILAS / TAMANHO DO INVENTÁRIO ==========
+        // O inventário começa com 18 espaços; uma mochila equipada no slot 🎒
+        // soma +9 (ou +18) espaços, até um teto de segurança.
+        const TB_BASE_INVENTORY = 18;
+        const TB_MAX_INVENTORY = 72;
+
+        function tbBackpackItem() {
+            return (gameState && gameState.equipment && gameState.equipment.backpack) || null;
+        }
+        // Capacidade atual de espaços do inventário.
+        function tbInventoryCapacity() {
+            const bp = tbBackpackItem();
+            const bonus = (bp && bp.capacity) || 0;
+            return Math.min(TB_MAX_INVENTORY, TB_BASE_INVENTORY + bonus);
+        }
+        // Ajusta o array do inventário à capacidade atual. Se estiver encolhendo
+        // e houver itens nos espaços que vão sumir, tenta movê-los para espaços
+        // livres; se não couberem, retorna false (nada é alterado).
+        function tbEnsureInventorySize() {
+            if (!gameState || !Array.isArray(gameState.inventory)) return false;
+            const cap = tbInventoryCapacity();
+            const inv = gameState.inventory;
+
+            if (inv.length > cap) {
+                // Itens além da nova capacidade precisam de um novo lar.
+                const excedentes = [];
+                for (let i = cap; i < inv.length; i++) {
+                    if (inv[i]) excedentes.push(inv[i]);
+                }
+                if (excedentes.length > 0) {
+                    let livres = 0;
+                    for (let j = 0; j < cap; j++) if (!inv[j]) livres++;
+                    if (livres < excedentes.length) return false;
+                    let k = 0;
+                    for (let i = cap; i < inv.length; i++) {
+                        if (inv[i]) inv[i] = null;
+                    }
+                    for (let j = 0; j < cap && k < excedentes.length; j++) {
+                        if (!inv[j]) inv[j] = excedentes[k++];
+                    }
+                }
+                inv.length = cap;
+            }
+            while (inv.length < cap) inv.push(null);
+            return true;
+        }
+
+        // Equipa uma mochila do slot `index` do inventário (ou troca a atual).
+        function equipBackpackFromInventory(index) {
+            if (gameState.isDead) return;
+            const item = gameState.inventory[index];
+            if (!item || item.type !== 'backpack') return;
+
+            const antigaId = gameState.equipment.backpack ? gameState.equipment.backpack.id : null;
+            const capAntes = tbInventoryCapacity();
+            const capDepois = Math.min(TB_MAX_INVENTORY, TB_BASE_INVENTORY + (item.capacity || 0));
+
+            // Simulação do inventário: tira a nova mochila do slot dela.
+            const sim = gameState.inventory.slice();
+            sim[index] = null;
+
+            // A mochila antiga precisa de um espaço que continue existindo.
+            let slotAntigo = -1;
+            if (antigaId) {
+                for (let i = 0; i < Math.min(capDepois, sim.length); i++) {
+                    if (!sim[i]) { slotAntigo = i; break; }
+                }
+                if (slotAntigo < 0) {
+                    addLog('❌ Sem espaço livre para guardar a mochila atual. Libere um espaço primeiro.');
+                    return;
+                }
+                sim[slotAntigo] = Object.assign({}, ITEMS[antigaId], { id: antigaId, quantity: 1 });
+            }
+
+            // Se a capacidade vai encolher, os espaços que somem devem estar vazios.
+            if (capDepois < capAntes) {
+                for (let i = capDepois; i < sim.length; i++) {
+                    if (sim[i]) {
+                        addLog(`❌ Tire os itens dos ${capAntes - capDepois} últimos espaços do inventário antes de trocar por uma mochila menor.`);
+                        return;
+                    }
+                }
+            }
+
+            gameState.inventory = sim;
+            gameState.equipment.backpack = Object.assign({}, ITEMS[item.id], { id: item.id, quantity: 1 });
+            tbEnsureInventorySize();
+
+            addLog(`🎒 Você equipou ${item.name}! Inventário com ${capDepois} espaços.`);
+            if (antigaId) {
+                if (antigaId === item.id) addLog('♻️ A mochila anterior voltou para o inventário.');
+                else addLog(`♻️ ${ITEMS[antigaId].name} voltou para o inventário.`);
+            }
+            updateUI();
+        }
+
+        // Guarda a mochila equipada de volta no inventário (reduz a capacidade).
+        function unequipBackpack() {
+            if (gameState.isDead) return;
+            const bp = gameState.equipment.backpack;
+            if (!bp) return;
+
+            // Simula a capacidade sem a mochila e verifica se tudo cabe.
+            const sim = gameState.inventory.slice();
+            const cap = TB_BASE_INVENTORY;
+            const guardados = [];
+            for (let i = 0; i < sim.length; i++) {
+                if (i >= cap && sim[i]) guardados.push(sim[i]);
+            }
+            let livres = 0;
+            for (let i = 0; i < cap; i++) if (!sim[i]) livres++;
+            if (livres < guardados.length) {
+                addLog('❌ Inventário cheio! Libere espaço antes de tirar a mochila.');
+                return;
+            }
+
+            const antigo = gameState.equipment.backpack;
+            gameState.equipment.backpack = null;
+            if (!tbEnsureInventorySize()) {
+                gameState.equipment.backpack = antigo;
+                addLog('❌ Não foi possível reorganizar o inventário.');
+                return;
+            }
+            const leftover = tbPutItem(gameState.inventory, antigo);
+            if (leftover > 0) {
+                addLog('❌ Inventário cheio!');
+                return;
+            }
+            addLog(`📦 ${antigo.name} guardado no inventário.`);
+            updateUI();
+        }
+
         // JSON com as chaves ordenadas, para comparar dois itens de forma estável.
         function tbStableStringify(value) {
             if (Array.isArray(value)) return '[' + value.map(tbStableStringify).join(',') + ']';
@@ -5658,6 +5909,15 @@ textarea { min-height: 96px; resize: vertical; }
                 updateUI();
             }
         }
+
+        // Índice do primeiro item com esse id no inventário (ou -1).
+        function tbFindInventoryItemId(itemId) {
+            for (let i = 0; i < gameState.inventory.length; i++) {
+                const it = gameState.inventory[i];
+                if (it && it.id === itemId) return i;
+            }
+            return -1;
+        }
     
         // ========== ITEMS FUNCTIONS ==========
         function useItem(index) {
@@ -5668,11 +5928,32 @@ textarea { min-height: 96px; resize: vertical; }
             
             if (item.useEffect && typeof window[item.useEffect] === 'function') { window[item.useEffect](); return; }
             if (item.type === 'station') { useStationItem(item.id); }
+            else if (item.type === 'backpack') { equipBackpackFromInventory(index); }
+            else if (item.type === 'container') { useContainer(index); }
             else if (item.type === 'food' || item.type === 'drink') { useFood(index); }
             else if (item.type === 'junk') { discardItem(index); }
             else if (item.id === 'clock') { showTimeRemaining(); }
             else if (item.type === 'book') { openBook(index); }
             else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
+        }
+
+        // Recipientes vazios (copo/taça): enchem com água em poços e fontes.
+        function useContainer(index) {
+            if (gameState.isDead) return;
+            const item = gameState.inventory[index];
+            if (!item || item.type !== 'container') return;
+
+            const temAgua = (typeof SV_hasWaterSource === 'function') ? SV_hasWaterSource() : false;
+            if (!temAgua) {
+                addLog(`💧 Você precisa estar perto de água (poço, rio, lago, fonte) para encher ${item.name}.`);
+                return;
+            }
+            if (!item.fillsTo || !ITEMS[item.fillsTo]) return;
+
+            removeItemFromInventory(index);
+            addItemToInventory(item.fillsTo, 1);
+            addLog(`💧 Você encheu ${item.name} — agora é ${ITEMS[item.fillsTo].name}. Clique nele (ou em 🍖 Comidas) para beber.`);
+            updateUI();
         }
 
         // Descartar itens inúteis (copos, taças vazias...).
@@ -5724,7 +6005,7 @@ textarea { min-height: 96px; resize: vertical; }
             }
             if (givesEmptyCup && ITEMS[givesEmptyCup]) {
                 addItemToInventory(givesEmptyCup, 1);
-                addLog(`♻️ Você ficou com ${ITEMS[givesEmptyCup].name}. Pode descartá-lo quando quiser.`);
+                addLog(`♻️ Você ficou com ${ITEMS[givesEmptyCup].name}. Encha-o perto de água (poço, rio, lago) ou guarde-o para reutilizar na taberna.`);
             }
 
             updateUI();
@@ -5735,7 +6016,9 @@ textarea { min-height: 96px; resize: vertical; }
             
             const item = gameState.inventory[index];
             if (!item || !item.slot) return;
-    
+
+            if (item.slot === 'backpack') { equipBackpackFromInventory(index); return; }
+
             if (item.slot === 'mainhand' || item.slot === 'offhand' || 
                 item.slot === 'helmet' || item.slot === 'chest' || 
                 item.slot === 'pants' || item.slot === 'boots') {
@@ -5755,7 +6038,9 @@ textarea { min-height: 96px; resize: vertical; }
         }
         function equipItem(slot) {
             if (gameState.isDead) return;
-            
+
+            if (slot === 'backpack') { unequipBackpack(); return; }
+
             if (gameState.equipment[slot]) {
                 const item = gameState.equipment[slot];
                 const leftover = tbPutItem(gameState.inventory, item);
@@ -8045,11 +8330,26 @@ textarea { min-height: 96px; resize: vertical; }
         
         function buyDrink(itemId, cost) {
             if (gameState.isDead) return;
-            if (gameState.character.gold >= cost) {
-                gameState.character.gold -= cost;
-                const item = ITEMS[itemId];
+            const item = ITEMS[itemId];
+            if (!item) return;
+
+            // Desconto por reutilizar copo/taça vazia já no inventário.
+            let finalCost = cost;
+            let copoReutilizado = null;
+            if (item.givesEmptyCup && ITEMS[item.givesEmptyCup]) {
+                const idx = tbFindInventoryItemId(item.givesEmptyCup);
+                if (idx >= 0) {
+                    removeItemFromInventory(idx);
+                    finalCost = Math.max(1, cost - 1);
+                    copoReutilizado = ITEMS[item.givesEmptyCup];
+                }
+            }
+
+            if (gameState.character.gold >= finalCost) {
+                gameState.character.gold -= finalCost;
                 addItemToInventory(itemId);
-                addLog(`🍺 Você comprou ${item.name}.`);
+                if (copoReutilizado) addLog(`♻️ Você reutilizou seu ${copoReutilizado.name} — desconto de 1 moeda!`);
+                addLog(`🍺 Você comprou ${item.name}${copoReutilizado ? ` por ${finalCost}💰` : ''}.`);
                 
                 gameState.character.life = Math.min(gameState.character.life + item.heal, gameState.character.maxLife);
                 if (item.mana) {
