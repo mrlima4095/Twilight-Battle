@@ -556,8 +556,12 @@ function chopWoodEastPlains() { tbChopTree(); }
 /* ------------------------------------------------------------------ */
 /*  Re-registra as salas da mina ao carregar um save dentro dela.      */
 /* ------------------------------------------------------------------ */
-const TB_origUpdateUI = (typeof updateUI === 'function') ? updateUI : null;
-if (TB_origUpdateUI) {
+/* Atenção: NÃO usar o nome TB_origUpdateUI aqui — ele já existe em
+   systems.js. Como scripts clássicos compartilham o mesmo escopo lexical
+   global, redeclarar um `const` top-level derruba o arquivo inteiro
+   (SyntaxError) e nenhuma função da mina fica disponível. */
+const TB_MINE_origUpdateUI = (typeof updateUI === 'function') ? updateUI : null;
+if (TB_MINE_origUpdateUI) {
     updateUI = function () {
         try {
             if (gameState && gameState.mine && gameState.mine.generated
@@ -566,7 +570,7 @@ if (TB_origUpdateUI) {
                 tbMineRegisterLocations();
             }
         } catch (e) { /* ignora */ }
-        return TB_origUpdateUI.apply(this, arguments);
+        return TB_MINE_origUpdateUI.apply(this, arguments);
     };
 }
 
