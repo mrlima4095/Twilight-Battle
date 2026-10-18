@@ -4112,7 +4112,7 @@ textarea { min-height: 96px; resize: vertical; }
                 ],
                 buyPriceMultiplier: 1.0,
                 canSellToNPC: true,
-                sellPriceMultiplier: 0.4,
+                sellPriceMultiplier: 0.26,
                 shopkeeperName: 'Tecelã Isadora',
                 dayBehavior: { homeChance: 0.65, alwaysAwake: true },
                 nightBehavior: { homeChance: 0.9, sleepChance: 0.8 },
@@ -4206,7 +4206,7 @@ textarea { min-height: 96px; resize: vertical; }
                 shopItems: [ { id: 'map', price: 3, quantity: -1 } ],
                 buyPriceMultiplier: 1.0,
                 canSellToNPC: false,
-                sellPriceMultiplier: 0.4,
+                sellPriceMultiplier: 0.26,
                 shopkeeperName: 'Pedro, o Cartógrafo',
                 dayBehavior: { 
                     homeChance: 0.7,  // 70% de chance de estar na oficina durante o dia
@@ -4302,7 +4302,7 @@ textarea { min-height: 96px; resize: vertical; }
                 ],
                 buyPriceMultiplier: 0.9,
                 canSellToNPC: true,
-                sellPriceMultiplier: 0.35,
+                sellPriceMultiplier: 0.22,
                 shopkeeperName: 'Dona Ana',
                 dayBehavior: { homeChance: 0.55, alwaysAwake: true },
                 nightBehavior: { homeChance: 0.95, sleepChance: 0.9 },
@@ -4350,7 +4350,7 @@ textarea { min-height: 96px; resize: vertical; }
                 ],
                 buyPriceMultiplier: 1.0,
                 canSellToNPC: false,
-                sellPriceMultiplier: 0.4,
+                sellPriceMultiplier: 0.26,
                 shopkeeperName: 'Jenny - Venda de Cartões',
                 // ================================================
                 dayBehavior: { homeChance: 1.0, alwaysAwake: true },
@@ -4396,7 +4396,7 @@ textarea { min-height: 96px; resize: vertical; }
                 ],
                 buyPriceMultiplier: 0.85,
                 canSellToNPC: false,
-                sellPriceMultiplier: 0.4,
+                sellPriceMultiplier: 0.26,
                 shopkeeperName: 'Capitão Aldric - Arsenal da Guarda',
                 dayBehavior: { homeChance: 0.8, alwaysAwake: true },
                 nightBehavior: { homeChance: 0.7, sleepChance: 0.6 },
@@ -5970,6 +5970,24 @@ textarea { min-height: 96px; resize: vertical; }
                 if (it && it.id === itemId) return i;
             }
             return -1;
+        }
+
+        // Valor base de um item (para venda). Itens sem "value" recebem uma
+        // estimativa realista pelo tipo/poder — matéria-prima vale pouco,
+        // itens refinados e equipamentos valem mais.
+        function TB_itemValue(item) {
+            if (!item) return 0;
+            if (item.value != null) return item.value;
+            switch (item.type) {
+                case 'food':   return Math.max(1, Math.round((item.heal || 0) / 6));
+                case 'drink':  return Math.max(1, Math.round(((item.heal || 0) + (item.mana || 0)) / 8));
+                case 'weapon':
+                case 'tool':   return Math.max(3, Math.round((item.attack || 3) * 2 + (item.maxDurability || 20) / 10));
+                case 'armor':
+                case 'shield': return Math.max(3, Math.round((item.defense || 2) * 3 + (item.maxDurability || 20) / 10));
+                case 'material': return 3;
+                default: return 2;
+            }
         }
     
         // ========== ITEMS FUNCTIONS ==========
@@ -9350,7 +9368,7 @@ textarea { min-height: 96px; resize: vertical; }
             const npc = NPC_DEFINITIONS[npcId];
             if (!npc) return;
             
-            const multiplier = npc.sellPriceMultiplier || 0.5;
+            const multiplier = npc.sellPriceMultiplier || 0.28;
             const container = document.getElementById('sell-items-container');
             container.innerHTML = '';
             
@@ -9360,8 +9378,8 @@ textarea { min-height: 96px; resize: vertical; }
             for (let i = 0; i < gameState.inventory.length; i++) {
                 const item = gameState.inventory[i];
                 if (item && item.consumable !== false) {
-                    const basePrice = item.value || 10;
-                    const sellPrice = Math.floor(basePrice * multiplier);
+                    const basePrice = TB_itemValue(item);
+                    const sellPrice = Math.max(1, Math.floor(basePrice * multiplier));
                     if (sellPrice > 0) {
                         hasItems = true;
                         const quantity = item.quantity || 1;

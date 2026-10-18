@@ -126,9 +126,9 @@ td { color:#d8d0eb; }
     <h2>🎒 Inventário, baú e equipamento</h2>
     <table>
       <tr><th>Área</th><th>Função</th></tr>
-      <tr><td>Inventário (esquerda)</td><td>Itens, materiais, ferramentas. Arraste para o lixo para descartar.</td></tr>
+      <tr><td>Inventário (esquerda)</td><td>Itens, materiais, ferramentas. Arraste para o lixo para descartar. O número de espaços aparece no rodapé do painel (base <strong>18</strong> + mochila).</td></tr>
       <tr><td>Baú (em casa)</td><td>Armazenamento extra. Arraste itens entre inventário e baú; use <strong>📦 Organizar</strong> para juntar e arrumar.</td></tr>
-      <tr><td>Equipamento (direita)</td><td>Capacete, peitoral, calças, botas, mãos principal/secundária.</td></tr>
+      <tr><td>Equipamento (direita)</td><td>Capacete, peitoral, calças, botas, mãos principal/secundária e <strong>🎒 mochila</strong>.</td></tr>
       <tr><td>Comidas</td><td>Consumíveis para recuperar vida/recursos (conforme o item).</td></tr>
     </table>
     <p>O resumo no painel direito mostra <strong>atk/def base</strong> e <strong>bônus</strong> dos equipamentos equipados.</p>
@@ -162,7 +162,8 @@ td { color:#d8d0eb; }
       <li><strong>Caem com o tempo</strong> — um pouco a cada instante, e mais rápido ao viajar, lutar e a cada virada de dia/noite (dormir avança o relógio, então também custa).</li>
       <li><strong>Comida</strong> (maçã, pão, carne, peixe…) recupera <strong>Fome</strong>; <strong>bebidas</strong> (garrafa d'água, cerveja, vinho, café) recuperam <strong>Sede</strong>. Basta usar o item como sempre fez.</li>
       <li><strong>Água</strong> vem do poço da sua casa, do poço da praça das Aldeias do Sul, do Lago Sagrado, do rio ou da estalagem: use a ação <strong>💧 Beber água</strong> para matar a sede na hora, ou <em>Pegar água</em> com uma <strong>garrafa vazia</strong> no inventário para levar. Você também pode <strong>comprar garrafa d'água na taverna</strong>.</li>
-      <li><strong>Bebidas alcoólicas</strong> (cerveja 🍺, vinho 🍷) <strong>baixam a sanidade</strong> — e devolvem um <strong>copo/taça vazia</strong>, que você pode descartar clicando nele ou arrastando para a lixeira 🗑️.</li>
+      <li><strong>Copo e taça</strong> não se descartam por clique: perto de água você os <strong>enche</strong> (vira <em>Copo/Taça com Água</em>), e na <strong>taberna</strong> comprar cerveja/café (ou vinho) levando o <strong>copo/taça vazia</strong> dá <strong>1 moeda de desconto</strong> — você reutiliza o seu recipiente.</li>
+      <li><strong>Bebidas alcoólicas</strong> (cerveja 🍺, vinho 🍷) <strong>baixam a sanidade</strong> — e devolvem um <strong>copo/taça vazia</strong>, que você pode reaproveitar (ou jogar na lixeira 🗑️ arrastando).</li>
       <li><strong>Sanidade baixa</strong> faz você <strong>errar magias</strong> (a mana é perdida) e <strong>causar menos dano em combate</strong>. Ela recupera devagar com o tempo e mais rápido a cada amanhecer/dormida.</li>
       <li>A sanidade também cai com a <strong>sede baixa</strong> (beba água!) e por ficar <strong>muito tempo sem dormir</strong> — cada virada de dia/noite sem dormir desgasta mais a mente. <strong>Dormir</strong> zera esse cansaço.</li>
       <li><strong>Fome ou sede em 0</strong> causa dano contínuo de inanição/desidratação até a morte. Não deixe chegar a zero.</li>
@@ -185,9 +186,14 @@ td { color:#d8d0eb; }
   <div class="section">
     <h2>🛠️ Craft, descanso e progressão</h2>
     <ul>
+      <li><strong>Mochilas</strong> — equipáveis no slot 🎒 (painel <strong>⚔️ Equipamento</strong>). A <em>Mochila de Couro</em> soma <strong>+9</strong> espaços e a <em>Mochila de Aventureiro</em> <strong>+18</strong> (base 18). Clique na mochila no inventário para equipar/trocar; clique no slot para guardá-la. Crafte na bancada ou compre de <strong>Damião</strong> nas Barracas.</li>
       <li><strong>Moinho / forja / bancadas</strong> — transformam materiais em itens</li>
       <li><strong>Dormir</strong> — passa o tempo, restaura (modal com timer; pode acordar). Na sua casa é de graça; na <strong>Estalagem do Sul</strong> (Aldeias do Comércio) custa 5 💰 a noite</li>
-      <li><strong>Mina de Ferro</strong> — ao sul da Aldeia da Forja: extraia <strong>Minério de Ferro</strong> (dá para fundir na fornalha)</li>
+      <li><strong>Mina de Ferro</strong> (ao sul da Aldeia da Forja) — uma <strong>galeria-labirinto</strong> gerada por partida. Desça com uma <strong>Tocha</strong> (para enxergar) e uma <strong>Picareta</strong> (para minerar). No escuro você se perde e não minera; cada passo/ação <strong>consome o fogo da tocha</strong>. Veios dão <strong>Pedra</strong>, <strong>Carvão</strong>, <strong>Minério de Ferro</strong> e, fundo, <strong>Ametista</strong>. Minerar gasta <strong>muita energia</strong> (fome/sede/mana) e a durabilidade da picareta.</li>
+      <li><strong>Ferramentas</strong> — Picaretas e Machados (de Pedra ou de Ferro) crafteáveis na bancada (pedra/madeira ou lingote) ou vendidos por <strong>Bruno</strong> na Forja. Junte <strong>Madeira</strong> com o machado num <strong>minigame de ritmo</strong> (árvores na Planície Leste, Floresta Sombria e entrada da floresta).</li>
+      <li><strong>Minigames</strong> — ao minerar ou cortar lenha, pare o marcador na faixa verde. Acertos no centro rendem mais recursos; erros desperdiçam energia.</li>
+      <li><strong>Fornalha</strong> — funde <strong>Minério de Ferro → Lingote de Ferro</strong> (e assa alimentos)</li>
+      <li><strong>Economia hardcore</strong> — vender itens rende <strong>pouco</strong> (matéria-prima quase nada; itens refinados e gemas valem mais). Vale a pena fabricar e refinar antes de negociar.</li>
       <li><strong>EXP e nível</strong> — sobe no perfil; barra de experiência</li>
       <li><strong>Biblioteca</strong> — pegar/devolver livros, ler e assinar</li>
     </ul>
