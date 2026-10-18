@@ -1155,10 +1155,6 @@ textarea { min-height: 96px; resize: vertical; }
   color: var(--muted); font-size: .78rem; line-height: 1.55;
 }
 .equip-summary strong { color: var(--text); }
-.inv-capacity {
-  text-align: center; margin: 6px 0 0; font-size: .72rem; color: var(--muted);
-}
-.inv-capacity strong { color: var(--gold); }
 .food-section-title {
   color: var(--gold); margin: 16px 0 10px; font-family: var(--font-display);
   font-size: .95rem; text-align: center;
@@ -1782,14 +1778,7 @@ textarea { min-height: 96px; resize: vertical; }
                             <span class="item-name" id="offhand-item">Vazio</span>
                         </div>
                     </div>
-                    <div class="equipment-row">
-                        <div class="equipment-slot" id="slot-backpack" onclick="equipItem('backpack')" title="Clique para tirar a mochila">
-                            <span class="slot-label">🎒 Mochila</span>
-                            <span class="item-name" id="backpack-item">Vazio</span>
-                        </div>
-                    </div>
                 </div>
-                <p class="inv-capacity">Espaços: <strong id="inv-capacity">18</strong></p>
                 <h4 class="food-section-title">🍖 Comidas</h4>
                 <div class="inventory-grid" id="food-grid"></div>
                 <div class="equip-summary">
@@ -1827,7 +1816,7 @@ textarea { min-height: 96px; resize: vertical; }
             location: 'home',
             inventory: Array(18).fill(null),
             chest: Array(18).fill(null),
-            equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null, backpack: null },
+            equipment: { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null },
             combatLog: [],
             currentEnemy: null,
             combatPanelOpen: null,
@@ -2107,11 +2096,11 @@ textarea { min-height: 96px; resize: vertical; }
             },
             tavern: {
                 name: 'Taberna da Aurora',
-                description: 'Um lugar aconchegante com música ao vivo e as melhores bebidas do reino.',
+                description: 'Um lugar aconchegante com música ao vivo e as melhores bebidas do reino.<br><em>♻️ Traga seu copo/taça vazio: a casa desconta 1 moeda por reutilizá-lo.</em>',
                 actions: [
-                    { name: '🍺 Cerveja (5💰 · 4💰 com copo)', action: 'buyBeer' },
-                    { name: '🍷 Vinho Tinto (15💰 · 14💰 com taça)', action: 'buyWine' },
-                    { name: '☕ Café Quente (8💰 · 7💰 com copo)', action: 'buyCoffee' },
+                    { name: '🍺 Cerveja (5💰)', action: 'buyBeer' },
+                    { name: '🍷 Vinho Tinto (15💰)', action: 'buyWine' },
+                    { name: '☕ Café Quente (8💰)', action: 'buyCoffee' },
                     { name: '💧 Garrafa d\'Água (3💰)', action: 'buyWaterBottle' },
                     { name: '🗣️ Ouvir Histórias', action: 'listenStories' },
                     { name: '🔙 Voltar para a Praça', action: 'goToMainSquare' }
@@ -3390,10 +3379,6 @@ textarea { min-height: 96px; resize: vertical; }
             copo_agua: { name: 'Copo com Água', type: 'drink', heal: 4, mana: 2, value: 1, description: 'Água fresca num copo. Mata a sede.', consumable: true, givesEmptyCup: 'copo_vazio' },
             taca_agua: { name: 'Taça com Água', type: 'drink', heal: 6, mana: 3, value: 1, description: 'Água fresca numa taça. Mata a sede.', consumable: true, givesEmptyCup: 'taca_vazia' },
 
-            // Mochilas: equipáveis no slot 🎒 e somam espaço ao inventário.
-            mochila: { name: 'Mochila de Couro', type: 'backpack', slot: 'backpack', capacity: 9, consumable: false, value: 20, description: 'Uma mochila simples de couro. Equipe-a (clique) para ganhar +9 espaços de inventário.' },
-            mochila_grande: { name: 'Mochila de Aventureiro', type: 'backpack', slot: 'backpack', capacity: 18, consumable: false, value: 55, description: 'Uma mochila reforçada de aventureiro. Equipe-a (clique) para ganhar +18 espaços de inventário.' },
-
             crystal_ball: { name: 'Bola de Cristal', type: 'tool', consumable: false, description: 'Revela conhecimentos ocultos. Use para executar comandos mágicos.', useEffect: 'openCrystalBall' },
             sleeping_bag: { 
                 name: 'Saco de Dormir', 
@@ -3561,7 +3546,7 @@ textarea { min-height: 96px; resize: vertical; }
                 learnFrom: 'cookbook'
             },
 
-            // ===== Ferramentas de coleta e mochilas (craftáveis na bancada) =====
+            // ===== Ferramentas de coleta (craftáveis na bancada) =====
             tocha: {
                 name: '🔥 4x Tocha',
                 description: 'Uma tocha de madeira e carvão para iluminar a mina.',
@@ -3603,24 +3588,6 @@ textarea { min-height: 96px; resize: vertical; }
                 description: 'Machado afiado que derruba árvores rapidamente.',
                 materials: [ { id: 'wood', quantity: 2 }, { id: 'iron_ingot', quantity: 3 } ],
                 result: 'machado_ferro',
-                quantity: 1,
-                station: 'crafting_table',
-                requires_learn: false
-            },
-            mochila: {
-                name: '🎒 Mochila de Couro',
-                description: 'Costure couro e linha para ampliar sua carga em +9 espaços.',
-                materials: [ { id: 'leather', quantity: 4 }, { id: 'string', quantity: 8 } ],
-                result: 'mochila',
-                quantity: 1,
-                station: 'crafting_table',
-                requires_learn: false
-            },
-            mochila_grande: {
-                name: '🎒 Mochila de Aventureiro',
-                description: 'Uma mochila reforçada que amplia sua carga em +18 espaços.',
-                materials: [ { id: 'leather', quantity: 8 }, { id: 'cloth', quantity: 4 }, { id: 'string', quantity: 12 } ],
-                result: 'mochila_grande',
                 quantity: 1,
                 station: 'crafting_table',
                 requires_learn: false
@@ -3968,9 +3935,7 @@ textarea { min-height: 96px; resize: vertical; }
                     { id: 'cloth', price: 10 },
                     { id: 'string', price: 4 },
                     { id: 'wool', price: 5 },
-                    { id: 'leather', price: 8 },
-                    { id: 'mochila', price: 30 },
-                    { id: 'mochila_grande', price: 95 }
+                    { id: 'leather', price: 8 }
                 ],
                 canSellToNPC: true,
                 dayBehavior: { homeChance: 0.9, alwaysAwake: true },
@@ -4972,11 +4937,10 @@ textarea { min-height: 96px; resize: vertical; }
             if (content.querySelector('.world-map')) tbInitWorldMap();
         }
         function updateInventoryGrid() {
-            if (typeof tbEnsureInventorySize === 'function') tbEnsureInventorySize();
             const grid = document.getElementById('inventory-grid');
             grid.innerHTML = '';
 
-            const total = tbInventoryCapacity();
+            const total = 18;
             for (let i = 0; i < total; i++) {
                 const item = gameState.inventory[i], slot = document.createElement('div');
                 slot.className = `inventory-slot ${item ? 'has-item' : ''} ${item && item.type === 'food' ? 'food-item' : ''} ${gameState.isDead ? 'disabled' : ''}`;
@@ -5083,12 +5047,6 @@ textarea { min-height: 96px; resize: vertical; }
                 if (item && item.durability !== undefined) { element.title = `${item.name}\nDefesa: ${item.defense}\nDurabilidade: ${item.durability}/${item.maxDurability}`; } 
                 else if (item) { element.title = `${item.name}\nDefesa: ${item.defense || 0}\nAtaque: ${item.attack || 0}`; }
             }
-
-            const capEl = document.getElementById('inv-capacity');
-            if (capEl) {
-                const bp = tbBackpackItem();
-                capEl.textContent = tbInventoryCapacity() + (bp ? ` (base 18 + ${bp.capacity} da mochila)` : '');
-            }
         }
         // ** Calculate Bonuses
         function calculateEquipmentBonuses() {
@@ -5149,7 +5107,7 @@ textarea { min-height: 96px; resize: vertical; }
             
             gameState.inventory = Array(18).fill(null);
             gameState.chest = Array(18).fill(null);
-            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null, backpack: null };
+            gameState.equipment = { helmet: null, chest: null, pants: null, boots: null, mainhand: null, offhand: null };
             gameState.mine = null;
             gameState.character = {
                 name: name,
@@ -5697,138 +5655,6 @@ textarea { min-height: 96px; resize: vertical; }
         // a menos que o item defina seu próprio "maxStack".
         const TB_MAX_STACK = 64;
 
-        // ========== MOCHILAS / TAMANHO DO INVENTÁRIO ==========
-        // O inventário começa com 18 espaços; uma mochila equipada no slot 🎒
-        // soma +9 (ou +18) espaços, até um teto de segurança.
-        const TB_BASE_INVENTORY = 18;
-        const TB_MAX_INVENTORY = 72;
-
-        function tbBackpackItem() {
-            return (gameState && gameState.equipment && gameState.equipment.backpack) || null;
-        }
-        // Capacidade atual de espaços do inventário.
-        function tbInventoryCapacity() {
-            const bp = tbBackpackItem();
-            const bonus = (bp && bp.capacity) || 0;
-            return Math.min(TB_MAX_INVENTORY, TB_BASE_INVENTORY + bonus);
-        }
-        // Ajusta o array do inventário à capacidade atual. Se estiver encolhendo
-        // e houver itens nos espaços que vão sumir, tenta movê-los para espaços
-        // livres; se não couberem, retorna false (nada é alterado).
-        function tbEnsureInventorySize() {
-            if (!gameState || !Array.isArray(gameState.inventory)) return false;
-            const cap = tbInventoryCapacity();
-            const inv = gameState.inventory;
-
-            if (inv.length > cap) {
-                // Itens além da nova capacidade precisam de um novo lar.
-                const excedentes = [];
-                for (let i = cap; i < inv.length; i++) {
-                    if (inv[i]) excedentes.push(inv[i]);
-                }
-                if (excedentes.length > 0) {
-                    let livres = 0;
-                    for (let j = 0; j < cap; j++) if (!inv[j]) livres++;
-                    if (livres < excedentes.length) return false;
-                    let k = 0;
-                    for (let i = cap; i < inv.length; i++) {
-                        if (inv[i]) inv[i] = null;
-                    }
-                    for (let j = 0; j < cap && k < excedentes.length; j++) {
-                        if (!inv[j]) inv[j] = excedentes[k++];
-                    }
-                }
-                inv.length = cap;
-            }
-            while (inv.length < cap) inv.push(null);
-            return true;
-        }
-
-        // Equipa uma mochila do slot `index` do inventário (ou troca a atual).
-        function equipBackpackFromInventory(index) {
-            if (gameState.isDead) return;
-            const item = gameState.inventory[index];
-            if (!item || item.type !== 'backpack') return;
-
-            const antigaId = gameState.equipment.backpack ? gameState.equipment.backpack.id : null;
-            const capAntes = tbInventoryCapacity();
-            const capDepois = Math.min(TB_MAX_INVENTORY, TB_BASE_INVENTORY + (item.capacity || 0));
-
-            // Simulação do inventário: tira a nova mochila do slot dela.
-            const sim = gameState.inventory.slice();
-            sim[index] = null;
-
-            // A mochila antiga precisa de um espaço que continue existindo.
-            let slotAntigo = -1;
-            if (antigaId) {
-                for (let i = 0; i < Math.min(capDepois, sim.length); i++) {
-                    if (!sim[i]) { slotAntigo = i; break; }
-                }
-                if (slotAntigo < 0) {
-                    addLog('❌ Sem espaço livre para guardar a mochila atual. Libere um espaço primeiro.');
-                    return;
-                }
-                sim[slotAntigo] = Object.assign({}, ITEMS[antigaId], { id: antigaId, quantity: 1 });
-            }
-
-            // Se a capacidade vai encolher, os espaços que somem devem estar vazios.
-            if (capDepois < capAntes) {
-                for (let i = capDepois; i < sim.length; i++) {
-                    if (sim[i]) {
-                        addLog(`❌ Tire os itens dos ${capAntes - capDepois} últimos espaços do inventário antes de trocar por uma mochila menor.`);
-                        return;
-                    }
-                }
-            }
-
-            gameState.inventory = sim;
-            gameState.equipment.backpack = Object.assign({}, ITEMS[item.id], { id: item.id, quantity: 1 });
-            tbEnsureInventorySize();
-
-            addLog(`🎒 Você equipou ${item.name}! Inventário com ${capDepois} espaços.`);
-            if (antigaId) {
-                if (antigaId === item.id) addLog('♻️ A mochila anterior voltou para o inventário.');
-                else addLog(`♻️ ${ITEMS[antigaId].name} voltou para o inventário.`);
-            }
-            updateUI();
-        }
-
-        // Guarda a mochila equipada de volta no inventário (reduz a capacidade).
-        function unequipBackpack() {
-            if (gameState.isDead) return;
-            const bp = gameState.equipment.backpack;
-            if (!bp) return;
-
-            // Simula a capacidade sem a mochila e verifica se tudo cabe.
-            const sim = gameState.inventory.slice();
-            const cap = TB_BASE_INVENTORY;
-            const guardados = [];
-            for (let i = 0; i < sim.length; i++) {
-                if (i >= cap && sim[i]) guardados.push(sim[i]);
-            }
-            let livres = 0;
-            for (let i = 0; i < cap; i++) if (!sim[i]) livres++;
-            if (livres < guardados.length) {
-                addLog('❌ Inventário cheio! Libere espaço antes de tirar a mochila.');
-                return;
-            }
-
-            const antigo = gameState.equipment.backpack;
-            gameState.equipment.backpack = null;
-            if (!tbEnsureInventorySize()) {
-                gameState.equipment.backpack = antigo;
-                addLog('❌ Não foi possível reorganizar o inventário.');
-                return;
-            }
-            const leftover = tbPutItem(gameState.inventory, antigo);
-            if (leftover > 0) {
-                addLog('❌ Inventário cheio!');
-                return;
-            }
-            addLog(`📦 ${antigo.name} guardado no inventário.`);
-            updateUI();
-        }
-
         // JSON com as chaves ordenadas, para comparar dois itens de forma estável.
         function tbStableStringify(value) {
             if (Array.isArray(value)) return '[' + value.map(tbStableStringify).join(',') + ']';
@@ -5999,7 +5825,6 @@ textarea { min-height: 96px; resize: vertical; }
             
             if (item.useEffect && typeof window[item.useEffect] === 'function') { window[item.useEffect](); return; }
             if (item.type === 'station') { useStationItem(item.id); }
-            else if (item.type === 'backpack') { equipBackpackFromInventory(index); }
             else if (item.type === 'container') { useContainer(index); }
             else if (item.type === 'food' || item.type === 'drink') { useFood(index); }
             else if (item.type === 'junk') { discardItem(index); }
@@ -6088,8 +5913,6 @@ textarea { min-height: 96px; resize: vertical; }
             const item = gameState.inventory[index];
             if (!item || !item.slot) return;
 
-            if (item.slot === 'backpack') { equipBackpackFromInventory(index); return; }
-
             if (item.slot === 'mainhand' || item.slot === 'offhand' || 
                 item.slot === 'helmet' || item.slot === 'chest' || 
                 item.slot === 'pants' || item.slot === 'boots') {
@@ -6109,8 +5932,6 @@ textarea { min-height: 96px; resize: vertical; }
         }
         function equipItem(slot) {
             if (gameState.isDead) return;
-
-            if (slot === 'backpack') { unequipBackpack(); return; }
 
             if (gameState.equipment[slot]) {
                 const item = gameState.equipment[slot];

@@ -365,16 +365,14 @@ function tbMineBurnFuel(n) {
 function enterMine() {
     if (gameState.isDead) return;
     const mine = tbMineEnsure();
-    if ((mine.fuel || 0) <= 0 && tbMineHasTorch() < 0) {
-        addLog('🕯️ A galeria é escuridão pura. Você precisa de pelo menos uma Tocha para descer (compre de Bruno ou crie na bancada).');
-        return;
-    }
     // Verifica ferramenta de mineração (aviso, não bloqueio).
     if (!tbFindTool('pickaxe')) {
         addLog('⚠️ Sem picareta, você poderá explorar os túneis, mas não conseguirá arrancar veio nenhum.');
     }
     tbMineGoTo(TB_MINE_ENTRANCE, { message: '🕳️ Você desce à galeria da mina. O ar é frio e úmido.' });
-    if ((mine.fuel || 0) <= 0) addLog('🕯️ Está escuro como breu. Acenda uma tocha antes de seguir.');
+    if ((mine.fuel || 0) <= 0) {
+        addLog('🕯️ Está escuro como breu. Acenda uma tocha (botão na sala) para enxergar, minerar e não se perder.');
+    }
 }
 
 function mineLightTorch() {
