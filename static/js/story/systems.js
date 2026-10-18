@@ -970,6 +970,7 @@ function TB_resetProgress() {
     gameState._evasionActive = false;
     gameState.learnedAbilities = [];
     gameState.library = { reputation: 50, hasMembership: false, loans: [] };
+    gameState.mine = null;
     TB_ensureState();
 }
 
