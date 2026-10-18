@@ -5830,7 +5830,7 @@ textarea { min-height: 96px; resize: vertical; }
             else if (item.type === 'junk') { discardItem(index); }
             else if (item.id === 'clock') { showTimeRemaining(); }
             else if (item.type === 'book') { openBook(index); }
-            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield') { equipItemFromInventory(index); }
+            else if (item.type === 'weapon' || item.type === 'armor' || item.type === 'shield' || item.type === 'tool') { equipItemFromInventory(index); }
         }
 
         // Recipientes vazios (copo/taça): enchem com água em poços e fontes.

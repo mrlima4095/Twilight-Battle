@@ -120,6 +120,24 @@ function tbDamageTool(ref, n) {
     return true;
 }
 
+// Ferramenta EQUIPADA NA MÃO PRINCIPAL (obrigatório para minerar/cortar).
+// Retorna { item, source, index } como tbDamageTool espera, ou null.
+function tbMainhandTool(kind) {
+    const eq = gameState && gameState.equipment && gameState.equipment.mainhand;
+    if (eq && eq.toolType === kind && (eq.durability === undefined || eq.durability > 0)) {
+        return { item: eq, source: 'equipment', index: -1 };
+    }
+    return null;
+}
+
+// Dano autoinfligido (bater com as mãos nuas na rocha/tronco).
+function tbHurtSelf(amount, reason) {
+    if (!gameState || !gameState.character) return;
+    gameState.character.life = Math.max(0, gameState.character.life - amount);
+    addLog(`🩸 ${reason} (-${amount} de vida)`);
+    if (gameState.character.life <= 0 && typeof playerDeath === 'function') playerDeath();
+}
+
 /* ------------------------------------------------------------------ */
 /*  MINA LABIRINTO                                                     */
 /* ------------------------------------------------------------------ */
@@ -365,9 +383,12 @@ function tbMineBurnFuel(n) {
 function enterMine() {
     if (gameState.isDead) return;
     const mine = tbMineEnsure();
-    // Verifica ferramenta de mineração (aviso, não bloqueio).
-    if (!tbFindTool('pickaxe')) {
-        addLog('⚠️ Sem picareta, você poderá explorar os túneis, mas não conseguirá arrancar veio nenhum.');
+    // Aviso (não bloqueia a entrada): minerar exige picareta NA MÃO PRINCIPAL.
+    if (!tbMainhandTool('pickaxe')) {
+        const esp = tbFindTool('pickaxe');
+        addLog(esp
+            ? '⚠️ Sua picareta está guardada. Equipe-a na MÃO PRINCIPAL (clique nela no inventário) para arrancar veios.'
+            : '⚠️ Você não tem picareta — dá para explorar os túneis, mas bater na rocha com as mãos nuas só machuca.');
     }
     tbMineGoTo(TB_MINE_ENTRANCE, { message: '🕳️ Você desce à galeria da mina. O ar é frio e úmido.' });
     if ((mine.fuel || 0) <= 0) {
@@ -427,9 +448,17 @@ function mineDig(index) {
     if (!vein || vein.hp <= 0) return;
     if (!tbMineIsLit()) { addLog('🕯️ Está escuro demais para minerar.'); return; }
 
-    const tool = tbFindTool('pickaxe');
+    const tool = tbMainhandTool('pickaxe');
     if (!tool) {
-        addLog('⛏️ Você precisa de uma picareta para minerar. Compre com Bruno na Forja ou crafte uma na bancada.');
+        // Sem picareta NA MÃO: socar a rocha machuca as mãos.
+        if (typeof SV_spend === 'function') SV_spend(1.5, 1.5);
+        if (typeof SV_spendMana === 'function') SV_spendMana(0.5);
+        tbHurtSelf(4 + Math.floor(Math.random() * 4), 'Você soca a rocha com as mãos nuas e a pedra corta seus dedos!');
+        const esp = tbFindTool('pickaxe');
+        addLog(esp
+            ? '⛏️ Sua picareta está na mochila — equipe na MÃO PRINCIPAL (clique nela) para minerar.'
+            : '⛏️ Você precisa de uma picareta. Compre com Bruno na Forja ou crafte uma na bancada.');
+        tbMineSync();
         return;
     }
     const power = tool.item.minePower || 1;
@@ -518,9 +547,16 @@ const TB_CHOP_ZONE = { pedra: 16, ferro: 20 };
 
 function tbChopTree() {
     if (gameState.isDead) return;
-    const tool = tbFindTool('axe');
+    const tool = tbMainhandTool('axe');
     if (!tool) {
-        addLog('🪓 Cortar árvore exige um machado. Compre de Bruno na Forja ou crafte um na bancada.');
+        // Sem machado NA MÃO: bater no tronco com as mãos nuas machuca.
+        if (typeof SV_spend === 'function') SV_spend(1.5, 1.2);
+        tbHurtSelf(3 + Math.floor(Math.random() * 3), 'Você bate no tronco com as mãos nuas e lasca a pele!');
+        const esp = tbFindTool('axe');
+        addLog(esp
+            ? '🪓 Seu machado está na mochila — equipe na MÃO PRINCIPAL (clique nele) para derrubar a árvore.'
+            : '🪓 Você precisa de um machado. Compre com Bruno na Forja ou crafte um na bancada.');
+        if (typeof updateUI === 'function') updateUI();
         return;
     }
     const power = tool.item.chopPower || 1;
