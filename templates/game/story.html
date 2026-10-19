@@ -201,18 +201,13 @@ body::before {
 }
 .minigame-title { color: var(--gold); font-family: var(--font-display); font-size: 1.15rem; margin: 0 0 4px; }
 .minigame-subtitle { color: var(--muted); font-size: .8rem; margin: 0 0 16px; }
-.minigame-track {
-  position: relative; height: 34px; border-radius: 12px; overflow: hidden;
-  background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.12); margin-bottom: 12px;
-}
-.minigame-target {
-  position: absolute; top: 0; bottom: 0; left: 40%; width: 22%;
-  background: linear-gradient(180deg, rgba(76,175,80,.85), rgba(46,125,50,.85));
-  box-shadow: inset 0 0 12px rgba(255,255,255,.25);
-}
-.minigame-marker {
-  position: absolute; top: -2px; bottom: -2px; width: 6px; left: 0;
-  background: #ffd700; box-shadow: 0 0 12px #ffd700; border-radius: 3px;
+.minigame-canvas {
+  display: block; width: 100%; aspect-ratio: 380 / 236; height: auto;
+  border-radius: 14px; margin: 0 auto 10px; cursor: pointer;
+  background: radial-gradient(120% 120% at 50% 25%, #251b3f, #0a0712 72%);
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: inset 0 0 40px rgba(0,0,0,.55);
+  touch-action: manipulation;
 }
 .minigame-feedback { min-height: 20px; font-size: .82rem; margin-bottom: 14px; color: var(--muted); }
 .minigame-feedback.ok { color: #6ee7a0; }
@@ -1790,15 +1785,12 @@ textarea { min-height: 96px; resize: vertical; }
 
         <div class="combat-log" id="combat-log"></div>
 
-        <!-- Minigame de coleta (mineração / corte de lenha) -->
+        <!-- Minigame de coleta (mineração / corte de lenha) — cena 3D em canvas -->
         <div class="minigame-overlay" id="minigame-overlay">
             <div class="minigame-box">
                 <h3 class="minigame-title" id="minigame-title">Minigame</h3>
                 <p class="minigame-subtitle" id="minigame-subtitle">Acerte o ponto certo!</p>
-                <div class="minigame-track" id="minigame-track">
-                    <div class="minigame-target" id="minigame-target"></div>
-                    <div class="minigame-marker" id="minigame-marker"></div>
-                </div>
+                <canvas class="minigame-canvas" id="minigame-canvas" width="380" height="236"></canvas>
                 <div class="minigame-feedback" id="minigame-feedback">&nbsp;</div>
                 <button class="action-btn success" id="minigame-strike" type="button">🪨 Bater!</button>
                 <button class="action-btn" id="minigame-cancel" type="button">Cancelar</button>
