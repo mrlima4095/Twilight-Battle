@@ -952,6 +952,31 @@ textarea { min-height: 96px; resize: vertical; }
   background: linear-gradient(145deg, rgba(70,58,100,.95), rgba(40,34,64,.98)) !important;
   color: #fff !important;
 }
+/* A regra acima pinta TODO action-btn de roxo com !important — inclusive as
+   bancadas/estações montadas, que usam .success. Estas regras (mais
+   específicas) devolvem o AMARELO das estações e o vermelho das perigosas. */
+#game-ui .action-buttons .action-btn.success,
+#game-ui #game-content > .action-buttons .action-btn.success,
+#game-ui .game-panel .action-buttons button.action-btn.success {
+  background: linear-gradient(145deg, var(--gold), var(--gold-2)) !important;
+  border: none !important;
+  color: #1a1020 !important;
+  box-shadow: 0 8px 20px rgba(240,193,75,.22) !important;
+}
+#game-ui .action-buttons .action-btn.success:hover,
+#game-ui #game-content > .action-buttons .action-btn.success:hover,
+#game-ui .game-panel .action-buttons button.action-btn.success:hover {
+  background: linear-gradient(145deg, #ffe08a, var(--gold)) !important;
+  border: none !important;
+  color: #1a1020 !important;
+}
+#game-ui .action-buttons .action-btn.danger,
+#game-ui #game-content > .action-buttons .action-btn.danger,
+#game-ui .game-panel .action-buttons button.action-btn.danger {
+  background: linear-gradient(145deg, #ff4d6d, #c9184a) !important;
+  border: none !important;
+  color: #fff !important;
+}
 
 /* ===== Mapa do Mundo (navegação entre ruas, trilhas e florestas) ===== */
 .world-map-wrap {
