@@ -2,11 +2,15 @@
 import os
 
 from twilight.config import (
+    AUTH_MODE,
     CORS_ALLOWED_ORIGINS,
     JWT_EXPIRATION_HOURS,
     JWT_SECRET,
+    SECURE_COOKIES,
     SECRET_KEY,
     TIMEZONE_NAME,
+    auth_allows_internal,
+    auth_allows_lucy,
     ensure_data_dirs,
 )
 from twilight.extensions import socketio
@@ -80,6 +84,16 @@ def create_app():
     app.config['TIMEZONE'] = TIMEZONE_NAME
     app.config['SESSION_COOKIE_HTTPONLY'] = True
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # A sessão Flask só guarda state/PKCE do OIDC. Em HTTPS o cookie precisa
+    # ser Secure para sobreviver ao redirect vindo da Lucy.
+    app.config['SESSION_COOKIE_SECURE'] = SECURE_COOKIES
+
+    # Disponível nos templates para mostrar/esconder formulários e botões
+    # conforme a política de login escolhida por quem roda a instância.
+    app.config['AUTH_MODE'] = AUTH_MODE
+    app.jinja_env.globals['auth_mode'] = AUTH_MODE
+    app.jinja_env.globals['auth_allows_internal'] = auth_allows_internal
+    app.jinja_env.globals['auth_allows_lucy'] = auth_allows_lucy
 
     _install_csrf_origin_guard(app)
 

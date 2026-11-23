@@ -17,7 +17,13 @@ from twilight.auth.service import (
     update_account,
     verify_password,
 )
-from twilight.config import JWT_EXPIRATION_HOURS, SECURE_COOKIES, now_sp_iso
+from twilight.config import (
+    AUTH_MODE,
+    JWT_EXPIRATION_HOURS,
+    SECURE_COOKIES,
+    auth_allows_internal,
+    now_sp_iso,
+)
 from twilight.state import games
 
 bp = Blueprint('auth', __name__)
@@ -72,8 +78,20 @@ def _set_auth_cookie(response, token):
     return response
 
 
+def _internal_login_disabled():
+    """Resposta usada quando a instância não permite login por senha."""
+    return jsonify({
+        'success': False,
+        'message': 'Esta instância usa apenas login da Lucy.',
+        'auth_mode': AUTH_MODE,
+    }), 403
+
+
 @bp.route('/api/register', methods=['POST'])
 def register():
+    if not auth_allows_internal():
+        return _internal_login_disabled()
+
     data = request.json or {}
     username = data.get('username', '').strip().lower()
     password = data.get('password', '').strip()
@@ -117,6 +135,9 @@ def register():
 
 @bp.route('/api/login', methods=['POST'])
 def login():
+    if not auth_allows_internal():
+        return _internal_login_disabled()
+
     data = request.json or {}
     username = data.get('username', '').strip().lower()
     password = data.get('password', '').strip()
@@ -159,7 +180,7 @@ def check_auth():
     username = get_current_user()
     
     if not username:
-        return jsonify({'authenticated': False})
+        return jsonify({'authenticated': False, 'auth_mode': AUTH_MODE})
     
     accounts = load_accounts()
     current_game = accounts.get(username, {}).get('current_game')
@@ -174,6 +195,8 @@ def check_auth():
             'game_exists': True,
             'game_started': bool(getattr(game, 'started', False)),
             'game_finished': bool(getattr(game, 'finished', False)),
+            'auth_mode': AUTH_MODE,
+            'auth_provider': accounts.get(username, {}).get('auth_provider', 'internal'),
         })
     else:
         # Se o jogo não existe mais, limpar da conta
@@ -184,7 +207,9 @@ def check_auth():
             'authenticated': True,
             'username': username,
             'current_game': None,
-            'game_exists': False
+            'game_exists': False,
+            'auth_mode': AUTH_MODE,
+            'auth_provider': accounts.get(username, {}).get('auth_provider', 'internal'),
         })
 
 
@@ -206,7 +231,7 @@ def clear_current_game():
 def api_auth_status():
     username = get_current_user()
     if not username:
-        return jsonify({'logged_in': False})
+        return jsonify({'logged_in': False, 'auth_mode': AUTH_MODE})
     
     accounts = load_accounts()
     user_data = accounts.get(username, {})
@@ -220,7 +245,9 @@ def api_auth_status():
             # level legado + admin_level (journal/admin usam admin_level)
             'level': admin_level,
             'admin_level': admin_level,
-        }
+            'auth_provider': user_data.get('auth_provider', 'internal'),
+        },
+        'auth_mode': AUTH_MODE,
     })
 
 
@@ -267,8 +294,10 @@ def get_account():
             'created_at': account.get('created_at'),
             'current_game': account.get('current_game'),
             'admin_level': int(account.get('admin_level', account.get('level', 0)) or 0),
+            'auth_provider': account.get('auth_provider', 'internal'),
             'preferences': preferences,
         },
+        'auth_mode': AUTH_MODE,
     })
 
 
@@ -288,6 +317,11 @@ def change_password():
         return jsonify({'success': False, 'message': 'Muitas tentativas. Aguarde alguns minutos.'}), 429
 
     account = load_accounts().get(username, {})
+    if account.get('auth_provider') == 'lucy':
+        return jsonify({
+            'success': False,
+            'message': 'Conta vinculada à Lucy: a senha é gerenciada por ela.',
+        }), 400
     if not account or not verify_password(current_password, account.get('password', '')):
         _record(key)
         return jsonify({'success': False, 'message': 'Senha atual incorreta'}), 400
@@ -356,7 +390,11 @@ def delete_own_account():
             'message': 'Contas de administrador não podem ser excluídas por aqui.',
         }), 403
 
-    if not account or not verify_password(password, account.get('password', '')):
+    if not account:
+        return jsonify({'success': False, 'message': 'Conta não encontrada'}), 404
+    if account.get('auth_provider') != 'lucy' and not verify_password(
+        password, account.get('password', '')
+    ):
         return jsonify({'success': False, 'message': 'Senha incorreta'}), 400
 
     # Evita deixar um "fantasma" numa partida em andamento.

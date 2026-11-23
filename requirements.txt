@@ -5,3 +5,5 @@ gevent==24.2.1
 gevent-websocket==0.10.1
 gunicorn==22.0.0
 PyJWT==2.8.0
+# Necessário para validar a assinatura RS256 do id_token da Lucy (JWKS).
+cryptography==42.0.8

@@ -169,6 +169,33 @@ body {
     <h1>Twilight Battle</h1>
     <p class="subtitle">Faça login para continuar a jornada</p>
 
+    {% set oidc_error = request.args.get('error') %}
+    {% if oidc_error %}
+    <div class="error-message" style="display:block;margin-bottom:14px">
+      Não foi possível entrar com a Lucy ({{ oidc_error }}). Tente novamente.
+    </div>
+    {% endif %}
+
+    {% if auth_allows_lucy() %}
+    <div id="lucy-login-block">
+      <a class="auth-btn" id="lucy-login-btn"
+         href="/auth/lucy/login{% if request.args.get('next') %}?next={{ request.args.get('next')|urlencode }}{% endif %}"
+         style="display:block;text-align:center;text-decoration:none">
+        🟢 Entrar com a Lucy
+      </a>
+      <p class="info-text" style="margin-top:10px">
+        Use sua conta da Lucy — sem precisar criar outra senha aqui.
+      </p>
+    </div>
+    {% endif %}
+
+    {% if auth_allows_internal() and auth_allows_lucy() %}
+      <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:#8c9bb5">
+        <span style="flex:1;height:1px;background:#33405a"></span>ou<span style="flex:1;height:1px;background:#33405a"></span>
+      </div>
+    {% endif %}
+
+    {% if auth_allows_internal() %}
     <div class="tab-buttons">
       <button class="tab-btn active" id="login-tab" type="button">Login</button>
       <button class="tab-btn" id="register-tab" type="button">Registrar</button>
@@ -208,6 +235,7 @@ body {
       <div class="spinner"></div>
       <p>Conectando...</p>
     </div>
+    {% endif %}
 
     <p class="info-text">Seus dados são armazenados com segurança</p>
     <div class="auth-links">
@@ -221,6 +249,9 @@ body {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            {% if not auth_allows_internal() %}
+            return;  // instância somente Lucy: o formulário interno não existe
+            {% endif %}
             const loginTab = document.getElementById('login-tab');
             const registerTab = document.getElementById('register-tab');
             const loginForm = document.getElementById('login-form');

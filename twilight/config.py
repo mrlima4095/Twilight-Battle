@@ -72,6 +72,45 @@ JWT_ALGORITHM = 'HS256'
 SECURE_COOKIES = (os.environ.get('SECURE_COOKIES', 'true').strip().lower()
                   not in ('0', 'false', 'no', 'off'))
 
+# ---------------------------------------------------------------------------
+# Autenticação: interna (usuário/senha), Lucy (OIDC) ou as duas.
+# Quem roda a instância escolhe com AUTH_MODE; o padrão continua sendo a
+# login interno de sempre, para não quebrar instalações existentes.
+# ---------------------------------------------------------------------------
+AUTH_MODE = (os.environ.get('AUTH_MODE') or 'internal').strip().lower()
+if AUTH_MODE not in ('internal', 'lucy', 'both'):
+    AUTH_MODE = 'internal'
+
+
+def auth_allows_internal() -> bool:
+    """Login por usuário/senha está disponível nesta instância?"""
+    return AUTH_MODE in ('internal', 'both')
+
+
+def auth_allows_lucy() -> bool:
+    """Login pela Lucy (OIDC) está disponível nesta instância?"""
+    return AUTH_MODE in ('lucy', 'both')
+
+
+# Cliente OIDC da Lucy. Só é obrigatório quando AUTH_MODE inclui 'lucy'.
+LUCY_ISSUER = (os.environ.get('LUCY_ISSUER') or 'https://chat.opentty.fun').strip().rstrip('/')
+LUCY_CLIENT_ID = (os.environ.get('LUCY_CLIENT_ID') or '').strip()
+LUCY_CLIENT_SECRET = (os.environ.get('LUCY_CLIENT_SECRET') or '').strip()
+LUCY_REDIRECT_URI = (os.environ.get('LUCY_REDIRECT_URI') or '').strip()
+LUCY_SCOPES = (os.environ.get('LUCY_SCOPES') or 'openid profile email').strip()
+LUCY_DISCOVERY_URL = (
+    os.environ.get('LUCY_DISCOVERY_URL') or f'{LUCY_ISSUER}/.well-known/openid-configuration'
+).strip()
+LUCY_TIMEOUT_SECONDS = _env_int('LUCY_TIMEOUT_SECONDS', 10)
+
+# Conta local criada automaticamente no primeiro login da Lucy.
+LUCY_ALLOW_SIGNUP = (os.environ.get('LUCY_ALLOW_SIGNUP', 'true').strip().lower()
+                     not in ('0', 'false', 'no', 'off'))
+# Se já existe uma conta interna com o mesmo usuário, vincula em vez de criar
+# outra com sufixo. Útil para preservar progresso/admin_level de contas antigas.
+LUCY_LINK_BY_USERNAME = (os.environ.get('LUCY_LINK_BY_USERNAME', 'true').strip().lower()
+                         not in ('0', 'false', 'no', 'off'))
+
 # Origens permitidas para o Socket.IO e checagem de CSRF (separadas por vírgula).
 # Vazio → mesma origem (recomendado em produção).
 CORS_ALLOWED_ORIGINS = [

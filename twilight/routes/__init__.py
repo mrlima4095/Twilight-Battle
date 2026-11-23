@@ -2,10 +2,11 @@
 
 
 def register_blueprints(app):
-    from twilight.routes import admin, auth, games, journal, pages, story, webhook
+    from twilight.routes import admin, auth, games, journal, lucy_auth, pages, story, webhook
 
     app.register_blueprint(pages.bp)
     app.register_blueprint(auth.bp)
+    app.register_blueprint(lucy_auth.bp)
     app.register_blueprint(games.bp)
     app.register_blueprint(story.bp)
     app.register_blueprint(journal.bp)

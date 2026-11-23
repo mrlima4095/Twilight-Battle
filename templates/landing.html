@@ -292,7 +292,7 @@ footer {
     </div>
     <div class="nav-cta">
       <a class="btn-ghost" href="/login">Entrar</a>
-      <a class="btn-gold" href="/login?tab=register">Criar conta</a>
+      <a class="btn-gold" href="{% if auth_allows_internal() %}/login?tab=register{% else %}/login{% endif %}">{% if auth_allows_internal() %}Criar conta{% else %}Entrar com a Lucy{% endif %}</a>
     </div>
   </div>
 </nav>
@@ -308,7 +308,7 @@ footer {
       e seja o <strong>último de pé</strong> no Reino do Crepúsculo.
     </p>
     <div class="hero-actions">
-      <a class="btn-gold" href="/login?tab=register">Jogar grátis</a>
+      <a class="btn-gold" href="{% if auth_allows_internal() %}/login?tab=register{% else %}/login{% endif %}">{% if auth_allows_internal() %}Jogar grátis{% else %}Entrar com a Lucy{% endif %}</a>
       <a class="btn-ghost" href="#jogo">Descobrir o jogo</a>
     </div>
 
@@ -439,9 +439,9 @@ footer {
   <section>
     <div class="final-cta">
       <h2>Pronto para erguer sua legião?</h2>
-      <p>Criar conta é grátis e leva segundos. Entre na batalha e desafie o reino.</p>
+      <p>{% if auth_allows_internal() %}Criar conta é grátis e leva segundos.{% else %}Entre com sua conta da Lucy e comece a jogar na hora.{% endif %} Entre na batalha e desafie o reino.</p>
       <div class="hero-actions">
-        <a class="btn-gold" href="/login?tab=register">Criar conta grátis</a>
+        <a class="btn-gold" href="{% if auth_allows_internal() %}/login?tab=register{% else %}/login{% endif %}">{% if auth_allows_internal() %}Criar conta grátis{% else %}Entrar com a Lucy{% endif %}</a>
         <a class="btn-ghost" href="/login">Já tenho conta</a>
       </div>
     </div>

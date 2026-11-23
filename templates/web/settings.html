@@ -362,7 +362,7 @@ body { padding: 0; }
     </div>
   </div>
 
-  <div class="panel" style="margin-bottom:16px">
+  <div class="panel" id="changePasswordPanel" style="margin-bottom:16px">
     <h3 class="section-title" style="margin-bottom:8px">Alterar senha</h3>
     <div class="form-grid">
       <div class="input-group">
@@ -410,8 +410,11 @@ body { padding: 0; }
   <div class="panel danger-panel" style="margin-bottom:16px">
     <h3 class="section-title danger" style="margin-bottom:8px">Zona de perigo</h3>
     <p class="muted">Excluir sua conta removerá permanentemente seu usuário, senha e dados associados.</p>
+    <p class="muted" id="lucyAccountNote" style="display:none">
+      Sua conta está vinculada à Lucy; não é preciso informar senha para excluí-la.
+    </p>
     <div class="form-grid" style="margin-top:10px">
-      <div class="input-group">
+      <div class="input-group" id="deletePasswordGroup">
         <label for="deletePassword">Senha atual</label>
         <input type="password" id="deletePassword" autocomplete="current-password">
       </div>
@@ -461,6 +464,15 @@ body { padding: 0; }
                     $('accountCreated').textContent = formatDate(acc.created_at);
                     $('accountAdminLevel').textContent = acc.admin_level || 0;
                     $('accountCurrentGame').textContent = acc.current_game || '—';
+
+                    // Conta da Lucy não tem senha local utilizável.
+                    const isLucy = acc.auth_provider === 'lucy';
+                    const pwdPanel = $('changePasswordPanel');
+                    if (pwdPanel) pwdPanel.style.display = isLucy ? 'none' : '';
+                    const pwdGroup = $('deletePasswordGroup');
+                    if (pwdGroup) pwdGroup.style.display = isLucy ? 'none' : '';
+                    const lucyNote = $('lucyAccountNote');
+                    if (lucyNote) lucyNote.style.display = isLucy ? 'block' : 'none';
 
                     const prefs = acc.preferences || {};
                     $('prefMaxPlayers').value = prefs.max_players || 6;
