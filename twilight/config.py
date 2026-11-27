@@ -7,7 +7,13 @@ from zoneinfo import ZoneInfo
 # Persistência: monte o volume do Coolify em /app/data
 DATA_DIR = os.environ.get('DATA_DIR') or 'data'
 SAVES_DIR = os.path.join(DATA_DIR, 'saves')
-# SQLite principal (contas + journal)
+# Banco principal (contas + journal).
+# Em produção o Coolify injeta DATABASE_URL (postgres). Sem ela, mantemos o
+# SQLite local em DATABASE_PATH para dev/testes.
+DATABASE_URL = (os.environ.get('DATABASE_URL') or '').strip()
+if DATABASE_URL.startswith('postgres://'):
+    # alguns proxies fornecem o scheme curto; psycopg espera postgresql://
+    DATABASE_URL = 'postgresql://' + DATABASE_URL[len('postgres://'):]
 DATABASE_PATH = os.environ.get('DATABASE_PATH') or os.path.join(DATA_DIR, 'database.db')
 # JSON legado — só usados na migração automática para o SQLite
 ACCOUNTS_FILE = os.path.join(DATA_DIR, 'accounts.json')
@@ -61,6 +67,13 @@ def _env_int(name: str, default: int) -> int:
         return int(str(raw).strip())
     except ValueError:
         return default
+
+
+# Tamanho máximo do pool PostgreSQL (somente quando DATABASE_URL está definida)
+DB_POOL_SIZE = _env_int('DB_POOL_SIZE', 8)
+# Coolify/Traefik repassam o IP real em X-Forwarded-For. Só confiar se ligado.
+TRUST_PROXY_HEADERS = (os.environ.get('TRUST_PROXY_HEADERS', 'false').strip().lower()
+                       not in ('0', 'false', 'no', 'off'))
 
 
 SECRET_KEY = _resolve_secret('SECRET_KEY', '.secret_key')

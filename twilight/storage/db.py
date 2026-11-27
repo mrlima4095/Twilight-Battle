@@ -1,88 +1,212 @@
-"""SQLite: data/database.db — contas e journal."""
+"""Persistência de contas e journal.
+
+Produção (Coolify): PostgreSQL via ``DATABASE_URL``, com pool de conexões.
+Dev/testes sem ``DATABASE_URL``: SQLite local, mantido como fallback.
+"""
 from __future__ import annotations
 
+import atexit
+import contextlib
 import json
 import os
 import sqlite3
 import threading
-from typing import Any
+from typing import Any, Iterator
 
 from twilight.config import (
     ACCOUNTS_FILE,
     DATA_DIR,
     DATABASE_PATH,
+    DATABASE_URL,
+    DB_POOL_SIZE,
     JOURNAL_FILE,
 )
 
+_USE_POSTGRES = DATABASE_URL.lower().startswith('postgresql://')
+
+if _USE_POSTGRES:
+    import psycopg
+    from psycopg.rows import dict_row
+    from psycopg_pool import ConnectionPool
+
 _lock = threading.RLock()
+_init_lock = threading.Lock()
 _initialized = False
+_sqlite_conn: sqlite3.Connection | None = None
+_pool: Any = None
+
+_ACCOUNT_COLUMNS = (
+    'SELECT username, password, created_at, current_game, admin_level, meta_json FROM accounts'
+)
+
+_SCHEMA_COMMON = """
+CREATE TABLE IF NOT EXISTS journal_entries (
+    id TEXT PRIMARY KEY,
+    version TEXT,
+    title TEXT,
+    description TEXT,
+    date TEXT,
+    type TEXT DEFAULT 'minor',
+    features_json TEXT NOT NULL DEFAULT '[]',
+    improvements_json TEXT NOT NULL DEFAULT '[]',
+    bugfixes_json TEXT NOT NULL DEFAULT '[]',
+    tags_json TEXT NOT NULL DEFAULT '[]',
+    extra_json TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_journal_date ON journal_entries(date);
+"""
+
+_SCHEMA_SQLITE = """
+CREATE TABLE IF NOT EXISTS accounts (
+    username TEXT PRIMARY KEY COLLATE NOCASE,
+    password TEXT NOT NULL,
+    created_at TEXT,
+    current_game TEXT,
+    admin_level INTEGER NOT NULL DEFAULT 0,
+    meta_json TEXT NOT NULL DEFAULT '{}'
+);
+""" + _SCHEMA_COMMON + """
+CREATE INDEX IF NOT EXISTS idx_accounts_current_game ON accounts(current_game);
+"""
+
+# PostgreSQL não tem collation NOCASE embutida: o código normaliza usuários para
+# minúsculas antes de gravar/consultar e mantém um índice extra para segurança.
+_SCHEMA_POSTGRES = (
+    """
+    CREATE TABLE IF NOT EXISTS accounts (
+        username TEXT PRIMARY KEY,
+        password TEXT NOT NULL,
+        created_at TEXT,
+        current_game TEXT,
+        admin_level INTEGER NOT NULL DEFAULT 0,
+        meta_json TEXT NOT NULL DEFAULT '{}'
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS journal_entries (
+        id TEXT PRIMARY KEY,
+        version TEXT,
+        title TEXT,
+        description TEXT,
+        date TEXT,
+        type TEXT DEFAULT 'minor',
+        features_json TEXT NOT NULL DEFAULT '[]',
+        improvements_json TEXT NOT NULL DEFAULT '[]',
+        bugfixes_json TEXT NOT NULL DEFAULT '[]',
+        tags_json TEXT NOT NULL DEFAULT '[]',
+        extra_json TEXT NOT NULL DEFAULT '{}'
+    );
+    """,
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_username_lower ON accounts (lower(username));",
+    "CREATE INDEX IF NOT EXISTS idx_accounts_current_game ON accounts(current_game);",
+    "CREATE INDEX IF NOT EXISTS idx_journal_date ON journal_entries(date);",
+)
 
 
-def _connect() -> sqlite3.Connection:
-    os.makedirs(os.path.dirname(DATABASE_PATH) or DATA_DIR, exist_ok=True)
-    conn = sqlite3.connect(DATABASE_PATH, check_same_thread=False, timeout=30)
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA foreign_keys = ON')
-    conn.execute('PRAGMA journal_mode = WAL')
-    conn.execute('PRAGMA busy_timeout = 30000')
-    return conn
+def _q(sql: str) -> str:
+    """Converte os placeholders ``?`` para o driver PostgreSQL."""
+    return sql.replace('?', '%s') if _USE_POSTGRES else sql
+
+
+def _ensure_pool() -> None:
+    global _pool
+    if _pool is None:
+        _pool = ConnectionPool(
+            conninfo=DATABASE_URL,
+            open=True,
+            min_size=1,
+            max_size=max(1, DB_POOL_SIZE),
+            kwargs={'row_factory': dict_row},
+        )
 
 
 def init_db() -> None:
-    """Cria tabelas e migra JSON legado se o DB estiver vazio."""
-    global _initialized
-    with _lock:
-        conn = _connect()
-        try:
-            conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS accounts (
-                    username TEXT PRIMARY KEY COLLATE NOCASE,
-                    password TEXT NOT NULL,
-                    created_at TEXT,
-                    current_game TEXT,
-                    admin_level INTEGER NOT NULL DEFAULT 0,
-                    meta_json TEXT NOT NULL DEFAULT '{}'
-                );
-
-                CREATE TABLE IF NOT EXISTS journal_entries (
-                    id TEXT PRIMARY KEY,
-                    version TEXT,
-                    title TEXT,
-                    description TEXT,
-                    date TEXT,
-                    type TEXT DEFAULT 'minor',
-                    features_json TEXT NOT NULL DEFAULT '[]',
-                    improvements_json TEXT NOT NULL DEFAULT '[]',
-                    bugfixes_json TEXT NOT NULL DEFAULT '[]',
-                    tags_json TEXT NOT NULL DEFAULT '[]',
-                    extra_json TEXT NOT NULL DEFAULT '{}'
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_accounts_current_game
-                    ON accounts(current_game);
-                CREATE INDEX IF NOT EXISTS idx_journal_date
-                    ON journal_entries(date);
-                """
+    """Cria tabelas/índices e migra o JSON legado (somente SQLite)."""
+    global _initialized, _sqlite_conn
+    with _init_lock:
+        if _initialized:
+            return
+        if _USE_POSTGRES:
+            _ensure_pool()
+            with _pool.connection() as conn:
+                with conn.transaction():
+                    with conn.cursor() as cur:
+                        for statement in _SCHEMA_POSTGRES:
+                            cur.execute(statement)
+        else:
+            os.makedirs(os.path.dirname(DATABASE_PATH) or DATA_DIR, exist_ok=True)
+            _sqlite_conn = sqlite3.connect(
+                DATABASE_PATH, check_same_thread=False, timeout=30
             )
-            # Migra contas/journal do JSON legado (uma vez, se as tabelas vazias)
-            _migrate_from_json_if_needed(conn)
-            conn.commit()
-        finally:
-            conn.close()
+            _sqlite_conn.row_factory = sqlite3.Row
+            # PRAGMAs uma única vez: conexão persistente (não uma por chamada).
+            _sqlite_conn.execute('PRAGMA foreign_keys = ON')
+            _sqlite_conn.execute('PRAGMA journal_mode = WAL')
+            _sqlite_conn.execute('PRAGMA busy_timeout = 30000')
+            with _lock:
+                _sqlite_conn.executescript(_SCHEMA_SQLITE)
+                _migrate_from_json_if_needed(_sqlite_conn)
+                _sqlite_conn.commit()
         _initialized = True
 
 
+@contextlib.contextmanager
+def _cursor() -> Iterator[Any]:
+    """Transação curta reaproveitando pool (PG) ou conexão única (SQLite)."""
+    init_db()
+    if _USE_POSTGRES:
+        with _pool.connection() as conn:
+            with conn.transaction():
+                with conn.cursor() as cur:
+                    yield cur
+    else:
+        assert _sqlite_conn is not None
+        with _lock:
+            cur = _sqlite_conn.cursor()
+            try:
+                yield cur
+                _sqlite_conn.commit()
+            except Exception:
+                _sqlite_conn.rollback()
+                raise
+            finally:
+                cur.close()
+
+
+def close_db() -> None:
+    """Fecha pool/conexão ao sair (evita threads órfãs no shutdown)."""
+    global _pool, _sqlite_conn, _initialized
+    if _pool is not None:
+        try:
+            _pool.close()
+        except Exception:
+            pass
+        _pool = None
+    if _sqlite_conn is not None:
+        try:
+            _sqlite_conn.close()
+        except Exception:
+            pass
+        _sqlite_conn = None
+    _initialized = False
+
+
+atexit.register(close_db)
+
+
 def _ensure_init() -> None:
-    if not _initialized:
-        init_db()
+    init_db()
+
+
+def _norm_username(username: Any) -> str:
+    return str(username or '').strip().lower()
 
 
 def _account_known_keys():
     return {'password', 'created_at', 'current_game', 'admin_level', 'level'}
 
 
-def _row_to_account(row: sqlite3.Row) -> dict:
+def _row_to_account(row: Any) -> dict:
     data: dict[str, Any] = {
         'password': row['password'],
         'created_at': row['created_at'],
@@ -120,7 +244,7 @@ def _account_to_row(username: str, data: dict) -> tuple:
     if 'level' in data and data.get('level') != admin_level:
         meta['level'] = data.get('level')
     return (
-        username,
+        _norm_username(username),
         data.get('password') or '',
         data.get('created_at'),
         data.get('current_game'),
@@ -130,27 +254,54 @@ def _account_to_row(username: str, data: dict) -> tuple:
 
 
 def load_accounts() -> dict:
-    """Retorna {username: {password, created_at, current_game, ...}}."""
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            rows = conn.execute(
-                'SELECT username, password, created_at, current_game, admin_level, meta_json FROM accounts'
-            ).fetchall()
-            return {row['username']: _row_to_account(row) for row in rows}
-        finally:
-            conn.close()
+    """Retorna todas as contas (apenas para listagens/admin)."""
+    with _cursor() as cur:
+        rows = cur.execute(_q(_ACCOUNT_COLUMNS)).fetchall()
+        return {row['username']: _row_to_account(row) for row in rows}
+
+
+def get_account(username: str) -> dict | None:
+    """Lê UMA conta — use no lugar de ``load_accounts().get(username)``."""
+    with _cursor() as cur:
+        row = cur.execute(
+            _q(_ACCOUNT_COLUMNS + ' WHERE username = ?'), (_norm_username(username),)
+        ).fetchone()
+    return _row_to_account(row) if row else None
+
+
+def account_exists(username: str) -> bool:
+    with _cursor() as cur:
+        row = cur.execute(
+            _q('SELECT 1 FROM accounts WHERE username = ?'), (_norm_username(username),)
+        ).fetchone()
+    return row is not None
+
+
+def find_linked_account(sub: str, issuer: str) -> tuple[str, dict] | None:
+    """Conta vinculada a um ``oidc_sub`` guardado em ``meta_json``."""
+    if _USE_POSTGRES:
+        where = (
+            "meta_json::jsonb->>'oidc_sub' = %s "
+            "AND (coalesce(meta_json::jsonb->>'oidc_issuer', '') IN ('', %s))"
+        )
+    else:
+        where = (
+            "json_extract(meta_json, '$.oidc_sub') = ? "
+            "AND (coalesce(json_extract(meta_json, '$.oidc_issuer'), '') IN ('', ?))"
+        )
+    with _cursor() as cur:
+        row = cur.execute(_q(_ACCOUNT_COLUMNS + ' WHERE ' + where), (sub, issuer)).fetchone()
+    if not row:
+        return None
+    return row['username'], _row_to_account(row)
 
 
 def upsert_account(username: str, data: dict) -> None:
     """Insere/atualiza UMA conta (sem tocar nas demais)."""
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            row = _account_to_row(username, data or {})
-            conn.execute(
+    row = _account_to_row(username, data or {})
+    with _cursor() as cur:
+        cur.execute(
+            _q(
                 """
                 INSERT INTO accounts (username, password, created_at, current_game, admin_level, meta_json)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -160,76 +311,81 @@ def upsert_account(username: str, data: dict) -> None:
                     current_game = excluded.current_game,
                     admin_level = excluded.admin_level,
                     meta_json = excluded.meta_json
-                """,
-                row,
-            )
-            conn.commit()
-        finally:
-            conn.close()
+                """
+            ),
+            row,
+        )
 
 
 def update_account(username: str, updates: dict) -> bool:
-    """
-    Aplica `updates` numa única conta de forma atômica.
-
-    O read-modify-write acontece inteiro sob o mesmo lock, então chamadas
-    concorrentes (check-auth, update_user_game, story save, admin...) não se
-    sobrescrevem nem apagam outras contas.
-    """
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            row = conn.execute(
-                'SELECT username, password, created_at, current_game, admin_level, meta_json '
-                'FROM accounts WHERE username = ?',
-                (username,),
-            ).fetchone()
-            if row is None:
-                return False
-            data = _row_to_account(row)
-            data.update(updates or {})
-            new_row = _account_to_row(row['username'], data)
-            conn.execute(
+    """Atualiza UMA conta de forma atômica (read-modify-write no mesmo lock)."""
+    uname = _norm_username(username)
+    with _cursor() as cur:
+        row = cur.execute(
+            _q(_ACCOUNT_COLUMNS + ' WHERE username = ?'), (uname,)
+        ).fetchone()
+        if row is None:
+            return False
+        data = _row_to_account(row)
+        data.update(updates or {})
+        new_row = _account_to_row(row['username'], data)
+        cur.execute(
+            _q(
                 'UPDATE accounts SET password = ?, created_at = ?, current_game = ?, '
-                'admin_level = ?, meta_json = ? WHERE username = ?',
-                new_row[1:] + (row['username'],),
-            )
-            conn.commit()
-            return True
-        finally:
-            conn.close()
+                'admin_level = ?, meta_json = ? WHERE username = ?'
+            ),
+            new_row[1:] + (row['username'],),
+        )
+    return True
+
+
+def clear_account_game(username: str, game_id: str | None = None) -> bool:
+    """Limpa ``current_game`` de uma conta, opcionalmente só se bater com game_id."""
+    with _cursor() as cur:
+        cur.execute(
+            _q(
+                'UPDATE accounts SET current_game = NULL '
+                'WHERE username = ? AND (CAST(? AS TEXT) IS NULL OR current_game = ?)'
+            ),
+            (_norm_username(username), game_id, game_id),
+        )
+        return cur.rowcount > 0
+
+
+def clear_accounts_current_game(game_id: str, usernames: list | None = None) -> int:
+    """Limpa ``current_game`` de todas (ou algumas) contas da sala, em UMA query."""
+    if not game_id:
+        return 0
+    sql = 'UPDATE accounts SET current_game = NULL WHERE current_game = ?'
+    params: list[Any] = [game_id]
+    if usernames:
+        names = [_norm_username(u) for u in usernames]
+        if _USE_POSTGRES:
+            sql += ' AND username = ANY(%s)'
+            params.append(names)
+        else:
+            sql += ' AND username IN (' + ','.join('?' for _ in names) + ')'
+            params.extend(names)
+    with _cursor() as cur:
+        cur.execute(_q(sql), params)
+        return cur.rowcount or 0
 
 
 def delete_account(username: str) -> bool:
-    """Remove UMA conta (não mexe nas demais)."""
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            cur = conn.execute('DELETE FROM accounts WHERE username = ?', (username,))
-            conn.commit()
-            return cur.rowcount > 0
-        finally:
-            conn.close()
+    with _cursor() as cur:
+        cur.execute(
+            _q('DELETE FROM accounts WHERE username = ?'), (_norm_username(username),)
+        )
+        return cur.rowcount > 0
 
 
 def save_accounts(accounts: dict) -> None:
-    """
-    Upsert em lote (compatível com a antiga API de JSON).
-
-    Só grava/atualiza o que recebeu — NÃO remove contas ausentes do dict, para
-    não apagar dados quando duas requisições concorrentes fazem
-    load → modify → save. Para remover use delete_account().
-    """
-    _ensure_init()
-    accounts = accounts or {}
-    with _lock:
-        conn = _connect()
-        try:
-            for uname, data in accounts.items():
-                row = _account_to_row(uname, data or {})
-                conn.execute(
+    """Upsert em lote em uma única transação (compatibilidade legada)."""
+    with _cursor() as cur:
+        for uname, data in (accounts or {}).items():
+            row = _account_to_row(uname, data or {})
+            cur.execute(
+                _q(
                     """
                     INSERT INTO accounts (username, password, created_at, current_game, admin_level, meta_json)
                     VALUES (?, ?, ?, ?, ?, ?)
@@ -239,16 +395,13 @@ def save_accounts(accounts: dict) -> None:
                         current_game = excluded.current_game,
                         admin_level = excluded.admin_level,
                         meta_json = excluded.meta_json
-                    """,
-                    row,
-                )
-            conn.commit()
-        finally:
-            conn.close()
+                    """
+                ),
+                row,
+            )
 
 
-
-def _entry_to_dict(row: sqlite3.Row) -> dict:
+def _entry_to_dict(row: Any) -> dict:
     def _loads(s, default):
         try:
             return json.loads(s or json.dumps(default))
@@ -280,16 +433,8 @@ def _entry_to_dict(row: sqlite3.Row) -> dict:
 
 def _entry_to_row(entry: dict) -> tuple:
     known = {
-        'id',
-        'version',
-        'title',
-        'description',
-        'date',
-        'type',
-        'features',
-        'improvements',
-        'bugfixes',
-        'tags',
+        'id', 'version', 'title', 'description', 'date', 'type',
+        'features', 'improvements', 'bugfixes', 'tags',
     }
     extra = {k: v for k, v in (entry or {}).items() if k not in known}
     return (
@@ -308,35 +453,25 @@ def _entry_to_row(entry: dict) -> tuple:
 
 
 def load_journal() -> list:
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            rows = conn.execute(
-                """
-                SELECT id, version, title, description, date, type,
-                       features_json, improvements_json, bugfixes_json, tags_json, extra_json
-                FROM journal_entries
-                ORDER BY date DESC
-                """
-            ).fetchall()
-            return [_entry_to_dict(r) for r in rows]
-        finally:
-            conn.close()
+    with _cursor() as cur:
+        rows = cur.execute(
+            """
+            SELECT id, version, title, description, date, type,
+                   features_json, improvements_json, bugfixes_json, tags_json, extra_json
+            FROM journal_entries ORDER BY date DESC
+            """
+        ).fetchall()
+        return [_entry_to_dict(r) for r in rows]
 
 
 def save_journal(entries: list) -> None:
     """Upsert em lote do journal (NÃO remove entradas ausentes)."""
-    _ensure_init()
-    entries = entries or []
-    with _lock:
-        conn = _connect()
-        try:
-            for entry in entries:
-                if not entry or entry.get('id') is None:
-                    continue
-                row = _entry_to_row(entry)
-                conn.execute(
+    with _cursor() as cur:
+        for entry in entries or []:
+            if not entry or entry.get('id') is None:
+                continue
+            cur.execute(
+                _q(
                     """
                     INSERT INTO journal_entries (
                         id, version, title, description, date, type,
@@ -353,25 +488,21 @@ def save_journal(entries: list) -> None:
                         bugfixes_json = excluded.bugfixes_json,
                         tags_json = excluded.tags_json,
                         extra_json = excluded.extra_json
-                    """,
-                    row,
-                )
-            conn.commit()
-        finally:
-            conn.close()
+                    """
+                ),
+                _entry_to_row(entry),
+            )
+
+
+def upsert_journal_entry(entry: dict) -> None:
+    """Grava UMA entrada do journal, sem reescrever as demais."""
+    save_journal([entry])
 
 
 def delete_journal_entry(entry_id: str) -> bool:
-    """Remove UMA entrada do journal."""
-    _ensure_init()
-    with _lock:
-        conn = _connect()
-        try:
-            cur = conn.execute('DELETE FROM journal_entries WHERE id = ?', (str(entry_id),))
-            conn.commit()
-            return cur.rowcount > 0
-        finally:
-            conn.close()
+    with _cursor() as cur:
+        cur.execute(_q('DELETE FROM journal_entries WHERE id = ?'), (str(entry_id),))
+        return cur.rowcount > 0
 
 
 def _migrate_from_json_if_needed(conn: sqlite3.Connection) -> None:
@@ -383,17 +514,15 @@ def _migrate_from_json_if_needed(conn: sqlite3.Connection) -> None:
                 accounts = json.load(f)
             if isinstance(accounts, dict):
                 for uname, data in accounts.items():
-                    row = _account_to_row(str(uname).lower(), data or {})
-                    # preserve original username casing? auth uses .lower()
+                    row = _account_to_row(uname, data or {})
                     conn.execute(
                         """
                         INSERT OR IGNORE INTO accounts
                         (username, password, created_at, current_game, admin_level, meta_json)
                         VALUES (?, ?, ?, ?, ?, ?)
                         """,
-                        (str(uname).lower(),) + row[1:],
+                        row,
                     )
-                # rename legacy file after success
                 _backup_legacy(ACCOUNTS_FILE)
         except (OSError, json.JSONDecodeError, TypeError):
             pass
@@ -407,7 +536,6 @@ def _migrate_from_json_if_needed(conn: sqlite3.Connection) -> None:
                 for entry in entries:
                     if not entry or entry.get('id') is None:
                         continue
-                    row = _entry_to_row(entry)
                     conn.execute(
                         """
                         INSERT OR IGNORE INTO journal_entries (
@@ -415,7 +543,7 @@ def _migrate_from_json_if_needed(conn: sqlite3.Connection) -> None:
                             features_json, improvements_json, bugfixes_json, tags_json, extra_json
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         """,
-                        row,
+                        _entry_to_row(entry),
                     )
                 _backup_legacy(JOURNAL_FILE)
         except (OSError, json.JSONDecodeError, TypeError):

@@ -75,7 +75,7 @@ def close_game(game_id: str, message: Optional[str] = None, notify: bool = True)
 
 
 def _delayed_close(game_id: str, delay: float, message: Optional[str]) -> None:
-    time.sleep(max(0.5, delay))
+    socketio.sleep(max(0.5, delay))
     with _lock:
         still = game_id in _pending_close
     if not still and game_id not in games:
@@ -111,13 +111,10 @@ def schedule_close_finished_game(
     msg = message or (
         f'Partida encerrada. A sala {game_id} foi fechada automaticamente.'
     )
-    t = threading.Thread(
-        target=_delayed_close,
-        args=(game_id, delay, msg),
-        daemon=True,
-        name=f'close-game-{game_id}',
+    # gevent-friendly: não bloqueia o worker com time.sleep numa thread real.
+    socketio.start_background_task(
+        _delayed_close, game_id, delay, msg
     )
-    t.start()
 
 
 def _count_human_sockets(game) -> int:

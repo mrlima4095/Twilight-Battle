@@ -38,6 +38,8 @@ class Game:
         self.current_turn = 0  # Índice na lista players
         self.time_of_day = "day"
         self.time_cycle = 0
+        # cache dos efeitos dia/noite: evita recalcular todo turno sem mudança
+        self._last_day_effects_signature = None
         # respeita config (antes era sobrescrito para 6 sempre)
         self.max_players = int(self.config.get('max_players', 6) or 6)
         self.turn_actions_used = {}
@@ -170,6 +172,7 @@ class Game:
         self.current_turn = 0
         self.time_of_day = "day"
         self.time_cycle = 0
+        self._last_day_effects_signature = None
         self.turn_actions_used = {}
         self.turn_extra_actions = {}
         self.last_spell_id = None
@@ -540,18 +543,24 @@ class Game:
                 self.player_data[username]['first_hit_reduced'] = False
                 self.player_data[username]['attacked_this_turn'] = False
         
-        if self.time_of_day == "day":
-            self.apply_day_effects()
+        cycle_changed = False
         if 'disable_daycicle' not in self.modifiers:
             self.time_cycle += 1
             cycle_len = getattr(self, 'day_cycle_length', 24) or 24
             if self.time_cycle % cycle_len == 0:
+                cycle_changed = True
                 self.time_of_day = "night" if self.time_of_day == "day" else "day"
                 if self.time_of_day == "day":
-                    self.apply_day_effects()
+                    # virada do ciclo: sempre reaplica (fora dos turnos normais)
+                    self.apply_day_effects(force=True)
                 else:
                     self.apply_werewolf_forms()
-                self.refresh_dynamic_weapon_bonuses()
+                    self.refresh_dynamic_weapon_bonuses()
+                    self._last_day_effects_signature = self._day_effects_signature()
+
+        if self.time_of_day == "day" and not cycle_changed:
+            # Sem virada, só recalcula se cartas/equipamentos mudaram.
+            self.apply_day_effects()
 
         
         current_player = self.players[self.current_turn]
@@ -1353,7 +1362,43 @@ class Game:
                     else:
                         card['attack'] = target_atk + gear_atk
 
-    def apply_day_effects(self):
+    def _day_effects_signature(self):
+        """ Estado relevante para dia/noite, sem contar stats recalculados.
+
+        Inclui o ciclo para que a virada dia<->noite sempre reaplique, e os
+        ids de cartas/equipamentos para que cartas recém-jogadas também sejam
+        processadas sem recalcular em todos os turnos.
+        """
+        parts = []
+        for username in self.players:
+            player = self.player_data.get(username) or {}
+            equip = player.get('equipment') or {}
+            parts.append((
+                username,
+                tuple(sorted(
+                    (slot, (item or {}).get('id'))
+                    for slot, item in equip.items()
+                )),
+            ))
+            for base in ('attack_bases', 'defense_bases'):
+                for card in player.get(base) or []:
+                    if not card:
+                        parts.append(None)
+                        continue
+                    parts.append((
+                        card.get('id'),
+                        tuple((eq or {}).get('id') for eq in card.get('equipped_items') or []),
+                        bool(card.get('dies_daylight')),
+                        bool(card.get('night_creature')),
+                        bool(card.get('werewolf')),
+                    ))
+        return (self.time_cycle, self.time_of_day, tuple(parts))
+
+    def apply_day_effects(self, force=False):
+        signature = self._day_effects_signature()
+        if not force and signature == getattr(self, '_last_day_effects_signature', None):
+            return
+
         for username in self.players:
             player = self.player_data[username]
             
@@ -1423,6 +1468,7 @@ class Game:
         # lobisomem troca forma no ciclo (também à noite via toggle)
         self.apply_werewolf_forms()
         self.refresh_dynamic_weapon_bonuses()
+        self._last_day_effects_signature = self._day_effects_signature()
 
     def swap_positions(self, username, pos1_type, pos1_index, pos2_type, pos2_index):
         """Troca duas cartas de posição"""

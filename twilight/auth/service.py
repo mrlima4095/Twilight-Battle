@@ -13,8 +13,14 @@ from twilight.config import (
     JWT_EXPIRATION_HOURS,
     JWT_SECRET,
 )
-from twilight.storage.db import (  # noqa: F401  (delete_account/save_accounts/upsert_account são re-exportados)
+from twilight.offload import run_offloop
+from twilight.storage.db import (  # noqa: F401  (helpers re-exportados para imports legados)
+    account_exists,
+    clear_account_game,
+    clear_accounts_current_game,
     delete_account,
+    find_linked_account,
+    get_account,
     load_accounts,
     save_accounts,
     update_account,
@@ -22,24 +28,25 @@ from twilight.storage.db import (  # noqa: F401  (delete_account/save_accounts/u
 )
 
 # reexport para imports legados: from twilight.auth.service import load_accounts
-def hash_password(password):
-    salt = secrets.token_hex(16)
-    password_hash = hashlib.pbkdf2_hmac(
+def _pbkdf2(password, salt):
+    return hashlib.pbkdf2_hmac(
         'sha256',
         password.encode('utf-8'),
         salt.encode('utf-8'),
-        100000
+        100000,
     ).hex()
+
+
+def hash_password(password):
+    salt = secrets.token_hex(16)
+    password_hash = run_offloop(_pbkdf2, password, salt)
     return f"{salt}${password_hash}"
+
+
 def verify_password(password, hashed):
     try:
         salt, password_hash = hashed.split('$')
-        check_hash = hashlib.pbkdf2_hmac(
-            'sha256',
-            password.encode('utf-8'),
-            salt.encode('utf-8'),
-            100000
-        ).hex()
+        check_hash = run_offloop(_pbkdf2, password, salt)
         return hmac.compare_digest(check_hash, password_hash)
     except Exception:
         return False
@@ -72,34 +79,15 @@ def update_user_game(username, game_id):
 
 def clear_user_game(username, game_id=None):
     """Remove current_game da conta (opcionalmente só se for o game_id)."""
-    accounts = load_accounts()
-    if username not in accounts:
-        return
-    current = accounts[username].get('current_game')
-    if game_id is None or current == game_id:
-        update_account(username, {'current_game': None})
+    clear_account_game(username, game_id)
+
 
 def clear_game_from_all_accounts(game_id, usernames=None):
     """
-    Limpa current_game de todos os jogadores da sala.
+    Limpa current_game de todos os jogadores da sala em UMA query indexada.
     Evita loop: fim de jogo → / → check-auth redireciona de volta pro game.
     """
-    if not game_id:
-        return
-    accounts = load_accounts()
-    if usernames is None:
-        targets = [
-            uname for uname, data in accounts.items()
-            if data.get('current_game') == game_id
-        ]
-    else:
-        targets = [
-            uname for uname in usernames
-            if uname in accounts and accounts[uname].get('current_game') == game_id
-        ]
-    # Atualização por conta (atômica), sem reescrever o conjunto inteiro
-    for uname in targets:
-        update_account(uname, {'current_game': None})
+    clear_accounts_current_game(game_id, usernames)
 
 def login_required(f):
     @wraps(f)

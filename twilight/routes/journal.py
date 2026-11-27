@@ -3,9 +3,13 @@ import time
 
 from flask import Blueprint, jsonify, request
 
-from twilight.auth.service import get_current_user, load_accounts, login_required
+from twilight.auth.service import get_account, get_current_user, login_required
 from twilight.config import now_sp_iso
-from twilight.storage.journal import delete_journal_entry, load_journal, save_journal
+from twilight.storage.journal import (
+    delete_journal_entry,
+    load_journal,
+    upsert_journal_entry,
+)
 
 bp = Blueprint('journal', __name__)
 
@@ -18,7 +22,7 @@ ADMIN_ONLY_TYPES = frozenset({'roadmap', 'plan', 'internal'})
 def _admin_level(username):
     if not username:
         return 0
-    acc = load_accounts().get(username, {}) or {}
+    acc = get_account(username) or {}
     try:
         return int(acc.get('admin_level', acc.get('level', 0)) or 0)
     except (TypeError, ValueError):
@@ -119,10 +123,8 @@ def api_journal_create(username):
     }
     _normalize_entry_visibility(new_entry)
     
-    entries = load_journal()
-    entries.append(new_entry)
-    save_journal(entries)
-    
+    upsert_journal_entry(new_entry)
+
     return jsonify({'success': True, 'entry': new_entry})
 
 
@@ -167,16 +169,15 @@ def api_journal_update(username, entry_id):
         entries[entry_index]['visibility'] = data.get('visibility')
     _normalize_entry_visibility(entries[entry_index])
     
-    save_journal(entries)
-    
+    upsert_journal_entry(entries[entry_index])
+
     return jsonify({'success': True, 'entry': entries[entry_index]})
 
 
 @bp.route('/api/journal/delete/<entry_id>', methods=['DELETE'])
 @login_required
 def api_journal_delete(username, entry_id):
-    accounts = load_accounts()
-    acc = accounts.get(username, {})
+    acc = get_account(username) or {}
     admin_level = acc.get('admin_level', acc.get('level', 0))
     
     if admin_level < 4:

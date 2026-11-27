@@ -622,7 +622,7 @@ def handle_get_chat_history(data):
         emit('chat_history', {'messages': []})
         return
     
-    messages = chat_messages.get(game_id, [])
+    messages = list(chat_messages.get(game_id, []))
     emit('chat_history', {'messages': messages})
 
 @socketio.on('player_action')

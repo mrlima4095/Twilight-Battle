@@ -68,7 +68,7 @@ def create_app():
 
     ensure_data_dirs()
 
-    # SQLite: accounts + journal (migra JSON legado se existir)
+    # Banco principal: Postgres (DATABASE_URL) ou SQLite de fallback.
     from twilight.storage.db import init_db
     init_db()
 

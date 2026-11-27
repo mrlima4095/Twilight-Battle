@@ -7,3 +7,5 @@ gunicorn==22.0.0
 PyJWT==2.8.0
 # Necessário para validar a assinatura RS256 do id_token da Lucy (JWKS).
 cryptography==42.0.8
+# PostgreSQL em produção (Coolify). Pool e binários já vêm no wheel.
+psycopg[binary,pool]==3.2.13

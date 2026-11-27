@@ -20,8 +20,10 @@ import jwt
 from jwt.algorithms import RSAAlgorithm
 
 from twilight import config
-from twilight.auth.service import hash_password, load_accounts, update_account, upsert_account
+from twilight.auth.service import hash_password, update_account, upsert_account
 from twilight.config import now_sp_iso
+from twilight.offload import run_offloop
+from twilight.storage.db import account_exists, find_linked_account, get_account as get_account_record
 
 
 class OidcError(Exception):
@@ -48,7 +50,9 @@ def _http_json(url, *, data=None, headers=None):
         method='POST' if body is not None else 'GET',
     )
     try:
-        with urlopen(req, timeout=config.LUCY_TIMEOUT_SECONDS) as response:
+        # IO síncrono fora do hub gevent (o worker é único).
+        response = run_offloop(urlopen, req, timeout=config.LUCY_TIMEOUT_SECONDS)
+        with response:
             raw = response.read()
     except HTTPError as exc:
         detail = exc.read().decode('utf-8', 'replace')[:400]
@@ -215,16 +219,6 @@ def normalize_username(raw) -> str:
     return value[:20].ljust(3, '_')
 
 
-def _find_linked(accounts: dict, sub: str, issuer: str):
-    for username, account in accounts.items():
-        if account.get('oidc_sub') != sub:
-            continue
-        saved_issuer = account.get('oidc_issuer')
-        if not saved_issuer or saved_issuer == issuer:
-            return username
-    return None
-
-
 def provision(claims: dict) -> str:
     """Encontra/cria a conta local do jogador e devolve o username dela."""
     sub = str(claims.get('sub') or '').strip()
@@ -232,8 +226,8 @@ def provision(claims: dict) -> str:
         raise OidcError('id_token da Lucy sem sub')
 
     issuer = config.LUCY_ISSUER.rstrip('/')
-    accounts = load_accounts()
-    username = _find_linked(accounts, sub, issuer)
+    linked = find_linked_account(sub, issuer)
+    username = linked[0] if linked else None
     display_name = str(claims.get('name') or claims.get('preferred_username') or sub)[:120]
     email = str(claims.get('email') or '')[:200]
     link_fields = {
@@ -249,15 +243,15 @@ def provision(claims: dict) -> str:
         return username
 
     candidate = normalize_username(claims.get('preferred_username') or sub)
-    if candidate in accounts:
-        existing = accounts[candidate]
+    existing = get_account_record(candidate)
+    if existing:
         if config.LUCY_LINK_BY_USERNAME and not existing.get('oidc_sub'):
             # Conta interna antiga: preserva progresso, saves e admin_level.
             update_account(candidate, link_fields)
             return candidate
         suffix = hashlib.sha256(f'{issuer}|{sub}'.encode('utf-8')).hexdigest()[:6]
         candidate = f'{candidate[:13]}_{suffix}'
-        while candidate in accounts:
+        while account_exists(candidate):
             suffix = hashlib.sha256(suffix.encode('utf-8')).hexdigest()[:6]
             candidate = f'{candidate[:13]}_{suffix}'
 

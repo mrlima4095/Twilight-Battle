@@ -262,8 +262,8 @@ def run_bot_turn(game_id: str) -> None:
         schedule_bot_turn(game_id)
         return
 
-    # pequena pausa “humana”
-    time.sleep(random.uniform(0.9, 1.6))
+    # pequena pausa “humana” (socketio.sleep cede ao hub gevent)
+    socketio.sleep(random.uniform(0.9, 1.6))
 
     plan = plan_easy_actions(game, bot)
     for step in plan:
@@ -289,7 +289,7 @@ def run_bot_turn(game_id: str) -> None:
             if log and step.get("action") != "attack":
                 # attack já broadcastou
                 pass
-        time.sleep(random.uniform(0.55, 1.1))
+        socketio.sleep(random.uniform(0.55, 1.1))
 
         if step.get("action") == "end_turn":
             break
@@ -365,7 +365,7 @@ def schedule_bot_turn(game_id: str, delay: float = 0.4) -> None:
 
     def _job():
         if delay:
-            time.sleep(delay)
+            socketio.sleep(delay)
         try:
             run_bot_turn(game_id)
         except Exception as e:

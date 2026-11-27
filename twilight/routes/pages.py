@@ -3,8 +3,8 @@ from flask import Blueprint, redirect, render_template
 
 from twilight.auth.service import (
     clear_user_game,
+    get_account,
     get_current_user,
-    load_accounts,
     login_required,
     update_user_game,
 )
@@ -22,8 +22,7 @@ def index():
 
     # Limpa ponteiro se a sala morreu; NÃO força a página da partida aqui —
     # o jogador pode abrir o lobby em outra aba e voltar com o link/código.
-    accounts = load_accounts()
-    current_game = accounts.get(username, {}).get('current_game')
+    current_game = (get_account(username) or {}).get('current_game')
     if current_game and current_game not in games:
         clear_user_game(username, current_game)
         current_game = None
@@ -91,7 +90,7 @@ def settings():
     if not username:
         return redirect('/login')
 
-    account = load_accounts().get(username, {})
+    account = get_account(username) or {}
     admin_level = int(account.get('admin_level', account.get('level', 0)) or 0)
     return render_template(
         'web/settings.html',

@@ -7,20 +7,22 @@ from collections import defaultdict, deque
 from flask import Blueprint, jsonify, request
 
 from twilight.auth.service import (
+    account_exists,
     clear_user_game,
     create_token,
     delete_account,
+    get_account as get_account_record,
     get_current_user,
     hash_password,
-    load_accounts,
-    save_accounts,
     update_account,
+    upsert_account,
     verify_password,
 )
 from twilight.config import (
     AUTH_MODE,
     JWT_EXPIRATION_HOURS,
     SECURE_COOKIES,
+    TRUST_PROXY_HEADERS,
     auth_allows_internal,
     now_sp_iso,
 )
@@ -38,13 +40,16 @@ _MAX_FAILED_LOGINS = 10
 _LOGIN_WINDOW = 300  # 5 min
 _MAX_REGISTERS = 10
 _REGISTER_WINDOW = 600  # 10 min
+_MAX_ATTEMPT_KEYS = 10_000
 _attempts_lock = threading.Lock()
 
 
 def _client_ip():
-    forwarded = request.headers.get('X-Forwarded-For', '')
-    if forwarded:
-        return forwarded.split(',')[0].strip()
+    # X-Forwarded-For só é confiável atrás de proxy conhecido (Coolify/Traefik).
+    if TRUST_PROXY_HEADERS:
+        forwarded = request.headers.get('X-Forwarded-For', '')
+        if forwarded:
+            return forwarded.split(',')[0].strip()
     return request.remote_addr or 'unknown'
 
 
@@ -52,10 +57,25 @@ def _prune(bucket, window):
     now = time.time()
     while bucket and bucket[0] < now - window:
         bucket.popleft()
+    return bool(bucket)
+
+
+def _prune_all():
+    """Limita o dicionário inteiro (chaves criadas por IPs aleatórios)."""
+    if len(_attempts) <= _MAX_ATTEMPT_KEYS:
+        return
+    now = time.time()
+    for key in list(_attempts):
+        bucket = _attempts[key]
+        while bucket and bucket[0] < now - _REGISTER_WINDOW:
+            bucket.popleft()
+        if not bucket:
+            _attempts.pop(key, None)
 
 
 def _too_many(key, window, limit):
     with _attempts_lock:
+        _prune_all()
         bucket = _attempts[key]
         _prune(bucket, window)
         return len(bucket) >= limit
@@ -111,19 +131,15 @@ def register():
         return jsonify({'success': False, 'message': 'Muitas tentativas. Tente novamente mais tarde.'}), 429
     _record(reg_key)
 
-    accounts = load_accounts()
-
-    if username in accounts:
+    if account_exists(username):
         return jsonify({'success': False, 'message': 'Usuário já existe'})
 
-    # Criar nova conta
-    accounts[username] = {
+    # Criar nova conta (uma linha, sem reescrever o resto da tabela)
+    upsert_account(username, {
         'password': hash_password(password),
         'created_at': now_sp_iso(),
-        'current_game': None  # Nenhum jogo ativo
-    }
-
-    save_accounts(accounts)
+        'current_game': None,
+    })
 
     # Criar token
     token = create_token(username)
@@ -149,9 +165,9 @@ def login():
     if _too_many(login_key, _LOGIN_WINDOW, _MAX_FAILED_LOGINS):
         return jsonify({'success': False, 'message': 'Muitas tentativas de login. Aguarde 5 minutos.'}), 429
 
-    accounts = load_accounts()
+    account = get_account_record(username)
 
-    if username not in accounts or not verify_password(password, accounts[username]['password']):
+    if not account or not verify_password(password, account.get('password', '')):
         _record(login_key)
         return jsonify({'success': False, 'message': 'Usuário ou senha inválidos'})
 
@@ -161,7 +177,7 @@ def login():
     response = jsonify({
         'success': True,
         'username': username,
-        'current_game': accounts[username].get('current_game')
+        'current_game': account.get('current_game')
     })
     return _set_auth_cookie(response, token)
 
@@ -182,9 +198,9 @@ def check_auth():
     if not username:
         return jsonify({'authenticated': False, 'auth_mode': AUTH_MODE})
     
-    accounts = load_accounts()
-    current_game = accounts.get(username, {}).get('current_game')
-    
+    account = get_account_record(username) or {}
+    current_game = account.get('current_game')
+
     # Verificar se o jogo ainda existe (lobby pós-rematch conta como ativo)
     if current_game and current_game in games:
         game = games[current_game]
@@ -196,12 +212,12 @@ def check_auth():
             'game_started': bool(getattr(game, 'started', False)),
             'game_finished': bool(getattr(game, 'finished', False)),
             'auth_mode': AUTH_MODE,
-            'auth_provider': accounts.get(username, {}).get('auth_provider', 'internal'),
+            'auth_provider': account.get('auth_provider', 'internal'),
         })
     else:
         # Se o jogo não existe mais, limpar da conta
         if current_game:
-            update_account(username, {'current_game': None})
+            clear_user_game(username, current_game)
         
         return jsonify({
             'authenticated': True,
@@ -209,7 +225,7 @@ def check_auth():
             'current_game': None,
             'game_exists': False,
             'auth_mode': AUTH_MODE,
-            'auth_provider': accounts.get(username, {}).get('auth_provider', 'internal'),
+            'auth_provider': account.get('auth_provider', 'internal'),
         })
 
 
@@ -233,8 +249,7 @@ def api_auth_status():
     if not username:
         return jsonify({'logged_in': False, 'auth_mode': AUTH_MODE})
     
-    accounts = load_accounts()
-    user_data = accounts.get(username, {})
+    user_data = get_account_record(username) or {}
     admin_level = int(user_data.get('admin_level', user_data.get('level', 0)) or 0)
     
     return jsonify({
@@ -279,7 +294,7 @@ def get_account():
     if err:
         return err
 
-    account = load_accounts().get(username, {})
+    account = get_account_record(username) or {}
     prefs = account.get('room_preferences')
     if not isinstance(prefs, dict):
         prefs = {}
@@ -316,7 +331,7 @@ def change_password():
     if _too_many(key, _LOGIN_WINDOW, _MAX_FAILED_LOGINS):
         return jsonify({'success': False, 'message': 'Muitas tentativas. Aguarde alguns minutos.'}), 429
 
-    account = load_accounts().get(username, {})
+    account = get_account_record(username) or {}
     if account.get('auth_provider') == 'lucy':
         return jsonify({
             'success': False,
@@ -382,7 +397,7 @@ def delete_own_account():
     if confirm != 'APAGAR':
         return jsonify({'success': False, 'message': 'Confirmação inválida. Digite APAGAR.'}), 400
 
-    account = load_accounts().get(username, {})
+    account = get_account_record(username) or {}
     admin_level = int(account.get('admin_level', account.get('level', 0)) or 0)
     if admin_level >= 1:
         return jsonify({

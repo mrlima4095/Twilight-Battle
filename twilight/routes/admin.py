@@ -7,15 +7,16 @@ from flask import Blueprint, jsonify, redirect, render_template, request
 
 from twilight.auth.admin import admin_required, is_admin, is_super_admin
 from twilight.auth.service import (
-    clear_game_from_all_accounts,
     clear_user_game,
     delete_account,
+    get_account,
     load_accounts,
     login_required,
     update_account,
 )
 from twilight.cards.definitions import CARDS
 from twilight.extensions import socketio
+from twilight.game.session import close_game
 from twilight.state import games
 from twilight.storage.story_saves import get_user_save_file
 from twilight.game.chat import broadcast_system_message
@@ -88,13 +89,12 @@ def api_admin_delete_user(admin_username, target_username):
     if target_username == admin_username:
         return jsonify({'success': False, 'message': 'Não pode deletar a si mesmo'}), 400
     
-    accounts = load_accounts()
-    if target_username not in accounts:
+    target_account = get_account(target_username)
+    if not target_account:
         return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
-    
+
     # Remover usuário de qualquer jogo ativo
-    accounts = load_accounts()
-    game_id = accounts.get(target_username, {}).get('current_game')
+    game_id = target_account.get('current_game')
     if game_id and game_id in games:
         game = games[game_id]
         if target_username in game.player_data:
@@ -122,10 +122,9 @@ def api_admin_set_level(admin_username, target_username):
     if not isinstance(level, int) or level < 0 or level > 5:
         return jsonify({'success': False, 'message': 'Nível inválido (0-5)'}), 400
     
-    accounts = load_accounts()
-    if target_username not in accounts:
+    if not get_account(target_username):
         return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
-    
+
     update_account(target_username, {'admin_level': level})
     
     return jsonify({'success': True, 'message': f'Nível de admin de {target_username} alterado para {level}'})
@@ -181,12 +180,9 @@ def api_admin_force_end(admin_username, game_id):
         'admin': admin_username
     }, room=game_id)
     
-    # Limpar referências dos jogadores e espectadores (atômico por conta)
-    clear_game_from_all_accounts(game_id)
-    
-    # Remover o jogo
-    del games[game_id]
-    
+    # Remove sala, chat, agendamentos e current_game de todos de uma vez.
+    close_game(game_id, message=f'Admin {admin_username} encerrou o jogo')
+
     return jsonify({'success': True, 'message': f'Jogo {game_id} encerrado'})
 
 @bp.route('/api/admin/game/<game_id>/sync')
@@ -276,10 +272,7 @@ def api_admin_kick_player(admin_username, game_id, target_username):
     
     if was_creator and game_id in games:
         # Criador foi removido, fechar jogo
-        socketio.emit('room_closed', {
-            'message': 'O criador foi removido pelo admin. A sala foi fechada.'
-        }, room=game_id)
-        del games[game_id]
+        close_game(game_id, message='O criador foi removido pelo admin. A sala foi fechada.')
         return jsonify({'success': True, 'message': f'Jogador {target_username} removido e sala fechada'})
     
     return jsonify({'success': True, 'message': f'Jogador {target_username} removido do jogo'})

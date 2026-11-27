@@ -5,8 +5,9 @@
 FROM python:3.11-slim-bookworm
 
 # Recomendado definir no Coolify (ver .env.example):
-#   SECRET_KEY, JWT_SECRET (segredos fortes), SECURE_COOKIES=true,
-#   CORS_ALLOWED_ORIGINS, WEBHOOK_SECRET (só se for usar o webhook de deploy)
+#   DATABASE_URL (Postgres da org), SECRET_KEY, JWT_SECRET (segredos fortes),
+#   SECURE_COOKIES=true, CORS_ALLOWED_ORIGINS, WEBHOOK_SECRET (deploy),
+#   TRUST_PROXY_HEADERS=true (Traefik)
 # Se SECRET_KEY/JWT_SECRET não forem definidos, a app GERA e persiste em
 # /app/data/.secret_key e /app/data/.jwt_secret (volume montado) — nunca
 # usa segredo público do repositório.
@@ -32,8 +33,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Persistência: no Coolify, volume em /app/data
-# data/database.db (SQLite: accounts + journal), data/saves/, JSON legado migrado auto
+# Persistência: DATABASE_URL (Postgres) em produção; /app/data guarda saves,
+# segredos locais e o SQLite de fallback (data/database.db) em dev/testes.
 RUN mkdir -p /app/data/saves
 VOLUME ["/app/data"]
 
