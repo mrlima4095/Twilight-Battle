@@ -164,6 +164,42 @@ body::before {
 }
 .start-btn:hover { transform: translateY(-2px); filter: brightness(1.05); }
 
+/* ── Controles do dono da sala (bots) ── */
+.host-bot-controls {
+  margin: 18px 0 4px; padding: 14px; border-radius: 14px;
+  background: rgba(155,123,255,.08); border: 1px solid rgba(155,123,255,.28);
+  text-align: left;
+}
+.host-bot-controls h3 {
+  color: var(--gold); font-family: var(--font-display); font-size: 1rem;
+  margin-bottom: 8px; text-align: center;
+}
+.host-bot-row {
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: end; justify-content: center;
+  margin-top: 8px;
+}
+.host-bot-field { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+.host-bot-field label { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+.host-bot-field select, .host-bot-field input {
+  background: rgba(0,0,0,.35); color: var(--text); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 9px; padding: 8px 10px; font-family: inherit; font-size: .9rem;
+}
+.bot-btn {
+  padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(240,193,75,.45);
+  background: rgba(240,193,75,.10); color: var(--gold); font-family: inherit;
+  font-size: .85rem; font-weight: 700; cursor: pointer; transition: .15s;
+}
+.bot-btn:hover:not(:disabled) { background: rgba(240,193,75,.2); transform: translateY(-1px); }
+.bot-btn:disabled { opacity: .45; cursor: not-allowed; }
+.bot-btn.danger { border-color: rgba(255,77,109,.45); color: #ff8fa3; background: rgba(255,77,109,.08); }
+#bot-action-status { color: var(--muted); font-size: .8rem; text-align: center; min-height: 16px; margin-top: 8px; }
+#player-names li.bot-row { background: rgba(94,231,255,.08); border-color: rgba(94,231,255,.28); }
+.bot-badge {
+  display: inline-block; margin-left: 8px; padding: 2px 7px; border-radius: 999px;
+  background: rgba(94,231,255,.14); border: 1px solid rgba(94,231,255,.3);
+  color: var(--cyan); font-size: .7rem; font-weight: 700;
+}
+
 /* ── Opponents (horizontal, compacto) ── */
 .opponents-area {
   display: flex;
@@ -678,6 +714,28 @@ body::before {
       <p>Jogadores na sala</p>
       <ul id="player-names"></ul>
     </div>
+    <div class="host-bot-controls" id="host-bot-controls" style="display:none">
+      <h3>🤖 Configurar bots (dono da sala)</h3>
+      <p style="font-size:.82rem" id="bot-slots-info">—</p>
+      <div class="host-bot-row">
+        <div class="host-bot-field">
+          <label for="bot-difficulty-select">Dificuldade</label>
+          <select id="bot-difficulty-select">
+            <option value="easy">Fácil</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Difícil</option>
+          </select>
+        </div>
+        <div class="host-bot-field">
+          <label for="bot-count-input">Qtd. bots</label>
+          <input type="number" id="bot-count-input" min="1" max="1" value="1">
+        </div>
+        <button class="bot-btn" id="add-bots-btn" type="button">Adicionar bots</button>
+        <button class="bot-btn" id="set-bot-difficulty-btn" type="button">Aplicar aos bots</button>
+        <button class="bot-btn danger" id="remove-bots-btn" type="button">Remover bots</button>
+      </div>
+      <div id="bot-action-status"></div>
+    </div>
     <p>Mínimo de 2 jogadores para começar</p>
     <button class="start-btn" id="start-game-btn" style="display:none" type="button">Começar jogo</button>
   </div>
@@ -854,40 +912,64 @@ body::before {
         }
         function clearSession() { localStorage.removeItem(SESSION_KEY); console.log('Sessão limpa'); }
 
+        const BOT_DIFFICULTY_LABELS = { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' };
+
+        function updateBotControls(data) {
+            if (!data) return;
+            const panel = document.getElementById('host-bot-controls');
+            const countInput = document.getElementById('bot-count-input');
+            const select = document.getElementById('bot-difficulty-select');
+            const info = document.getElementById('bot-slots-info');
+            const players = data.players_count ?? (Array.isArray(data.players) ? data.players.length : 0);
+            const max = data.max_players || 6;
+            const slots = Math.max(0, max - players);
+
+            if (panel) panel.style.display = data.is_creator && !data.started ? 'block' : 'none';
+            if (info) info.textContent = `${players}/${max} jogadores · ${slots} vaga(s) livre(s)`;
+            if (countInput) {
+                countInput.max = String(Math.max(1, slots));
+                const current = Math.min(parseInt(countInput.value, 10) || 1, Math.max(1, slots));
+                countInput.value = String(current);
+                countInput.disabled = slots === 0;
+            }
+            if (select && data.bot_difficulty && BOT_DIFFICULTY_LABELS[data.bot_difficulty]) {
+                select.value = data.bot_difficulty;
+            }
+            const addBtn = document.getElementById('add-bots-btn');
+            if (addBtn) addBtn.disabled = slots === 0;
+            const removeBtn = document.getElementById('remove-bots-btn');
+            if (removeBtn) removeBtn.disabled = !data.bots_count;
+            const diffBtn = document.getElementById('set-bot-difficulty-btn');
+            if (diffBtn) diffBtn.disabled = !data.bots_count;
+        }
+
+        function applyLobbyPayload(data) {
+            if (!data) return;
+            if (Array.isArray(data.players)) updatePlayersList(data.players);
+            updateBotControls(data);
+        }
+
         function checkIfCanStart() {
             fetch(`/api/check-start-permission/${gameId}`, { method: 'GET' })
-                .then(response => {
-                    if (response.status === 401) {
-                        // Não tem permissão - ocultar botão
-                        const startBtn = document.getElementById('start-game-btn');
-                        if (startBtn) {
-                            startBtn.style.display = 'none';
-                        }
-                        return response.json().catch(() => ({}));
-                    }
-                    return response.json();
-                })
+                .then(response => response.json().catch(() => ({})))
                 .then(data => {
                     const startBtn = document.getElementById('start-game-btn');
-                    if (!startBtn) return;
-                    
-                    if (data.can_start === true) {
-                        // Tem permissão - mostrar e habilitar botão
+                    if (!data || data.can_start !== true) {
+                        if (startBtn) startBtn.style.display = 'none';
+                    } else if (startBtn) {
                         startBtn.style.display = 'inline-block';
                         startBtn.disabled = false;
                         startBtn.style.opacity = '1';
                         startBtn.style.cursor = 'pointer';
-                    } else {
-                        // Não tem permissão - ocultar botão completamente
-                        startBtn.style.display = 'none';
                     }
+                    updateBotControls(data);
                 })
                 .catch(error => {
                     console.error('Erro ao verificar permissão:', error);
                     const startBtn = document.getElementById('start-game-btn');
-                    if (startBtn) {
-                        startBtn.style.display = 'none';
-                    }
+                    if (startBtn) startBtn.style.display = 'none';
+                    const panel = document.getElementById('host-bot-controls');
+                    if (panel) panel.style.display = 'none';
                 });
         }
 
@@ -1076,8 +1158,17 @@ body::before {
                 saveSession();
             }
             
-            updatePlayersList(data.players);
+            applyLobbyPayload(data);
             checkIfCanStart();
+        });
+        socket.on('lobby_updated', function(data) {
+            console.log('Lobby atualizado:', data);
+            applyLobbyPayload(data);
+            checkIfCanStart();
+            if (data && data.message) {
+                const status = document.getElementById('bot-action-status');
+                if (status) status.textContent = data.message;
+            }
         });
         socket.on('player_left', function(data) {
             // Você saiu → volta ao menu
@@ -1096,6 +1187,7 @@ body::before {
                 background: '#1a1a2e',
                 color: '#fff'
             });
+            applyLobbyPayload(data);
             requestGameState();
             checkIfCanStart();
         });
@@ -1896,7 +1988,17 @@ body::before {
             
             players.forEach(player => {
                 const li = document.createElement('li');
-                li.textContent = player.name; // name é o username
+                if (player.is_bot) {
+                    li.classList.add('bot-row');
+                    const label = BOT_DIFFICULTY_LABELS[player.bot_difficulty] || 'Bot';
+                    li.textContent = `🤖 ${player.name || player.username}`;
+                    const badge = document.createElement('span');
+                    badge.className = 'bot-badge';
+                    badge.textContent = label;
+                    li.appendChild(badge);
+                } else {
+                    li.textContent = player.name || player.username;
+                }
                 list.appendChild(li);
             });
         }
@@ -4030,6 +4132,39 @@ body::before {
                     // Verificar permissão novamente
                     checkIfCanStart();
                 });
+        });
+
+        function postBotAction(payload, label) {
+            const status = document.getElementById('bot-action-status');
+            if (status) status.textContent = label;
+            fetch(`/api/games/${gameId}/bots`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json().catch(() => ({})).then(data => ({ status: response.status, data })))
+            .then(({ status: code, data }) => {
+                if (status) status.textContent = data.message || (code >= 400 ? 'Não foi possível configurar os bots.' : 'Pronto!');
+                applyLobbyPayload(data);
+                checkIfCanStart();
+            })
+            .catch(() => {
+                if (status) status.textContent = 'Erro ao conectar ao servidor.';
+                checkIfCanStart();
+            });
+        }
+
+        document.getElementById('add-bots-btn').addEventListener('click', function() {
+            const difficulty = document.getElementById('bot-difficulty-select').value;
+            const count = parseInt(document.getElementById('bot-count-input').value, 10) || 1;
+            postBotAction({ action: 'fill', difficulty, count }, 'Adicionando bots...');
+        });
+        document.getElementById('set-bot-difficulty-btn').addEventListener('click', function() {
+            const difficulty = document.getElementById('bot-difficulty-select').value;
+            postBotAction({ action: 'difficulty', difficulty }, 'Aplicando dificuldade...');
+        });
+        document.getElementById('remove-bots-btn').addEventListener('click', function() {
+            postBotAction({ action: 'remove' }, 'Removendo bots...');
         });
         document.getElementById('leave-game-btn').addEventListener('click', function() {
             Swal.fire({

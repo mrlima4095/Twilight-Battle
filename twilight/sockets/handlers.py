@@ -12,6 +12,7 @@ from twilight.auth.service import (
 )
 from twilight.extensions import socketio
 from twilight.game.chat import add_chat_message, broadcast_system_message
+from twilight.game.lobby import emit_lobby_update, lobby_payload, lobby_players
 from twilight.game.session import close_game
 from twilight.state import chat_messages, games
 
@@ -30,11 +31,7 @@ def _emit_game_over_and_rematch(game_id, game, winner, winner_name):
     }, room=game_id)
 
     lobby = game.reset_to_lobby(last_winner=winner)
-    players_list = [
-        {'username': p, 'name': game.player_data[p]['name']}
-        for p in game.players
-        if p in game.player_data
-    ]
+    players_list = lobby_players(game)
     broadcast_system_message(
         game_id,
         f'🔄 Sala reaberta para nova partida! (mesmo código {game_id}) — o criador pode iniciar de novo.'
@@ -48,6 +45,7 @@ def _emit_game_over_and_rematch(game_id, game, winner, winner_name):
         'creator': game.creator,
         'message': 'Sala pronta para jogar de novo. Aguardando o criador iniciar.',
     }, room=game_id)
+    emit_lobby_update(game, 'Sala pronta para jogar de novo. Aguardando o criador iniciar.')
 
 @socketio.on('connect')
 def handle_connect(): pass
@@ -108,13 +106,9 @@ def handle_join_game(data):
             emit('reconnect_success', payload)
             # avisa lista de jogadores no lobby
             if not game.started:
-                players_list = [
-                    {'username': p, 'name': game.player_data[p]['name']}
-                    for p in game.players if p in game.player_data
-                ]
                 emit('player_joined', {
+                    **lobby_payload(game),
                     'username': username,
-                    'players': players_list,
                 }, room=game_id)
         else:
             emit('error', {'message': result['message']})
@@ -137,17 +131,9 @@ def handle_join_game(data):
                 game.current_turn = 0
             except ValueError:
                 pass
-        players_list = [
-            {
-                'username': p,
-                'name': game.player_data[p]['name'],
-                'is_bot': bool(game.player_data[p].get('is_bot')),
-            }
-            for p in game.players
-        ]
         emit('player_joined', {
+            **lobby_payload(game),
             'username': username,
-            'players': players_list,
             'tutorial': bool(getattr(game, 'tutorial', False)),
         }, room=game_id)
 
@@ -217,6 +203,7 @@ def handle_leave_game(data):
         }, room=game_id)
     else:
         emit('player_left', {
+            **lobby_payload(game),
             'username': username,
             'message': f'{username} saiu do jogo'
         }, room=game_id)
@@ -328,6 +315,10 @@ def handle_get_game_state(data):
                 'dead': player_data.get('dead', False),
                 'observer': player_data.get('observer', False),
                 'is_bot': bool(player_data.get('is_bot', False)),
+                'bot_difficulty': (
+                    (player_data.get('bot_difficulty') or 'normal')
+                    if player_data.get('is_bot') else None
+                ),
             }
             
             # Informações privadas apenas para o próprio jogador (não para espectadores)
@@ -453,10 +444,11 @@ def handle_spectate_game(data):
         update_user_game(username, game_id)
         
         # Lista de jogadores para o espectador
-        players_list = [{'username': p, 'name': game.player_data[p]['name']} for p in game.players]
+        players_list = lobby_players(game)
         
         # Notificar todos que um espectador entrou
         emit('spectator_joined', {
+            **lobby_payload(game),
             'username': username,
             'players': players_list,
             'spectator': True

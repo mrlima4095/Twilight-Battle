@@ -49,6 +49,8 @@ class Game:
         self.day_cycle_length = 6 if 'fast_cycle' in self.modifiers else 24
         # Tutorial 1v1 com mentor (IA fácil)
         self.tutorial = bool(self.config.get('tutorial', False))
+        # Dificuldade padrão dos bots adicionados pelo dono da sala.
+        self.bot_difficulty = str(self.config.get('bot_difficulty') or 'normal').lower()
 
         self.first_round = True
         self.players_acted = set()
@@ -153,6 +155,7 @@ class Game:
             u: {
                 'is_bot': bool(d.get('is_bot')),
                 'name': d.get('name') or u,
+                'bot_difficulty': d.get('bot_difficulty') or 'easy',
             }
             for u, d in (self.player_data or {}).items()
             if d and d.get('is_bot')
@@ -203,6 +206,9 @@ class Game:
             if username in bot_flags:
                 self.player_data[username]['is_bot'] = True
                 self.player_data[username]['name'] = bot_flags[username].get('name') or username
+                self.player_data[username]['bot_difficulty'] = (
+                    bot_flags[username].get('bot_difficulty') or 'easy'
+                )
 
         # reanexa espectadores
         for uname, data in spectators.items():

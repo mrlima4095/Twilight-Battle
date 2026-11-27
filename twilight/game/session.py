@@ -122,8 +122,12 @@ def _count_human_sockets(game) -> int:
     players = set(getattr(game, 'players', []) or [])
     count = 0
     for sid, uname in (getattr(game, 'socket_to_username', {}) or {}).items():
-        if uname in players and not str(sid).startswith('bot:'):
-            count += 1
+        if uname not in players:
+            continue
+        pdata = (getattr(game, 'player_data', {}) or {}).get(uname) or {}
+        if pdata.get('is_bot') or str(sid).startswith('bot:'):
+            continue
+        count += 1
     return count
 
 

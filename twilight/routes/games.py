@@ -8,9 +8,22 @@ from flask import Blueprint, jsonify, request
 from twilight.auth.service import get_current_user, login_required
 from twilight.cards.definitions import MODIFIERS
 from twilight.extensions import socketio
-from twilight.game.ai import TUTORIAL_BOT_NAME, TUTORIAL_TIPS, add_tutorial_bot, schedule_bot_turn
+from twilight.game.ai import (
+    TUTORIAL_BOT_NAME,
+    TUTORIAL_TIPS,
+    add_tutorial_bot,
+    fill_bots,
+    remove_all_bots,
+    schedule_bot_turn,
+)
 from twilight.game.chat import broadcast_system_message
 from twilight.game.engine import Game
+from twilight.game.lobby import (
+    BOT_DIFFICULTY_LABELS,
+    emit_lobby_update,
+    lobby_payload,
+    normalize_bot_difficulty,
+)
 from twilight.state import games
 
 bp = Blueprint('games', __name__)
@@ -51,11 +64,12 @@ def create_game():
     
     data = request.json or {}
     config = {
-        'max_players': min(int(data.get('max_players', 6)), 12),
+        'max_players': max(2, min(int(data.get('max_players', 6)), 12)),
         'private': data.get('private', False),
         'allow_spectators': data.get('allow_spectators', True),
         'chat_enabled': data.get('chat_enabled', True),
-        'modifiers': data.get('modifiers', []) 
+        'bot_difficulty': normalize_bot_difficulty(data.get('bot_difficulty')),
+        'modifiers': data.get('modifiers', [])
     }
     
     game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
@@ -161,6 +175,104 @@ def start_game(game_id):
 
 
 
+def _host_game(game_id):
+    """Retorna (game, None) ou (None, resposta de erro) para ações do dono."""
+    username = get_current_user()
+    if not username:
+        return None, (jsonify({'success': False, 'message': 'Usuário não autenticado'}), 401)
+    game = games.get(game_id)
+    if not game:
+        return None, (jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404)
+    if game.creator != username:
+        return None, (
+            jsonify({'success': False, 'message': 'Apenas o criador da sala pode configurar os bots'}),
+            401,
+        )
+    return game, None
+
+
+@bp.route('/api/games/<game_id>/bots', methods=['POST'])
+def manage_bots(game_id):
+    """Dono da sala: preencher vagas com bots, remover bots ou mudar dificuldade."""
+    game, error = _host_game(game_id)
+    if error:
+        return error
+
+    if getattr(game, 'started', False) or getattr(game, 'finished', False):
+        return jsonify({
+            'success': False,
+            'message': 'Só é possível configurar bots antes do início da partida',
+        }), 400
+
+    data = request.json or {}
+    action = str(data.get('action') or 'fill').strip().lower()
+    difficulty = normalize_bot_difficulty(data.get('difficulty') or game.bot_difficulty)
+    added: list = []
+    removed: list = []
+
+    if action == 'fill':
+        raw_count = data.get('count')
+        count = None
+        if raw_count not in (None, ''):
+            try:
+                count = int(raw_count)
+            except (TypeError, ValueError):
+                return jsonify({'success': False, 'message': 'Quantidade inválida'}), 400
+            if count < 1:
+                return jsonify({'success': False, 'message': 'Escolha ao menos 1 bot'}), 400
+        # Nunca ocupar a última vaga: o dono precisa conseguir entrar na sala.
+        added = fill_bots(
+            game, count=count, difficulty=difficulty, reserve_creator_slot=True
+        )
+        if not added:
+            return jsonify({
+                'success': False,
+                'message': 'Não há vagas livres nesta sala',
+                **lobby_payload(game),
+            }), 400
+        label = BOT_DIFFICULTY_LABELS[difficulty]
+        message = (
+            f'🤖 {len(added)} bot(s) ({label}) entrou(ram) na sala. '
+            f'{len(game.players)}/{game.max_players} jogadores.'
+        )
+
+    elif action == 'remove':
+        removed = remove_all_bots(game)
+        if not removed:
+            return jsonify({
+                'success': False,
+                'message': 'Não há bots na sala',
+                **lobby_payload(game),
+            }), 400
+        message = f'🤖 {len(removed)} bot(s) removido(s) da sala.'
+
+    elif action == 'difficulty':
+        game.bot_difficulty = difficulty
+        changed = 0
+        for player in game.players:
+            if (game.player_data.get(player) or {}).get('is_bot'):
+                game.player_data[player]['bot_difficulty'] = difficulty
+                changed += 1
+        label = BOT_DIFFICULTY_LABELS[difficulty]
+        message = (
+            f'🎚️ Dificuldade dos bots alterada para {label}'
+            + (f' ({changed} bot(s) atualizado(s)).' if changed else '.')
+        )
+
+    else:
+        return jsonify({'success': False, 'message': 'Ação desconhecida'}), 400
+
+    broadcast_system_message(game_id, message)
+    payload = emit_lobby_update(game, message)
+    return jsonify({
+        'success': True,
+        'message': message,
+        'added': added,
+        'removed': removed,
+        **payload,
+    })
+
+
 @bp.route('/api/check-start-permission/<game_id>')
 def check_start_permission(game_id):
     username = get_current_user()
@@ -173,21 +285,20 @@ def check_start_permission(game_id):
     
     game = games[game_id]
     can_start = (game.creator == username and len(game.players) >= 2)
-    
+    payload = {
+        **lobby_payload(game),
+        'is_creator': game.creator == username,
+        'can_start': can_start,
+    }
+
     if not can_start:
-        return jsonify({
-            'can_start': False,
-            'is_creator': game.creator == username,
-            'players_count': len(game.players),
-            'message': 'Apenas o criador da sala pode iniciar o jogo (mínimo 2 jogadores)'
-        }), 401
-    
-    return jsonify({
-        'can_start': True,
-        'is_creator': True,
-        'players_count': len(game.players),
-        'message': 'Você pode iniciar o jogo'
-    })
+        payload['message'] = (
+            'Apenas o criador da sala pode iniciar o jogo (mínimo 2 jogadores)'
+        )
+        return jsonify(payload), 401
+
+    payload['message'] = 'Você pode iniciar o jogo'
+    return jsonify(payload)
 
 
 

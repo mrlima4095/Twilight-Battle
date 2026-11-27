@@ -1,8 +1,8 @@
 """
-IA leve do servidor (tutorial / bot fácil).
+IA leve do servidor (tutorial / bots da sala).
 
 Não depende do client apps/bot.py — roda no processo Flask e emite ações
-como um jogador normal.
+como um jogador normal. Dificuldades: fácil, normal e difícil.
 """
 from __future__ import annotations
 
@@ -12,9 +12,29 @@ from typing import Any, Optional
 
 from twilight.extensions import socketio
 from twilight.game.chat import broadcast_system_message
+from twilight.game.lobby import emit_lobby_update, lobby_players, normalize_bot_difficulty
 
 
 TUTORIAL_BOT_NAME = "mentor"
+
+# Probabilidades por dificuldade. Valores mais altos = jogadas mais eficientes.
+_DIFFICULTY_PLAN = {
+    'easy': {
+        'draw': 0.80, 'attack_card': 0.75, 'trap': 0.40,
+        'defense_card': 0.30, 'attack': 0.40,
+        'think': (1.0, 1.8), 'gap': (0.65, 1.1), 'smart_target': False,
+    },
+    'normal': {
+        'draw': 0.95, 'attack_card': 0.95, 'trap': 0.70,
+        'defense_card': 0.55, 'attack': 0.70,
+        'think': (0.8, 1.4), 'gap': (0.5, 0.9), 'smart_target': False,
+    },
+    'hard': {
+        'draw': 1.00, 'attack_card': 1.00, 'trap': 0.90,
+        'defense_card': 0.75, 'attack': 0.90,
+        'think': (0.6, 1.0), 'gap': (0.45, 0.8), 'smart_target': True,
+    },
+}
 
 # Dicas enviadas ao client no modo tutorial (progressivas)
 TUTORIAL_TIPS = [
@@ -91,106 +111,115 @@ def _now_ts() -> str:
         return time.strftime("%H:%M:%S")
 
 
-def _emit_action(game_id: str, player: str, action: str, result: dict, log: str = ""):
+def _emit_action(game, player: str, action: str, result: dict, log: str = ""):
+    display = (game.player_data.get(player) or {}).get('name') or player
     socketio.emit(
         "action_success",
         {
             "player_id": player,
-            "player_name": player,
+            "player_name": display,
             "action": action,
             "result": result,
             "log_message": log,
             "timestamp": _now_ts(),
             "from_bot": True,
         },
-        room=game_id,
+        room=game.game_id,
     )
 
 
-def plan_easy_actions(game, bot: str) -> list[dict[str, Any]]:
-    """Plano simples e legível (dificuldade fácil)."""
+def plan_bot_actions(game, bot: str, difficulty: str | None = None) -> list[dict[str, Any]]:
+    """Plano do turno conforme a dificuldade do bot."""
     p = game.player_data.get(bot) or {}
     if p.get("dead"):
         return [{"action": "end_turn"}]
+
+    diff = normalize_bot_difficulty(difficulty or p.get("bot_difficulty") or "easy")
+    cfg = _DIFFICULTY_PLAN[diff]
 
     hand = list(p.get("hand") or [])
     atk = list(p.get("attack_bases") or [])
     defense = list(p.get("defense_bases") or [])
     actions: list[dict[str, Any]] = []
 
-    # 1) Draw quase sempre
-    if game.deck:
+    # 1) Comprar carta
+    if game.deck and random.random() < cfg["draw"]:
         actions.append({"action": "draw"})
 
-    # 2) Jogar criatura no ataque ou trap/defesa
+    # 2) Jogar criatura no ataque ou armadilha/criatura na defesa
     empty_atk = _empty_slots(atk)
     empty_def = _empty_slots(defense)
     creatures = [c for c in hand if _is_creature(c)]
     traps = [c for c in hand if _is_trap(c)]
 
-    played = False
-    if empty_atk and creatures and random.random() < 0.85:
+    if empty_atk and creatures and random.random() < cfg["attack_card"]:
         c = random.choice(creatures)
-        actions.append(
-            {
-                "action": "play_card",
-                "params": {
-                    "card_id": c["instance_id"],
-                    "position_type": "attack",
-                    "position_index": empty_atk[0],
-                },
-            }
-        )
-        played = True
+        actions.append({
+            "action": "play_card",
+            "params": {
+                "card_id": c["instance_id"],
+                "position_type": "attack",
+                "position_index": empty_atk[0],
+            },
+        })
         hand = [x for x in hand if x.get("instance_id") != c.get("instance_id")]
         creatures = [c for c in hand if _is_creature(c)]
-    elif empty_def and traps and random.random() < 0.5:
+    elif empty_def and traps and random.random() < cfg["trap"]:
         t = traps[0]
-        actions.append(
-            {
-                "action": "play_card",
-                "params": {
-                    "card_id": t["instance_id"],
-                    "position_type": "defense",
-                    "position_index": empty_def[0],
-                },
-            }
-        )
-        played = True
-    elif empty_def and creatures and random.random() < 0.4:
+        actions.append({
+            "action": "play_card",
+            "params": {
+                "card_id": t["instance_id"],
+                "position_type": "defense",
+                "position_index": empty_def[0],
+            },
+        })
+    elif empty_def and creatures and random.random() < cfg["defense_card"]:
         c = random.choice(creatures)
-        actions.append(
-            {
-                "action": "play_card",
-                "params": {
-                    "card_id": c["instance_id"],
-                    "position_type": "defense",
-                    "position_index": empty_def[0],
-                },
-            }
-        )
-        played = True
+        actions.append({
+            "action": "play_card",
+            "params": {
+                "card_id": c["instance_id"],
+                "position_type": "defense",
+                "position_index": empty_def[0],
+            },
+        })
 
-    # 3) Atacar às vezes (se permitido)
+    # 3) Atacar (respeitando a 1ª rodada)
     enemies = [
-        u
-        for u in game.players
+        u for u in game.players
         if u != bot
         and not (game.player_data.get(u) or {}).get("dead")
         and not (game.player_data.get(u) or {}).get("observer")
+        and not (game.player_data.get(u) or {}).get("spectator")
     ]
     can_atk, _ = game.can_attack(bot)
-    has_attacker = any(_is_creature(c) for c in (game.player_data[bot].get("attack_bases") or []))
-    # se acabamos de planejar play em atk, contar como attacker futuro
-    if any(a.get("action") == "play_card" and (a.get("params") or {}).get("position_type") == "attack" for a in actions):
+    has_attacker = any(_is_creature(c) for c in (p.get("attack_bases") or []))
+    if any(
+        a.get("action") == "play_card"
+        and (a.get("params") or {}).get("position_type") == "attack"
+        for a in actions
+    ):
         has_attacker = True
 
-    if can_atk and has_attacker and enemies and random.random() < 0.45:
-        target = random.choice(enemies)
+    if can_atk and has_attacker and enemies and random.random() < cfg["attack"]:
+        if cfg["smart_target"]:
+            # Difícil: foca quem tem menos vida (aproveita kills).
+            target = min(
+                enemies,
+                key=lambda u: (game.player_data.get(u) or {}).get("life", 0),
+            )
+        else:
+            target = random.choice(enemies)
         actions.append({"action": "attack", "params": {"target_id": target}})
 
     actions.append({"action": "end_turn"})
     return actions
+
+
+def plan_easy_actions(game, bot: str) -> list[dict[str, Any]]:
+    """Compatibilidade: o Mentor/tutorial continua jogando no fácil."""
+    return plan_bot_actions(game, bot, 'easy')
 
 
 def _run_one_action(game, bot: str, step: dict) -> tuple[bool, Optional[dict], str]:
@@ -256,16 +285,22 @@ def run_bot_turn(game_id: str) -> None:
     if not is_bot_player(game, bot):
         return
 
+    diff = normalize_bot_difficulty(
+        (game.player_data.get(bot) or {}).get('bot_difficulty') or 'easy'
+    )
+    cfg = _DIFFICULTY_PLAN[diff]
+    display = (game.player_data.get(bot) or {}).get('name') or bot
+
     if (game.player_data.get(bot) or {}).get("dead"):
         game.next_turn()
-        _emit_action(game_id, bot, "end_turn", {"success": True}, f"{bot} (morto) passa")
+        _emit_action(game, bot, "end_turn", {"success": True}, f"{display} (morto) passa")
         schedule_bot_turn(game_id)
         return
 
-    # pequena pausa “humana” (socketio.sleep cede ao hub gevent)
-    socketio.sleep(random.uniform(0.9, 1.6))
+    # pausa “humana” (socketio.sleep cede ao hub gevent)
+    socketio.sleep(random.uniform(*cfg['think']))
 
-    plan = plan_easy_actions(game, bot)
+    plan = plan_bot_actions(game, bot, diff)
     for step in plan:
         game = games.get(game_id)
         if not game or getattr(game, "finished", False):
@@ -285,11 +320,11 @@ def run_bot_turn(game_id: str) -> None:
                         },
                         room=game_id,
                     )
-            _emit_action(game_id, bot, step["action"], result, log)
+            _emit_action(game, bot, step["action"], result, log)
             if log and step.get("action") != "attack":
                 # attack já broadcastou
                 pass
-        socketio.sleep(random.uniform(0.55, 1.1))
+        socketio.sleep(random.uniform(*cfg['gap']))
 
         if step.get("action") == "end_turn":
             break
@@ -319,22 +354,13 @@ def run_bot_turn(game_id: str) -> None:
                 room=game_id,
             )
             lobby = game.reset_to_lobby(last_winner=winner)
-            players_list = [
-                {
-                    "username": p,
-                    "name": game.player_data[p]["name"],
-                    "is_bot": bool(game.player_data[p].get("is_bot")),
-                }
-                for p in game.players
-                if p in game.player_data
-            ]
             socketio.emit(
                 "lobby_reset",
                 {
                     "game_id": game_id,
                     "last_winner": winner,
                     "last_winner_name": wname,
-                    "players": players_list,
+                    "players": lobby_players(game),
                     "modifiers": lobby.get("modifiers", []),
                     "creator": game.creator,
                     "tutorial": bool(getattr(game, "tutorial", False)),
@@ -342,6 +368,7 @@ def run_bot_turn(game_id: str) -> None:
                 },
                 room=game_id,
             )
+            emit_lobby_update(game, "Sala pronta para jogar de novo.")
         except Exception as e:
             print(f"[ai] game_over emit failed: {e}")
         return
@@ -377,17 +404,86 @@ def schedule_bot_turn(game_id: str, delay: float = 0.4) -> None:
     socketio.start_background_task(_job)
 
 
-def add_tutorial_bot(game, name: str = TUTORIAL_BOT_NAME) -> bool:
-    """Adiciona bot de treino à sala (sem conta real)."""
-    if name in game.players:
-        return False
-    if len(game.players) >= game.max_players:
-        return False
+def add_bot(game, name: str | None = None, difficulty: str = 'normal',
+            display_name: str | None = None) -> dict | None:
+    """Adiciona um bot servidor à sala (sem conta real). Só no lobby."""
+    if getattr(game, 'started', False) or getattr(game, 'finished', False):
+        return None
+    if len(game.players) >= int(getattr(game, 'max_players', 6) or 6):
+        return None
 
-    sid = f"bot:{name}:{game.game_id}"
-    game.players.append(name)
-    game.socket_to_username[sid] = name
-    game.player_data[name] = game._make_player_state(name, sid, deal_hand=True)
-    game.player_data[name]["is_bot"] = True
-    game.player_data[name]["name"] = "Mentor"
+    diff = normalize_bot_difficulty(difficulty)
+
+    if name:
+        key = str(name).strip().lower()
+    else:
+        n = 1
+        key = f'bot_{n}'
+        while key in game.players or key in game.player_data:
+            n += 1
+            key = f'bot_{n}'
+    if key in game.players or key in game.player_data:
+        return None
+
+    label = display_name or (
+        'Mentor' if key == TUTORIAL_BOT_NAME else key.replace('bot_', 'Bot ').replace('_', ' ').title()
+    )
+    sid = f'bot:{key}:{game.game_id}'
+    game.players.append(key)
+    game.socket_to_username[sid] = key
+    game.player_data[key] = game._make_player_state(key, sid, deal_hand=True)
+    game.player_data[key].update({
+        'is_bot': True,
+        'bot_difficulty': diff,
+        'name': label,
+    })
+    return {'username': key, 'name': label, 'is_bot': True, 'bot_difficulty': diff}
+
+
+def remove_bot(game, username: str) -> bool:
+    """Remove apenas um bot do lobby, sem fechar a sala."""
+    if getattr(game, 'started', False) or not is_bot_player(game, username):
+        return False
+    if username in game.players:
+        game.players.remove(username)
+    game.player_data.pop(username, None)
+    for sid, uname in list(game.socket_to_username.items()):
+        if uname == username:
+            del game.socket_to_username[sid]
+    if not game.players:
+        game.current_turn = 0
+    elif game.current_turn >= len(game.players):
+        game.current_turn = 0
     return True
+
+
+def remove_all_bots(game) -> list[str]:
+    """Remove todos os bots do lobby. Devolve os usernames removidos."""
+    bots = [p for p in list(game.players) if is_bot_player(game, p)]
+    for bot in bots:
+        remove_bot(game, bot)
+    return bots
+
+
+def fill_bots(game, count: int | None = None, difficulty: str = 'normal',
+              reserve_creator_slot: bool = False) -> list[dict]:
+    """Preenche vagas da sala com bots (padrão: todas as vagas livres)."""
+    reserved = 1 if reserve_creator_slot and game.creator not in game.players else 0
+    slots = int(getattr(game, 'max_players', 6) or 6) - len(game.players) - reserved
+    if slots <= 0:
+        return []
+    wanted = slots if count is None else max(0, min(int(count), slots))
+    diff = normalize_bot_difficulty(difficulty)
+    game.bot_difficulty = diff
+    added = []
+    for _ in range(wanted):
+        bot = add_bot(game, difficulty=diff)
+        if not bot:
+            break
+        added.append(bot)
+    return added
+
+
+def add_tutorial_bot(game, name: str = TUTORIAL_BOT_NAME) -> bool:
+    """Adiciona o Mentor (bot fácil) ao tutorial."""
+    return add_bot(game, name=name, difficulty='easy', display_name='Mentor') is not None

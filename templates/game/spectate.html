@@ -264,6 +264,7 @@ body { padding: 0; }
     <script>
         const gameId = '{{ game_id }}';
         const currentUsername = '{{ username }}';
+        const BOT_DIFFICULTY_LABELS = { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' };
         let gameState = null;
         
         const socket = io({
@@ -288,6 +289,25 @@ body { padding: 0; }
             if (data.username === currentUsername) {
                 // Próprio espectador entrou
             }
+        });
+
+        socket.on('lobby_updated', function(data) {
+            if (!data || !Array.isArray(data.players)) return;
+            const list = document.getElementById('player-names');
+            list.innerHTML = '';
+            data.players.forEach(player => {
+                const li = document.createElement('li');
+                li.textContent = player.is_bot
+                    ? `🤖 ${player.name || player.username}`
+                    : (player.name || player.username);
+                if (player.is_bot) {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'margin-left:8px;font-size:.7rem;color:var(--cyan)';
+                    badge.textContent = BOT_DIFFICULTY_LABELS[player.bot_difficulty] || 'Bot';
+                    li.appendChild(badge);
+                }
+                list.appendChild(li);
+            });
         });
         
         socket.on('game_state', function(data) {
@@ -384,7 +404,13 @@ body { padding: 0; }
             
             for (const [playerId, playerData] of Object.entries(gameState.players)) {
                 const li = document.createElement('li');
-                li.textContent = playerData.name;
+                li.textContent = playerData.is_bot ? `🤖 ${playerData.name}` : playerData.name;
+                if (playerData.is_bot) {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'margin-left:8px;font-size:.7rem;color:var(--cyan)';
+                    badge.textContent = BOT_DIFFICULTY_LABELS[playerData.bot_difficulty] || 'Bot';
+                    li.appendChild(badge);
+                }
                 list.appendChild(li);
             }
         }
