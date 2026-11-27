@@ -130,6 +130,16 @@ body {
   min-height: 18px; color: #ff8fa3; font-size: .85rem; margin: 4px 0 10px;
   font-weight: 600;
 }
+.success-message {
+  min-height: 18px; color: #7ee0a8; font-size: .85rem; margin: 4px 0 10px;
+  font-weight: 600;
+}
+.resend-btn {
+  width: 100%; padding: 9px; border-radius: 10px; margin-top: 6px;
+  border: 1px solid rgba(240,193,75,.45); background: rgba(240,193,75,.08);
+  color: var(--gold); font-family: inherit; font-size: .85rem; font-weight: 700;
+  cursor: pointer;
+}
 .auth-btn {
   width: 100%; padding: 14px; border: none; border-radius: 12px;
   font-family: inherit; font-size: 1rem; font-weight: 800; cursor: pointer;
@@ -175,6 +185,16 @@ body {
       Não foi possível entrar com a Lucy ({{ oidc_error }}). Tente novamente.
     </div>
     {% endif %}
+    {% if request.args.get('verified') %}
+    <div class="success-message" style="display:block;margin-bottom:14px">
+      Email confirmado! Você já está logado.
+    </div>
+    {% endif %}
+    {% if request.args.get('verify_error') %}
+    <div class="error-message" style="display:block;margin-bottom:14px">
+      Link de verificação inválido ou expirado. Peça um novo abaixo.
+    </div>
+    {% endif %}
 
     {% if auth_allows_lucy() %}
     <div id="lucy-login-block">
@@ -212,6 +232,12 @@ body {
       </div>
       <div class="error-message" id="login-error"></div>
       <button class="auth-btn" id="login-btn" type="button">Entrar</button>
+      {% if email_verification_required %}
+      <button class="resend-btn" id="resend-btn" type="button" style="display:none">
+        Reenviar verificação
+      </button>
+      <div class="success-message" id="resend-status" style="display:none"></div>
+      {% endif %}
     </div>
 
     <div id="register-form" style="display:none">
@@ -219,6 +245,12 @@ body {
         <label for="register-username">Usuário (minúsculas, 3–20 caracteres)</label>
         <input type="text" id="register-username" placeholder="ex: jogador123" autocomplete="off">
       </div>
+      {% if email_verification_required %}
+      <div class="form-group">
+        <label for="register-email">Email (você receberá um link de confirmação)</label>
+        <input type="email" id="register-email" placeholder="voce@exemplo.com" autocomplete="email">
+      </div>
+      {% endif %}
       <div class="form-group">
         <label for="register-password">Senha (mínimo 4 caracteres)</label>
         <input type="password" id="register-password" placeholder="Digite sua senha" autocomplete="new-password">
@@ -228,6 +260,7 @@ body {
         <input type="password" id="register-confirm" placeholder="Confirme sua senha" autocomplete="new-password">
       </div>
       <div class="error-message" id="register-error"></div>
+      <div class="success-message" id="register-success" style="display:none"></div>
       <button class="auth-btn" id="register-btn" type="button">Criar conta</button>
     </div>
 
@@ -261,6 +294,10 @@ body {
             const loading = document.getElementById('loading');
             const loginError = document.getElementById('login-error');
             const registerError = document.getElementById('register-error');
+            const registerSuccess = document.getElementById('register-success');
+            const registerEmail = document.getElementById('register-email');
+            const resendBtn = document.getElementById('resend-btn');
+            const resendStatus = document.getElementById('resend-status');
             
             // Alternar entre tabs
             loginTab.addEventListener('click', function() {
@@ -270,6 +307,9 @@ body {
                 registerForm.style.display = 'none';
                 loginError.style.display = 'none';
                 registerError.style.display = 'none';
+                registerSuccess.style.display = 'none';
+                if (resendBtn) { resendBtn.style.display = 'none'; }
+                if (resendStatus) { resendStatus.style.display = 'none'; }
             });
             
             registerTab.addEventListener('click', function() {
@@ -279,6 +319,9 @@ body {
                 loginForm.style.display = 'none';
                 loginError.style.display = 'none';
                 registerError.style.display = 'none';
+                registerSuccess.style.display = 'none';
+                if (resendBtn) { resendBtn.style.display = 'none'; }
+                if (resendStatus) { resendStatus.style.display = 'none'; }
             });
             
             // Login
@@ -294,6 +337,8 @@ body {
                 
                 loading.classList.add('active');
                 loginError.style.display = 'none';
+                if (resendBtn) { resendBtn.style.display = 'none'; }
+                if (resendStatus) { resendStatus.style.display = 'none'; }
                 
                 fetch('/api/login', {
                     method: 'POST',
@@ -313,6 +358,9 @@ body {
                     } else {
                         loginError.textContent = data.message;
                         loginError.style.display = 'block';
+                        if (data.requires_verification && resendBtn) {
+                            resendBtn.style.display = 'block';
+                        }
                     }
                 })
                 .catch(error => {
@@ -327,8 +375,9 @@ body {
                 const username = document.getElementById('register-username').value.trim().toLowerCase();
                 const password = document.getElementById('register-password').value;
                 const confirm = document.getElementById('register-confirm').value;
+                const email = registerEmail ? registerEmail.value.trim().toLowerCase() : '';
                 
-                if (!username || !password || !confirm) {
+                if (!username || !password || !confirm || (registerEmail && !email)) {
                     registerError.textContent = 'Preencha todos os campos';
                     registerError.style.display = 'block';
                     return;
@@ -352,19 +401,28 @@ body {
                     return;
                 }
                 
+                if (registerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    registerError.textContent = 'Email inválido';
+                    registerError.style.display = 'block';
+                    return;
+                }
                 loading.classList.add('active');
                 registerError.style.display = 'none';
+                registerSuccess.style.display = 'none';
                 
                 fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, email })
                 })
                 .then(response => response.json())
                 .then(data => {
                     loading.classList.remove('active');
                     
-                    if (data.success) {
+                    if (data.requires_verification) {
+                        registerSuccess.textContent = data.message;
+                        registerSuccess.style.display = 'block';
+                    } else if (data.success) {
                         window.location.href = '/';
                     } else {
                         registerError.textContent = data.message;
@@ -377,6 +435,34 @@ body {
                     registerError.style.display = 'block';
                 });
             });
+
+            if (resendBtn) {
+                resendBtn.addEventListener('click', function() {
+                    const username = document.getElementById('login-username').value.trim().toLowerCase();
+                    if (!username) {
+                        resendStatus.textContent = 'Digite seu usuário acima para reenviar.';
+                        resendStatus.style.display = 'block';
+                        return;
+                    }
+                    resendBtn.disabled = true;
+                    fetch('/api/resend-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        resendBtn.disabled = false;
+                        resendStatus.textContent = data.message;
+                        resendStatus.style.display = 'block';
+                    })
+                    .catch(() => {
+                        resendBtn.disabled = false;
+                        resendStatus.textContent = 'Erro ao conectar ao servidor';
+                        resendStatus.style.display = 'block';
+                    });
+                });
+            }
             
             // Enter key
             document.getElementById('login-password').addEventListener('keypress', function(e) {

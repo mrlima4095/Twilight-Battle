@@ -296,6 +296,23 @@ def find_linked_account(sub: str, issuer: str) -> tuple[str, dict] | None:
     return row['username'], _row_to_account(row)
 
 
+def find_account_by_meta(key: str, value: str) -> tuple[str, dict] | None:
+    """Busca uma conta por campo arbitrário em ``meta_json`` (ex.: email)."""
+    import re
+
+    if not re.fullmatch(r'[a-z0-9_]+', key or ''):
+        raise ValueError('chave de meta inválida')
+    if _USE_POSTGRES:
+        where = "meta_json::jsonb->>%s = %s"
+    else:
+        where = "json_extract(meta_json, '$.' || ?) = ?"
+    with _cursor() as cur:
+        row = cur.execute(_q(_ACCOUNT_COLUMNS + ' WHERE ' + where), (key, value)).fetchone()
+    if not row:
+        return None
+    return row['username'], _row_to_account(row)
+
+
 def upsert_account(username: str, data: dict) -> None:
     """Insere/atualiza UMA conta (sem tocar nas demais)."""
     row = _account_to_row(username, data or {})

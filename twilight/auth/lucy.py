@@ -230,11 +230,17 @@ def provision(claims: dict) -> str:
     username = linked[0] if linked else None
     display_name = str(claims.get('name') or claims.get('preferred_username') or sub)[:120]
     email = str(claims.get('email') or '')[:200]
+    # Lucy já confirma o email do usuário: a conta entra pronta, sem precisar
+    # passar pela verificação local exigida no cadastro por senha.
     link_fields = {
         'auth_provider': 'lucy',
         'oidc_sub': sub,
         'oidc_issuer': issuer,
         'oidc_email': email,
+        'email': email,
+        'email_verified': True,
+        'email_verify_token_hash': None,
+        'email_verify_expires': None,
         'realname': display_name,
     }
 

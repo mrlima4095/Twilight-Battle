@@ -124,6 +124,28 @@ LUCY_ALLOW_SIGNUP = (os.environ.get('LUCY_ALLOW_SIGNUP', 'true').strip().lower()
 LUCY_LINK_BY_USERNAME = (os.environ.get('LUCY_LINK_BY_USERNAME', 'true').strip().lower()
                          not in ('0', 'false', 'no', 'off'))
 
+# ---------------------------------------------------------------------------
+# Email: cadastro local exige email confirmado; contas criadas pela Lucy já
+# entram verificadas (o provedor confirma o email). Postfix local em produção.
+# ---------------------------------------------------------------------------
+EMAIL_VERIFICATION_REQUIRED = (os.environ.get(
+    'EMAIL_VERIFICATION_REQUIRED', 'true'
+).strip().lower() not in ('0', 'false', 'no', 'off'))
+EMAIL_VERIFICATION_TTL_SECONDS = _env_int('EMAIL_VERIFICATION_TTL_SECONDS', 24 * 3600)
+APP_BASE_URL = (os.environ.get('APP_BASE_URL') or 'https://game.opentty.fun').strip().rstrip('/')
+
+# Sem MAIL_SERVER o envio fica desligado (dev/testes). O Coolify aponta para o
+# Postfix da máquina, na gateway da rede Docker.
+MAIL_ENABLED = bool((os.environ.get('MAIL_SERVER') or '').strip())
+MAIL_SERVER = (os.environ.get('MAIL_SERVER') or 'localhost').strip()
+MAIL_PORT = _env_int('MAIL_PORT', 25)
+MAIL_FROM = (os.environ.get('MAIL_FROM') or 'noreply@game.opentty.fun').strip()
+MAIL_USE_TLS = (os.environ.get('MAIL_USE_TLS', 'false').strip().lower()
+                in ('1', 'true', 'yes', 'on'))
+MAIL_USERNAME = (os.environ.get('MAIL_USERNAME') or '').strip()
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD') or ''
+MAIL_TIMEOUT_SECONDS = _env_int('MAIL_TIMEOUT_SECONDS', 10)
+
 # Origens permitidas para o Socket.IO e checagem de CSRF (separadas por vírgula).
 # Vazio → mesma origem (recomendado em produção).
 CORS_ALLOWED_ORIGINS = [

@@ -13,6 +13,8 @@ os.environ['TURN_TIMEOUT_SECONDS'] = '0'
 os.environ['SECRET_KEY'] = 'test-secret-key'
 os.environ['JWT_SECRET'] = 'test-jwt-secret'
 os.environ['SECURE_COOKIES'] = 'false'
+# Suíte legada: verificação é testada à parte em test_email_verification.py.
+os.environ['EMAIL_VERIFICATION_REQUIRED'] = 'false'
 
 import pytest  # noqa: E402
 

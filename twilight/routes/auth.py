@@ -4,8 +4,9 @@ import threading
 import time
 from collections import defaultdict, deque
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, redirect, request
 
+from twilight.auth import email_verification
 from twilight.auth.service import (
     account_exists,
     clear_user_game,
@@ -20,6 +21,7 @@ from twilight.auth.service import (
 )
 from twilight.config import (
     AUTH_MODE,
+    EMAIL_VERIFICATION_REQUIRED,
     JWT_EXPIRATION_HOURS,
     SECURE_COOKIES,
     TRUST_PROXY_HEADERS,
@@ -112,12 +114,18 @@ def register():
     if not auth_allows_internal():
         return _internal_login_disabled()
 
+    require_verify = EMAIL_VERIFICATION_REQUIRED
     data = request.json or {}
     username = data.get('username', '').strip().lower()
     password = data.get('password', '').strip()
+    email = email_verification.normalize_email(data.get('email'))
 
-    if not username or not password:
-        return jsonify({'success': False, 'message': 'Usuário e senha obrigatórios'})
+    if not username or not password or (require_verify and not email):
+        return jsonify({
+            'success': False,
+            'message': 'Usuário, senha e email obrigatórios' if require_verify
+                       else 'Usuário e senha obrigatórios',
+        })
     if not USERNAME_RE.match(username):
         return jsonify({
             'success': False,
@@ -125,6 +133,8 @@ def register():
         })
     if len(password) < 4:
         return jsonify({'success': False, 'message': 'Senha deve ter pelo menos 4 caracteres'})
+    if require_verify and not email_verification.valid_email(email):
+        return jsonify({'success': False, 'message': 'Email inválido'})
 
     reg_key = f'reg:{_client_ip()}'
     if _too_many(reg_key, _REGISTER_WINDOW, _MAX_REGISTERS):
@@ -133,19 +143,39 @@ def register():
 
     if account_exists(username):
         return jsonify({'success': False, 'message': 'Usuário já existe'})
+    if require_verify and email_verification.find_by_email(email):
+        return jsonify({'success': False, 'message': 'Este email já está em uso'})
 
-    # Criar nova conta (uma linha, sem reescrever o resto da tabela)
-    upsert_account(username, {
+    fields = {
         'password': hash_password(password),
         'created_at': now_sp_iso(),
         'current_game': None,
+        'auth_provider': 'internal',
+    }
+    if require_verify:
+        fields['email'] = email
+        fields['email_verified'] = False
+    upsert_account(username, fields)
+
+    if not require_verify:
+        # Compatibilidade com instalações que desligaram a verificação.
+        return _set_auth_cookie(
+            jsonify({'success': True, 'username': username}), create_token(username)
+        )
+
+    sent, _ = email_verification.send_verification(username, email)
+    response = jsonify({
+        'success': True,
+        'username': username,
+        'requires_verification': True,
+        'email_sent': sent,
+        'message': (
+            'Conta criada! Confirme seu email para entrar.'
+            if sent else
+            'Conta criada, mas o email não pôde ser enviado. Use "Reenviar verificação" na tela de login.'
+        ),
     })
-
-    # Criar token
-    token = create_token(username)
-
-    response = jsonify({'success': True, 'username': username})
-    return _set_auth_cookie(response, token)
+    return response
 
 
 
@@ -171,15 +201,67 @@ def login():
         _record(login_key)
         return jsonify({'success': False, 'message': 'Usuário ou senha inválidos'})
 
-    # Criar token
-    token = create_token(username)
+    if EMAIL_VERIFICATION_REQUIRED and not email_verification.is_verified(account):
+        return jsonify({
+            'success': False,
+            'requires_verification': True,
+            'message': 'Confirme seu email antes de entrar. Verifique sua caixa de entrada.',
+        }), 403
 
+    token = create_token(username)
     response = jsonify({
         'success': True,
         'username': username,
         'current_game': account.get('current_game')
     })
     return _set_auth_cookie(response, token)
+
+
+@bp.route('/verify-email/<token>')
+def verify_email(token):
+    """Link do email: confirma a conta e já loga o jogador."""
+    username = email_verification.confirm_token(token)
+    if not username:
+        return redirect('/login?verify_error=1')
+
+    response = redirect('/?email_verified=1')
+    return _set_auth_cookie(response, create_token(username))
+
+
+@bp.route('/api/resend-verification', methods=['POST'])
+def resend_verification():
+    """Reenvia o link de confirmação para uma conta local não verificada."""
+    if not auth_allows_internal() or not EMAIL_VERIFICATION_REQUIRED:
+        return jsonify({'success': False, 'message': 'Verificação de email indisponível'}), 400
+
+    data = request.json or {}
+    username = data.get('username', '').strip().lower()
+    email = email_verification.normalize_email(data.get('email'))
+    key = f'verify:{_client_ip()}:{username}'
+    if _too_many(key, _REGISTER_WINDOW, _MAX_REGISTERS):
+        return jsonify({'success': False, 'message': 'Muitas tentativas. Aguarde alguns minutos.'}), 429
+    _record(key)
+
+    account = get_account_record(username)
+    if not account:
+        return jsonify({'success': False, 'message': 'Conta não encontrada'})
+    if account.get('email_verified') or email_verification.is_verified(account):
+        return jsonify({'success': True, 'message': 'Esta conta já está verificada'})
+
+    saved_email = account.get('email') or ''
+    if email and saved_email and email != saved_email:
+        return jsonify({'success': False, 'message': 'Email não corresponde ao da conta'})
+    if not saved_email:
+        if not email_verification.valid_email(email):
+            return jsonify({'success': False, 'message': 'Informe um email válido'})
+        saved_email = email
+
+    sent, _ = email_verification.send_verification(username, saved_email)
+    return jsonify({
+        'success': sent,
+        'message': ('Link reenviado. Verifique sua caixa de entrada.' if sent
+                    else 'Não foi possível enviar o email. Tente novamente mais tarde.'),
+    })
 
 
 
@@ -310,6 +392,8 @@ def get_account():
             'current_game': account.get('current_game'),
             'admin_level': int(account.get('admin_level', account.get('level', 0)) or 0),
             'auth_provider': account.get('auth_provider', 'internal'),
+            'email': account.get('email'),
+            'email_verified': bool(account.get('email_verified')),
             'preferences': preferences,
         },
         'auth_mode': AUTH_MODE,

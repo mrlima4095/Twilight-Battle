@@ -396,6 +396,12 @@ input::placeholder, textarea::placeholder { color: #6b6480; }
 </head>
 <body>
 
+{% if request.args.get('email_verified') %}
+<div style="max-width:760px;margin:16px auto;padding:12px 16px;border-radius:12px;background:rgba(61,220,151,.12);border:1px solid rgba(61,220,151,.45);color:#7ee0a8;font-weight:700;text-align:center">
+  Email confirmado! Bem-vindo(a) ao Twilight Battle.
+</div>
+{% endif %}
+
 <div class="shell">
   <header class="hero">
     <div class="hero-badge">✦ RPG de cartas · Crepúsculo</div>

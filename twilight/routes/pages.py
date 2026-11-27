@@ -8,6 +8,7 @@ from twilight.auth.service import (
     login_required,
     update_user_game,
 )
+from twilight.config import EMAIL_VERIFICATION_REQUIRED
 from twilight.state import games
 
 bp = Blueprint('pages', __name__)
@@ -38,7 +39,10 @@ def login_page():
     """Formulário de login/registro (visitantes). Usuários logados vão ao início."""
     if get_current_user():
         return redirect('/')
-    return render_template('security/auth.html')
+    return render_template(
+        'security/auth.html',
+        email_verification_required=EMAIL_VERIFICATION_REQUIRED,
+    )
 
 
 @bp.route('/rules')
