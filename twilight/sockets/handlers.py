@@ -707,6 +707,11 @@ def handle_player_action(data):
                 damage = result.get('damage_to_player', 0)
                 total = result.get('total_attack', damage)
                 life_left = result.get('target_life')
+                # Dados públicos só para a animação de dano na carta do alvo.
+                # Mesmo sob névoa todos precisam saber quem mudou de vida.
+                result['visual_damage'] = damage
+                result['visual_target'] = result.get('target')
+                result['visual_target_name'] = target_name
                 if result.get('attack_cancelled'):
                     log_message = f"⚔️ {player_name} atacou {target_name}, mas o ataque foi cancelado!"
                 elif result.get('damage_reflected'):

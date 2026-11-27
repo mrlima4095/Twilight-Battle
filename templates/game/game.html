@@ -2074,19 +2074,24 @@ body::before {
                 });
             }
             else if (data.action === 'attack' && data.result) {
-                // Swal só para quem atacou e quem foi atacado
                 const r = data.result;
-                const attackerId = r.attacker || data.player_id || data.player_name;
-                const targetId = r.target || r.original_target;
-                const involved = (
-                    currentUsername === attackerId ||
-                    currentUsername === targetId ||
-                    currentUsername === r.attacker_name ||
-                    currentUsername === r.target_name
-                );
-                if (involved) {
+                const targetId = r.visual_target || r.target || r.original_target;
+                const targetName = r.visual_target_name || r.target_name;
+                const iAmTarget = currentUsername === targetId || currentUsername === targetName;
+
+                // Modal só para quem levou o ataque. Atacante e demais jogadores
+                // continuam recebendo só a mensagem no chat da sala.
+                if (iAmTarget) {
                     showAttackResult(r);
                 }
+
+                // O número vermelho aparece para TODOS sobre a carta do alvo,
+                // mesmo sob névoa — assim todo mundo vê quem perdeu vida.
+                createDamageAnimation(
+                    r.visual_damage != null ? r.visual_damage : r.damage_to_player,
+                    targetId,
+                    targetName
+                );
             }
 
             if (gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started && !isTimerRunning) {
@@ -2227,28 +2232,35 @@ body::before {
                 confirmButtonColor: '#ffd700'
             });
 
-            // Animação: só mostra número se soubermos o dano
-            if (!fog || iAmTarget || iAmAttacker) {
-                createDamageAnimation(result.damage_to_player || 0);
-            }
         }
-        
-        function createDamageAnimation(damage) {
-            document.querySelectorAll('.opponent-card').forEach(opponentCard => {
-                const parentRect = opponentCard.getBoundingClientRect();
-                opponentCard.querySelectorAll('.base-slot.has-card').forEach(slot => {
-                    const slotRect = slot.getBoundingClientRect();
-                    const damageNum = document.createElement('div');
-                    damageNum.className = 'damage-number';
-                    damageNum.textContent = `-${damage}`;
-                    damageNum.style.left = `${slotRect.left - parentRect.left + slotRect.width / 2}px`;
-                    damageNum.style.top = `${slotRect.top - parentRect.top + slotRect.height / 2}px`;
-                    damageNum.style.transform = 'translate(-50%, -50%)';
-                    opponentCard.appendChild(damageNum);
 
-                    setTimeout(() => damageNum.remove(), 1000);
-                });
-            });
+        function createDamageAnimation(damage, targetId, targetName) {
+            const amount = Number(damage || 0);
+            if (!amount) return;
+
+            const targetElement =
+                Array.from(document.querySelectorAll('.opponent-card'))
+                    .find(card => card.dataset.playerId === targetId)
+                || (targetId === currentUsername ? document.getElementById('player-area') : null)
+                || Array.from(document.querySelectorAll('.opponent-card'))
+                    .find(card => (card.querySelector('.opponent-name')?.textContent || '').trim() === (targetName || '').trim())
+                || Array.from(document.querySelectorAll('#player-names li'))
+                    .find(li => targetName && li.textContent.includes(targetName));
+
+            if (!targetElement) return;
+            if (getComputedStyle(targetElement).position === 'static') {
+                targetElement.style.position = 'relative';
+            }
+
+            const damageNum = document.createElement('div');
+            damageNum.className = 'damage-number';
+            damageNum.textContent = `-${amount}`;
+            damageNum.style.left = '50%';
+            damageNum.style.top = '45%';
+            damageNum.style.transform = 'translate(-50%, -50%)';
+            targetElement.appendChild(damageNum);
+
+            setTimeout(() => damageNum.remove(), 1000);
         }
 
         function requestGameState() {
