@@ -1590,6 +1590,15 @@ body::before {
             
             updateGameUI();
         });
+        // Turno forçado pelo admin: recarrega o estado e o timer sem evento novo.
+        socket.on('turn_changed', function(data) {
+            console.log('Turno alterado pelo admin:', data);
+            requestGameState();
+            // Pode ser o mesmo jogador; nesse caso o game_state não reinicia o timer.
+            if (data && data.forced && data.new_turn === currentUsername) {
+                setTimeout(function() { resetTurnTimer(); }, 120);
+            }
+        });
         // | (Recebeu listas)
         socket.on('graveyard_list', function(data) {
             console.log('Cemitério recebido:', data);
@@ -2699,8 +2708,9 @@ body::before {
                     playerData.attack_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'attack', index, true);
                         if (card) {
-                            slot.title = 'Clique para abrir o menu da carta';
-                            slot.onclick = (evt) => showOpponentCardMenu(
+                            slot.title = 'Clique para detalhes · botão direito: menu';
+                            slot.onclick = () => showCardDetails(card, playerData.name, 'attack', index, true);
+                            slot.oncontextmenu = (evt) => showOpponentCardMenu(
                                 evt, card, playerId, playerData.name, 'attack', index
                             );
                         }
@@ -2712,8 +2722,9 @@ body::before {
                     playerData.defense_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'defense', index, true);
                         if (card) {
-                            slot.title = 'Clique para abrir o menu da carta';
-                            slot.onclick = (evt) => showOpponentCardMenu(
+                            slot.title = 'Clique para detalhes · botão direito: menu';
+                            slot.onclick = () => showCardDetails(card, playerData.name, 'defense', index, true);
+                            slot.oncontextmenu = (evt) => showOpponentCardMenu(
                                 evt, card, playerId, playerData.name, 'defense', index
                             );
                         }
@@ -2777,6 +2788,10 @@ body::before {
                 playerData.attack_bases.forEach((card, index) => {
                     const slot = createBaseSlot(card, 'attack', index, false);
                     slot.onclick = () => selectBase('attack', index, card);
+                    if (card) {
+                        slot.title = 'Clique para detalhes · botão direito: menu';
+                        slot.oncontextmenu = (evt) => showOwnCardMenu(evt, card, 'attack', index);
+                    }
                     attackBases.appendChild(slot);
                 });
             }
@@ -2788,6 +2803,10 @@ body::before {
                 playerData.defense_bases.forEach((card, index) => {
                     const slot = createBaseSlot(card, 'defense', index, false);
                     slot.onclick = () => selectBase('defense', index, card);
+                    if (card) {
+                        slot.title = 'Clique para detalhes · botão direito: menu';
+                        slot.oncontextmenu = (evt) => showOwnCardMenu(evt, card, 'defense', index);
+                    }
                     defenseBases.appendChild(slot);
                 });
             }
@@ -2800,11 +2819,14 @@ body::before {
                 console.log('Renderizando mão com', playerData.hand.length, 'cartas');
                 playerData.hand.forEach((card, index) => {
                     const cardElement = createCardElement(card, index);
-                    // Clique esquerdo abre menu contextual com as ações da carta
+                    // Clique esquerdo mantém a ação original; botão direito abre o menu
                     if (isEquippableCard(card)) {
                         cardElement.classList.add('equippable');
+                        cardElement.onclick = () => selectEquippableFromHand(card);
+                    } else {
+                        cardElement.onclick = () => selectCard(card, index);
                     }
-                    cardElement.onclick = (evt) => showHandCardMenu(evt, card, index);
+                    cardElement.oncontextmenu = (evt) => showHandCardMenu(evt, card, index);
                     handCards.appendChild(cardElement);
                 });
             } else {
@@ -2918,7 +2940,7 @@ body::before {
             const div = document.createElement('div');
             div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
             div.dataset.instanceId = card.instance_id || '';
-            div.title = 'Clique para abrir o menu da carta';
+            div.title = 'Clique para jogar/equipar · botão direito: menu';
             const emoji = getCardEmoji(card);
             const shortName = (card.name || '').substring(0, 12);
             const stats = [
@@ -2988,7 +3010,7 @@ body::before {
             return getCardEmoji({ type: type });
         }
 
-        // ── Menu contextual (clique esquerdo nas cartas) ──
+        // ── Menu contextual (botão direito nas cartas dos jogadores) ──
         let cardMenuActions = [];
 
         function getCardActionMenu() {
@@ -3053,6 +3075,13 @@ body::before {
         }
 
         document.addEventListener('click', (evt) => {
+            const menu = getCardActionMenu();
+            if (menu.style.display === 'block' && !menu.contains(evt.target)) {
+                hideCardActionMenu();
+            }
+        });
+        // Fora das cartas dos jogadores o menu não aparece ( vale o menu do navegador ).
+        document.addEventListener('contextmenu', (evt) => {
             const menu = getCardActionMenu();
             if (menu.style.display === 'block' && !menu.contains(evt.target)) {
                 hideCardActionMenu();
@@ -3491,10 +3520,10 @@ body::before {
                 return;
             }
             
-            // Modo normal: abre o menu contextual da carta em campo
+            // Modo normal (jogar carta): sem ação pendente, mostra os detalhes da carta em campo
             if (!selectedCard && actionMode !== 'move') {
                 if (card) {
-                    showOwnCardMenu(evt, card, type, index);
+                    showCardDetails(card, currentUsername, type, index, false);
                 }
                 return;
             }

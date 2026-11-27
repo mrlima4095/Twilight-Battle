@@ -1,6 +1,7 @@
 """Painel e APIs administrativas."""
 import os
 import random
+import time
 import uuid
 
 from flask import Blueprint, jsonify, redirect, render_template, request
@@ -37,6 +38,38 @@ def _emit_admin_private(game, target_username, payload):
             socketio.emit('admin_action', payload, room=sid)
     except Exception:
         pass
+
+
+def _resolve_card(card_id):
+    """Aceita ID canônico ou nome amigável de carta (como em 'dar carta')."""
+    card_id = str(card_id or '').strip()
+    if card_id in CARDS:
+        return card_id, CARDS[card_id]
+    for cid, info in CARDS.items():
+        if info['name'].lower() == card_id.lower():
+            return cid, info
+    return None, None
+
+
+def _new_card_instance(card_info):
+    """Cópia independente com instance_id novo, igual à criação do deck."""
+    card = card_info.copy()
+    card['instance_id'] = str(uuid.uuid4())[:8]
+    return card
+
+
+def _deck_index(deck, position, *, insert=False):
+    """
+    Converte posição visível (1 = próxima carta) para índice real da lista.
+
+    O motor compra com deck.pop(), então a próxima carta é o último elemento.
+    Para inserir antes de uma posição, usa-se o índice seguinte.
+    """
+    position = int(position)
+    if not 1 <= position <= len(deck) + (1 if insert else 0):
+        raise ValueError(f'Posição inválida: {position}')
+    return len(deck) - position + (1 if insert else 0)
+
 
 @bp.route('/admin')
 @login_required
@@ -348,24 +381,15 @@ def api_admin_give_card(admin_username, game_id, target_username):
         return jsonify({'success': False, 'message': 'Jogador não encontrado'}), 404
     
     # Encontrar a carta
-    if card_id in CARDS:
-        card_info = CARDS[card_id]
-    else:
-        # Procurar por nome
-        for cid, cinfo in CARDS.items():
-            if cinfo['name'].lower() == card_id.lower():
-                card_info = cinfo
-                card_id = cid
-                break
-        else:
-            return jsonify({'success': False, 'message': f'Carta "{card_id}" não encontrada'}), 404
+    card_id, card_info = _resolve_card(card_id)
+    if not card_info:
+        return jsonify({'success': False, 'message': f'Carta "{data.get("card_id")}" não encontrada'}), 404
     
     player = game.player_data[target_username]
     cards_given = []
     
     for _ in range(min(quantity, 50)):  # Máximo 50 cartas por vez
-        new_card = card_info.copy()
-        new_card['instance_id'] = str(uuid.uuid4())[:8]
+        new_card = _new_card_instance(card_info)
         player['hand'].append(new_card)
         cards_given.append(new_card['name'])
     
@@ -616,8 +640,8 @@ def api_admin_modify_field(admin_username, game_id, target_username):
 @bp.route('/api/admin/game/<game_id>/set-turn', methods=['POST'])
 @admin_required
 def api_admin_set_turn(admin_username, game_id):
-    """Define o turno atual do jogo"""
-    data = request.json
+    """Define o turno atual do jogo (e agenda o bot, se for o caso)."""
+    data = request.json or {}
     target_username = data.get('target_username')
     
     if game_id not in games:
@@ -628,19 +652,38 @@ def api_admin_set_turn(admin_username, game_id):
     if target_username not in game.players:
         return jsonify({'success': False, 'message': 'Jogador não encontrado no jogo'}), 404
     
+    target_data = game.player_data.get(target_username) or {}
+    if target_data.get('dead', False):
+        return jsonify({'success': False, 'message': 'Jogador morto não pode receber o turno'}), 400
+
     # Encontrar índice do jogador
     for i, p in enumerate(game.players):
         if p == target_username:
             game.current_turn = i
             break
-    
+
+    # Forçar turno equivale a um turno novo para o alvo: limpa as ações que
+    # já tinham sido gastas, senão o bot roda e todas as jogadas falham.
+    game.turn_actions_used[target_username] = {}
+    game.turn_extra_actions[target_username] = {}
+    for flag in ('free_swap_used', 'first_hit_reduced', 'attacked_this_turn'):
+        target_data[flag] = False
+    game.last_action_at = time.time()
+
     broadcast_system_message(game_id, f'👑 Admin alterou o turno para {target_username}')
-    
+
     socketio.emit('turn_changed', {
         'new_turn': target_username,
-        'message': f'Turno alterado pelo admin para {target_username}'
+        'message': f'Turno alterado pelo admin para {target_username}',
+        'forced': True,
     }, room=game_id)
-    
+
+    # A IA interna só joga quando alguém chama schedule_bot_turn (o fluxo
+    # normal chama no end_turn; o set-turn não chamava → bot ficava parado).
+    from twilight.game.ai import is_bot_player, schedule_bot_turn
+    if is_bot_player(game, target_username):
+        schedule_bot_turn(game_id, delay=0.8)
+
     return jsonify({'success': True, 'current_turn': target_username})
 
 @bp.route('/api/admin/game/<game_id>/set-time', methods=['POST'])
@@ -728,6 +771,113 @@ def api_admin_peek_deck(admin_username, game_id):
         'draw_from': 'end',  # documenta a convenção do motor
         'cards': peek_cards
     })
+
+
+@bp.route('/api/admin/game/<game_id>/deck/edit', methods=['POST'])
+@admin_required
+def api_admin_edit_deck(admin_username, game_id):
+    """
+    Edita as próximas cartas na ordem real de compra (1 = próxima).
+
+    ações:
+      replace -> { position, card_id }
+      insert  -> { position, card_id }  (posição = onde a carta passa a ficar)
+      remove  -> { position }
+      move    -> { from, to }
+    Tudo é silencioso: nenhuma mensagem vai para o chat da sala.
+    """
+    if game_id not in games:
+        return jsonify({'success': False, 'message': 'Jogo não encontrado'}), 404
+
+    data = request.get_json(silent=True) or {}
+    action = str(data.get('action') or '').strip().lower()
+    game = games[game_id]
+    deck = getattr(game, 'deck', None)
+    if deck is None:
+        return jsonify({'success': False, 'message': 'Jogo sem deck'}), 400
+
+    def _int(value, label):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            raise ValueError(f'{label} inválida')
+
+    try:
+        if action in ('replace', 'insert'):
+            card_id, card_info = _resolve_card(data.get('card_id'))
+            if not card_info:
+                return jsonify({
+                    'success': False,
+                    'message': f'Carta "{data.get("card_id")}" não encontrada'
+                }), 404
+
+            position = _int(data.get('position', 1), 'Posição')
+            index = _deck_index(deck, position, insert=(action == 'insert'))
+            new_card = _new_card_instance(card_info)
+
+            if action == 'replace':
+                old_card = deck[index]
+                deck[index] = new_card
+                message = f'Carta {position} ({old_card.get("name", "?")}) trocada por {new_card["name"]}'
+            else:
+                deck.insert(index, new_card)
+                message = f'{new_card["name"]} inserida na posição {position}'
+
+            return jsonify({
+                'success': True,
+                'action': action,
+                'position': position,
+                'deck_count': len(deck),
+                'card': {
+                    'position': position,
+                    'instance_id': new_card['instance_id'],
+                    'id': new_card['id'],
+                    'name': new_card['name'],
+                    'type': new_card['type'],
+                },
+                'message': message,
+            })
+
+        if action == 'remove':
+            position = _int(data.get('position', 1), 'Posição')
+            index = _deck_index(deck, position)
+            card = deck.pop(index)
+            return jsonify({
+                'success': True,
+                'action': action,
+                'position': position,
+                'deck_count': len(deck),
+                'card': {'id': card.get('id'), 'name': card.get('name')},
+                'message': f'{card.get("name", "Carta")} removida da posição {position}',
+            })
+
+        if action == 'move':
+            from_position = _int(
+                data.get('from') if data.get('from') is not None else data.get('from_position'),
+                'Posição de origem'
+            )
+            to_position = _int(
+                data.get('to') if data.get('to') is not None else data.get('to_position'),
+                'Posição de destino'
+            )
+            from_index = _deck_index(deck, from_position)
+            to_index = _deck_index(deck, to_position)
+            card = deck.pop(from_index)
+            deck.insert(to_index, card)
+            return jsonify({
+                'success': True,
+                'action': action,
+                'position': to_position,
+                'deck_count': len(deck),
+                'card': {'id': card.get('id'), 'name': card.get('name')},
+                'message': f'{card.get("name", "Carta")} movida da posição {from_position} para {to_position}',
+            })
+
+        return jsonify({'success': False, 'message': 'Ação inválida'}), 400
+
+    except ValueError as exc:
+        return jsonify({'success': False, 'message': str(exc)}), 400
+
 
 @bp.route('/api/admin/game/<game_id>/graveyard/revive', methods=['POST'])
 @admin_required

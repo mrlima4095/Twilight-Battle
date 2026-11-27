@@ -1487,6 +1487,15 @@ class TwilightBot:
 
         @self.sio.on("turn_changed")
         def on_turn(data):
+            # Turno forçado pelo admin pode ser o mesmo turno em que o bot
+            # já jogou; limpa a trava para ele responder novamente.
+            if data.get("forced") and data.get("new_turn") == self.username:
+                with self._lock:
+                    self._turn_done_for = None
+                    self._turn_key_active = None
+                    self._used = {}
+                    self._failed = set()
+                print("[jogo] turno forçado pelo admin — vou jogar de novo")
             self.request_state()
 
     def _turn_key(self, state: dict) -> str:

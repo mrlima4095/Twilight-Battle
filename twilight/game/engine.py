@@ -3315,15 +3315,18 @@ class Game:
         
         # Armadilha 171 - Rouba a carta que dá golpe crítico
         if trap_id == 'armadilha_171':
-            damage = 0
-            index = -1
-            for card in attacker['attack_bases']:
-                if card and card.get('attack', 0) > damage:
-                    damage = card.get('attack', 0)
-                    index += 1
+            # Rouba a carta de maior ataque, mantendo o slot da base livre
+            # (pop reduziria o tamanho da lista e deixaria o atacante com
+            #  um slot de ataque a menos para o resto da partida).
+            index = max(
+                (i for i, card in enumerate(attacker['attack_bases']) if card),
+                key=lambda i: int(attacker['attack_bases'][i].get('attack') or 0),
+                default=-1,
+            )
 
-            if index >= 0 and index < len(attacker['attack_bases']) and attacker['attack_bases'][index]:
-                stolen_card = attacker['attack_bases'].pop(index)
+            if index >= 0:
+                stolen_card = attacker['attack_bases'][index]
+                attacker['attack_bases'][index] = None
                 defender['hand'].append(stolen_card)
 
                 broadcast_system_message(
