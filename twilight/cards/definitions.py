@@ -1,6 +1,16 @@
 """Definições de cartas, disfarces de armadilha e modificadores de sala."""
 
 
+# Slots disponíveis para itens equipados em criaturas (1 item por slot).
+CREATURE_ITEM_SLOTS = ('weapon', 'helmet', 'armor', 'pants', 'boots')
+
+# Criaturas com forma bestial não podem receber itens equipados.
+# O Lobisomem é a exceção natural: a Adaga do Crepúsculo foi feita para ele.
+BEAST_CREATURE_IDS = frozenset({
+    'dragao', 'leviatan', 'apofis', 'fenix', 'medusa', 'lobisomem_crepusculo',
+})
+
+
 # Registro central das habilidades implementadas no motor.
 # As cartas referenciam esses IDs em `ability`; o cliente usa `trigger` e
 # `ability_text` para mostrar o efeito no modal de detalhes.
@@ -186,7 +196,8 @@ CARDS = {
         "ability_name": ABILITIES["dragon_burn"]["name"],
         "trigger": ABILITIES["dragon_burn"]["trigger"],
         "ability_text": ABILITIES["dragon_burn"]["text"],
-        "description": "Besta (250⚔️ / 1500❤️). Ao atacar, todas as cartas do alvo ficam queimando: 50❤️ de dano por 2 turnos.",
+        "beast_form": True,
+        "description": "Besta (250⚔️ / 1500❤️). Ao atacar, todas as cartas do alvo ficam queimando: 50❤️ de dano por 2 turnos. Bestas não equipam itens.",
     },
     "leviatan": {
         "id": "leviatan", 
@@ -194,8 +205,9 @@ CARDS = {
         "type": "creature", 
         "life": 5000, 
         "attack": 1024, 
-        "count": 1, 
-        "description": "Titã (1024⚔️ / 5000❤️). Carta única colossal — só entra no baralho se lendas estiverem ativas."
+        "count": 1,
+        "beast_form": True,
+        "description": "Titã (1024⚔️ / 5000❤️). Carta única colossal — só entra no baralho se lendas estiverem ativas. Bestas não equipam itens."
     },
     "apofis": {
         "id": "apofis", 
@@ -203,8 +215,9 @@ CARDS = {
         "type": "creature", 
         "life": 5000, 
         "attack": 1250, 
-        "count": 1, 
-        "description": "Rei do Caos (1250⚔️ / 5000❤️). Pode anular armadilhas/magias rivais. Peça de Ritual 157 e Ritual do Caos."
+        "count": 1,
+        "beast_form": True,
+        "description": "Rei do Caos (1250⚔️ / 5000❤️). Pode anular armadilhas/magias rivais. Peça de Ritual 157 e Ritual do Caos. Forma bestial: não equipa itens."
     },
     "fenix": {
         "id": "fenix",
@@ -217,6 +230,7 @@ CARDS = {
         "ability_name": ABILITIES["phoenix_rebirth"]["name"],
         "trigger": ABILITIES["phoenix_rebirth"]["trigger"],
         "ability_text": ABILITIES["phoenix_rebirth"]["text"],
+        "beast_form": True,
         "description": "Ave lendária (1500⚔️ / 5000❤️). Ação toggle_time: alterna dia↔noite (1× por turno). Ao morrer, deixa um Ovo de Fênix no inventário do dono: renasce em 10 turnos com metade da vida, uma única vez. Se o ovo for perdido, revivida ou o dono derrotado, não renasce."
     },
 
@@ -231,6 +245,7 @@ CARDS = {
         "ability_name": ABILITIES["medusa_petrify"]["name"],
         "trigger": ABILITIES["medusa_petrify"]["trigger"],
         "ability_text": ABILITIES["medusa_petrify"]["text"],
+        "beast_form": True,
         "description": "Lenda (512⚔️ / 1024❤️). Ao atacar, petrifica todas as cartas de ataque do alvo: elas não podem atacar na próxima vez em que for o turno delas. 2 usos por Medusa; reviver do cemitério reseta a cota."
     },
     
@@ -436,6 +451,7 @@ CARDS = {
         "attack": 40,
         "count": 18,
         "werewolf": True,
+        "beast_form": True,
         "day_life": 700,
         "day_attack": 40,
         "night_life": 480,

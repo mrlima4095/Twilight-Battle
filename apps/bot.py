@@ -149,6 +149,29 @@ def is_armor(card: Optional[dict]) -> bool:
     return bool(card and card.get("type") == "armor")
 
 
+def item_slot(card: Optional[dict]) -> Optional[str]:
+    """Slot canônico do item em criatura (espelha o motor)."""
+    if not card:
+        return None
+    slot = card.get("slot")
+    if slot in CREATURE_ITEM_SLOTS:
+        return slot
+    if is_weapon(card) or card.get("id") in WEAPON_IDS:
+        return "weapon"
+    if is_armor(card) or card.get("id") == "capacete_trevas":
+        text = f"{card.get('id', '')} {card.get('name', '')}".lower()
+        if "capacete" in text or "helmet" in text:
+            return "helmet"
+        if "peitoral" in text or "armadura" in text or "manto" in text:
+            return "armor"
+        if "calç" in text or "calca" in text or "pants" in text:
+            return "pants"
+        if "bota" in text or "boot" in text:
+            return "boots"
+        return "armor"
+    return None
+
+
 def empty_slots(bases: list) -> list[int]:
     return [i for i, c in enumerate(bases or []) if c is None]
 
@@ -166,6 +189,10 @@ def filled_creatures(bases: list) -> list[tuple[int, dict]]:
 # ---------------------------------------------------------------------------
 MAGE_IDS = frozenset({"mago", "rei_mago", "mago_negro"})
 WEAPON_IDS = frozenset({"lamina_almas", "blade_vampires", "blade_dragons"})
+BEAST_IDS = frozenset({
+    "dragao", "leviatan", "apofis", "fenix", "medusa", "lobisomem_crepusculo",
+})
+CREATURE_ITEM_SLOTS = ("weapon", "helmet", "armor", "pants", "boots")
 TRAP_VALUE = {
     "armadilha_poco": 100,
     "armadilha_espelho": 90,
@@ -545,6 +572,9 @@ class Strategy:
     def _can_equip(self, item: dict, creature: dict) -> bool:
         iid = item.get("id") or ""
         cid = creature.get("id") or ""
+        if creature.get("beast_form") or cid in BEAST_IDS:
+            if not (item.get("werewolf_only") and creature.get("werewolf")):
+                return False
         if iid == "blade_vampires" and cid not in ("vampiro_tayler", "vampiro_wers"):
             return False
         if iid == "blade_dragons" and cid not in (
@@ -562,16 +592,12 @@ class Strategy:
             races = item.get("equip_races") or list(MAGE_IDS)
             if cid not in races:
                 return False
+        slot = item_slot(item)
+        if not slot:
+            return False
         eqs = creature.get("equipped_items") or []
-        if item.get("type") == "weapon" or iid in WEAPON_IDS:
-            if any(e.get("type") == "weapon" or e.get("id") in WEAPON_IDS for e in eqs):
-                return False
-        if item.get("type") == "armor" or iid == "capacete_trevas":
-            armor_n = sum(
-                1 for e in eqs if e.get("type") == "armor" or e.get("id") == "capacete_trevas"
-            )
-            if armor_n >= 4:
-                return False
+        if any(item_slot(e) == slot for e in eqs):
+            return False
         return True
 
     def _pick_equip_creature(

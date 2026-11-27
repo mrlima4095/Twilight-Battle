@@ -5,7 +5,7 @@ from random import shuffle
 import uuid
 
 from twilight.cards.deck import create_deck, get_random_disguise
-from twilight.cards.definitions import CARDS
+from twilight.cards.definitions import BEAST_CREATURE_IDS, CARDS, CREATURE_ITEM_SLOTS
 from twilight.extensions import socketio
 from twilight.game.chat import broadcast_system_message
 from twilight.game.rituals import RitualManager
@@ -160,6 +160,35 @@ class Game:
             item.get('type') == 'weapon'
             or item.get('id') in ('lamina_almas', 'blade_vampires', 'blade_dragons')
         ))
+
+    @staticmethod
+    def _is_beast_creature(card):
+        return bool(card and (
+            card.get('beast_form') or card.get('id') in BEAST_CREATURE_IDS
+        ))
+
+    @classmethod
+    def _item_slot(cls, item):
+        """Slot canônico de um item em criatura (uma peça por slot)."""
+        if not item:
+            return None
+        slot = item.get('slot')
+        if slot in CREATURE_ITEM_SLOTS:
+            return slot
+        if cls._is_weapon_item(item):
+            return 'weapon'
+        if cls._is_armor_item(item):
+            text = f"{item.get('id', '')} {item.get('name', '')}".lower()
+            if 'capacete' in text or 'helmet' in text:
+                return 'helmet'
+            if 'peitoral' in text or 'armadura' in text or 'manto' in text:
+                return 'armor'
+            if 'calç' in text or 'calca' in text or 'pants' in text:
+                return 'pants'
+            if 'bota' in text or 'boot' in text:
+                return 'boots'
+            return 'armor'
+        return None
 
     def _init_armor_durability(self, item):
         """Durabilidade da armadura = proteção/vida que ela deu ao equipar."""
@@ -2112,18 +2141,46 @@ class Game:
             if target_creature.get('id') not in races:
                 return {'success': False, 'message': 'O Cajado do Mago Negro só pode ser usado por magos'}
         
+        # Formas bestiais não usam equipamento; a Adaga do Crepúsculo é a
+        # exceção criada exclusivamente para o Lobisomem.
+        if self._is_beast_creature(target_creature):
+            allowed_beast_item = (
+                item_card.get('werewolf_only') and target_creature.get('werewolf')
+            )
+            if not allowed_beast_item:
+                return {
+                    'success': False,
+                    'message': f'{target_creature["name"]} tem forma bestial e não pode equipar itens',
+                }
+
         if 'equipped_items' not in target_creature:
             target_creature['equipped_items'] = []
-        
-        weapon_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'weapon' or eq.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons'])
-        armor_count = sum(1 for eq in target_creature['equipped_items'] if eq.get('type') == 'armor' or eq.get('id') == 'capacete_trevas')
-        
-        if (item_card.get('type') == 'weapon' or item_card.get('id') in ['lamina_almas', 'blade_vampires', 'blade_dragons']) and weapon_count >= 1:
-            return {'success': False, 'message': 'Criatura já tem uma arma equipada'}
-        
-        if (item_card.get('type') == 'armor' or item_card.get('id') == 'capacete_trevas') and armor_count >= 4:
-            return {'success': False, 'message': 'Criatura já tem muitas armaduras'}
-        
+
+        # Um item por slot (arma, capacete, peitoral, calças e botas).
+        item_slot = self._item_slot(item_card)
+        if not item_slot:
+            return {'success': False, 'message': 'Item sem slot de equipamento'}
+        occupied = next(
+            (eq for eq in target_creature['equipped_items']
+             if self._item_slot(eq) == item_slot),
+            None,
+        )
+        if occupied:
+            slot_names = {
+                'weapon': 'arma',
+                'helmet': 'capacete',
+                'armor': 'peitoral',
+                'pants': 'calças',
+                'boots': 'botas',
+            }
+            return {
+                'success': False,
+                'message': (
+                    f'{target_creature["name"]} já tem um item no slot de '
+                    f'{slot_names[item_slot]}: {occupied.get("name", "item")}'
+                ),
+            }
+
         # Remover item da mão
         player['hand'].pop(item_index)
         

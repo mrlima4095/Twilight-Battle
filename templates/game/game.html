@@ -644,6 +644,29 @@ body::before {
   from { opacity: 1; transform: translate(-50%, 0) scale(1); }
   to { opacity: 0; transform: translate(-50%, -40px) scale(1.2); }
 }
+#card-action-menu {
+  position: fixed; z-index: 10000; display: none; min-width: 230px; max-width: 300px;
+  max-height: min(70vh, 420px); overflow-y: auto; padding: 8px;
+  background: rgba(20, 18, 38, .98); border: 1px solid rgba(155,123,255,.5);
+  border-radius: 14px; box-shadow: 0 14px 38px rgba(0,0,0,.6); color: #fff;
+}
+#card-action-menu .menu-title {
+  padding: 6px 8px 9px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.1);
+  display: flex; flex-direction: column; gap: 2px;
+}
+#card-action-menu .menu-title strong { color: #ffd700; font-size: .92rem; }
+#card-action-menu .menu-title small { color: #b8b0cc; font-size: .74rem; }
+#card-action-menu button {
+  display: block; width: 100%; text-align: left; margin: 3px 0; padding: 9px 10px;
+  border: 1px solid rgba(255,255,255,.08); border-radius: 9px;
+  background: rgba(255,255,255,.05); color: #fff; font-size: .84rem; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+#card-action-menu button:hover:not(:disabled) {
+  background: rgba(155,123,255,.22); border-color: rgba(155,123,255,.5);
+}
+#card-action-menu button.danger { color: #ff8fa3; }
+#card-action-menu button:disabled { opacity: .45; cursor: not-allowed; }
 @keyframes fadeInOut {
   0%, 100% { opacity: 1; }
   50% { opacity: .45; }
@@ -2676,8 +2699,10 @@ body::before {
                     playerData.attack_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'attack', index, true);
                         if (card) {
-                            slot.title = 'Clique para ver os detalhes da carta';
-                            slot.onclick = () => showCardDetails(card, playerData.name, 'attack', index, true);
+                            slot.title = 'Clique para abrir o menu da carta';
+                            slot.onclick = (evt) => showOpponentCardMenu(
+                                evt, card, playerId, playerData.name, 'attack', index
+                            );
                         }
                         attackRow.appendChild(slot);
                     });
@@ -2687,8 +2712,10 @@ body::before {
                     playerData.defense_bases.forEach((card, index) => {
                         const slot = createBaseSlot(card, 'defense', index, true);
                         if (card) {
-                            slot.title = 'Clique para ver os detalhes da carta';
-                            slot.onclick = () => showCardDetails(card, playerData.name, 'defense', index, true);
+                            slot.title = 'Clique para abrir o menu da carta';
+                            slot.onclick = (evt) => showOpponentCardMenu(
+                                evt, card, playerId, playerData.name, 'defense', index
+                            );
                         }
                         defenseRow.appendChild(slot);
                     });
@@ -2773,13 +2800,11 @@ body::before {
                 console.log('Renderizando mão com', playerData.hand.length, 'cartas');
                 playerData.hand.forEach((card, index) => {
                     const cardElement = createCardElement(card, index);
-                    // Itens equipáveis: um clique já avisa e entra no modo de equipar
+                    // Clique esquerdo abre menu contextual com as ações da carta
                     if (isEquippableCard(card)) {
                         cardElement.classList.add('equippable');
-                        cardElement.onclick = () => selectEquippableFromHand(card);
-                    } else {
-                        cardElement.onclick = () => selectCard(card, index);
                     }
+                    cardElement.onclick = (evt) => showHandCardMenu(evt, card, index);
                     handCards.appendChild(cardElement);
                 });
             } else {
@@ -2811,6 +2836,7 @@ body::before {
             slot.className = `base-slot ${type} ${card ? 'has-card' : ''}`;
             slot.setAttribute('data-type', type);
             slot.setAttribute('data-index', index);
+            slot.dataset.instanceId = card?.instance_id || '';
             
             if (card) {
                 let lifePercent = 100;
@@ -2879,7 +2905,7 @@ body::before {
                 slot.innerHTML = type === 'attack' ? '⚔️' : (type === 'defense' ? '🛡️' : '·');
             }
             
-            slot.onclick = () => selectBase(type, index, card);
+            slot.onclick = (evt) => selectBase(type, index, card, evt);
 
             if (equipMode && card && card.type === 'creature' && !isOpponent) {
                 slot.classList.add('creature-highlight');
@@ -2891,6 +2917,8 @@ body::before {
         function createCardElement(card, index) {
             const div = document.createElement('div');
             div.className = `card ${card.type} ${selectedCard === card ? 'selected' : ''}`;
+            div.dataset.instanceId = card.instance_id || '';
+            div.title = 'Clique para abrir o menu da carta';
             const emoji = getCardEmoji(card);
             const shortName = (card.name || '').substring(0, 12);
             const stats = [
@@ -2960,6 +2988,227 @@ body::before {
             return getCardEmoji({ type: type });
         }
 
+        // ── Menu contextual (clique esquerdo nas cartas) ──
+        let cardMenuActions = [];
+
+        function getCardActionMenu() {
+            let menu = document.getElementById('card-action-menu');
+            if (!menu) {
+                menu = document.createElement('div');
+                menu.id = 'card-action-menu';
+                menu.setAttribute('role', 'menu');
+                document.body.appendChild(menu);
+            }
+            return menu;
+        }
+
+        function hideCardActionMenu() {
+            const menu = getCardActionMenu();
+            menu.style.display = 'none';
+        }
+
+        function showCardActionMenu(evt, title, subtitle, actions) {
+            if (!evt) return;
+            evt.preventDefault();
+            evt.stopPropagation();
+
+            const menu = getCardActionMenu();
+            menu.innerHTML = '';
+            cardMenuActions = actions.map(a => a.run);
+
+            const header = document.createElement('div');
+            header.className = 'menu-title';
+            header.innerHTML = '<strong></strong><small></small>';
+            header.querySelector('strong').textContent = title || 'Carta';
+            header.querySelector('small').textContent = subtitle || '';
+            menu.appendChild(header);
+
+            actions.forEach((action, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = `${action.icon || '•'} ${action.label}`;
+                btn.disabled = !!action.disabled;
+                btn.title = action.hint || '';
+                if (action.danger) btn.classList.add('danger');
+                btn.onclick = (clickEvent) => {
+                    clickEvent.stopPropagation();
+                    hideCardActionMenu();
+                    const run = cardMenuActions[index];
+                    if (run) run();
+                };
+                menu.appendChild(btn);
+            });
+
+            menu.style.display = 'block';
+            const left = Math.max(12, Math.min(
+                evt.clientX || 12,
+                window.innerWidth - menu.offsetWidth - 12
+            ));
+            const top = Math.max(12, Math.min(
+                evt.clientY || 12,
+                window.innerHeight - menu.offsetHeight - 12
+            ));
+            menu.style.left = `${left}px`;
+            menu.style.top = `${top}px`;
+        }
+
+        document.addEventListener('click', (evt) => {
+            const menu = getCardActionMenu();
+            if (menu.style.display === 'block' && !menu.contains(evt.target)) {
+                hideCardActionMenu();
+            }
+        });
+        document.addEventListener('keydown', (evt) => {
+            if (evt.key === 'Escape') hideCardActionMenu();
+        });
+        window.addEventListener('scroll', (evt) => {
+            const menu = getCardActionMenu();
+            if (menu.style.display === 'block' && !menu.contains(evt.target)) {
+                hideCardActionMenu();
+            }
+        }, true);
+        window.addEventListener('resize', hideCardActionMenu);
+
+        function showPlayerInfo(playerId) {
+            const player = (gameState && gameState.players && gameState.players[playerId]);
+            if (!player) return;
+            const atkCount = (player.attack_bases || []).filter(Boolean).length;
+            const defCount = (player.defense_bases || []).filter(Boolean).length;
+            Swal.fire({
+                title: `🧑 ${player.name || playerId}`,
+                html: `
+                    <div style="text-align:left;color:#fff;line-height:1.7;">
+                        <p>❤️ <strong>Vida:</strong> ${player.dead ? '💀 0' : (player.life ?? '—')}</p>
+                        <p>⚔️ <strong>Cartas em ataque:</strong> ${atkCount}</p>
+                        <p>🛡️ <strong>Cartas em defesa:</strong> ${defCount}</p>
+                        <p>🔮 <strong>Talismãs:</strong> ${player.talisman_count || 0}</p>
+                        <p>🔷 <strong>Runas:</strong> ${player.runes || 0}</p>
+                        ${player.is_bot ? `<p>🤖 <strong>Bot:</strong> ${player.bot_difficulty || 'normal'}</p>` : ''}
+                        ${player.dead ? '<p style="color:#ff8fa3;">Este jogador foi derrotado.</p>' : ''}
+                    </div>
+                `,
+                background: '#1a1a2e', color: '#fff', confirmButtonColor: '#ffd700'
+            });
+        }
+
+        function showOpponentCardMenu(evt, card, playerId, ownerName, baseType, index) {
+            if (!card) return;
+            const actions = [
+                {
+                    icon: '👁️', label: 'Ver detalhes da carta',
+                    run: () => showCardDetails(card, ownerName, baseType, index, true),
+                },
+                {
+                    icon: '🧑', label: `Ver info de ${ownerName || 'jogador'}`,
+                    run: () => showPlayerInfo(playerId),
+                },
+                {
+                    icon: '⚔️', label: `Atacar ${ownerName || 'jogador'}`,
+                    disabled: !gameState
+                        || gameState.current_turn !== currentUsername
+                        || !!gameState.players?.[playerId]?.dead,
+                    hint: gameState && gameState.current_turn !== currentUsername
+                        ? 'Só no seu turno' : '',
+                    run: () => selectTarget(playerId),
+                },
+            ];
+            showCardActionMenu(
+                evt,
+                card.name || 'Carta',
+                `${ownerName || 'Oponente'} · ${baseType === 'attack' ? '⚔️ Ataque' : '🛡️ Defesa'} #${index + 1}`,
+                actions
+            );
+        }
+
+        function showOwnCardMenu(evt, card, baseType, index) {
+            if (!card) return;
+            const actions = [
+                {
+                    icon: '👁️', label: 'Ver detalhes / desequipar',
+                    run: () => showCardDetails(card, currentUsername, baseType, index, false),
+                },
+                {
+                    icon: '🔄', label: 'Mover / trocar posição',
+                    disabled: !gameState || gameState.current_turn !== currentUsername,
+                    hint: gameState && gameState.current_turn !== currentUsername
+                        ? 'Só no seu turno' : '',
+                    run: () => document.getElementById('move-mode-btn').click(),
+                },
+            ];
+            if (card.id === 'fenix') {
+                actions.push({
+                    icon: '🌗', label: 'Mudar ciclo dia/noite',
+                    disabled: !gameState || gameState.current_turn !== currentUsername,
+                    run: () => toggleTimeOfDay(),
+                });
+            }
+            if (card.id === 'oraculo_imortalidade') {
+                actions.push({
+                    icon: '👁️', label: 'Usar Oráculo',
+                    disabled: !gameState || gameState.current_turn !== currentUsername,
+                    run: () => document.getElementById('oracle-btn').click(),
+                });
+            }
+            if (card.id === 'profeta') {
+                actions.push({
+                    icon: '🔮', label: 'Profetizar',
+                    disabled: !gameState || gameState.current_turn !== currentUsername,
+                    run: () => document.getElementById('prophet-curse-btn').click(),
+                });
+            }
+            showCardActionMenu(
+                evt,
+                card.name || 'Carta',
+                `${baseType === 'attack' ? '⚔️ Ataque' : '🛡️ Defesa'} #${index + 1} · seu campo`,
+                actions
+            );
+        }
+
+        function showHandCardMenu(evt, card, index) {
+            if (!card) return;
+            const sourceEl = evt.currentTarget || null;
+            const myTurn = !!gameState && gameState.current_turn === currentUsername;
+            const actions = [
+                {
+                    icon: '👁️', label: 'Ver detalhes da carta',
+                    run: () => showCardDetails(card, currentUsername, 'hand', index, false),
+                },
+            ];
+            if (isEquippableCard(card)) {
+                const myCards = gameState?.players?.[currentUsername] || {};
+                const eligible = [...(myCards.attack_bases || []), ...(myCards.defense_bases || [])]
+                    .some(c => c && canEquipOnCreature(card, c));
+                actions.push({
+                    icon: '🔰', label: 'Equipar em criatura',
+                    disabled: !myTurn || !eligible,
+                    hint: !myTurn ? 'Só no seu turno'
+                        : (!eligible ? 'Nenhuma criatura com slot livre (bestas não equipam)' : ''),
+                    run: () => selectEquippableFromHand(card),
+                });
+            }
+            if (card.type === 'creature' || card.type === 'trap') {
+                actions.push({
+                    icon: '📤', label: 'Colocar em campo',
+                    disabled: !myTurn, hint: !myTurn ? 'Só no seu turno' : '',
+                    run: () => selectCard(card, index, sourceEl),
+                });
+            }
+            if (card.type === 'spell') {
+                actions.push({
+                    icon: '✨', label: 'Usar feitiço',
+                    disabled: !myTurn, hint: !myTurn ? 'Só no seu turno' : '',
+                    run: () => selectSpell(card.id || card.name),
+                });
+            }
+            if (card.type === 'rune') {
+                actions.push({
+                    icon: '🔄', label: 'Ver cemitério para reviver',
+                    run: () => showGraveyard(),
+                });
+            }
+            showCardActionMenu(evt, card.name || 'Carta', `🃏 Mão · ${card.type || 'carta'}`, actions);
+        }
+
         // Clique numa carta do campo (sua ou do oponente) abre os detalhes completos
         function showCardDetails(card, ownerName, baseType, index, isOpponent) {
             if (!card) {
@@ -2974,7 +3223,9 @@ body::before {
 
             const esc = value => escapeHtml(value == null ? '' : String(value));
             const owner = esc(ownerName || (isOpponent ? 'Oponente' : 'Você'));
-            const base = baseType === 'attack' ? '⚔️ Ataque' : '🛡️ Defesa';
+            const base = baseType === 'attack'
+                ? '⚔️ Ataque'
+                : (baseType === 'hand' ? '🃏 Mão' : '🛡️ Defesa');
             const life = card.life != null ? esc(card.life) : '—';
             const lifeMax = card.original_life != null ? ` / ${esc(card.original_life)}` : '';
             const attack = card.attack != null ? esc(card.attack) : '—';
@@ -3021,6 +3272,7 @@ body::before {
             if (card.dies_daylight) flags.push('🌞 Morre ao virar dia sem proteção solar');
             if (card.daylight_protect) flags.push('🛡️ Proteção contra luz do dia');
             if (card.werewolf) flags.push('🐺 Licantropo');
+            if (isBeastCard(card)) flags.push('🐾 Forma bestial: não equipa itens');
             if (card.blocked) flags.push('🚫 Bloqueado');
             if (card.fog || card.is_disguised || card.is_disguised_trap || card.is_trap) {
                 flags.push('⚠️ Identidade oculta');
@@ -3169,10 +3421,22 @@ body::before {
             });
         }
 
-        function selectBase(type, index, card) {
+        function selectBase(type, index, card, evt) {
             if (equipMode) {
                 // Modo equipar ativo - clicou em uma criatura
                 if (card && card.type === 'creature') {
+                    const restriction = equipRestriction(selectedItemForEquip, card);
+                    if (restriction) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Não dá para equipar',
+                            text: restriction,
+                            background: '#1a1a2e',
+                            color: '#fff',
+                            confirmButtonColor: '#ffd700'
+                        });
+                        return;
+                    }
                     // Confirmar equipamento
                     Swal.fire({
                         title: 'Equipar item?',
@@ -3227,10 +3491,10 @@ body::before {
                 return;
             }
             
-            // Modo normal (jogar carta): sem ação pendente, mostra os detalhes da carta em campo
+            // Modo normal: abre o menu contextual da carta em campo
             if (!selectedCard && actionMode !== 'move') {
                 if (card) {
-                    showCardDetails(card, currentUsername, type, index, false);
+                    showOwnCardMenu(evt, card, type, index);
                 }
                 return;
             }
@@ -3719,7 +3983,7 @@ body::before {
             return false;
         }
 
-        function selectCard(card, index) {
+        function selectCard(card, index, sourceEl) {
             if (gameState.current_turn !== currentUsername) {
                 Swal.fire({
                     icon: 'error',
@@ -3738,14 +4002,14 @@ body::before {
             document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
             
             // Adicionar seleção na carta atual
-            if (event && event.currentTarget) {
-                event.currentTarget.classList.add('selected');
+            if (sourceEl) {
+                sourceEl.classList.add('selected');
             } else {
-                // Se não tiver event (chamada programática), encontrar a carta pelo índice
-                const cards = document.querySelectorAll('.card');
-                if (cards[index]) {
-                    cards[index].classList.add('selected');
-                }
+                // Fallback: localiza pelo instance_id ou pelo índice da mão
+                const matching = Array.from(document.querySelectorAll('.card'))
+                    .find(c => card.instance_id && c.dataset.instanceId === card.instance_id);
+                const cards = document.querySelectorAll('#hand-cards .card');
+                (matching || cards[index])?.classList.add('selected');
             }
             
             let message = '';
@@ -3879,6 +4143,12 @@ body::before {
                     } else if (itemCard.id === 'lamina_almas' && !['elfo', 'mago', 'mago_negro', 'rei_mago', 'vampiro_tayler', 'vampiro_wers'].includes(creature.id)) {
                         canEquip = false;
                         restrictions = '<br><small style="color: #ff4444;">⛔ Apenas elfos, magos e vampiros</small>';
+                    } else {
+                        const reason = equipRestriction(itemCard, creature);
+                        if (reason) {
+                            canEquip = false;
+                            restrictions = `<br><small style="color: #ff4444;">⛔ ${escapeHtml(reason)}</small>`;
+                        }
                     }
                 }
                 
@@ -5154,45 +5424,59 @@ body::before {
         // |
         // Equipar itens
         window.equipToCreature = function(itemCardId) {
-            // Mostrar lista de criaturas para equipar
+            // Mostrar só criaturas que podem receber este item
             const playerData = gameState.players[currentUsername];
+            const item = (playerData.hand || []).find(c => c.instance_id === itemCardId);
             const creatures = [];
-            
-            for (let card of [...playerData.attack_bases, ...playerData.defense_bases]) {
+            const blocked = [];
+
+            for (let card of [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])]) {
                 if (card && card.type === 'creature') {
                     creatures.push(card);
                 }
             }
-            
-            if (creatures.length === 0) {
+
+            const eligible = creatures.filter(c => canEquipOnCreature(item, c));
+            if (creatures.length === 0 || eligible.length === 0) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Sem criaturas',
-                    text: 'Você não tem criaturas em campo para equipar',
+                    title: 'Sem criaturas válidas',
+                    text: creatures.length === 0
+                        ? 'Você não tem criaturas em campo para equipar'
+                        : 'Nenhuma criatura pode receber este item (slot ocupado ou forma bestial)',
                     background: '#1a1a2e',
                     color: '#fff',
                     confirmButtonColor: '#ffd700'
                 });
                 return;
             }
-            
+
             let creaturesHtml = '';
             creatures.forEach(creature => {
-                let equippedItems = '';
-                if (creature.equipped_items && creature.equipped_items.length > 0) {
-                    equippedItems = `<br><small>Equipado: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`;
+                const reason = equipRestriction(item, creature);
+                const equippedItems = creature.equipped_items && creature.equipped_items.length > 0
+                    ? `<br><small>Equipado: ${creature.equipped_items.map(e => e.name).join(', ')}</small>`
+                    : '';
+                if (reason) {
+                    blocked.push(creature.name);
+                    creaturesHtml += `
+                        <div class="creature-option" style="padding: 10px; margin: 5px; background: rgba(255, 68, 68, .12); border: 1px solid rgba(255, 68, 68, .45); border-radius: 5px; opacity: .7;">
+                            <strong>${escapeHtml(creature.name || '')}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
+                            <br><small style="color: #ff8fa3;">⛔ ${escapeHtml(reason)}</small>
+                        </div>
+                    `;
+                    return;
                 }
-                
                 creaturesHtml += `
                     <div class="creature-option" onclick="selectCreatureForEquip('${itemCardId}', '${creature.instance_id}')" style="padding: 10px; margin: 5px; background: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; border-radius: 5px; cursor: pointer;">
-                        <strong>${creature.name}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
+                        <strong>${escapeHtml(creature.name || '')}</strong> ❤️${creature.life || 0} ⚔️${creature.attack || 0}
                         ${equippedItems}
                     </div>
                 `;
             });
-            
+
             Swal.fire({
-                title: 'Selecione a criatura',
+                title: `🔰 Equipar ${escapeHtml((item && item.name) || 'item')}`,
                 html: `<div style="max-height: 400px; overflow-y: auto;">${creaturesHtml}</div>`,
                 showCancelButton: true,
                 cancelButtonText: 'Cancelar',
@@ -5202,6 +5486,49 @@ body::before {
                 showConfirmButton: false
             });
         };
+        // Regras de equipamento em criaturas (espelham o motor):
+        // 1 item por slot e bestas não recebem itens.
+        const ITEM_SLOTS = ['weapon', 'helmet', 'armor', 'pants', 'boots'];
+        const BEAST_CARD_IDS = new Set([
+            'dragao', 'leviatan', 'apofis', 'fenix', 'medusa', 'lobisomem_crepusculo'
+        ]);
+        const SPECIAL_WEAPON_IDS = new Set(['lamina_almas', 'blade_vampires', 'blade_dragons']);
+
+        function isBeastCard(card) {
+            return !!(card && (card.beast_form || BEAST_CARD_IDS.has(card.id)));
+        }
+
+        function itemSlot(card) {
+            if (!card) return null;
+            if (ITEM_SLOTS.includes(card.slot)) return card.slot;
+            if (card.type === 'weapon' || SPECIAL_WEAPON_IDS.has(card.id)) return 'weapon';
+            if (card.type === 'armor' || card.id === 'capacete_trevas') {
+                const text = `${card.id || ''} ${card.name || ''}`.toLowerCase();
+                if (text.includes('capacete') || text.includes('helmet')) return 'helmet';
+                if (text.includes('peitoral') || text.includes('armadura') || text.includes('manto')) return 'armor';
+                if (text.includes('calç') || text.includes('calca') || text.includes('pants')) return 'pants';
+                if (text.includes('bota') || text.includes('boot')) return 'boots';
+                return 'armor';
+            }
+            return null;
+        }
+
+        function equipRestriction(item, creature) {
+            if (!item || !creature) return 'Item ou criatura inválida';
+            const slot = itemSlot(item);
+            if (!slot) return 'Item sem slot de equipamento';
+            if (isBeastCard(creature) && !(item.werewolf_only && creature.werewolf)) {
+                return 'Forma bestial não equipa itens';
+            }
+            const occupied = (creature.equipped_items || []).find(e => itemSlot(e) === slot);
+            if (occupied) return `Slot ocupado: ${occupied.name || 'item'}`;
+            return '';
+        }
+
+        function canEquipOnCreature(item, creature) {
+            return !equipRestriction(item, creature);
+        }
+
         function isEquippableCard(card) {
             if (!card) return false;
             if (card.type === 'weapon' || card.type === 'armor' || card.type === 'equipment') return true;
@@ -5246,8 +5573,17 @@ body::before {
             
             equipMode = true;
             document.getElementById('equip-mode-indicator').style.display = 'block';
+            const eligibleIds = new Set(
+                [...(playerData.attack_bases || []), ...(playerData.defense_bases || [])]
+                    .filter(card => card && canEquipOnCreature(selectedItemForEquip, card))
+                    .map(card => card.instance_id)
+            );
             document.querySelectorAll('#player-area .base-slot.has-card[data-card-type="creature"]')
-                .forEach(slot => slot.classList.add('creature-highlight'));
+                .forEach(slot => {
+                    if (eligibleIds.has(slot.dataset.instanceId)) {
+                        slot.classList.add('creature-highlight');
+                    }
+                });
             
             Swal.fire({
                 title: `🔰 Item selecionado: ${selectedItemForEquip.name}`,

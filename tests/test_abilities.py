@@ -16,6 +16,10 @@ def _game():
     g.time_of_day = 'night'
     g.time_cycle = 1
     g.turn_actions_used = {'alice': {}, 'bob': {}}
+    # Mão aleatória pode conter Talismã do Guerreiro (+1024) e mudar o resultado
+    # dos testes de dano; aqui queremos só as cartas montadas explicitamente.
+    g.player_data['alice']['hand'] = []
+    g.player_data['bob']['hand'] = []
     g.player_data['bob']['life'] = 5000
     return g
 
