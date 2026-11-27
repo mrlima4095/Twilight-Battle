@@ -38,6 +38,8 @@
   --font-display: "Cinzel", "Times New Roman", serif;
   --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
   --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
+  --chat-gutter: 336px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -66,13 +68,13 @@ body::before {
 .game-container {
   position: relative; z-index: 1;
   max-width: 1280px; margin: 0 auto;
-  padding: 14px 14px 120px;
+  padding: 14px 14px calc(24px + var(--safe-bottom));
   min-height: 100vh;
 }
 
 /* ── Header HUD ── */
 .game-header {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
   padding: 12px 16px; margin-bottom: 14px;
   background: var(--panel); backdrop-filter: blur(16px);
   border: 1px solid var(--border); border-radius: 16px;
@@ -83,16 +85,19 @@ body::before {
   background: linear-gradient(120deg, #fff6d0, var(--gold));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  flex: 1 1 220px;
 }
 .game-title a {
-  font-family: var(--font-ui); font-size: .75rem !important; margin-left: 0 !important;
+  font-family: var(--font-ui); font-size: .78rem !important; margin-left: 0 !important;
   color: var(--muted) !important; text-decoration: none !important;
-  padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1);
+  display: inline-flex; align-items: center; min-height: 44px;
+  padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,.1);
   transition: .2s;
 }
 .game-title a:hover { color: var(--gold) !important; border-color: var(--border); }
 .game-info {
-  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; flex: 1;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end;
+  flex: 2 1 360px;
 }
 .time-indicator, .turn-indicator, .session-indicator {
   padding: 7px 12px; border-radius: 999px; font-size: .82rem; font-weight: 600;
@@ -107,6 +112,9 @@ body::before {
   box-shadow: 0 0 16px rgba(120,140,255,.12);
 }
 .turn-indicator { color: var(--muted); }
+.turn-indicator.preparing {
+  background: rgba(255,165,0,.14); color: #ffd27a; border-color: rgba(255,165,0,.35);
+}
 .turn-indicator.my-turn {
   background: rgba(61,220,151,.12); color: var(--green); border-color: rgba(61,220,151,.4);
   animation: pulse-glow 2s ease infinite;
@@ -115,8 +123,9 @@ body::before {
   background: rgba(61,220,151,.15) !important; color: var(--green) !important;
   border: 1px solid rgba(61,220,151,.35);
 }
-.header-actions { margin-left: auto; display: flex; gap: 8px; }
+.header-actions { margin-left: 0; display: flex; gap: 8px; }
 #leave-game-btn {
+  min-height: 44px;
   background: linear-gradient(135deg, #ff4d6d, #c9184a) !important;
   color: #fff !important; padding: 10px 16px !important; border: none !important;
   border-radius: 12px !important; font-weight: 700 !important; cursor: pointer !important;
@@ -156,7 +165,7 @@ body::before {
   color: var(--text); font-weight: 600;
 }
 .start-btn {
-  margin-top: 18px; padding: 14px 28px; border: none; border-radius: 14px;
+  margin-top: 18px; min-height: 48px; padding: 14px 28px; border: none; border-radius: 14px;
   background: linear-gradient(135deg, var(--gold), var(--gold-2));
   color: #1a1020; font-family: inherit; font-size: 1.05rem; font-weight: 800;
   cursor: pointer; box-shadow: 0 10px 30px rgba(240,193,75,.3);
@@ -185,7 +194,7 @@ body::before {
   border-radius: 9px; padding: 8px 10px; font-family: inherit; font-size: .9rem;
 }
 .bot-btn {
-  padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(240,193,75,.45);
+  min-height: 44px; padding: 9px 14px; border-radius: 10px; border: 1px solid rgba(240,193,75,.45);
   background: rgba(240,193,75,.10); color: var(--gold); font-family: inherit;
   font-size: .85rem; font-weight: 700; cursor: pointer; transition: .15s;
 }
@@ -202,31 +211,24 @@ body::before {
 
 /* ── Opponents (horizontal, compacto) ── */
 .opponents-area {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
   margin-bottom: 12px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 2px 10px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(240,193,75,.35) transparent;
-}
-.opponents-area::-webkit-scrollbar { height: 6px; }
-.opponents-area::-webkit-scrollbar-thumb {
-  background: rgba(240,193,75,.35); border-radius: 99px;
+  overflow: visible;
+  padding: 4px 2px 8px;
+  align-items: start;
 }
 .opponent-card {
-  flex: 0 0 auto;
-  min-width: 280px;
-  max-width: 360px;
+  position: relative;
+  min-width: 0;
+  max-width: none;
   background: var(--panel-2);
   border: 1px solid rgba(255,255,255,.08);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 12px;
   box-shadow: 0 8px 20px rgba(0,0,0,.25);
-  transition: border-color .2s;
+  transition: border-color .2s, transform .2s;
 }
 .opponent-card:hover { border-color: rgba(255,94,200,.3); }
 .opponent-header {
@@ -253,9 +255,9 @@ body::before {
 }
 .opponent-card .bases-row {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 5px;
-  overflow-x: auto;
+  overflow: visible;
 }
 .opponent-card .base-slot {
   width: 56px;
@@ -265,22 +267,24 @@ body::before {
   max-width: 56px;
   padding: 3px 2px;
   border-radius: 10px;
-  font-size: .65rem;
+  font-size: .7rem;
   flex-shrink: 0;
 }
-.opponent-card .base-slot .slot-emoji { font-size: 1.15rem; line-height: 1; }
+.opponent-card .base-slot .slot-emoji { font-size: 1.2rem; line-height: 1; }
 .opponent-card .base-slot .slot-name { display: none; }
-.opponent-card .base-slot .slot-stats { font-size: .6rem; line-height: 1.15; }
-.opponent-card .base-slot .equipped-items { font-size: .55rem; }
+.opponent-card .base-slot .slot-stats { font-size: .66rem; line-height: 1.2; }
+.opponent-card .base-slot .equipped-items { font-size: .62rem; }
 .opponent-card .action-btn {
   width: 100%;
-  margin-top: 6px;
-  padding: 7px 10px;
-  font-size: .78rem;
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: .82rem;
 }
 
 /* ── Player board ── */
 .player-area {
+  position: relative;
   background: var(--panel); backdrop-filter: blur(16px);
   border: 1px solid var(--border); border-radius: 20px;
   padding: 18px; box-shadow: var(--shadow);
@@ -311,7 +315,7 @@ body::before {
   display: flex; flex-wrap: wrap; gap: 8px;
 }
 
-/* Slots fixos — nada vaza do retângulo */
+/* Slots fixos — o tooltip pode sair, o conteúdo da carta não */
 .base-slot {
   width: 72px;
   height: 88px;
@@ -332,8 +336,8 @@ body::before {
   transition: border-color .15s, background .15s, box-shadow .15s;
   position: relative;
   text-align: center;
-  font-size: .7rem;
-  overflow: hidden;
+  font-size: .72rem;
+  overflow: visible;
   box-sizing: border-box;
 }
 .base-slot.attack { border-color: rgba(255,77,109,.28); }
@@ -353,22 +357,24 @@ body::before {
 .base-slot.creature-highlight {
   border-color: var(--green) !important; box-shadow: 0 0 12px rgba(61,220,151,.25);
 }
-.base-slot.damaged { animation: shake .4s ease; }
+.base-slot.wounded {
+  box-shadow: inset 0 0 0 1px rgba(255,77,109,.4);
+}
 @keyframes shake {
   0%,100% { transform: translateX(0); }
   25% { transform: translateX(-3px); }
   75% { transform: translateX(3px); }
 }
 .base-slot .slot-emoji {
-  font-size: 1.35rem;
+  font-size: 1.4rem;
   line-height: 1;
   flex-shrink: 0;
 }
 .base-slot .slot-name {
   font-weight: 700;
   color: var(--gold);
-  font-size: .62rem;
-  line-height: 1.1;
+  font-size: .7rem;
+  line-height: 1.2;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -377,17 +383,17 @@ body::before {
 }
 .base-slot .slot-stats {
   color: #d8d0eb;
-  font-size: .62rem;
-  line-height: 1.15;
+  font-size: .68rem;
+  line-height: 1.2;
   font-weight: 600;
   white-space: nowrap;
 }
 .base-slot .equipped-items {
-  font-size: .55rem;
+  font-size: .62rem;
   color: var(--cyan);
   line-height: 1;
 }
-/* tooltip só no hover, fora do fluxo do slot */
+/* tooltip só no hover, posicionado acima do slot sem ser cortado */
 .base-slot .card-tooltip {
   display: none;
   position: absolute;
@@ -396,12 +402,13 @@ body::before {
   transform: translateX(-50%);
   z-index: 40;
   width: max-content;
-  max-width: 160px;
-  padding: 6px 8px;
-  background: #1a1430;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: .72rem;
+  max-width: 200px;
+  padding: 8px 10px;
+  background: rgba(12,10,28,.98);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  font-size: .74rem;
+  line-height: 1.35;
   box-shadow: var(--shadow);
   pointer-events: none;
   white-space: normal;
@@ -423,12 +430,12 @@ body::before {
   align-items: flex-start;
 }
 .card {
-  width: 78px;
-  height: 100px;
-  min-width: 78px;
-  max-width: 78px;
-  min-height: 100px;
-  max-height: 100px;
+  width: 84px;
+  height: 108px;
+  min-width: 84px;
+  max-width: 84px;
+  min-height: 108px;
+  max-height: 108px;
   border-radius: 12px;
   padding: 6px 4px;
   background: linear-gradient(165deg, #2a2148 0%, #15102a 100%);
@@ -463,16 +470,16 @@ body::before {
 .card.rune, .card.talisman { border-top: 3px solid #3ddc97; }
 .card .card-emoji { font-size: 1.45rem; line-height: 1; }
 .card .card-name {
-  font-weight: 700; font-size: .62rem; color: var(--text); line-height: 1.1;
+  font-weight: 700; font-size: .7rem; color: var(--text); line-height: 1.2;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 0 2px;
 }
 .card .card-type {
-  font-size: .55rem; text-transform: uppercase; letter-spacing: .04em;
+  font-size: .62rem; text-transform: uppercase; letter-spacing: .04em;
   color: var(--muted);
 }
 .card .card-stats {
-  font-size: .62rem; color: #d8d0eb; font-weight: 600; line-height: 1.15;
+  font-size: .68rem; color: #d8d0eb; font-weight: 600; line-height: 1.2;
   white-space: nowrap;
 }
 .card .card-description { display: none !important; }
@@ -493,6 +500,9 @@ body::before {
   border-color: var(--border); color: var(--text);
   background: rgba(240,193,75,.06); transform: translateY(-2px);
 }
+.pile.is-disabled {
+  opacity: .45; cursor: not-allowed; pointer-events: none; transform: none;
+}
 .pile strong { display: block; color: var(--gold); margin-bottom: 4px; font-family: var(--font-display); }
 
 /* ── Action bar ── */
@@ -502,8 +512,8 @@ body::before {
   background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);
 }
 .action-btn {
-  padding: 10px 14px; border: none; border-radius: 11px; cursor: pointer;
-  font-family: inherit; font-size: .82rem; font-weight: 700;
+  min-height: 44px; padding: 10px 14px; border: none; border-radius: 11px; cursor: pointer;
+  font-family: inherit; font-size: .84rem; font-weight: 700;
   background: linear-gradient(135deg, #3a3358, #2a2440); color: var(--text);
   border: 1px solid rgba(255,255,255,.08); transition: .15s;
 }
@@ -536,17 +546,20 @@ body::before {
 
 /* ── Chat ── */
 .chat-container {
-  position: fixed; right: 16px; bottom: 16px; z-index: 900;
-  width: min(340px, calc(100vw - 24px));
-  background: rgba(14, 11, 28, .92); backdrop-filter: blur(18px);
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right, 0px));
+  bottom: calc(16px + var(--safe-bottom));
+  z-index: 700;
+  width: min(320px, calc(100vw - 24px));
+  background: rgba(14, 11, 28, .94); backdrop-filter: blur(18px);
   border: 1px solid var(--border); border-radius: 18px;
   box-shadow: 0 20px 50px rgba(0,0,0,.5);
   display: flex; flex-direction: column; overflow: hidden;
-  max-height: 420px;
+  max-height: min(420px, calc(100vh - 120px));
 }
 .chat-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 14px; background: rgba(240,193,75,.08);
+  padding: 10px 14px; background: rgba(240,193,75,.08);
   border-bottom: 1px solid rgba(255,255,255,.06);
   font-weight: 700; font-size: .9rem; color: var(--gold); cursor: pointer;
 }
@@ -560,12 +573,16 @@ body::before {
   background: var(--red); color: #fff; animation: pulse-glow 1s ease infinite;
 }
 .chat-minimize-btn {
-  width: 28px; height: 28px; border: none; border-radius: 8px; cursor: pointer;
-  background: rgba(255,255,255,.06); color: var(--text); font-size: 1rem;
+  width: 44px; height: 44px; border: none; border-radius: 10px; cursor: pointer;
+  background: rgba(255,255,255,.06); color: var(--text); font-size: 1.1rem;
 }
 .chat-messages {
   flex: 1; overflow-y: auto; padding: 12px; max-height: 280px;
   display: flex; flex-direction: column; gap: 8px;
+}
+.chat-messages:empty::before {
+  content: "Nenhuma mensagem ainda. Diga oi! 👋";
+  color: var(--muted); font-size: .85rem; text-align: center; padding: 12px 0;
 }
 .chat-message {
   padding: 8px 10px; border-radius: 12px; font-size: .85rem; line-height: 1.35;
@@ -601,35 +618,76 @@ body::before {
   animation: dmg-float 1s ease forwards; z-index: 20;
 }
 @keyframes dmg-float {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to { opacity: 0; transform: translateY(-40px) scale(1.2); }
+  from { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -40px) scale(1.2); }
+}
+@keyframes fadeInOut {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+@keyframes timerPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.05); }
 }
 #turn-timer {
   position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
   z-index: 800; padding: 10px 20px; border-radius: 999px;
-  background: rgba(14,11,28,.9); border: 1px solid var(--border);
+  background: rgba(14,11,28,.94); border: 1px solid var(--border);
   color: var(--gold); font-weight: 800; font-family: var(--font-display);
   box-shadow: var(--shadow); display: none;
 }
 #turn-message {
-  text-align: center; padding: 10px; margin: 8px 0; border-radius: 12px;
+  text-align: center; padding: 10px; margin: 8px 0 14px; border-radius: 12px;
   background: rgba(155,123,255,.1); border: 1px solid rgba(155,123,255,.2);
   color: var(--muted);
 }
+#turn-message strong { color: var(--gold); }
 
 /* SweetAlert tweak */
+.swal2-container { z-index: 2000 !important; }
 .swal2-popup {
   background: #16122a !important; color: var(--text) !important;
   border: 1px solid var(--border) !important; border-radius: 18px !important;
+  max-width: calc(100vw - 24px) !important;
 }
 
+/* Chat fixo só onde há espaço; abaixo disso ele entra no fluxo da página */
+@media (min-width: 1180px) {
+  .game-container { padding-right: calc(var(--chat-gutter) + 16px); }
+}
+@media (max-width: 1179px) {
+  .chat-container {
+    position: static; width: 100%; max-height: none; margin-top: 12px;
+  }
+  .chat-messages { max-height: 240px; }
+}
+@media (max-width: 900px) {
+  .game-header { align-items: flex-start; }
+  .game-title { flex-basis: 100%; }
+  .game-info { justify-content: flex-start; flex-basis: 100%; }
+  .header-actions { margin-left: auto; }
+  .opponents-area { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  #turn-timer { top: 12px; }
+}
 @media (max-width: 640px) {
+  .game-container { padding: 10px 10px calc(20px + var(--safe-bottom)); }
+  .game-header { padding: 10px 12px; gap: 8px; }
+  .game-title { font-size: 1.1rem; gap: 8px; }
+  .waiting-room { padding: 28px 16px; margin: 24px auto; }
+  .opponents-area { grid-template-columns: 1fr; }
+  .player-area { padding: 12px; }
   .base-slot { width: 62px; height: 76px; min-width: 62px; max-width: 62px; min-height: 76px; max-height: 76px; }
   .card { width: 68px; height: 88px; min-width: 68px; max-width: 68px; min-height: 88px; max-height: 88px; }
-  .opponent-card { min-width: 240px; max-width: 280px; }
-  .game-header { padding: 10px 12px; }
-  .chat-container { right: 8px; bottom: 8px; }
-  .tutorial-coach { left: 8px; right: 8px; bottom: 8px; width: auto; max-width: none; }
+  .deck-info { gap: 8px; }
+  .pile { min-width: 0; padding: 12px; }
+  .action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #turn-timer { top: 8px; padding: 8px 14px; font-size: .8rem; }
+  .chat-messages { max-height: 200px; }
+}
+@media (max-width: 420px) {
+  .game-title a { flex: 1 1 auto; justify-content: center; }
+  .player-stats { width: 100%; }
+  .stat { flex: 1 1 auto; text-align: center; }
 }
 
 /* Painel de dicas do tutorial */
@@ -638,7 +696,7 @@ body::before {
   left: 16px;
   bottom: 16px;
   width: min(340px, calc(100vw - 32px));
-  z-index: 1200;
+  z-index: 950;
   background: rgba(12, 10, 28, 0.94);
   border: 1px solid rgba(61, 220, 151, 0.35);
   border-radius: 16px;
@@ -661,14 +719,33 @@ body::before {
 .tutorial-coach .tc-body { color: #cfc6e6; font-size: .9rem; line-height: 1.5; margin-bottom: 12px; }
 .tutorial-coach .tc-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tutorial-coach button {
+  min-height: 44px;
   border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.06);
-  color: #fff; border-radius: 999px; padding: 7px 12px; font-size: .82rem;
+  color: #fff; border-radius: 999px; padding: 8px 14px; font-size: .82rem;
   font-weight: 700; cursor: pointer; font-family: inherit;
 }
 .tutorial-coach button.primary {
   background: rgba(61,220,151,.2); border-color: rgba(61,220,151,.4); color: #b8f5d8;
 }
 .tutorial-coach .tc-progress { font-size: .75rem; color: #8a829e; margin-top: 8px; }
+
+@media (max-width: 640px) {
+  .tutorial-coach {
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    right: calc(8px + env(safe-area-inset-right, 0px));
+    bottom: calc(8px + var(--safe-bottom));
+    width: auto; max-width: none;
+  }
+}
+#tc-fab { z-index: 960 !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
 
     </style>
 </head>
@@ -746,19 +823,19 @@ body::before {
     <div class="player-header">
       <h2 id="player-name">Seu campo</h2>
       <div class="player-stats">
-        <div class="stat">❤️ Vida: <span id="player-life">1200</span></div>
+        <div class="stat">❤️ Vida: <span id="player-life">—</span></div>
         <div class="stat">🔷 Runas: <span id="player-runes">0</span></div>
         <div class="stat">🔮 Talismãs: <span id="player-talismans">0</span></div>
       </div>
     </div>
 
     <div class="bases-section">
-      <h3>⚔️ Bases de Ataque (3)</h3>
+      <h3 id="attack-bases-label">⚔️ Bases de Ataque (3)</h3>
       <div class="bases-row" id="attack-bases"></div>
     </div>
 
     <div class="bases-section">
-      <h3>🛡️ Bases de Defesa (6)</h3>
+      <h3 id="defense-bases-label">🛡️ Bases de Defesa (6)</h3>
       <div class="bases-row" id="defense-bases"></div>
     </div>
 
@@ -788,7 +865,7 @@ body::before {
       <button class="action-btn equip" id="equip-mode-btn" type="button">🔰 Modo Equipar</button>
       <button class="action-btn move" id="move-mode-btn" type="button">🔄 Modo Troca</button>
       <button class="action-btn" id="end-turn-btn" type="button">⏰ Finalizar turno</button>
-      <button class="action-btn" id="oracle-btn" type="button" style="display:none;visibility:hidden">👁️ Oráculo</button>
+      <button class="action-btn" id="oracle-btn" type="button" style="display:none">👁️ Oráculo</button>
     </div>
 
     <div id="equip-mode-indicator" style="display:none;background:#4CAF50;color:white;padding:10px;border-radius:5px;margin:10px 0;text-align:center">
@@ -1397,7 +1474,7 @@ body::before {
                 cancelButtonColor: '#ffd700',
                 background: '#1a1a2e',
                 color: '#fff',
-                width: '800px'
+                width: 'min(800px, calc(100vw - 24px))'
             });
         });
         socket.on('spells_list', function(data) {
@@ -1456,7 +1533,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '600px'
+                width: 'min(600px, calc(100vw - 24px))'
             });
         });
         socket.on('rituals_list', function(data) {
@@ -1505,7 +1582,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '600px'
+                width: 'min(600px, calc(100vw - 24px))'
             });
         });
         // | (Maldições)
@@ -1605,6 +1682,10 @@ body::before {
             if (waiting) waiting.style.display = 'block';
             if (playerArea) playerArea.style.display = 'none';
             if (opponents) opponents.innerHTML = '';
+            const spectatorMsg = document.getElementById('spectator-message');
+            if (spectatorMsg) { spectatorMsg.style.display = 'none'; }
+            const turnMsg = document.getElementById('turn-message');
+            if (turnMsg) { turnMsg.style.display = 'none'; }
             if (players) {
                 updatePlayersList(players);
             }
@@ -1965,16 +2046,20 @@ body::before {
         }
         
         function createDamageAnimation(damage) {
-            const targetCards = document.querySelectorAll('.opponent-card .base-slot.has-card');
-            targetCards.forEach(card => {
-                const damageNum = document.createElement('div');
-                damageNum.className = 'damage-number';
-                damageNum.textContent = `-${damage}`;
-                damageNum.style.left = card.offsetLeft + 'px';
-                damageNum.style.top = card.offsetTop + 'px';
-                card.appendChild(damageNum);
-                
-                setTimeout(() => damageNum.remove(), 1000);
+            document.querySelectorAll('.opponent-card').forEach(opponentCard => {
+                const parentRect = opponentCard.getBoundingClientRect();
+                opponentCard.querySelectorAll('.base-slot.has-card').forEach(slot => {
+                    const slotRect = slot.getBoundingClientRect();
+                    const damageNum = document.createElement('div');
+                    damageNum.className = 'damage-number';
+                    damageNum.textContent = `-${damage}`;
+                    damageNum.style.left = `${slotRect.left - parentRect.left + slotRect.width / 2}px`;
+                    damageNum.style.top = `${slotRect.top - parentRect.top + slotRect.height / 2}px`;
+                    damageNum.style.transform = 'translate(-50%, -50%)';
+                    opponentCard.appendChild(damageNum);
+
+                    setTimeout(() => damageNum.remove(), 1000);
+                });
             });
         }
 
@@ -2020,12 +2105,12 @@ body::before {
                 const currentPlayerData = gameState.players[gameState.current_turn];
                 const currentPlayerName = currentPlayerData ? currentPlayerData.name : 'Desconhecido';
                 
+                turnIndicator.classList.remove('preparing');
                 if (gameState.first_round) {
-                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) - Vez de: ${currentPlayerName}`;
-                    turnIndicator.style.background = '#ffa500';
+                    turnIndicator.innerHTML = `⏳ Preparação (${gameState.players_acted || 0}/${Object.keys(gameState.players).length}) — Vez de: ${currentPlayerName}`;
+                    turnIndicator.classList.add('preparing');
                 } else {
                     turnIndicator.textContent = `Vez de: ${currentPlayerName}`;
-                    turnIndicator.style.background = '#4CAF50';
                 }
                 
                 // Verificar se é meu turno (comparar com currentUsername)
@@ -2039,6 +2124,9 @@ body::before {
                     turnIndicator.classList.remove('my-turn');
                     if (isTimerRunning) { stopTurnTimer(); }
                 }
+            } else {
+                turnIndicator.className = 'turn-indicator';
+                turnIndicator.textContent = 'Aguardando início...';
             }
             
             // SÓ atualizar a área de oponentes se o jogo já começou
@@ -2076,12 +2164,17 @@ body::before {
                 updatePlayerArea();
             }
             
-            // Atualizar visibilidade dos botões de ação
+            // Atualizar visibilidade dos botões de ação e o aviso de turno
             updateActionButtons();
+            showTurnMessage();
         }
         function updateActionButtons() {
             const actionButtons = document.querySelectorAll('.action-buttons .action-btn');
+            const actionBar = document.querySelector('.action-buttons');
+            const deckPile = document.getElementById('deck-pile');
             const isMyTurn = gameState && gameState.current_turn === currentUsername && !gameState.current_player_dead && gameState.started;
+
+            if (deckPile) { deckPile.classList.toggle('is-disabled', !isMyTurn); }
             
             console.log('Atualizando botões - isMyTurn:', isMyTurn);
             
@@ -2115,6 +2208,13 @@ body::before {
             }
             
             actionButtons.forEach(btn => {
+                // Oráculo ainda não tem fluxo de ação: não deixa espaço invisível na barra
+                if (btn.id === 'oracle-btn') {
+                    btn.style.display = 'none';
+                    btn.disabled = true;
+                    return;
+                }
+
                 // Verificar cada botão específico
                 if (btn.id === 'prophet-curse-btn') {
                     // Só mostrar se for turno do jogador E ele tiver um profeta em campo
@@ -2186,6 +2286,12 @@ body::before {
                     endTurnBtn.style.display = 'none';
                 }
             }
+
+            // Esconde a barra inteira quando não há ação disponível (o aviso de turno aparece acima)
+            if (actionBar) {
+                const hasVisibleButton = Array.from(actionButtons).some(btn => btn.style.display !== 'none');
+                actionBar.style.display = hasVisibleButton ? '' : 'none';
+            }
         }
 
         function showSessionIndicator() {
@@ -2199,32 +2305,20 @@ body::before {
         }
         function showTurnMessage() {
             const playerArea = document.getElementById('player-area');
-            const isMyTurn = gameState && gameState.current_turn === currentUsername;
-            
-            // Verificar se já existe uma mensagem de turno
+            if (!playerArea) return;
+
             let turnMessage = document.getElementById('turn-message');
-            
-            if (!isMyTurn && gameState && gameState.current_turn) {
-                const currentPlayerName = gameState.players[gameState.current_turn].name;
-                
+            const waitingFor = gameState && gameState.started && gameState.current_turn && gameState.current_turn !== currentUsername
+                ? (gameState.players[gameState.current_turn]?.name || gameState.current_turn)
+                : null;
+
+            if (waitingFor) {
                 if (!turnMessage) {
                     turnMessage = document.createElement('div');
                     turnMessage.id = 'turn-message';
-                    turnMessage.style.cssText = `
-                        background: rgba(255, 68, 68, 0.3);
-                        border: 2px solid #ff4444;
-                        border-radius: 10px;
-                        padding: 15px;
-                        margin: 10px 0;
-                        text-align: center;
-                        color: #fff;
-                        font-size: 16px;
-                        backdrop-filter: blur(5px);
-                    `;
                     playerArea.insertBefore(turnMessage, playerArea.firstChild);
                 }
-                
-                turnMessage.innerHTML = `⏳ Aguardando turno de <strong style="color: #ffd700;">${currentPlayerName}</strong>`;
+                turnMessage.innerHTML = `⏳ Aguardando turno de <strong>${escapeHtml(waitingFor)}</strong>`;
                 turnMessage.style.display = 'block';
             } else if (turnMessage) {
                 turnMessage.style.display = 'none';
@@ -2272,7 +2366,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '500px'
+                width: 'min(500px, calc(100vw - 24px))'
             });
         }
 
@@ -2334,6 +2428,7 @@ body::before {
         function createOpponentCard(playerId, playerData) {
             const div = document.createElement('div');
             div.className = 'opponent-card';
+            div.dataset.playerId = playerId;
             
             // Se por algum motivo um jogador morto aparecer, mostrar versão "fantasma"
             if (playerData.dead) {
@@ -2407,13 +2502,22 @@ body::before {
             
             document.getElementById('player-name').textContent = playerData.name;
             document.getElementById('player-life').textContent = playerData.life;
-            
-            // Contar runas na mão
-            const runes = playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0;
-            const talismans = playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0;
-            
+
+            // Usa os contadores do servidor (mesma semântica dos oponentes), com fallback para a mão
+            const runes = playerData.runes != null
+                ? playerData.runes
+                : (playerData.hand ? playerData.hand.filter(c => c && (c.type === 'rune' || c.id === 'runa')).length : 0);
+            const talismans = playerData.talisman_count != null
+                ? playerData.talisman_count
+                : (playerData.hand ? playerData.hand.filter(c => c && c.type === 'talisman').length : 0);
+
             document.getElementById('player-runes').textContent = runes;
             document.getElementById('player-talismans').textContent = talismans;
+
+            const attackLabel = document.getElementById('attack-bases-label');
+            const defenseLabel = document.getElementById('defense-bases-label');
+            if (attackLabel) { attackLabel.textContent = `⚔️ Bases de Ataque (${gameState.attack_slot_count || 3})`; }
+            if (defenseLabel) { defenseLabel.textContent = `🛡️ Bases de Defesa (${gameState.defense_slot_count || 6})`; }
             
             // Bases de ataque
             const attackBases = document.getElementById('attack-bases');
@@ -2517,7 +2621,8 @@ body::before {
                 }
                 
                 if (lifePercent < 100) {
-                    slot.classList.add('damaged');
+                    // Estado persistente: sem "shake" a cada atualização de 3s
+                    slot.classList.add('wounded');
                 }
             } else {
                 slot.innerHTML = type === 'attack' ? '⚔️' : (type === 'defense' ? '🛡️' : '·');
@@ -3077,23 +3182,26 @@ body::before {
             `;
         }
         function createHealAnimation(amount, targetName) {
-            // Encontrar o jogador alvo na interface
-            const playerElement = document.querySelector(`.opponent-card:contains('${targetName}')`) || 
-                                document.getElementById('player-area');
-            
-            if (playerElement) {
-                const healNum = document.createElement('div');
-                healNum.className = 'damage-number';
-                healNum.textContent = `+${amount} ❤️`;
-                healNum.style.color = '#4CAF50';
-                healNum.style.left = '50%';
-                healNum.style.top = '50%';
-                healNum.style.transform = 'translate(-50%, -50%)';
-                healNum.style.animation = 'floatUp 1s ease-out';
-                playerElement.appendChild(healNum);
-                
-                setTimeout(() => healNum.remove(), 1000);
-            }
+            // jQuery-style :contains() não existe no querySelector — busca pelo id do jogador
+            const targetId = Object.entries(gameState?.players || {})
+                .find(([, player]) => player.name === targetName || player.username === targetName)?.[0];
+            const playerElement = Array.from(document.querySelectorAll('.opponent-card'))
+                .find(card => card.dataset.playerId === targetId)
+                || document.getElementById('player-area');
+
+            if (!playerElement) return;
+
+            const healNum = document.createElement('div');
+            healNum.className = 'damage-number';
+            healNum.textContent = `+${amount} ❤️`;
+            healNum.style.color = 'var(--green)';
+            healNum.style.left = '50%';
+            healNum.style.top = '50%';
+            healNum.style.transform = 'translate(-50%, -50%)';
+            healNum.style.animation = 'dmg-float 1s ease-out';
+            playerElement.appendChild(healNum);
+
+            setTimeout(() => healNum.remove(), 1000);
         }
 
         function selectCardToRevive(cardId) {
@@ -3388,7 +3496,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '600px'
+                width: 'min(600px, calc(100vw - 24px))'
             });
         }
 
@@ -3459,7 +3567,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '500px'
+                width: 'min(500px, calc(100vw - 24px))'
             });
         }
 
@@ -3884,7 +3992,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#ffd700',
                 showConfirmButton: false,
-                width: '600px'
+                width: 'min(600px, calc(100vw - 24px))'
             });
         });
         // | (Anunciar uma profecia)
@@ -3968,7 +4076,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#800080',
                 showConfirmButton: false,
-                width: '500px'
+                width: 'min(500px, calc(100vw - 24px))'
             });
         });
         // | (Usar uma profecia)
@@ -4200,7 +4308,7 @@ body::before {
         document.addEventListener('DOMContentLoaded', function() {
             initChat();
 
-            const urlParams = new 'URLSearchParams'(window.location.search);
+            const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('created') === 'true') {
                 const playerName = localStorage.getItem('playerName') || 'Jogador';
                 
@@ -4458,7 +4566,7 @@ body::before {
                 color: '#fff',
                 confirmButtonColor: '#800080',
                 showConfirmButton: false,
-                width: '600px'
+                width: 'min(600px, calc(100vw - 24px))'
             });
         };
         window.selectCardForProphetCurse = function(targetPlayerId, cardInstanceId) {
@@ -4656,7 +4764,6 @@ body::before {
                     font-weight: bold;
                     color: #ffd700;
                     text-align: center;
-                    margin-left: 20px;
                     display: none;
                 `;
                 const gameInfo = document.getElementById('game-info');
@@ -4807,9 +4914,11 @@ body::before {
                 timerProgressBar: true,
                 allowOutsideClick: false
             }).then(() => {
-                // Focar no chat para facilitar ações
-                const chatInput = document.getElementById('chat-input');
-                if (chatInput) chatInput.focus();
+                // No desktop o foco ajuda; no mobile evita abrir teclado e esconder o tabuleiro
+                if (window.matchMedia('(pointer: fine)').matches) {
+                    const chatInput = document.getElementById('chat-input');
+                    if (chatInput) chatInput.focus();
+                }
             });
         }
         // | Game Engine
@@ -4993,7 +5102,7 @@ body::before {
                     fab.id = 'tc-fab';
                     fab.type = 'button';
                     fab.textContent = '🎓 Dicas';
-                    fab.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:1201;border-radius:999px;padding:10px 14px;font-weight:800;border:1px solid rgba(61,220,151,.4);background:rgba(12,10,28,.92);color:#3ddc97;cursor:pointer;font-family:inherit;';
+                    fab.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:960;border-radius:999px;padding:10px 14px;font-weight:800;border:1px solid rgba(61,220,151,.4);background:rgba(12,10,28,.94);color:#3ddc97;cursor:pointer;font-family:inherit;';
                     fab.onclick = () => {
                         if (!window.TB_IS_TUTORIAL) { fab.remove(); return; }
                         minimized = false;

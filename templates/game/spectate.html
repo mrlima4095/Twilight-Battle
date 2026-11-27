@@ -68,9 +68,11 @@ body::before {
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pulse-glow { 0%,100% { box-shadow: 0 0 0 0 rgba(61,220,151,0); } 50% { box-shadow: 0 0 18px rgba(61,220,151,.25); } }
 
+.swal2-container { z-index: 2000 !important; }
 .swal2-popup {
   background: #16122a !important; color: var(--text) !important;
   border: 1px solid var(--border) !important; border-radius: 18px !important;
+  max-width: calc(100vw - 24px) !important;
 }
 
 body { padding: 0; }
@@ -207,6 +209,26 @@ body { padding: 0; }
   position: absolute; z-index: 50; max-width: 220px; padding: 10px;
   background: #1a1430; border: 1px solid var(--border); border-radius: 10px;
   font-size: .8rem; box-shadow: var(--shadow); pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .game-header { align-items: flex-start; }
+  .game-title { flex-basis: 100%; }
+  .game-info { flex-basis: 100%; }
+  .exit-btn { margin-left: auto; }
+}
+@media (max-width: 640px) {
+  .game-container { padding: 10px 10px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .opponents-area { grid-template-columns: 1fr; }
+  .base-slot { width: 76px; min-height: 90px; padding: 6px; }
+  .graveyard-info { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
     </style>
@@ -629,7 +651,7 @@ body { padding: 0; }
                 cancelButtonColor: '#ffd700',
                 background: '#1a1a2e',
                 color: '#fff',
-                width: '800px'
+                width: 'min(800px, calc(100vw - 24px))'
             });
         }
         
