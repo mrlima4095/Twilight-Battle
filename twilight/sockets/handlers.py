@@ -326,6 +326,7 @@ def handle_get_game_state(data):
                 player_info['hand'] = player_data['hand']
                 player_info['equipment'] = player_data['equipment']
                 player_info['talismans'] = player_data['talismans']
+                player_info['inventory'] = player_data.get('inventory', [])
             
             state['players'][uname] = player_info
     
@@ -739,6 +740,23 @@ def handle_player_action(data):
                 else:
                     log_message = f"🔰 {player_name} equipou {result.get('item', 'um item')} em {result.get('creature', 'uma criatura')}"
 
+        elif action == 'unequip_item':
+            result = game.unequip_item_from_creature(
+                player_name, params['item_card_id'], params['creature_card_id']
+            )
+            if result and result.get('success'):
+                if fog:
+                    log_message = f"🔰 {player_name} desequipou um item (névoa)"
+                    result = dict(result)
+                    result.pop('item', None)
+                    result.pop('creature', None)
+                    result['message'] = 'Item desequipado e devolvido à mão (névoa)'
+                else:
+                    log_message = (
+                        f"🔰 {player_name} desequipou {result.get('item', 'um item')} "
+                        f"de {result.get('creature', 'uma criatura')}"
+                    )
+
         elif action == 'cast_spell':
             result = game.cast_spell(player_name, params['spell_id'], params.get('target_player_id'), params.get('target_card_id'))
             if result and result.get('success'):
@@ -866,8 +884,8 @@ def handle_player_action(data):
             if fog and action == 'attack' and isinstance(result, dict):
                 sensitive = (
                     'total_attack', 'damage_to_player', 'target_life',
-                    'cards_destroyed', 'cards_damaged', 'trap_effects',
-                    'reflected_damage',
+                    'cards_destroyed', 'cards_damaged', 'cards_healed',
+                    'creature_effects', 'trap_effects', 'reflected_damage',
                 )
                 stripped = {k: v for k, v in result.items() if k not in sensitive}
                 stripped['fog'] = True

@@ -308,6 +308,14 @@ body::before {
 .stat:nth-child(2) { color: var(--cyan); border-color: rgba(94,231,255,.25); }
 .stat:nth-child(3) { color: var(--violet); border-color: rgba(155,123,255,.25); }
 
+.inventory-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.inventory-item {
+  padding: 5px 9px; border-radius: 999px; font-size: .78rem; font-weight: 700;
+  background: rgba(255,140,0,.16); border: 1px solid rgba(255,170,60,.5);
+  color: #ffc978; cursor: pointer; white-space: nowrap;
+}
+.inventory-item:hover { background: rgba(255,140,0,.28); }
+
 .bases-section { margin-bottom: 12px; }
 .bases-section h3 {
   font-size: .8rem; color: var(--muted); font-weight: 600;
@@ -361,6 +369,16 @@ body::before {
 }
 .base-slot.wounded {
   box-shadow: inset 0 0 0 1px rgba(255,77,109,.4);
+}
+.base-slot.petrified {
+  filter: grayscale(.65); border-color: rgba(160,160,170,.7) !important;
+}
+.base-slot .status-badge {
+  font-size: .62rem; line-height: 1; font-weight: 800;
+  color: #ffd9a0; text-shadow: 0 1px 2px rgba(0,0,0,.8);
+}
+.base-slot .ability-charges {
+  font-size: .6rem; line-height: 1; color: var(--violet); font-weight: 700;
 }
 @keyframes shake {
   0%,100% { transform: translateX(0); }
@@ -980,6 +998,7 @@ body::before {
         <div class="stat">❤️ Vida: <span id="player-life">—</span></div>
         <div class="stat">🔷 Runas: <span id="player-runes">0</span></div>
         <div class="stat">🔮 Talismãs: <span id="player-talismans">0</span></div>
+        <div class="inventory-list" id="player-inventory"></div>
       </div>
     </div>
 
@@ -1991,6 +2010,17 @@ body::before {
                     timer: 2000
                 });
             }
+            else if (data.action === 'unequip_item' && data.result && isActor) {
+                Swal.fire({
+                    icon: 'success',
+                    title: '✅ Item desequipado!',
+                    html: `<p style="color: #fff;">${data.result.message || 'Item desequipado com sucesso!'}</p>`,
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700',
+                    timer: 2000
+                });
+            }
             else if (data.action === 'cast_spell' && data.result && data.result.effect) {
                 if (data.result.effect.type === 'heal') {
                     createHealAnimation(data.result.effect.amount, data.result.effect.target);
@@ -2680,6 +2710,22 @@ body::before {
             document.getElementById('player-runes').textContent = runes;
             document.getElementById('player-talismans').textContent = talismans;
 
+            // Inventário (ex.: Ovo de Fênix): clique mostra o estado do item
+            const inventoryList = document.getElementById('player-inventory');
+            if (inventoryList) {
+                inventoryList.innerHTML = '';
+                (playerData.inventory || []).forEach((item) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'inventory-item';
+                    btn.textContent = item.id === 'ovo_fenix'
+                        ? `🥚 Ovo: ${item.turns_remaining != null ? item.turns_remaining : '?'} turno(s)`
+                        : `🎒 ${item.name || item.id || 'Item'}`;
+                    btn.addEventListener('click', () => showInventoryItem(item));
+                    inventoryList.appendChild(btn);
+                });
+            }
+
             const attackLabel = document.getElementById('attack-bases-label');
             const defenseLabel = document.getElementById('defense-bases-label');
             if (attackLabel) { attackLabel.textContent = `⚔️ Bases de Ataque (${gameState.attack_slot_count || 3})`; }
@@ -2772,24 +2818,45 @@ body::before {
                 if (card.equipped_items && card.equipped_items.length > 0) {
                     equippedItems = `<div class="equipped-items">⚔${card.equipped_items.length}</div>`;
                 }
-                
+
+                const statusText = [];
+                if (card.petrified) statusText.push('🪨 Petrificada');
+                const burnEffect = (card.effects || []).find(
+                    e => e && e.type === 'burn' && (e.turns_remaining || 0) > 0
+                );
+                if (burnEffect) statusText.push(`🔥 ${burnEffect.turns_remaining} turno(s)`);
+                const statusBadge = statusText.length
+                    ? `<div class="status-badge">${statusText.join(' · ')}</div>` : '';
+
+                const medusaCharges = card.id === 'medusa'
+                    ? `<div class="ability-charges">🐍 ${card.medusa_petrify_uses != null ? card.medusa_petrify_uses : 2}/2</div>`
+                    : '';
+
                 // Tooltip só com nome + stats (sem descrição, não estoura o slot)
                 slot.innerHTML = `
                     <div class="slot-emoji">${emoji}</div>
                     <div class="slot-name" title="${escapeHtml(card.name || '')}">${escapeHtml(shortName)}</div>
                     ${stats ? `<div class="slot-stats">${stats}</div>` : ''}
                     ${equippedItems}
+                    ${statusBadge}
+                    ${medusaCharges}
                     <div class="card-tooltip">
                         <strong>${escapeHtml(card.name || '')}</strong>
                         ${stats ? `<br>${stats}` : ''}
+                        ${statusText.length ? `<br>${statusText.join(' · ')}` : ''}
+                        ${card.id === 'medusa' ? `<br>🐍 Petrificar: ${card.medusa_petrify_uses != null ? card.medusa_petrify_uses : 2}/2 usos` : ''}
                         ${card.type === 'trap' || card.is_disguised ? '<br>⚠️ Armadilha?' : ''}
                         ${card.blocked ? '<br>🚫 Bloqueado' : ''}
                     </div>
                 `;
-                
+
                 // dado para highlight de criatura no modo equipar
                 if (card.type === 'creature') {
                     slot.dataset.cardType = 'creature';
+                }
+
+                if (card.petrified) {
+                    slot.classList.add('petrified');
                 }
                 
                 if (lifePercent < 100) {
@@ -2911,10 +2978,29 @@ body::before {
                         itemData.life ? `❤️ +${esc(itemData.life)}` : '',
                         itemData.ability ? `✨ ${esc(itemData.ability)}` : ''
                     ].filter(Boolean).join(' · ');
+                    const isArmor = itemData.type === 'armor' || itemData.id === 'capacete_trevas';
+                    const hasDurability = itemData.durability != null && itemData.max_durability != null;
+                    const pristine = !hasDurability
+                        || Number(itemData.durability) >= Number(itemData.max_durability);
+                    const durabilityHtml = isArmor
+                        ? `<br><small style="color:${pristine ? '#8be9a3' : '#ff8fa3'};">`
+                          + `🛡️ Durabilidade: ${hasDurability ? `${esc(itemData.durability)}/${esc(itemData.max_durability)}` : '—'}`
+                          + `${pristine ? '' : ' (já absorveu dano)'}</small>`
+                        : '';
+                    const canUnequip = !isOpponent && (!isArmor || pristine);
+                    const unequipBtn = isOpponent ? '' : `<button type="button"
+                        class="swal2-styled"
+                        style="margin-top:7px;padding:5px 10px;font-size:.78rem;background:${canUnequip ? '#e2b341' : '#555'};color:#111;font-weight:700;"
+                        ${canUnequip ? '' : 'disabled title="Esta armadura já absorveu dano e não pode ser removida"'}
+                        onclick="unequipItemFromCard('${esc(itemData.instance_id || '')}', '${esc(card.instance_id || '')}')">
+                        ${canUnequip ? '🔓 Desequipar' : '🔒 Desgastada'}
+                    </button>`;
                     return `<li style="margin:6px 0;padding:8px;background:rgba(255,255,255,.04);border-radius:8px;">
                         <strong style="color:#5ee7ff;">${esc(itemData.name || 'Item')}</strong>
                         ${bonus ? `<br><span style="color:#ffd700;font-size:.85em;">${bonus}</span>` : ''}
+                        ${durabilityHtml}
                         ${itemData.description ? `<br><small style="color:#b8b0cc;">${esc(itemData.description)}</small>` : ''}
+                        ${unequipBtn}
                     </li>`;
                 }).join('')
                 : '<li style="color:#888;">Nenhum item equipado</li>';
@@ -2927,9 +3013,29 @@ body::before {
             if (card.fog || card.is_disguised || card.is_disguised_trap || card.is_trap) {
                 flags.push('⚠️ Identidade oculta');
             }
-            if (card.ability) flags.push(`✨ ${esc(card.ability)}`);
-            const abilities = [card.description ? esc(card.description) : '', ...flags]
+            if (card.petrified) flags.push('🪨 Petrificada: não pode atacar no próximo turno');
+            const burnEffect = (card.effects || []).find(
+                e => e && e.type === 'burn' && (e.turns_remaining || 0) > 0
+            );
+            if (burnEffect) flags.push(`🔥 Queimando: -${burnEffect.damage || 50}❤️ por ${burnEffect.turns_remaining} turno(s)`);
+            if (card.id === 'medusa') {
+                flags.push(`🐍 Olhar de Pedra: ${card.medusa_petrify_uses != null ? card.medusa_petrify_uses : 2}/2 usos`);
+            }
+
+            const abilityTitle = card.ability_name || card.ability;
+            const abilityText = card.ability_text || card.description || '';
+            const abilities = [abilityText ? esc(abilityText) : '', ...flags]
                 .filter(Boolean).join('<br>');
+            const abilityBadge = abilityTitle
+                ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px;">
+                       <span style="padding:4px 10px;border-radius:999px;background:rgba(155,123,255,.18);border:1px solid rgba(155,123,255,.45);color:#d9c9ff;font-size:.8rem;font-weight:700;">
+                           ✨ ${esc(abilityTitle)}
+                       </span>
+                       ${card.trigger ? `<span style="padding:4px 10px;border-radius:999px;background:rgba(94,231,255,.12);border:1px solid rgba(94,231,255,.35);color:#a9efff;font-size:.8rem;">
+                           ⚡ ${esc(card.trigger)}
+                       </span>` : ''}
+                   </div>`
+                : '';
 
             Swal.fire({
                 title: esc(card.name || 'Carta'),
@@ -2954,6 +3060,7 @@ body::before {
                                 <strong style="color:#5ee7ff;font-size:1.05em;">${protection}</strong>
                             </div>
                         </div>
+                        ${abilityBadge}
                         <h4 style="color:#5ee7ff;margin:14px 0 6px;font-size:.9rem;">🎒 Itens equipados (${items.length})</h4>
                         <ul style="list-style:none;padding:0;margin:0;">${equippedHtml}</ul>
                         <h4 style="color:#f0c14b;margin:14px 0 6px;font-size:.9rem;">✨ Habilidades / detalhes</h4>
@@ -3364,6 +3471,31 @@ body::before {
                 game_id: gameId,
                 action: 'draw',
                 params: {}
+            });
+        }
+
+        function showInventoryItem(item) {
+            if (!item) return;
+            if (item.id === 'ovo_fenix') {
+                const turns = item.turns_remaining != null ? item.turns_remaining : '?';
+                Swal.fire({
+                    icon: 'info',
+                    title: '🥚 Ovo de Fênix',
+                    html: `Faltam <strong>${turns} turno(s)</strong> para a Fênix renascer com metade da vida.<br>` +
+                          'Se alguém reviver a Fênix do cemitério ou você for derrotado, o ovo some.',
+                    background: '#1a1a2e',
+                    color: '#fff',
+                    confirmButtonColor: '#ffd700'
+                });
+                return;
+            }
+            Swal.fire({
+                icon: 'info',
+                title: item.name || 'Item',
+                html: escapeHtml(item.description || 'Sem descrição.'),
+                background: '#1a1a2e',
+                color: '#fff',
+                confirmButtonColor: '#ffd700'
             });
         }
 
@@ -3783,6 +3915,31 @@ body::before {
             socket.emit('player_action', {
                 game_id: gameId,
                 action: 'equip_item',
+                params: {
+                    item_card_id: itemCardId,
+                    creature_card_id: creatureId
+                }
+            });
+        }
+
+        function unequipItemFromCard(itemCardId, creatureId) {
+            console.log('Desequipando item', itemCardId, 'de criatura', creatureId);
+            Swal.close();
+
+            Swal.fire({
+                title: 'Desequipando...',
+                html: 'Aguarde enquanto o item volta para a sua mão',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+                background: '#1a1a2e',
+                color: '#fff'
+            });
+
+            socket.emit('player_action', {
+                game_id: gameId,
+                action: 'unequip_item',
                 params: {
                     item_card_id: itemCardId,
                     creature_card_id: creatureId

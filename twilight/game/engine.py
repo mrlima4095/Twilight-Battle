@@ -111,6 +111,7 @@ class Game:
                 'mount': None
             },
             'talismans': [],
+            'inventory': [],
             'runes': 0,
             'active_effects': [],
             'profecia_alvo': None,
@@ -122,6 +123,166 @@ class Game:
             'first_hit_reduced': False,
             'attacked_this_turn': False,
         }
+
+    @staticmethod
+    def _default_card_life(card):
+        """Vida padrão da carta (original_life, definição ou vida atual)."""
+        if not card:
+            return 0
+        if card.get('original_life') is not None:
+            try:
+                return int(card['original_life'])
+            except (TypeError, ValueError):
+                pass
+        base = CARDS.get(card.get('id'), {})
+        try:
+            return int(base.get('life') or card.get('life') or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    @staticmethod
+    def _ensure_ability_charges(card):
+        """Inicializa contadores de habilidades limitadas ao entrar em campo."""
+        if card and card.get('id') == 'medusa':
+            card.setdefault('medusa_petrify_uses', 2)
+
+    @staticmethod
+    def _is_ninfa(card):
+        return bool(card and card.get('id') in ('ninfa', 'ninfa_lorem'))
+
+    @staticmethod
+    def _is_armor_item(item):
+        return bool(item and (item.get('type') == 'armor' or item.get('id') == 'capacete_trevas'))
+
+    @staticmethod
+    def _is_weapon_item(item):
+        return bool(item and (
+            item.get('type') == 'weapon'
+            or item.get('id') in ('lamina_almas', 'blade_vampires', 'blade_dragons')
+        ))
+
+    def _init_armor_durability(self, item):
+        """Durabilidade da armadura = proteção/vida que ela deu ao equipar."""
+        if not self._is_armor_item(item):
+            return
+        if item.get('durability') is None:
+            max_durability = int(item.get('protection') or item.get('life') or 0)
+            item['max_durability'] = max_durability
+            item['durability'] = max_durability
+
+    def _armor_is_pristine(self, item):
+        """Só pode ser removida se nunca absorveu dano."""
+        if not self._is_armor_item(item):
+            return True
+        self._init_armor_durability(item)
+        try:
+            return int(item.get('durability') or 0) >= int(item.get('max_durability') or 0)
+        except (TypeError, ValueError):
+            return False
+
+    def _damage_armor(self, card, amount):
+        """Registra o dano recebido na durabilidade das armaduras equipadas."""
+        if not card or amount <= 0:
+            return []
+        depleted = []
+        for item in card.get('equipped_items') or []:
+            if amount <= 0:
+                break
+            if not self._is_armor_item(item):
+                continue
+            self._init_armor_durability(item)
+            try:
+                current = int(item.get('durability') or 0)
+            except (TypeError, ValueError):
+                current = 0
+            if current <= 0:
+                continue
+            spent = min(current, amount)
+            item['durability'] = current - spent
+            amount -= spent
+            if item['durability'] == 0:
+                depleted.append(item.get('name', 'Armadura'))
+        return depleted
+
+    def _cancel_phoenix_eggs(self, phoenix_instance_id):
+        """Cancela ovos de uma Fênix específica (revivida por outra pessoa)."""
+        if not phoenix_instance_id:
+            return
+        for player in self.player_data.values():
+            inventory = player.get('inventory') or []
+            player['inventory'] = [
+                item for item in inventory
+                if not (
+                    item.get('id') == 'ovo_fenix'
+                    and item.get('phoenix_instance_id') == phoenix_instance_id
+                )
+            ]
+
+    def _handle_non_attack_death(self, player, base_name, index, card, cause='luz do sol'):
+        """Morte fora de ataque: sempre cemitério; Fênix ainda pode deixar o ovo."""
+        if not player or not card:
+            return None
+        self.graveyard.append(card)
+        player[base_name][index] = None
+        info = {'card': card, 'phoenix_egg': False}
+        if card.get('id') == 'fenix' and not card.get('phoenix_rebirth_used'):
+            self._give_phoenix_egg(player, card)
+            info['phoenix_egg'] = True
+        return info
+
+    def _lose_phoenix_eggs_on_card_reset(self):
+        """O feitiço que devolve as mãos ao deck também destrói ovos de Fênix."""
+        lost = []
+        for player in self.player_data.values():
+            inventory = player.get('inventory') or []
+            kept = []
+            for item in inventory:
+                if item.get('id') != 'ovo_fenix':
+                    kept.append(item)
+                    continue
+                instance_id = item.get('phoenix_instance_id')
+                for card in self.graveyard:
+                    if (
+                        card.get('instance_id') == instance_id
+                        and card.get('id') == 'fenix'
+                    ):
+                        card['phoenix_egg_lost'] = True
+                lost.append(player['name'])
+            player['inventory'] = kept
+        if lost:
+            broadcast_system_message(
+                self.game_id,
+                f'🥚 O feitiço destruiu o Ovo de Fênix de {", ".join(lost)} — a Fênix não volta!',
+                fog_message='🥚 Um ovo foi destruído por um feitiço.',
+            )
+        return lost
+
+    def _give_phoenix_egg(self, player, fenix_card):
+        """Cria o ovo com contador de 10 turnos; a habilidade só vale uma vez."""
+        if not player or not fenix_card or fenix_card.get('phoenix_rebirth_used'):
+            return
+        fenix_card['phoenix_rebirth_used'] = True
+
+        instance_id = fenix_card.get('instance_id')
+        inventory = player.setdefault('inventory', [])
+        if any(
+            item.get('id') == 'ovo_fenix' and item.get('phoenix_instance_id') == instance_id
+            for item in inventory
+        ):
+            return
+
+        inventory.append({
+            'id': 'ovo_fenix',
+            'name': '🥚 Ovo de Fênix',
+            'description': 'Clique para ver quantos turnos faltam para a Fênix renascer.',
+            'turns_remaining': 10,
+            'phoenix_instance_id': instance_id,
+        })
+        broadcast_system_message(
+            self.game_id,
+            f"🥚 {player['name']} recebeu o Ovo de Fênix: a Fênix pode renascer em 10 turnos!",
+            fog_message=f"🥚 Um ovo misterioso apareceu para {player['name']}.",
+        )
 
     def add_player(self, socket_id, username):
         """Adiciona um jogador ao jogo usando username como identificador"""
@@ -261,6 +422,7 @@ class Game:
                 'mount': None
             },
             'talismans': [],
+            'inventory': [],
             'runes': 0,
             'active_effects': [],
             'profecia_alvo': None,
@@ -506,10 +668,126 @@ class Game:
         
         return False
 
+    def process_burn_effects(self):
+        """Aplica o dano das cartas queimando (Dragão) e remove efeitos expirados."""
+        damaged = []
+        destroyed = []
+
+        for username, player in self.player_data.items():
+            if player.get('dead', False):
+                continue
+            for base_name in ('attack_bases', 'defense_bases'):
+                for i, card in enumerate(player[base_name]):
+                    if not card:
+                        continue
+                    for effect in list(card.get('effects') or []):
+                        if effect.get('type') != 'burn':
+                            continue
+                        try:
+                            damage = int(effect.get('damage') or 50)
+                            turns = int(effect.get('turns_remaining') or 0) - 1
+                        except (TypeError, ValueError):
+                            damage, turns = 50, -1
+
+                        new_life = card.get('life', 0) - damage
+                        effect['turns_remaining'] = turns
+                        self._damage_armor(card, damage)
+
+                        if new_life <= 0:
+                            self._handle_non_attack_death(player, base_name, i, card, cause='queimadura')
+                            destroyed.append({
+                                'player': username,
+                                'card_name': card.get('name', 'Carta'),
+                            })
+                        else:
+                            card['life'] = new_life
+                            damaged.append(f"{card.get('name', 'Carta')} (-{damage}🔥)")
+
+                        if turns <= 0:
+                            card.setdefault('effects', []).remove(effect)
+                        break  # uma queimadura por carta por turno
+
+        if damaged or destroyed:
+            broadcast_system_message(
+                self.game_id,
+                f"🔥 Queimadura: {', '.join(damaged + [d['card_name'] + ' morreu queimando' for d in destroyed])}",
+                fog_message=f"🔥 Cartas queimando causaram dano em {len(damaged) + len(destroyed)} carta(s).",
+            )
+        return damaged, destroyed
+
+    def process_phoenix_eggs(self):
+        """Conta os turnos do Ovo de Fênix e devolve a carta com metade da vida."""
+        returned = []
+
+        for username, player in self.player_data.items():
+            inventory = player.get('inventory') or []
+            if player.get('dead', False):
+                player['inventory'] = [
+                    item for item in inventory if item.get('id') != 'ovo_fenix'
+                ]
+                continue
+
+            for egg in list(inventory):
+                if egg.get('id') != 'ovo_fenix':
+                    continue
+                try:
+                    egg['turns_remaining'] = int(egg.get('turns_remaining') or 0) - 1
+                except (TypeError, ValueError):
+                    egg['turns_remaining'] = -1
+
+                if egg['turns_remaining'] > 0:
+                    continue
+
+                instance_id = egg.get('phoenix_instance_id')
+                fenix = None
+                graveyard_index = -1
+                for i, card in enumerate(self.graveyard):
+                    if card.get('instance_id') == instance_id and card.get('id') == 'fenix':
+                        fenix = card
+                        graveyard_index = i
+                        break
+
+                if egg in (player.get('inventory') or []):
+                    player['inventory'].remove(egg)
+
+                if not fenix or fenix.get('phoenix_reborn') or fenix.get('phoenix_egg_lost'):
+                    broadcast_system_message(
+                        self.game_id,
+                        f"🥚 O Ovo de Fênix de {username} esfriou — a Fênix não volta mais.",
+                        fog_message=f"🥚 Um ovo esfriou para {username}.",
+                    )
+                    continue
+
+                self.graveyard.pop(graveyard_index)
+                half_life = max(1, self._default_card_life(fenix) // 2)
+                fenix['life'] = half_life
+                fenix['phoenix_reborn'] = True
+                player.setdefault('hand', []).append(fenix)
+                returned.append({'player': username, 'card': fenix})
+                broadcast_system_message(
+                    self.game_id,
+                    f"🔥 Fênix de {username} renasceu com metade da vida ({half_life}❤️)!",
+                    fog_message=f"🔥 Uma Fênix renasceu para {username}!",
+                )
+
+        return returned
+
     def next_turn(self):
         """Avança para o próximo turno, pulando jogadores mortos"""
         if not self.players:
             return
+
+        # Efeitos que contam turnos: queimadura do Dragão e Ovo de Fênix
+        self.process_burn_effects()
+        self.process_phoenix_eggs()
+
+        # A petrificação da Medusa dura até o fim do próximo turno do alvo
+        ending_username = self.players[self.current_turn]
+        ending_player = self.player_data.get(ending_username)
+        if ending_player:
+            for card in ending_player['attack_bases']:
+                if card and card.get('petrified'):
+                    card.pop('petrified', None)
 
         # Sangria: se o jogador atual não atacou neste turno, -20 vida
         if 'bleed_out' in self.modifiers and self.players:
@@ -694,6 +972,9 @@ class Game:
         if card_to_play.get('type') == 'creature' and card_to_play.get('werewolf'):
             card_to_play['werewolf_form'] = None
             self.apply_werewolf_forms()
+
+        # Habilidades com cota limitada (ex.: Medusa) começam ao entrar em campo
+        self._ensure_ability_charges(card_to_play)
         
         self.use_action(username, 'play')
         
@@ -726,7 +1007,7 @@ class Game:
         attacking_cards = []
         
         for i, card in enumerate(attacker['attack_bases']):
-            if card and card.get('type') == 'creature':
+            if card and card.get('type') == 'creature' and not card.get('petrified'):
                 has_attack_cards = True
                 card_attack = card.get('attack', 0)
                 attack_power += card_attack
@@ -893,6 +1174,13 @@ class Game:
                     'defender': defender['name'],
                     'message': f'📜 {attacker["name"]} usou o Oráculo da Imortalidade para anular o Talismã de {defender["name"]}!'
                 }, room=self.game_id)
+
+        # Efeitos das criaturas que atacaram (Medusa/Dragão)
+        creature_effects = []
+        if any(entry.get('card', {}).get('id') == 'medusa' for entry in attacking_cards):
+            creature_effects.extend(self.apply_medusa_petrify(defender, username))
+        if any(entry.get('card', {}).get('id') == 'dragao' for entry in attacking_cards):
+            creature_effects.extend(self.apply_dragon_burn(defender, username))
         
         return {
             'success': True,
@@ -910,8 +1198,177 @@ class Game:
             'oracle_activated': result.get('oracle_activated', False),
             'immortality_activated': result.get('immortality_activated', False),
             'log': result['log'],
-            'trap_effects': trap_effects
+            'trap_effects': trap_effects,
+            'cards_healed': result.get('cards_healed', []),
+            'creature_effects': creature_effects,
         }
+
+    def apply_medusa_petrify(self, defender, attacker_username):
+        """Medusa petrifica as cartas de ataque do alvo por 1 turno (máx. 2 usos)."""
+        attacker = self.player_data.get(attacker_username)
+        if not attacker or not defender:
+            return []
+
+        medusa = next(
+            (card for card in attacker['attack_bases'] if card and card.get('id') == 'medusa'),
+            None,
+        )
+        if not medusa:
+            return []
+
+        self._ensure_ability_charges(medusa)
+        if medusa.get('medusa_petrify_uses', 0) <= 0:
+            return []
+
+        targets = [
+            card for card in defender['attack_bases']
+            if card and card.get('type') == 'creature'
+        ]
+        if not targets:
+            return []
+
+        for card in targets:
+            card['petrified'] = True
+        medusa['medusa_petrify_uses'] -= 1
+        uses_left = medusa['medusa_petrify_uses']
+
+        broadcast_system_message(
+            self.game_id,
+            f"🐍 Medusa petrificou {len(targets)} carta(s) de ataque de {defender['name']} "
+            f"({uses_left}/2 usos restantes)!",
+            fog_message=f"🐍 Cartas de ataque de {defender['name']} foram petrificadas!",
+        )
+
+        return [{
+            'type': 'medusa_petrify',
+            'card_count': len(targets),
+            'uses_remaining': uses_left,
+            'message': f'{len(targets)} carta(s) petrificada(s)',
+        }]
+
+    def apply_dragon_burn(self, defender, attacker_username):
+        """Dragão queima todas as cartas do alvo: 50 de dano por 2 turnos."""
+        attacker = self.player_data.get(attacker_username)
+        if not attacker or not defender:
+            return []
+
+        has_dragon = any(
+            card and card.get('id') == 'dragao' for card in attacker['attack_bases']
+        )
+        if not has_dragon:
+            return []
+
+        burned = 0
+        for base_name in ('defense_bases', 'attack_bases'):
+            for card in defender[base_name]:
+                if not card or card.get('type') != 'creature':
+                    continue
+                effects = card.setdefault('effects', [])
+                existing = next((eff for eff in effects if eff.get('type') == 'burn'), None)
+                if existing:
+                    existing['turns_remaining'] = 2
+                    existing['damage'] = 50
+                else:
+                    effects.append({
+                        'type': 'burn',
+                        'turns_remaining': 2,
+                        'damage': 50,
+                        'source': 'dragao',
+                    })
+                burned += 1
+
+        if burned:
+            broadcast_system_message(
+                self.game_id,
+                f"🔥 Dragão queimou {burned} carta(s) de {defender['name']}: 50❤️ por 2 turnos!",
+                fog_message=f"🔥 Cartas de {defender['name']} estão queimando por 2 turnos!",
+            )
+
+        return [{
+            'type': 'dragon_burn',
+            'card_count': burned,
+            'damage_per_turn': 50,
+            'turns': 2,
+            'message': f'{burned} carta(s) queimando',
+        }]
+
+    def _heal_cards_after_ninfa(self, player, killed_base, killed_index, amount, damage_log):
+        """Converte o dano excedente da Ninfa em cura nas próximas cartas da fila."""
+        if amount <= 0:
+            return []
+
+        healed = []
+        sequences = []
+        if killed_base == 'defense_bases':
+            sequences.append(('defense_bases', range(killed_index + 1, len(player['defense_bases']))))
+        sequences.append(('attack_bases', range(len(player['attack_bases']))))
+
+        for base_name, indices in sequences:
+            for i in indices:
+                if amount <= 0:
+                    break
+                card = player[base_name][i]
+                if not card or card.get('type') != 'creature':
+                    continue
+                max_life = self._default_card_life(card)
+                current_life = card.get('life', 0)
+                if current_life >= max_life:
+                    continue
+                cure = min(amount, max_life - current_life)
+                card['life'] = current_life + cure
+                amount -= cure
+                where = 'defesa' if base_name == 'defense_bases' else 'ataque'
+                text = f"{card['name']} ({where}) (+{cure}❤️)"
+                healed.append(text)
+                damage_log.append(f"🧚 {text} curou até a vida padrão")
+
+        return healed
+
+    def _destroy_card_on_attack(self, target_username, base_name, index, card,
+                                overflow=0, damage_log=None, cards_destroyed=None):
+        """
+        Remove uma carta morta por ataque e aplica as habilidades de morte.
+        - Zumbi volta para a mão de quem a tinha em campo.
+        - Ninfa transforma o dano excedente em cura na linha de fogo.
+        - Fênix deixa o Ovo com contador de 10 turnos (uma vez só).
+        """
+        player = self.player_data[target_username]
+        card_name = card.get('name', 'Carta')
+        info = {
+            'card': card,
+            'card_name': card_name,
+            'returned_to_hand': False,
+            'healed': [],
+            'phoenix_egg': False,
+        }
+        logs = []
+
+        # Ataque: zumbi volta pra mão; qualquer outra carta vai pro cemitério
+        if card.get('id') == 'zumbi':
+            player.setdefault('hand', []).append(card)
+            info['returned_to_hand'] = True
+            logs.append(f"🧟 {card_name} voltou para a mão de {player['name']} (destruído no ataque)")
+        else:
+            self.graveyard.append(card)
+            logs.append(f"{card_name} foi para o cemitério")
+
+            if card.get('id') == 'fenix' and not card.get('phoenix_rebirth_used'):
+                self._give_phoenix_egg(player, card)
+                info['phoenix_egg'] = True
+
+        player[base_name][index] = None
+
+        if self._is_ninfa(card) and overflow > 0 and damage_log is not None:
+            cured = self._heal_cards_after_ninfa(player, base_name, index, overflow, damage_log)
+            info['healed'] = cured
+            logs.append(f"🧚 Sacrifício da Ninfa: {overflow} de dano restante virou cura nas próximas cartas")
+
+        if cards_destroyed is not None:
+            cards_destroyed.append(card_name)
+        if damage_log is not None:
+            damage_log.extend(logs)
+
+        return info
 
     def apply_damage_to_player(self, target_username, damage_amount, is_reflected=False, skip_talisman=False):
         """
@@ -961,6 +1418,7 @@ class Game:
         damage_log = []
         cards_destroyed = []
         cards_damaged = []
+        cards_healed = []
 
         # Capacete da Sentinela: 1º hit do turno -80
         helmet = (target.get('equipment') or {}).get('helmet')
@@ -983,7 +1441,8 @@ class Game:
                 break
             
             card = def_card['card']
-            card_life = def_card['current_life']
+            # Vida lida na hora: a Ninfa pode ter curado esta carta na linha de fogo
+            card_life = card.get('life', def_card.get('current_life', 0))
             reflected_text = " [dano refletido]" if is_reflected else ""
 
             # Apollo (defesa): dano < 1000 que o atinge → cura o JOGADOR pelo valor
@@ -1006,6 +1465,7 @@ class Game:
 
                 old_card_life = card_life
                 new_card_life = card_life - card_damage
+                self._damage_armor(card, card_damage)
                 if new_card_life <= 0:
                     self.graveyard.append(card)
                     target['defense_bases'][def_card['index']] = None
@@ -1039,14 +1499,20 @@ class Game:
                 break
             
             if remaining_damage >= card_life:
-                remaining_damage -= card_life
-                self.graveyard.append(card)
-                target['defense_bases'][def_card['index']] = None
-                cards_destroyed.append(card['name'])
+                overflow = remaining_damage - card_life
+                self._damage_armor(card, card_life)
+                destroyed = self._destroy_card_on_attack(
+                    target_username, 'defense_bases', def_card['index'], card,
+                    overflow=overflow, damage_log=damage_log, cards_destroyed=cards_destroyed,
+                )
+                cards_healed.extend(destroyed.get('healed', []))
                 damage_log.append(f"{card['name']} (defesa) foi destruída{reflected_text}")
+                # Ninfa absorve o restante e não deixa dano passar adiante
+                remaining_damage = 0 if destroyed.get('healed') or self._is_ninfa(card) else overflow
             else:
                 new_life = card_life - remaining_damage
                 card['life'] = new_life
+                self._damage_armor(card, remaining_damage)
                 cards_damaged.append(f"{card['name']} (defesa) (-{remaining_damage}❤️)")
                 damage_log.append(f"{card['name']} (defesa) recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
                 remaining_damage = 0
@@ -1057,18 +1523,25 @@ class Game:
                 break
             
             card = atk_card['card']
-            card_life = atk_card['current_life']
+            # Vida lida na hora: a Ninfa pode ter curado esta carta na linha de fogo
+            card_life = card.get('life', atk_card.get('current_life', 0))
             reflected_text = " [dano refletido]" if is_reflected else ""
             
             if remaining_damage >= card_life:
-                remaining_damage -= card_life
-                self.graveyard.append(card)
-                target['attack_bases'][atk_card['index']] = None
-                cards_destroyed.append(card['name'])
+                overflow = remaining_damage - card_life
+                self._damage_armor(card, card_life)
+                destroyed = self._destroy_card_on_attack(
+                    target_username, 'attack_bases', atk_card['index'], card,
+                    overflow=overflow, damage_log=damage_log, cards_destroyed=cards_destroyed,
+                )
+                cards_healed.extend(destroyed.get('healed', []))
                 damage_log.append(f"{card['name']} (ataque) foi destruída{reflected_text}")
+                # Ninfa absorve o restante e não deixa dano passar adiante
+                remaining_damage = 0 if destroyed.get('healed') or self._is_ninfa(card) else overflow
             else:
                 new_life = card_life - remaining_damage
                 card['life'] = new_life
+                self._damage_armor(card, remaining_damage)
                 cards_damaged.append(f"{card['name']} (ataque) (-{remaining_damage}❤️)")
                 damage_log.append(f"{card['name']} (ataque) recebeu {remaining_damage} de dano (vida restante: {new_life}){reflected_text}")
                 remaining_damage = 0
@@ -1167,6 +1640,7 @@ class Game:
             'apollo_healed': apollo_healed,
             'cards_destroyed': cards_destroyed,
             'cards_damaged': cards_damaged,
+            'cards_healed': cards_healed,
             'log': damage_log
         }
     def force_attack_between_players(self, attacker_name, target_name):
@@ -1221,6 +1695,10 @@ class Game:
         player['dead'] = True
         player['observer'] = True
         player['life'] = 0
+        # Derrotado: ovos de Fênix não têm mais efeito
+        player['inventory'] = [
+            item for item in (player.get('inventory') or []) if item.get('id') != 'ovo_fenix'
+        ]
 
         # Caça ao Rei: quem matou o criador da sala ganha +300 vida
         if 'king_hunt' in self.modifiers and username == self.creator and self.players:
@@ -1414,11 +1892,11 @@ class Game:
                     # Verificar se morre durante o dia (zumbis, vampiros)
                     if card.get('dies_daylight'):
                         if not self.has_daylight_protection(player, card):
-                            self.graveyard.append(card)
-                            player['defense_bases'][i] = None
+                            self._handle_non_attack_death(player, 'defense_bases', i, card)
                             broadcast_system_message(
                                 self.game_id,
-                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!',
+                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!'
+                                + (' (foi para o cemitério)' if card.get('id') == 'zumbi' else ''),
                                 fog_message=f'☀️ Uma criatura de {username} morreu com a luz do dia!',
                             )
                     
@@ -1430,13 +1908,14 @@ class Game:
                         if card_life > 0:
                             new_life = max(0, card_life - 10)
                             card['life'] = new_life
+                            self._damage_armor(card, 10)
                             
                             if new_life <= 0:
-                                self.graveyard.append(card)
-                                player['defense_bases'][i] = None
+                                self._handle_non_attack_death(player, 'defense_bases', i, card)
                                 broadcast_system_message(
                                     self.game_id,
-                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)',
+                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)'
+                                    + (' (foi para o cemitério)' if card.get('id') == 'zumbi' else ''),
                                     fog_message=f'☀️ Uma criatura de {username} foi destruída pelo sol!',
                                 )
             
@@ -1446,11 +1925,11 @@ class Game:
                     # Verificar se morre durante o dia (zumbis, vampiros)
                     if card.get('dies_daylight'):
                         if not self.has_daylight_protection(player, card):
-                            self.graveyard.append(card)
-                            player['attack_bases'][i] = None
+                            self._handle_non_attack_death(player, 'attack_bases', i, card)
                             broadcast_system_message(
                                 self.game_id,
-                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!',
+                                f'☀️ {card["name"]} de {username} morreu com a luz do dia!'
+                                + (' (foi para o cemitério)' if card.get('id') == 'zumbi' else ''),
                                 fog_message=f'☀️ Uma criatura de {username} morreu com a luz do dia!',
                             )
                     
@@ -1462,13 +1941,14 @@ class Game:
                         if card_life > 0:
                             new_life = max(0, card_life - 10)
                             card['life'] = new_life
+                            self._damage_armor(card, 10)
                             
                             if new_life <= 0:
-                                self.graveyard.append(card)
-                                player['attack_bases'][i] = None
+                                self._handle_non_attack_death(player, 'attack_bases', i, card)
                                 broadcast_system_message(
                                     self.game_id,
-                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)',
+                                    f'☀️ {card["name"]} de {username} foi destruído pelo sol! (-10❤️)'
+                                    + (' (foi para o cemitério)' if card.get('id') == 'zumbi' else ''),
                                     fog_message=f'☀️ Uma criatura de {username} foi destruída pelo sol!',
                                 )
         # lobisomem troca forma no ciclo (também à noite via toggle)
@@ -1649,6 +2129,12 @@ class Game:
         
         # Equipar item
         target_creature['equipped_items'].append(item_card)
+        self._init_armor_durability(item_card)
+        # Guarda os bônus realmente aplicados para poder desequipar depois
+        item_card.pop('_applied_attack', None)
+        item_card.pop('_applied_charge_bonus', None)
+        item_card.pop('_applied_life', None)
+        item_card.pop('_applied_spell_resist', None)
 
         # Armas dinâmicas (clava / adaga): aplica valor efetivo e guarda para refresh
         if item_card.get('ability') in ('crepusculo_dagger', 'orc_club') or item_card.get('id') in (
@@ -1659,20 +2145,24 @@ class Game:
             item_card['_applied_attack'] = bonus
         elif item_card.get('attack'):
             target_creature['attack'] = target_creature.get('attack', 0) + item_card['attack']
+            item_card['_applied_attack'] = int(item_card['attack'])
         if item_card.get('attack_bonus') and item_card.get('ability') == 'charge_bonus':
             # Botas de Guerra: bônus só em ataque
             if creature_location and creature_location[0] == 'attack_bases':
-                target_creature['attack'] = target_creature.get('attack', 0) + item_card.get('attack_bonus', 0)
-        if item_card.get('protection'):
-            target_creature['life'] = target_creature.get('life', 0) + item_card['protection']
-        if item_card.get('life'):
-            target_creature['life'] = target_creature.get('life', 0) + item_card['life']
+                bonus = int(item_card.get('attack_bonus', 0))
+                target_creature['attack'] = target_creature.get('attack', 0) + bonus
+                item_card['_applied_charge_bonus'] = bonus
+        applied_life = int(item_card.get('protection') or 0) + int(item_card.get('life') or 0)
+        if applied_life:
+            target_creature['life'] = target_creature.get('life', 0) + applied_life
+            item_card['_applied_life'] = applied_life
 
         # Peitoral de Carvalho: ward em elfo/ninfa
         if item_card.get('ability') == 'nature_ward':
             cid = target_creature.get('id') or ''
             if cid in (item_card.get('spell_resist_races') or []) or 'elfo' in cid or 'ninfa' in cid:
                 target_creature['spell_resist_charges'] = target_creature.get('spell_resist_charges', 0) + 1
+                item_card['_applied_spell_resist'] = 1
                 broadcast_system_message(
                     self.game_id,
                     f'🌳 Peitoral de Carvalho: {target_creature["name"]} resiste ao próximo feitiço hostil!',
@@ -1691,7 +2181,107 @@ class Game:
             'item': item_card['name'],
             'message': f"{item_card['name']} equipado em {target_creature['name']}"
         }
-    
+
+    def unequip_item_from_creature(self, username, item_card_id, creature_card_id):
+        """Remove um item equipado e devolve os bônus e o item para a mão."""
+        player = self.player_data.get(username)
+        if not player:
+            return {'success': False, 'message': 'Jogador não encontrado'}
+
+        target_creature = None
+        creature_location = None
+        for base in ('attack_bases', 'defense_bases'):
+            for i, card in enumerate(player.get(base) or []):
+                if card and card.get('instance_id') == creature_card_id:
+                    target_creature = card
+                    creature_location = (base, i)
+                    break
+            if target_creature:
+                break
+
+        if not target_creature:
+            return {'success': False, 'message': 'Criatura não encontrada em campo'}
+
+        equipped = target_creature.get('equipped_items') or []
+        item = next(
+            (eq for eq in equipped if eq and eq.get('instance_id') == item_card_id),
+            None,
+        )
+        if not item:
+            return {'success': False, 'message': 'Item não está equipado nesta criatura'}
+
+        if self._is_armor_item(item) and not self._armor_is_pristine(item):
+            return {
+                'success': False,
+                'message': (
+                    f"❌ {item.get('name', 'A armadura')} já absorveu dano "
+                    f"({item.get('durability', 0)}/{item.get('max_durability', 0)} de durabilidade) "
+                    "e não pode ser removida."
+                ),
+            }
+
+        is_dynamic_weapon = (
+            item.get('ability') in ('crepusculo_dagger', 'orc_club')
+            or item.get('id') in ('adaga_crepusculo', 'clava_orc')
+        )
+        if '_applied_attack' in item:
+            attack_bonus = int(item.get('_applied_attack') or 0)
+        elif is_dynamic_weapon:
+            attack_bonus = int(self.get_weapon_attack_value(player, item))
+        else:
+            attack_bonus = int(item.get('attack') or 0)
+
+        charge_bonus = 0
+        if (
+            item.get('ability') == 'charge_bonus'
+            and creature_location
+            and creature_location[0] == 'attack_bases'
+        ):
+            charge_bonus = int(
+                item.get('_applied_charge_bonus', item.get('attack_bonus', 0)) or 0
+            )
+
+        life_bonus = int(
+            item.get('_applied_life',
+                     int(item.get('protection') or 0) + int(item.get('life') or 0)) or 0
+        )
+        ward_bonus = int(item.get('_applied_spell_resist') or 0)
+
+        target_creature['attack'] = max(
+            0,
+            int(target_creature.get('attack') or 0) - attack_bonus - charge_bonus,
+        )
+        target_creature['life'] = max(
+            0,
+            int(target_creature.get('life') or 0) - life_bonus,
+        )
+        if ward_bonus:
+            target_creature['spell_resist_charges'] = max(
+                0,
+                int(target_creature.get('spell_resist_charges') or 0) - ward_bonus,
+            )
+
+        equipped.remove(item)
+        if not equipped:
+            target_creature.pop('equipped_items', None)
+        player.setdefault('hand', []).append(item)
+
+        for key in ('_applied_attack', '_applied_charge_bonus', '_applied_life', '_applied_spell_resist'):
+            item.pop(key, None)
+
+        broadcast_system_message(
+            self.game_id,
+            f'🔧 {username} desequipou {item.get("name", "um item")} de {target_creature["name"]}',
+            fog_message=f'🔧 {username} desequipou um item de uma criatura (névoa)',
+        )
+
+        return {
+            'success': True,
+            'creature': target_creature['name'],
+            'item': item.get('name', 'Item'),
+            'message': f"{item.get('name', 'Item')} desequipado de {target_creature['name']} e voltou para a sua mão",
+        }
+
     def get_graveyard_cards(self):
         """Retorna lista de cartas no cemitério"""
         graveyard_info = []
@@ -1763,6 +2353,13 @@ class Game:
             original_card = CARDS.get(target_card['id'], {})
             if original_card and 'life' in original_card:
                 target_card['life'] = original_card['life']
+
+        # Reviver resetou a cota da Medusa; Fênix revivida por runas cancela o ovo
+        if target_card.get('id') == 'medusa':
+            target_card['medusa_petrify_uses'] = 2
+            target_card.pop('petrified', None)
+        if target_card.get('id') == 'fenix':
+            self._cancel_phoenix_eggs(target_card.get('instance_id'))
         
         player['hand'].append(target_card)
         
@@ -2218,13 +2815,17 @@ class Game:
         
         elif spell_id == 'feitico_comunista':
             # Todas as cartas das mãos voltam para a pilha
+            lost_eggs = self._lose_phoenix_eggs_on_card_reset()
             for player_uname in self.players:
                 player = self.player_data[player_uname]
                 for card in player['hand']:
                     self.deck.append(card)
                 player['hand'] = []
             random.shuffle(self.deck)
-            return {'type': 'reset_hands'}
+            result = {'type': 'reset_hands'}
+            if lost_eggs:
+                result['phoenix_eggs_lost'] = lost_eggs
+            return result
         
         elif spell_id == 'feitico_silencio':
             # Próximas duas rodadas sem armadilhas

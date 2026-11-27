@@ -1,5 +1,38 @@
 """Definições de cartas, disfarces de armadilha e modificadores de sala."""
 
+
+# Registro central das habilidades implementadas no motor.
+# As cartas referenciam esses IDs em `ability`; o cliente usa `trigger` e
+# `ability_text` para mostrar o efeito no modal de detalhes.
+ABILITIES = {
+    'undead_return': {
+        'name': 'Volta dos Mortos',
+        'trigger': 'Ao morrer por ataque',
+        'text': 'O Zumbi volta para a mão de quem o jogou em campo. Se morrer pela luz do sol, vai para o cemitério.',
+    },
+    'ninfa_sacrifice': {
+        'name': 'Sacrifício da Ninfa',
+        'trigger': 'Ao morrer em combate',
+        'text': 'O dano restante que iria para a próxima carta na linha de fogo vira cura nas cartas seguintes, até a vida padrão delas.',
+    },
+    'dragon_burn': {
+        'name': 'Queimadura Dragônica',
+        'trigger': 'Ao atacar',
+        'text': 'Todas as cartas do alvo sofrem 50 de dano por fogo em 2 turnos.',
+    },
+    'medusa_petrify': {
+        'name': 'Olhar de Pedra',
+        'trigger': 'Ao atacar',
+        'text': 'Petrifica as cartas de ataque do alvo, que ficam impedidas de atacar na próxima vez em que for o turno delas. 2 usos; reviver reseta a cota.',
+    },
+    'phoenix_rebirth': {
+        'name': 'Renascimento',
+        'trigger': 'Ao morrer',
+        'text': 'Deixa um Ovo de Fênix no inventário do dono. Em 10 turnos a Fênix volta com metade da vida, uma única vez. Se o ovo for perdido, revivida ou o dono derrotado, não renasce.',
+    },
+}
+
+
 CARDS = {
     # Criaturas
     # - Tropas
@@ -31,13 +64,17 @@ CARDS = {
         "description": "Tropa bruta (60⚔️ / 512❤️). Sinergia com Clava do Orc (+50⚔️ por orc em bases de ataque, máx. 3)."
     },
     "zumbi": {
-        "id": "zumbi", 
+        "id": "zumbi",
         "name": "Zumbi",
         "type": "creature",
-        "life": 100, 
+        "life": 100,
         "attack": 25,
-        "count": 50, 
-        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Morre ao virar o DIA se não tiver proteção solar (Capacete das Trevas / Manto do Eclipse). Se destruído por outro zumbi, pode voltar à mão.", 
+        "count": 50,
+        "ability": "undead_return",
+        "ability_name": ABILITIES["undead_return"]["name"],
+        "trigger": ABILITIES["undead_return"]["trigger"],
+        "ability_text": ABILITIES["undead_return"]["text"],
+        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Se morrer por ATAQUE, volta para a mão de quem a jogou em campo; se morrer pela luz do sol, vai para o cemitério (salvo proteção solar).",
         "dies_daylight": True
     },
     "centauro": {
@@ -56,7 +93,11 @@ CARDS = {
         "life": 512,
         "attack": 30,
         "count": 35,
-        "description": "Espírito da natureza (30⚔️ / 512❤️). Sinergia com Peitoral de Carvalho (ward contra feitiço hostil)."
+        "ability": "ninfa_sacrifice",
+        "ability_name": ABILITIES["ninfa_sacrifice"]["name"],
+        "trigger": ABILITIES["ninfa_sacrifice"]["trigger"],
+        "ability_text": ABILITIES["ninfa_sacrifice"]["text"],
+        "description": "Espírito da natureza (30⚔️ / 512❤️). Ao morrer em combate, o dano restante que seguiria para a próxima carta na linha de fogo vira cura para as cartas seguintes, até a vida padrão delas. também tem sinergia com Peitoral de Carvalho.",
     },
     "vampiro": {
         "id": "vampiro", 
@@ -135,13 +176,17 @@ CARDS = {
     
     # - Bestas
     "dragao": {
-        "id": "dragao", 
-        "name": "Dragão", 
-        "type": "creature", 
-        "life": 1500, 
-        "attack": 250, 
-        "count": 12, 
-        "description": "Besta (250⚔️ / 1500❤️). Ataque aplica queimadura: o alvo toma 50 de dano de fogo em rodadas seguintes."
+        "id": "dragao",
+        "name": "Dragão",
+        "type": "creature",
+        "life": 1500,
+        "attack": 250,
+        "count": 12,
+        "ability": "dragon_burn",
+        "ability_name": ABILITIES["dragon_burn"]["name"],
+        "trigger": ABILITIES["dragon_burn"]["trigger"],
+        "ability_text": ABILITIES["dragon_burn"]["text"],
+        "description": "Besta (250⚔️ / 1500❤️). Ao atacar, todas as cartas do alvo ficam queimando: 50❤️ de dano por 2 turnos.",
     },
     "leviatan": {
         "id": "leviatan", 
@@ -162,23 +207,31 @@ CARDS = {
         "description": "Rei do Caos (1250⚔️ / 5000❤️). Pode anular armadilhas/magias rivais. Peça de Ritual 157 e Ritual do Caos."
     },
     "fenix": {
-        "id": "fenix", 
-        "name": "Fênix", 
-        "type": "creature", 
-        "life": 5000, 
-        "attack": 1500, 
-        "count": 1, 
-        "description": "Ave lendária (1500⚔️ / 5000❤️). Ação toggle_time: alterna dia↔noite (1× por turno, se a carta permitir)."
+        "id": "fenix",
+        "name": "Fênix",
+        "type": "creature",
+        "life": 5000,
+        "attack": 1500,
+        "count": 1,
+        "ability": "phoenix_rebirth",
+        "ability_name": ABILITIES["phoenix_rebirth"]["name"],
+        "trigger": ABILITIES["phoenix_rebirth"]["trigger"],
+        "ability_text": ABILITIES["phoenix_rebirth"]["text"],
+        "description": "Ave lendária (1500⚔️ / 5000❤️). Ação toggle_time: alterna dia↔noite (1× por turno). Ao morrer, deixa um Ovo de Fênix no inventário do dono: renasce em 10 turnos com metade da vida, uma única vez. Se o ovo for perdido, revivida ou o dono derrotado, não renasce."
     },
 
     "medusa": {
-        "id": "medusa", 
-        "name": "Medusa", 
-        "type": "creature", 
-        "life": 1024, 
-        "attack": 512, 
-        "count": 1, 
-        "description": "Lenda (512⚔️ / 1024❤️). Ataque pode transformar criaturas em pedra; alvos com muita vida são imunes."
+        "id": "medusa",
+        "name": "Medusa",
+        "type": "creature",
+        "life": 1024,
+        "attack": 512,
+        "count": 1,
+        "ability": "medusa_petrify",
+        "ability_name": ABILITIES["medusa_petrify"]["name"],
+        "trigger": ABILITIES["medusa_petrify"]["trigger"],
+        "ability_text": ABILITIES["medusa_petrify"]["text"],
+        "description": "Lenda (512⚔️ / 1024❤️). Ao atacar, petrifica todas as cartas de ataque do alvo: elas não podem atacar na próxima vez em que for o turno delas. 2 usos por Medusa; reviver do cemitério reseta a cota."
     },
     
     "profeta": {
@@ -621,7 +674,7 @@ DISGUISE_OPTIONS = [
         "life": 100, 
         "attack": 25,
         "count": 50, 
-        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Morre ao virar o DIA se não tiver proteção solar (Capacete das Trevas / Manto do Eclipse). Se destruído por outro zumbi, pode voltar à mão.", 
+        "description": "Criatura noturna fraca (25⚔️ / 100❤️). Se morrer por ATAQUE, volta para a mão de quem a jogou em campo; se morrer pela luz do sol, vai para o cemitério (salvo proteção solar).",
         "dies_daylight": True
     },
     {
@@ -640,7 +693,7 @@ DISGUISE_OPTIONS = [
         "life": 512,
         "attack": 30,
         "count": 35,
-        "description": "Espírito da natureza (30⚔️ / 512❤️). Sinergia com Peitoral de Carvalho (ward contra feitiço hostil)."
+        "description": "Espírito da natureza (30⚔️ / 512❤️). Ao morrer em combate, o dano restante que seguiria para a próxima carta na linha de fogo vira cura para as cartas seguintes, até a vida padrão delas. também tem sinergia com Peitoral de Carvalho.",
     }
 ]
 

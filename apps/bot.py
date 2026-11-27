@@ -34,13 +34,10 @@ try:
     import requests
     import socketio
 except ImportError:
-    print(
-        "Dependências faltando. Instale com:\n"
-        "  pip install \"python-socketio[client]\" requests websocket-client\n"
-        "ou use o venv do projeto:\n"
-        "  python3 -m venv .venv && .venv/bin/pip install \"python-socketio[client]\" requests websocket-client"
-    )
-    sys.exit(1)
+    # Não derruba o módulo na importação: as funções puras de score/prioridade
+    # continuam disponíveis para testes. A falha é levantada ao criar o bot.
+    requests = None  # type: ignore[assignment]
+    socketio = None  # type: ignore[assignment]
 
 # websocket-client é obrigatório atrás de reverse-proxy (Coolify/nginx);
 # sem ele o client só tenta polling e costuma falhar com
@@ -65,15 +62,17 @@ CREATURE_VALUE = {
     "vampiro_wers": 900,
     "vampiro_tayler": 850,
     "dragao": 800,
+    "fenix": 880,
     "lobisomem": 720,
     "ninfa_lorem": 700,
+    "medusa": 830,
     "vampiro": 650,
     "centauro": 600,
     "orc": 450,
     "mago": 500,
     "elfo": 420,
-    "ninfa": 400,
-    "zumbi": 200,
+    "ninfa": 460,
+    "zumbi": 260,
 }
 
 SPELL_PRIORITY = {
@@ -113,6 +112,20 @@ def card_score(card: Optional[dict]) -> float:
         base += float(eq.get("attack") or 0) * 0.5
         base += float(eq.get("protection") or 0) * 0.3
     base += float(card.get("attack") or 0) * 0.15
+
+    # Habilidades implementadas no motor valem mais que os stats indicam.
+    # Usa os metadados de definitions.py quando presentes; fallback por id para
+    # cartas vindas de testes/estados antigos.
+    ability = card.get("ability") or cid
+    ability_bonus = {
+        "undead_return": 60,   # zumbi volta para a mão se morrer atacando/defendendo
+        "ninfa_sacrifice": 70, # cura a linha de fogo ao morrer
+        "dragon_burn": 80,     # 50❤️ por 2 turnos em todas as cartas do alvo
+        "medusa_petrify": 100, # 2 usos que travam o ataque inimigo
+        "phoenix_rebirth": 120,# volta com metade da vida após 10 turnos
+    }
+    if ability in ability_bonus and not card.get("phoenix_rebirth_used"):
+        base += ability_bonus[ability]
     return base
 
 
@@ -691,7 +704,8 @@ class Strategy:
         return turns_to_flip > 3
 
     def _creature_priority(
-        self, c: dict, time_of_day: str, turns_to_flip: int, hand: list, atk: list, defense: list
+        self, c: dict, time_of_day: str, turns_to_flip: int, hand: list, atk: list,
+        defense: list, my_life: float = 1200,
     ) -> float:
         s = card_score(c)
         cid = c.get("id") or ""
@@ -708,6 +722,17 @@ class Strategy:
             s += 280 if (has_spell and not has_mage) else 160
         if cid == "centauro":
             s += 80
+        # Habilidades novas: valorizar controle/sustain conforme o board
+        if cid == "medusa":
+            s += 120  # petrificar several atacantes vale mais que o ataque 512
+        if cid == "dragao":
+            s += 80   # queimadura atinge todas as cartas do alvo
+        if cid == "ninfa" and float(my_life) < 700:
+            s += 70   # sacrifício cura a linha de fogo quando a vida está baixa
+        if cid == "fenix" and not c.get("phoenix_rebirth_used"):
+            s += 100  # uma segunda vida
+        if cid == "zumbi":
+            s += 60   # volta para a mão se morrer por ataque
         return s
 
     def _pick_player_equipment(
@@ -805,7 +830,9 @@ class Strategy:
         empty_def = empty_slots(defense)
 
         def cprio(c: dict) -> float:
-            return self._creature_priority(c, time_of_day, turns_to_flip, hand, atk, defense)
+            return self._creature_priority(
+                c, time_of_day, turns_to_flip, hand, atk, defense, my_life
+            )
 
         # prioridade: board de ataque > trap > defesa > equip jogador
         need_attack = bool(empty_atk)
@@ -1072,6 +1099,14 @@ class TwilightBot:
         difficulty: str = "normal",
         auto_play: bool = True,
     ):
+        if requests is None or socketio is None:
+            raise SystemExit(
+                "Dependências faltando. Instale com:\n"
+                "  pip install \"python-socketio[client]\" requests websocket-client\n"
+                "ou use o venv do projeto:\n"
+                "  python3 -m venv .venv && .venv/bin/pip install "
+                "\"python-socketio[client]\" requests websocket-client"
+            )
         self.url = url.rstrip("/")
         self.username = username.strip().lower()
         self.password = password
