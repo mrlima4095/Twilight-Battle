@@ -654,8 +654,9 @@ body::before {
 }
 
 /* ── Desktop: tabuleiro inteiro na viewport, sem scroll ──
-   Os dois primeiros oponentes ficam nas laterais do campo do jogador;
-   os demais são adicionados em uma faixa abaixo. No mobile o fluxo continua igual. */
+   Até 3 oponentes: faixa no topo e jogador embaixo (como antes).
+   Com 4 ou mais: roda ao redor do jogador — topo, laterais e baixo.
+   No mobile o fluxo continua igual. */
 @media (min-width: 901px) {
   html, body { height: 100%; overflow: hidden; }
 
@@ -668,10 +669,14 @@ body::before {
     height: 100vh; height: 100dvh;
     padding: 10px 12px calc(10px + var(--safe-bottom));
     display: grid;
-    grid-template-columns: minmax(140px, 1fr) repeat(4, minmax(0, 1.35fr)) minmax(140px, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(180px, 1.2fr) repeat(4, minmax(0, 1.2fr)) minmax(180px, 1.2fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: 8px;
     overflow: hidden;
+  }
+  .game-container[data-opponent-count="4"],
+  .game-container[data-opponent-count="5"] {
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
   }
   .game-header {
     grid-column: 1 / -1; grid-row: 1;
@@ -679,7 +684,7 @@ body::before {
   }
   .waiting-room,
   #spectator-message.waiting-room {
-    grid-column: 1 / -1; grid-row: 2 / 4; z-index: 2;
+    grid-column: 1 / -1; grid-row: 2 / -1; z-index: 2;
     align-self: center; justify-self: center;
     margin: 0; padding: 24px 28px;
   }
@@ -688,69 +693,118 @@ body::before {
   .opponents-area { display: contents; }
   .opponents-area > .opponent-card {
     min-width: 0; min-height: 0; overflow: hidden; padding: 8px;
-  }
-  .opponents-area > .board-message { display: none; }
-  .opponents-area > .opponent-card:nth-child(1) { grid-column: 1; grid-row: 2; }
-  .opponents-area > .opponent-card:nth-child(2) { grid-column: 6; grid-row: 2; }
-  .opponents-area > .opponent-card:nth-child(3) { grid-column: 1 / 3; grid-row: 3; }
-  .opponents-area > .opponent-card:nth-child(4) { grid-column: 3 / 5; grid-row: 3; }
-  .opponents-area > .opponent-card:nth-child(5) { grid-column: 5 / 7; grid-row: 3; }
-  .opponents-area > .opponent-card:nth-child(n+6) { grid-column: 1 / 7; grid-row: 3; }
-
-  /* Laterais: mesma estrutura do card, só mais compacta para caber na altura */
-  .opponents-area > .opponent-card:nth-child(-n+2) {
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .opponents-area > .opponent-card:nth-child(-n+2) .opponent-header,
-  .opponents-area > .opponent-card:nth-child(-n+2) .opponent-stats { margin-bottom: 0; }
-  .opponents-area > .opponent-card:nth-child(-n+2) .bases-section {
-    min-height: 0; margin-bottom: 0;
-  }
-  .opponents-area > .opponent-card:nth-child(-n+2) .bases-section small {
-    font-size: .62rem; margin-bottom: 3px;
-  }
-  .opponents-area > .opponent-card:nth-child(-n+2) .bases-row {
-    gap: 4px; align-content: flex-start;
-  }
-  .opponents-area > .opponent-card:nth-child(-n+2) .base-slot {
-    width: var(--slot-w); height: var(--slot-h);
-    min-width: var(--slot-w); max-width: var(--slot-w);
-    min-height: var(--slot-h); max-height: var(--slot-h);
-  }
-  .opponents-area > .opponent-card:nth-child(-n+2) .action-btn {
-    width: 100%; min-height: 34px; margin-top: auto; padding: 6px 8px; font-size: .78rem;
-  }
-
-  /* Faixa inferior: cards em linha, com as bases em miniatura */
-  .opponents-area > .opponent-card:nth-child(n+3) {
     display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start;
     gap: 4px 8px;
   }
-  .opponents-area > .opponent-card:nth-child(n+3) .opponent-header {
-    flex: 1 1 100%; margin-bottom: 0;
-  }
-  .opponents-area > .opponent-card:nth-child(n+3) .opponent-stats { margin-bottom: 0; }
-  .opponents-area > .opponent-card:nth-child(n+3) .bases-section {
+  .opponents-area > .board-message { display: none; }
+  .opponents-area > .opponent-card .opponent-header { flex: 1 1 100%; margin-bottom: 0; }
+  .opponents-area > .opponent-card .opponent-stats { margin-bottom: 0; }
+  .opponents-area > .opponent-card .bases-section {
     flex: 1 1 170px; display: flex; align-items: center; gap: 4px; margin-bottom: 0;
   }
-  .opponents-area > .opponent-card:nth-child(n+3) .bases-section small { display: none; }
-  .opponents-area > .opponent-card:nth-child(n+3) .bases-row { gap: 3px; }
-  .opponents-area > .opponent-card:nth-child(n+3) .base-slot {
+  .opponents-area > .opponent-card .bases-section small { display: none; }
+  .opponents-area > .opponent-card .bases-row { gap: 3px; }
+  .opponents-area > .opponent-card .base-slot {
     width: 34px; height: 42px; min-width: 34px; max-width: 34px;
     min-height: 42px; max-height: 42px; padding: 2px 1px; border-radius: 7px;
   }
-  .opponents-area > .opponent-card:nth-child(n+3) .base-slot .slot-emoji { font-size: .95rem; }
-  .opponents-area > .opponent-card:nth-child(n+3) .base-slot .slot-stats { font-size: .55rem; }
-  .opponents-area > .opponent-card:nth-child(n+3) .action-btn {
+  .opponents-area > .opponent-card .base-slot .slot-emoji { font-size: .95rem; }
+  .opponents-area > .opponent-card .base-slot .slot-stats { font-size: .55rem; }
+  .opponents-area > .opponent-card .action-btn {
     width: auto; min-height: 34px; margin: 0; padding: 6px 10px; font-size: .76rem;
   }
 
-  /* Campo do jogador compacto para não gerar scroll */
-  .player-area {
+  /* 1 oponente: centralizado no topo. 2 ou 3: dividindo a faixa superior. */
+  .game-container[data-opponent-count="1"] .opponents-area > .opponent-card:nth-child(1) {
     grid-column: 2 / 6; grid-row: 2;
+  }
+  .game-container[data-opponent-count="2"] .opponents-area > .opponent-card:nth-child(1) {
+    grid-column: 1 / 4; grid-row: 2;
+  }
+  .game-container[data-opponent-count="2"] .opponents-area > .opponent-card:nth-child(2) {
+    grid-column: 4 / 7; grid-row: 2;
+  }
+  .game-container[data-opponent-count="3"] .opponents-area > .opponent-card:nth-child(1) {
+    grid-column: 1 / 3; grid-row: 2;
+  }
+  .game-container[data-opponent-count="3"] .opponents-area > .opponent-card:nth-child(2) {
+    grid-column: 3 / 5; grid-row: 2;
+  }
+  .game-container[data-opponent-count="3"] .opponents-area > .opponent-card:nth-child(3) {
+    grid-column: 5 / 7; grid-row: 2;
+  }
+
+  /* 4 ou 5 oponentes: roda (topo, esquerda, direita e baixo) */
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(1),
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(1) {
+    grid-column: 1; grid-row: 3;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(2),
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(2) {
+    grid-column: 6; grid-row: 3;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(3),
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(3) {
+    grid-column: 2 / 6; grid-row: 2;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(4) {
+    grid-column: 2 / 6; grid-row: 4;
+  }
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(4) {
+    grid-column: 1 / 4; grid-row: 4;
+  }
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(5) {
+    grid-column: 4 / 7; grid-row: 4;
+  }
+
+  /* Laterais da roda: verticais, com mais espaço e slots maiores */
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2),
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) {
+    flex-wrap: nowrap; flex-direction: column; align-items: stretch; align-content: stretch; gap: 4px;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-section,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-section {
+    display: block; flex: 1 1 auto; min-height: 0;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-section small,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-section small {
+    display: block; font-size: .62rem; margin-bottom: 3px;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-row,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .bases-row {
+    gap: 4px;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot {
+    width: var(--slot-w); height: var(--slot-h);
+    min-width: var(--slot-w); max-width: var(--slot-w);
+    min-height: var(--slot-h); max-height: var(--slot-h);
+    padding: 3px 2px; border-radius: 10px;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot .slot-emoji,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot .slot-emoji {
+    font-size: 1.1rem;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot .slot-stats,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .base-slot .slot-stats {
+    font-size: .62rem;
+  }
+  .game-container[data-opponent-count="4"] .opponents-area > .opponent-card:nth-child(-n+2) .action-btn,
+  .game-container[data-opponent-count="5"] .opponents-area > .opponent-card:nth-child(-n+2) .action-btn {
+    width: 100%; min-height: 34px; margin-top: auto;
+  }
+
+  /* Campo do jogador: faixa inferior quando os oponentes estão no topo;
+     centro da roda quando há 4 ou mais oponentes. */
+  .player-area {
+    grid-column: 1 / -1; grid-row: 3;
     min-width: 0; min-height: 0; overflow: hidden;
     display: flex; flex-direction: column;
     padding: 10px 14px;
+  }
+  .game-container[data-opponent-count="4"] .player-area,
+  .game-container[data-opponent-count="5"] .player-area {
+    grid-column: 2 / 6; grid-row: 3;
   }
   /* o JS alterna display via inline style; mantém o layout flex quando visível */
   .player-area:not([style*="display:none"]):not([style*="display: none"]) {
@@ -795,6 +849,10 @@ body::before {
 @media (min-width: 901px) and (max-width: 1100px) {
   .game-container {
     --slot-w: 46px; --slot-h: 58px; --card-w: 52px; --card-h: 68px;
+  }
+  .opponents-area > .opponent-card .base-slot {
+    width: 30px; height: 38px; min-width: 30px; max-width: 30px;
+    min-height: 38px; max-height: 38px;
   }
 }
 @media (min-width: 901px) and (max-height: 740px) {
@@ -2513,9 +2571,18 @@ body::before {
             });
         }
 
+        // Define quantos oponentes estão no tabuleiro para o CSS escolher topo ou roda
+        function setOpponentLayoutCount(count) {
+            const container = document.getElementById('game-container');
+            if (container) {
+                container.dataset.opponentCount = String(Math.max(0, Math.min(count, 5)));
+            }
+        }
+
         function updateOpponentsArea() {
             const opponentsArea = document.getElementById('opponents-area');
             opponentsArea.innerHTML = '';
+            setOpponentLayoutCount(0);
             
             // Se o jogo não começou, não mostrar oponentes
             if (!gameState || !gameState.started) {
@@ -2552,6 +2619,7 @@ body::before {
                 const opponentCard = createOpponentCard(playerUsername, playerData);
                 opponentsArea.appendChild(opponentCard);
             }
+            setOpponentLayoutCount(opponentsArea.querySelectorAll('.opponent-card').length);
             
             // Se não houver oponentes vivos, mostrar mensagem
             if (!hasAliveOpponents) {
