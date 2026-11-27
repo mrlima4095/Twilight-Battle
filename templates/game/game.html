@@ -38,7 +38,6 @@
   --font-display: "Cinzel", "Times New Roman", serif;
   --glow-gold: 0 0 30px rgba(240, 193, 75, .25);
   --glow-cyan: 0 0 24px rgba(94, 231, 255, .2);
-  --chat-gutter: 336px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
@@ -544,7 +543,7 @@ body::before {
   background: rgba(255,77,109,.85); color: #fff; cursor: pointer; font-weight: 700;
 }
 
-/* ── Chat ── */
+/* ── Chat (overlay arrastável) ── */
 .chat-container {
   position: fixed;
   right: calc(16px + env(safe-area-inset-right, 0px));
@@ -555,14 +554,17 @@ body::before {
   border: 1px solid var(--border); border-radius: 18px;
   box-shadow: 0 20px 50px rgba(0,0,0,.5);
   display: flex; flex-direction: column; overflow: hidden;
-  max-height: min(420px, calc(100vh - 120px));
+  max-height: min(420px, calc(100dvh - 120px));
 }
+.chat-container.is-dragging { opacity: .92; box-shadow: 0 26px 60px rgba(0,0,0,.65); }
 .chat-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: 10px 14px; background: rgba(240,193,75,.08);
   border-bottom: 1px solid rgba(255,255,255,.06);
-  font-weight: 700; font-size: .9rem; color: var(--gold); cursor: pointer;
+  font-weight: 700; font-size: .9rem; color: var(--gold);
+  cursor: grab; user-select: none; touch-action: none;
 }
+.chat-header.is-dragging { cursor: grabbing; }
 .chat-count {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
@@ -651,15 +653,154 @@ body::before {
   max-width: calc(100vw - 24px) !important;
 }
 
-/* Chat fixo só onde há espaço; abaixo disso ele entra no fluxo da página */
-@media (min-width: 1180px) {
-  .game-container { padding-right: calc(var(--chat-gutter) + 16px); }
-}
-@media (max-width: 1179px) {
-  .chat-container {
-    position: static; width: 100%; max-height: none; margin-top: 12px;
+/* ── Desktop: tabuleiro inteiro na viewport, sem scroll ──
+   Os dois primeiros oponentes ficam nas laterais do campo do jogador;
+   os demais são adicionados em uma faixa abaixo. No mobile o fluxo continua igual. */
+@media (min-width: 901px) {
+  html, body { height: 100%; overflow: hidden; }
+
+  .game-container {
+    --slot-w: clamp(50px, 6vh, 64px);
+    --slot-h: clamp(62px, 7.4vh, 78px);
+    --card-w: clamp(56px, 6.6vh, 70px);
+    --card-h: clamp(74px, 8.6vh, 90px);
+    width: 100%; max-width: 1600px;
+    height: 100vh; height: 100dvh;
+    padding: 10px 12px calc(10px + var(--safe-bottom));
+    display: grid;
+    grid-template-columns: minmax(140px, 1fr) repeat(4, minmax(0, 1.35fr)) minmax(140px, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    overflow: hidden;
   }
-  .chat-messages { max-height: 240px; }
+  .game-header {
+    grid-column: 1 / -1; grid-row: 1;
+    margin-bottom: 0; padding: 8px 14px; gap: 8px;
+  }
+  .waiting-room,
+  #spectator-message.waiting-room {
+    grid-column: 1 / -1; grid-row: 2 / 4; z-index: 2;
+    align-self: center; justify-self: center;
+    margin: 0; padding: 24px 28px;
+  }
+
+  /* display:contents deixa os cards serem posicionados diretamente na grade do tabuleiro */
+  .opponents-area { display: contents; }
+  .opponents-area > .opponent-card {
+    min-width: 0; min-height: 0; overflow: hidden; padding: 8px;
+  }
+  .opponents-area > .board-message { display: none; }
+  .opponents-area > .opponent-card:nth-child(1) { grid-column: 1; grid-row: 2; }
+  .opponents-area > .opponent-card:nth-child(2) { grid-column: 6; grid-row: 2; }
+  .opponents-area > .opponent-card:nth-child(3) { grid-column: 1 / 3; grid-row: 3; }
+  .opponents-area > .opponent-card:nth-child(4) { grid-column: 3 / 5; grid-row: 3; }
+  .opponents-area > .opponent-card:nth-child(5) { grid-column: 5 / 7; grid-row: 3; }
+  .opponents-area > .opponent-card:nth-child(n+6) { grid-column: 1 / 7; grid-row: 3; }
+
+  /* Laterais: mesma estrutura do card, só mais compacta para caber na altura */
+  .opponents-area > .opponent-card:nth-child(-n+2) {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .opponents-area > .opponent-card:nth-child(-n+2) .opponent-header,
+  .opponents-area > .opponent-card:nth-child(-n+2) .opponent-stats { margin-bottom: 0; }
+  .opponents-area > .opponent-card:nth-child(-n+2) .bases-section {
+    min-height: 0; margin-bottom: 0;
+  }
+  .opponents-area > .opponent-card:nth-child(-n+2) .bases-section small {
+    font-size: .62rem; margin-bottom: 3px;
+  }
+  .opponents-area > .opponent-card:nth-child(-n+2) .bases-row {
+    gap: 4px; align-content: flex-start;
+  }
+  .opponents-area > .opponent-card:nth-child(-n+2) .base-slot {
+    width: var(--slot-w); height: var(--slot-h);
+    min-width: var(--slot-w); max-width: var(--slot-w);
+    min-height: var(--slot-h); max-height: var(--slot-h);
+  }
+  .opponents-area > .opponent-card:nth-child(-n+2) .action-btn {
+    width: 100%; min-height: 34px; margin-top: auto; padding: 6px 8px; font-size: .78rem;
+  }
+
+  /* Faixa inferior: cards em linha, com as bases em miniatura */
+  .opponents-area > .opponent-card:nth-child(n+3) {
+    display: flex; flex-wrap: wrap; align-items: center; align-content: flex-start;
+    gap: 4px 8px;
+  }
+  .opponents-area > .opponent-card:nth-child(n+3) .opponent-header {
+    flex: 1 1 100%; margin-bottom: 0;
+  }
+  .opponents-area > .opponent-card:nth-child(n+3) .opponent-stats { margin-bottom: 0; }
+  .opponents-area > .opponent-card:nth-child(n+3) .bases-section {
+    flex: 1 1 170px; display: flex; align-items: center; gap: 4px; margin-bottom: 0;
+  }
+  .opponents-area > .opponent-card:nth-child(n+3) .bases-section small { display: none; }
+  .opponents-area > .opponent-card:nth-child(n+3) .bases-row { gap: 3px; }
+  .opponents-area > .opponent-card:nth-child(n+3) .base-slot {
+    width: 34px; height: 42px; min-width: 34px; max-width: 34px;
+    min-height: 42px; max-height: 42px; padding: 2px 1px; border-radius: 7px;
+  }
+  .opponents-area > .opponent-card:nth-child(n+3) .base-slot .slot-emoji { font-size: .95rem; }
+  .opponents-area > .opponent-card:nth-child(n+3) .base-slot .slot-stats { font-size: .55rem; }
+  .opponents-area > .opponent-card:nth-child(n+3) .action-btn {
+    width: auto; min-height: 34px; margin: 0; padding: 6px 10px; font-size: .76rem;
+  }
+
+  /* Campo do jogador compacto para não gerar scroll */
+  .player-area {
+    grid-column: 2 / 6; grid-row: 2;
+    min-width: 0; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+    padding: 10px 14px;
+  }
+  /* o JS alterna display via inline style; mantém o layout flex quando visível */
+  .player-area:not([style*="display:none"]):not([style*="display: none"]) {
+    display: flex !important;
+  }
+  .player-header { margin-bottom: 6px; padding-bottom: 6px; gap: 8px; }
+  .player-header h2 { font-size: 1.05rem; }
+  .player-stats { gap: 5px; }
+  .stat { padding: 5px 8px; font-size: .8rem; }
+  .bases-section { margin-bottom: 5px; }
+  .bases-section h3 { font-size: .72rem; margin-bottom: 4px; }
+  .bases-row { gap: 5px; }
+  .player-area .base-slot {
+    width: var(--slot-w); height: var(--slot-h);
+    min-width: var(--slot-w); max-width: var(--slot-w);
+    min-height: var(--slot-h); max-height: var(--slot-h);
+  }
+  .player-area .base-slot .slot-emoji { font-size: 1.1rem; }
+  .player-area .base-slot .slot-name { font-size: .64rem; }
+  .player-area .base-slot .slot-stats { font-size: .62rem; }
+  .hand-area { flex: 1 1 auto; min-height: 0; margin: 5px 0; padding: 7px 9px; }
+  .hand-title { font-size: .74rem; margin-bottom: 5px; }
+  .hand-cards { min-height: 0; gap: 5px; }
+  .player-area .card {
+    width: var(--card-w); height: var(--card-h);
+    min-width: var(--card-w); max-width: var(--card-w);
+    min-height: var(--card-h); max-height: var(--card-h);
+    padding: 4px 3px;
+  }
+  .player-area .card .card-emoji { font-size: 1.15rem; }
+  .player-area .card .card-name { font-size: .64rem; }
+  .player-area .card .card-stats { font-size: .62rem; }
+  .deck-info { margin: 5px 0; gap: 8px; }
+  .pile { padding: 8px; font-size: .8rem; }
+  .action-buttons { flex-shrink: 0; margin-top: 5px; padding: 7px; gap: 5px; }
+  .action-btn { min-height: 36px; padding: 6px 10px; font-size: .78rem; }
+  #turn-message { margin: 4px 0; padding: 6px 10px; font-size: .8rem; }
+  #equip-mode-indicator, #move-mode-indicator {
+    margin-top: 6px !important; padding: 7px 10px !important; font-size: .8rem;
+  }
+}
+@media (min-width: 901px) and (max-width: 1100px) {
+  .game-container {
+    --slot-w: 46px; --slot-h: 58px; --card-w: 52px; --card-h: 68px;
+  }
+}
+@media (min-width: 901px) and (max-height: 740px) {
+  .game-container {
+    --slot-w: 44px; --slot-h: 56px; --card-w: 50px; --card-h: 66px;
+  }
 }
 @media (max-width: 900px) {
   .game-header { align-items: flex-start; }
@@ -933,6 +1074,8 @@ body::before {
         let chatSendBtn = null;
         let isChatMinimized = false;
         let unreadCount = 0;
+        let chatDragState = null;
+        let chatSuppressClick = false;
 
         let turnTimer = null;
         let turnTimeLeft = 60;
@@ -2377,7 +2520,7 @@ body::before {
             // Se o jogo não começou, não mostrar oponentes
             if (!gameState || !gameState.started) {
                 const waitingMsg = document.createElement('div');
-                waitingMsg.className = 'opponent-card';
+                waitingMsg.className = 'opponent-card board-message';
                 waitingMsg.style.textAlign = 'center';
                 waitingMsg.style.padding = '30px';
                 waitingMsg.innerHTML = `
@@ -2413,7 +2556,7 @@ body::before {
             // Se não houver oponentes vivos, mostrar mensagem
             if (!hasAliveOpponents) {
                 const noOpponentsMsg = document.createElement('div');
-                noOpponentsMsg.className = 'opponent-card';
+                noOpponentsMsg.className = 'opponent-card board-message';
                 noOpponentsMsg.style.textAlign = 'center';
                 noOpponentsMsg.style.padding = '30px';
                 noOpponentsMsg.innerHTML = `
@@ -3759,6 +3902,10 @@ body::before {
             const chatMinimizeBtn = document.getElementById('chat-minimize-btn');
             
             chatHeader.addEventListener('click', function(e) {
+                if (chatSuppressClick) {
+                    chatSuppressClick = false;
+                    return;
+                }
                 if (e.target !== chatMinimizeBtn) {
                     toggleChatMinimize();
                 }
@@ -3766,6 +3913,7 @@ body::before {
             
             chatMinimizeBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
+                chatSuppressClick = false;
                 toggleChatMinimize();
             });
             
@@ -3774,6 +3922,113 @@ body::before {
             if (savedState === 'true') {
                 toggleChatMinimize();
             }
+
+            initChatDrag();
+        }
+
+        // Chat pode cobrir o jogo: arrastar pela barra de título (mouse, toque ou caneta)
+        function clampChatToViewport() {
+            const chat = document.getElementById('chat-container');
+            if (!chat || !chat.style.left || !chat.style.top) return;
+            const rect = chat.getBoundingClientRect();
+            const x = Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - rect.width - 8));
+            const y = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - rect.height - 8));
+            chat.style.left = `${x}px`;
+            chat.style.top = `${y}px`;
+        }
+
+        function initChatDrag() {
+            const chat = document.getElementById('chat-container');
+            const header = document.getElementById('chat-header');
+            if (!chat || !header) return;
+
+            const posKey = `chat_pos_${gameId}`;
+
+            function setPosition(x, y) {
+                const rect = chat.getBoundingClientRect();
+                const maxX = Math.max(8, window.innerWidth - rect.width - 8);
+                const maxY = Math.max(8, window.innerHeight - rect.height - 8);
+                const safeX = Math.min(Math.max(8, x), maxX);
+                const safeY = Math.min(Math.max(8, y), maxY);
+                chat.style.left = `${safeX}px`;
+                chat.style.top = `${safeY}px`;
+                chat.style.right = 'auto';
+                chat.style.bottom = 'auto';
+                return { x: safeX, y: safeY };
+            }
+
+            function savePosition() {
+                if (!chat.style.left || !chat.style.top) return;
+                try {
+                    localStorage.setItem(posKey, JSON.stringify({
+                        x: parseFloat(chat.style.left),
+                        y: parseFloat(chat.style.top)
+                    }));
+                } catch (e) {}
+            }
+
+            try {
+                const saved = JSON.parse(localStorage.getItem(posKey) || 'null');
+                if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
+                    requestAnimationFrame(() => setPosition(saved.x, saved.y));
+                }
+            } catch (e) {}
+
+            header.addEventListener('pointerdown', function(e) {
+                if (e.target.closest('#chat-minimize-btn')) return;
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+                const rect = chat.getBoundingClientRect();
+                chatSuppressClick = false;
+                const pos = setPosition(rect.left, rect.top);
+                chatDragState = {
+                    pointerId: e.pointerId,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    left: pos.x,
+                    top: pos.y,
+                    moved: false
+                };
+                header.classList.add('is-dragging');
+                chat.classList.add('is-dragging');
+                try { header.setPointerCapture(e.pointerId); } catch (err) {}
+            });
+
+            header.addEventListener('pointermove', function(e) {
+                const state = chatDragState;
+                if (!state || e.pointerId !== state.pointerId) return;
+                const dx = e.clientX - state.startX;
+                const dy = e.clientY - state.startY;
+                if (!state.moved && Math.abs(dx) + Math.abs(dy) > 5) {
+                    state.moved = true;
+                }
+                if (state.moved) {
+                    setPosition(state.left + dx, state.top + dy);
+                }
+            });
+
+            function finishDrag(e) {
+                const state = chatDragState;
+                if (!state || (e && e.pointerId !== state.pointerId)) return;
+                chatDragState = null;
+                header.classList.remove('is-dragging');
+                chat.classList.remove('is-dragging');
+                try { header.releasePointerCapture(state.pointerId); } catch (err) {}
+                if (state.moved) {
+                    // Evita que o clique de soltar ainda acione minimizar/expandir
+                    chatSuppressClick = true;
+                    setTimeout(() => { chatSuppressClick = false; }, 300);
+                    savePosition();
+                }
+            }
+            header.addEventListener('pointerup', finishDrag);
+            header.addEventListener('pointercancel', finishDrag);
+
+            window.addEventListener('resize', function() {
+                if (chat.style.left && chat.style.top) {
+                    setPosition(parseFloat(chat.style.left), parseFloat(chat.style.top));
+                }
+            });
         }
 
         function toggleChatMinimize() {
@@ -3797,9 +4052,12 @@ body::before {
                 // Resetar contador de não lidas
                 unreadCount = 0;
                 updateChatCount();
-                // Scroll para última mensagem
-                setTimeout(() => scrollChatToBottom(), 100);
             }
+            // A altura muda ao minimizar/expandir: mantém o chat dentro da tela
+            setTimeout(() => {
+                clampChatToViewport();
+                if (!isChatMinimized) scrollChatToBottom();
+            }, 100);
         }
 
         function sendChatMessage() {
