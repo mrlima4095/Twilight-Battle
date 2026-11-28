@@ -8,6 +8,7 @@ import smtplib
 from email.message import EmailMessage
 
 from twilight.config import (
+    MAIL_ADMIN_FROM,
     MAIL_ENABLED,
     MAIL_FROM,
     MAIL_PASSWORD,
@@ -29,13 +30,13 @@ def _send(message: EmailMessage) -> None:
         smtp.send_message(message)
 
 
-def send_email(to: str, subject: str, body: str) -> bool:
+def send_email(to: str, subject: str, body: str, from_addr: str | None = None) -> bool:
     """Envia um email simples. Retorna False se não houver SMTP configurado."""
     if not MAIL_ENABLED or not to:
         return False
 
     message = EmailMessage()
-    message['From'] = MAIL_FROM
+    message['From'] = from_addr or MAIL_FROM
     message['To'] = to
     message['Subject'] = subject
     message.set_content(body)
@@ -46,6 +47,11 @@ def send_email(to: str, subject: str, body: str) -> bool:
     except Exception as exc:  # never derruba o request por causa de email
         print(f'[mail] falha ao enviar para {to}: {exc}')
         return False
+
+
+def send_admin_email(to: str, subject: str, body: str) -> bool:
+    """Email institucional do painel admin (remetente admin@game...)."""
+    return send_email(to, subject, body, from_addr=MAIL_ADMIN_FROM)
 
 
 def send_verification_email(to: str, username: str, verify_url: str) -> bool:

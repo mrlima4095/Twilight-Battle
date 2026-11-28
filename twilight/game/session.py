@@ -48,6 +48,11 @@ def close_game(game_id: str, message: Optional[str] = None, notify: bool = True)
             except Exception:
                 pass
             chat_messages.pop(game_id, None)
+            try:
+                from twilight.game.persistence import remove_game_snapshot
+                remove_game_snapshot(game_id)
+            except Exception:
+                pass
             return False
 
         try:
@@ -71,6 +76,11 @@ def close_game(game_id: str, message: Optional[str] = None, notify: bool = True)
         except KeyError:
             pass
         chat_messages.pop(game_id, None)
+        try:
+            from twilight.game.persistence import remove_game_snapshot
+            remove_game_snapshot(game_id)
+        except Exception:
+            pass
         return True
 
 
@@ -161,6 +171,11 @@ def enforce_turn_timeout() -> list:
         except Exception:
             continue
         acted.append({'game_id': game_id, 'player': current})
+        try:
+            from twilight.game.persistence import snapshot_game
+            snapshot_game(game_id)
+        except Exception:
+            pass
         # Notificação é best-effort: nunca deve impedir a troca de turno.
         try:
             socketio.emit('turn_timeout', {

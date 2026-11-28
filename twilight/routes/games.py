@@ -74,7 +74,12 @@ def create_game():
     
     game_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     games[game_id] = Game(game_id, username, config)
-    
+    try:
+        from twilight.game.persistence import snapshot_game
+        snapshot_game(game_id)
+    except Exception:
+        pass
+
     return jsonify({'game_id': game_id, 'config': config})
 
 
@@ -109,6 +114,11 @@ def start_tutorial():
     game.tutorial = True
     add_tutorial_bot(game, TUTORIAL_BOT_NAME)
     games[game_id] = game
+    try:
+        from twilight.game.persistence import snapshot_game
+        snapshot_game(game_id)
+    except Exception:
+        pass
 
     return jsonify({
         'success': True,

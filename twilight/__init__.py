@@ -21,6 +21,23 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _UNSAFE_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
 
 
+def _install_game_persistence_hook(app):
+    """Salva mudanças feitas por rotas HTTP que tenham ``game_id`` na URL."""
+    @app.after_request
+    def _snapshot_mutating_request(response):
+        from flask import request
+        if request.method not in _UNSAFE_METHODS:
+            return response
+        game_id = (request.view_args or {}).get('game_id')
+        if game_id:
+            try:
+                from twilight.game.persistence import snapshot_game
+                snapshot_game(game_id)
+            except Exception:
+                pass
+        return response
+
+
 def _install_csrf_origin_guard(app):
     """
     Mitigação de CSRF sem reescrever o frontend: para métodos que mudam estado,
@@ -96,14 +113,23 @@ def create_app():
     app.jinja_env.globals['auth_allows_lucy'] = auth_allows_lucy
 
     _install_csrf_origin_guard(app)
+    _install_game_persistence_hook(app)
 
     socketio.init_app(app)
     register_blueprints(app)
     register_socket_handlers()
 
+    # Restaura partidas antes do reaper (senão ele pode apagar a sala no boot).
+    from twilight.game.persistence import restore_games, start_snapshot_loop
+    restore_games(schedule_bots=not os.environ.get('DISABLE_REAPER'))
+
     # Reaper de salas abandonadas / turnos travados (desligável em testes)
     if not os.environ.get('DISABLE_REAPER'):
         from twilight.game.session import start_reaper
+        import atexit
+        from twilight.game.persistence import snapshot_all_games
+        atexit.register(snapshot_all_games)
+        start_snapshot_loop(interval_seconds=5)
         start_reaper()
 
     return app

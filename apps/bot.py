@@ -208,6 +208,11 @@ ACTION_BUCKET = {
     "cast_spell": "spell",
     "call_centaurs": "call_centaurs",
     "prophet_curse": "prophet_curse",
+    "toggle_time": "toggle_time",
+    "ritual": "ritual",
+    "oracle": "oracle",
+    "revive": "revive",
+    "flip_card": "flip_card",
     "equip_item": "equip_item",  # grátis no motor (sem limite de turno)
     "end_turn": "end_turn",
 }
@@ -234,6 +239,18 @@ def is_hidden_card(card: Optional[dict]) -> bool:
         card.get("hidden")
         or card.get("name") in ("???", "Silhueta")
     )
+
+
+def has_daylight_protection(pdata: dict, card: Optional[dict] = None) -> bool:
+    protectors = ("capacete_trevas", "manto_eclipse")
+    for item in (pdata.get("equipment") or {}).values():
+        if item and (item.get("daylight_protect") or item.get("id") in protectors):
+            return True
+    if card:
+        for item in card.get("equipped_items") or []:
+            if item.get("daylight_protect") or item.get("id") in protectors:
+                return True
+    return False
 
 
 def has_sabedoria(me_data: dict, hand: list) -> bool:
@@ -481,7 +498,17 @@ class Strategy:
             if centaur_count >= 2:
                 return {"action": "call_centaurs", "params": {}, "reason": "call-centaurs"}
 
-        # ========== 7) Profecia (critério, não random) ==========
+        # ========== 7) Fênix: altera o ciclo se favorecer o campo ==========
+        if (
+            self.difficulty != "easy"
+            and self.can_use(used, "toggle_time", me_data, hand)
+            and "toggle_time" not in failed
+        ):
+            toggle = self._pick_toggle_time(state, me, me_data, enemies)
+            if toggle:
+                return toggle
+
+        # ========== 8) Profecia (critério, não random) ==========
         if (
             self.difficulty == "hard"
             and "no_prophet" not in modifiers
@@ -493,7 +520,25 @@ class Strategy:
             if curse:
                 return curse
 
-        # ========== 8) Ataque ==========
+        # ========== 9) Reviver / rituais / Oráculo ==========
+        if self.difficulty != "easy":
+            if self.can_use(used, "revive", me_data, hand) and "revive" not in failed:
+                revive = self._pick_revive(state, hand)
+                if revive:
+                    return revive
+            if (
+                self.can_use(used, "ritual", me_data, hand)
+                and "ritual" not in failed
+            ):
+                ritual = self._pick_ritual(me_data, hand, enemies)
+                if ritual:
+                    return ritual
+            if self.can_use(used, "oracle", me_data, hand) and "oracle" not in failed:
+                oracle = self._pick_oracle(me_data, hand, enemies)
+                if oracle:
+                    return oracle
+
+        # ========== 10) Ataque ==========
         if (
             not attacks_blocked
             and self.can_use(used, "attack", me_data, hand)
@@ -520,7 +565,7 @@ class Strategy:
                             "reason": f"attack-{target}-pwr{int(pwr)}-{phase}",
                         }
 
-        # ========== 9) Fim de turno ==========
+        # ========== 11) Fim de turno ==========
         return {"action": "end_turn", "params": {}, "reason": f"end-{phase}"}
 
     def plan_turn(
@@ -713,6 +758,150 @@ class Strategy:
                     "reason": f"swap-shelter-{weak[1].get('name')}",
                 }
         return None
+
+    def _pick_toggle_time(
+        self,
+        state: dict,
+        me: str,
+        me_data: dict,
+        enemies: list,
+    ) -> Optional[dict]:
+        """Fênix: troca dia/noite só quando o próprio campo sai ganhando."""
+        if "disable_daycicle" in set(state.get("modifiers") or []):
+            return None
+        my_field = (me_data.get("attack_bases") or []) + (me_data.get("defense_bases") or [])
+        if not any(is_creature(c) and c.get("id") == "fenix" for c in my_field):
+            return None
+
+        def counts(pdata: dict) -> tuple[int, int]:
+            vulnerable = wolves = 0
+            cards = (pdata.get("attack_bases") or []) + (pdata.get("defense_bases") or [])
+            for card in cards:
+                if not is_creature(card):
+                    continue
+                if not has_daylight_protection(pdata, card) and (
+                    card.get("dies_daylight") or is_night_creature(card)
+                ):
+                    vulnerable += 1
+                if card.get("werewolf"):
+                    wolves += 1
+            return vulnerable, wolves
+
+        own_v, own_w = counts(me_data)
+        opp_v = opp_w = 0
+        for _, pdata in enemies:
+            v, w = counts(pdata)
+            opp_v += v
+            opp_w += w
+
+        if state.get("time_of_day") == "day":  # vira noite
+            benefit = (own_v - opp_v) + 2 * (own_w - opp_w)
+        else:  # vira dia
+            benefit = (opp_v - own_v) + 2 * (opp_w - own_w)
+
+        if benefit > 0:
+            return {"action": "toggle_time", "params": {}, "reason": "fenix-toggle"}
+        return None
+
+    def _pick_revive(self, state: dict, hand: list) -> Optional[dict]:
+        """Revive a melhor carta do cemitério quando há 4 runas na mão."""
+        if "no_runes" in set(state.get("modifiers") or []):
+            return None
+        runes = [
+            c for c in hand
+            if c and (c.get("type") == "rune" or c.get("id") == "runa")
+        ]
+        grave = state.get("graveyard") or []
+        if len(runes) < 4 or not grave:
+            return None
+
+        def value(c: dict) -> float:
+            score = float(c.get("attack") or 0) + float(c.get("life") or 0) / 4
+            if c.get("type") == "creature":
+                score += 500
+            return score
+
+        best = max(grave, key=value)
+        return {
+            "action": "revive",
+            "params": {"card_id": best.get("instance_id") or best.get("name")},
+            "reason": "revive-best",
+        }
+
+    def _pick_ritual(self, me_data: dict, hand: list, enemies: list) -> Optional[dict]:
+        """Rituais 157/Amor quando as condições de campo são atendidas."""
+        field = (me_data.get("attack_bases") or []) + (me_data.get("defense_bases") or [])
+        field = [c for c in field if is_creature(c)]
+        ids = {c.get("id") for c in field}
+        has_mago_negro = "mago_negro" in ids
+        ritual_ids = {c.get("id") for c in hand if c and c.get("type") == "ritual"}
+
+        def unlocked(ritual_id: str) -> bool:
+            return has_mago_negro or ritual_id in ritual_ids
+
+        if (
+            unlocked("ritual_157")
+            and {"apofis", "mago_negro"} <= ids
+            and sum(1 for c in field if c.get("id") == "zumbi") >= 6
+            and sum(
+                1 for c in (me_data.get("defense_bases") or [])
+                if is_creature(c) and c.get("id") == "elfo"
+            ) >= 2
+        ):
+            target = max(
+                enemies,
+                key=lambda e: int(e[1].get("talisman_count") or 0),
+                default=None,
+            )
+            if target and int(target[1].get("talisman_count") or 0) > 0:
+                return {
+                    "action": "ritual",
+                    "params": {
+                        "ritual_id": "ritual_157",
+                        "target_player_id": target[0],
+                    },
+                    "reason": "ritual-157",
+                }
+
+        if unlocked("ritual_amor") and {"ninfa", "vampiro_tayler"} <= ids:
+            for enemy_id, pdata in enemies:
+                cursed = bool(pdata.get("profecia_alvo")) or any(
+                    (effect or {}).get("type") == "profecia_morte"
+                    for effect in (pdata.get("active_effects") or [])
+                )
+                if cursed:
+                    return {
+                        "action": "ritual",
+                        "params": {
+                            "ritual_id": "ritual_amor",
+                            "target_player_id": enemy_id,
+                        },
+                        "reason": "ritual-amor",
+                    }
+        return None
+
+    def _pick_oracle(self, me_data: dict, hand: list, enemies: list) -> Optional[dict]:
+        """Anula o Talismã da Imortalidade de um oponente com o Oráculo."""
+        if not any(c and c.get("id") == "oraculo_imortalidade" for c in hand):
+            return None
+        if not any(
+            c and is_creature(c) and c.get("id") == "elfo"
+            for c in (me_data.get("defense_bases") or [])
+        ):
+            return None
+        candidates = [
+            (float(pdata.get("life") or 0), enemy_id)
+            for enemy_id, pdata in enemies
+            if int(pdata.get("talisman_count") or 0) > 0
+        ]
+        if not candidates:
+            return None
+        _, target = min(candidates)
+        return {
+            "action": "oracle",
+            "params": {"target_id": target},
+            "reason": "oracle-nullify",
+        }
 
     def _should_hold_night(
         self, c: dict, time_of_day: str, turns_to_flip: int
@@ -1078,7 +1267,24 @@ class Strategy:
         if self.difficulty == "easy":
             return random.choice(enemies)[0]
 
-        enemies_sorted = sorted(enemies, key=threat, reverse=True)
+        # Bots também são oponentes legítimos. Sem isso, com vida/defesa
+        # parecidas o humano sempre ganhava o desempate por ordem do dict.
+        rivalry = {"normal": 0.25, "hard": 0.55}.get(self.difficulty, 0.0)
+        prefer_bot = (
+            rivalry > 0
+            and any(pdata.get("is_bot") for _, pdata in enemies)
+            and random.random() < rivalry
+        )
+
+        def threat_with_rivalry(entry):
+            uname, pdata = entry
+            score = threat(entry)
+            if not prefer_bot or not pdata.get("is_bot"):
+                return score
+            # Desconto virtual de vida: continua priorizando kills reais.
+            return (score[0], score[1] + 450, *score[2:])
+
+        enemies_sorted = sorted(enemies, key=threat_with_rivalry, reverse=True)
         return enemies_sorted[0][0]
 
     def _pick_prophet_curse(self, enemies: list) -> Optional[dict]:

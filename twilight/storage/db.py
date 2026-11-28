@@ -39,7 +39,22 @@ _ACCOUNT_COLUMNS = (
     'SELECT username, password, created_at, current_game, admin_level, meta_json FROM accounts'
 )
 
-_SCHEMA_COMMON = """
+_SNAPSHOT_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS game_snapshots (
+    game_id TEXT PRIMARY KEY,
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    version INTEGER NOT NULL DEFAULT 1,
+    updated_at REAL NOT NULL,
+    state_json TEXT NOT NULL,
+    chat_json TEXT NOT NULL DEFAULT '[]'
+);
+"""
+_SNAPSHOT_INDEX_SQL = (
+    'CREATE INDEX IF NOT EXISTS idx_game_snapshots_updated_at '
+    'ON game_snapshots(updated_at);'
+)
+
+_SCHEMA_COMMON = _SNAPSHOT_TABLE_SQL + _SNAPSHOT_INDEX_SQL + """
 CREATE TABLE IF NOT EXISTS journal_entries (
     id TEXT PRIMARY KEY,
     version TEXT,
@@ -72,6 +87,8 @@ CREATE INDEX IF NOT EXISTS idx_accounts_current_game ON accounts(current_game);
 # PostgreSQL não tem collation NOCASE embutida: o código normaliza usuários para
 # minúsculas antes de gravar/consultar e mantém um índice extra para segurança.
 _SCHEMA_POSTGRES = (
+    _SNAPSHOT_TABLE_SQL,
+    _SNAPSHOT_INDEX_SQL,
     """
     CREATE TABLE IF NOT EXISTS accounts (
         username TEXT PRIMARY KEY,
@@ -416,6 +433,71 @@ def save_accounts(accounts: dict) -> None:
                 ),
                 row,
             )
+
+
+def save_game_snapshot(
+    game_id: str,
+    schema_version: int,
+    version: int,
+    updated_at: float,
+    state_json: str,
+    chat_json: str,
+) -> bool:
+    """Upsert atômico do estado de uma partida (Postgres e SQLite)."""
+    with _cursor() as cur:
+        cur.execute(
+            _q(
+                """
+                INSERT INTO game_snapshots
+                    (game_id, schema_version, version, updated_at, state_json, chat_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(game_id) DO UPDATE SET
+                    schema_version = excluded.schema_version,
+                    version = game_snapshots.version + 1,
+                    updated_at = excluded.updated_at,
+                    state_json = excluded.state_json,
+                    chat_json = excluded.chat_json
+                """
+            ),
+            (str(game_id), int(schema_version), int(version), float(updated_at),
+             state_json, chat_json),
+        )
+        return cur.rowcount > 0
+
+
+def load_game_snapshots() -> list[dict]:
+    """Todos os snapshots salvos, com JSON já decodificado (linhas corrompidas ignoradas)."""
+    with _cursor() as cur:
+        cur.execute(_q(
+            'SELECT game_id, schema_version, version, updated_at, state_json, chat_json '
+            'FROM game_snapshots ORDER BY updated_at'
+        ))
+        rows = cur.fetchall()
+    result = []
+    for row in rows:
+        try:
+            payload = json.loads(row['state_json'])
+            # state_json guarda um envelope com versionamento; devolvemos só o
+            # estado do jogo, que é o que o restore consome.
+            state = payload.get('state', payload) if isinstance(payload, dict) else payload
+            chat = json.loads(row['chat_json'] or '[]')
+            result.append({
+                'game_id': row['game_id'],
+                'schema_version': int(row['schema_version']),
+                'version': int(row['version']),
+                'updated_at': float(row['updated_at']),
+                'state': state,
+                'chat': chat,
+            })
+        except (TypeError, ValueError, KeyError, json.JSONDecodeError):
+            continue
+    return result
+
+
+def delete_game_snapshot(game_id: str) -> bool:
+    with _cursor() as cur:
+        cur.execute(_q('DELETE FROM game_snapshots WHERE game_id = ?'), (str(game_id),))
+        return cur.rowcount > 0
 
 
 def _entry_to_dict(row: Any) -> dict:

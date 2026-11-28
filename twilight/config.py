@@ -140,6 +140,9 @@ MAIL_ENABLED = bool((os.environ.get('MAIL_SERVER') or '').strip())
 MAIL_SERVER = (os.environ.get('MAIL_SERVER') or 'localhost').strip()
 MAIL_PORT = _env_int('MAIL_PORT', 25)
 MAIL_FROM = (os.environ.get('MAIL_FROM') or 'noreply@game.opentty.fun').strip()
+# Remetente usado apenas por emails enviados pelo painel admin. Os automáticos
+# (verificação/recuperação) continuam saindo como noreply@.
+MAIL_ADMIN_FROM = (os.environ.get('MAIL_ADMIN_FROM') or '').strip() or 'admin@game.opentty.fun'
 MAIL_USE_TLS = (os.environ.get('MAIL_USE_TLS', 'false').strip().lower()
                 in ('1', 'true', 'yes', 'on'))
 MAIL_USERNAME = (os.environ.get('MAIL_USERNAME') or '').strip()

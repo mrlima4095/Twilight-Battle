@@ -6,16 +6,20 @@ import uuid
 
 from flask import Blueprint, jsonify, redirect, render_template, request
 
+from twilight.auth import email_verification
 from twilight.auth.admin import admin_required, is_admin, is_super_admin
 from twilight.auth.service import (
     clear_user_game,
     delete_account,
     get_account,
+    is_account_active,
     load_accounts,
     login_required,
     update_account,
 )
 from twilight.cards.definitions import CARDS
+from twilight.config import now_sp_iso
+from twilight.mailer import send_admin_email
 from twilight.extensions import socketio
 from twilight.game.session import close_game
 from twilight.state import games
@@ -79,38 +83,144 @@ def admin_panel(username):
         return redirect('/')
     return render_template('security/admin.html', username=username, is_super=is_super_admin(username))
 
+def _account_summary(uname, data):
+    """Dados públicos de uma conta para o painel (nunca expõe senha/token)."""
+    current_game = data.get('current_game')
+    game_info = None
+    if current_game and current_game in games:
+        game = games[current_game]
+        if uname in game.player_data:
+            player = game.player_data[uname]
+            game_info = {
+                'game_id': current_game,
+                'started': game.started,
+                'is_dead': player.get('dead', False),
+                'life': player.get('life', 0),
+                'hand_count': len(player.get('hand', [])),
+            }
+
+    return {
+        'username': uname,
+        'created_at': data.get('created_at', 'Desconhecido'),
+        'admin_level': data.get('admin_level', 0),
+        'current_game': current_game,
+        'game_info': game_info,
+        'email': data.get('email') or data.get('oidc_email') or '',
+        'email_verified': bool(data.get('email_verified', False)),
+        'auth_provider': data.get('auth_provider') or 'internal',
+        'oidc_sub': data.get('oidc_sub') or '',
+        'oidc_issuer': data.get('oidc_issuer') or '',
+        'active': is_account_active(data),
+        'account_status': data.get('account_status') or ('active' if is_account_active(data) else 'disabled'),
+        'deactivated_at': data.get('deactivated_at') or '',
+    }
+
+
 @bp.route('/api/admin/users')
 @admin_required
 def api_admin_users(username):
     """Lista todos os usuários cadastrados"""
     accounts = load_accounts()
     users = []
-    
     for uname, data in accounts.items():
-        # Encontrar jogo atual
-        current_game = data.get('current_game')
-        game_info = None
-        if current_game and current_game in games:
-            game = games[current_game]
-            if uname in game.player_data:
-                player = game.player_data[uname]
-                game_info = {
-                    'game_id': current_game,
-                    'started': game.started,
-                    'is_dead': player.get('dead', False),
-                    'life': player.get('life', 0),
-                    'hand_count': len(player.get('hand', []))
-                }
-        
-        users.append({
-            'username': uname,
-            'created_at': data.get('created_at', 'Desconhecido'),
-            'admin_level': data.get('admin_level', 0),
-            'current_game': current_game,
-            'game_info': game_info
-        })
-    
+        users.append(_account_summary(uname, data))
     return jsonify({'success': True, 'users': users})
+
+
+@bp.route('/api/admin/user/<target_username>', methods=['GET'])
+@admin_required
+def api_admin_user_detail(admin_username, target_username):
+    """Detalhes de uma conta (inclui vínculo Lucy), sem dados sensíveis."""
+    account = get_account(target_username)
+    if not account:
+        return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
+    return jsonify({'success': True, 'user': _account_summary(target_username, account)})
+
+
+@bp.route('/api/admin/user/<target_username>/status', methods=['PUT'])
+@admin_required
+def api_admin_set_user_status(admin_username, target_username):
+    """Ativa/desativa uma conta. Conta desativada não consegue entrar nem usar JWT antigo."""
+    if not is_super_admin(admin_username):
+        return jsonify({'success': False, 'message': 'Apenas super admin pode alterar status'}), 403
+    if target_username == admin_username:
+        return jsonify({'success': False, 'message': 'Não pode alterar a si mesmo'}), 400
+
+    data = request.json or {}
+    active = data.get('active')
+    if not isinstance(active, bool):
+        status = str(data.get('status') or '').strip().lower()
+        if status not in ('active', 'disabled'):
+            return jsonify({'success': False, 'message': 'Status inválido (active/disabled)'}), 400
+        active = status == 'active'
+
+    account = get_account(target_username)
+    if not account:
+        return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
+
+    updates = {
+        'active': active,
+        'account_status': 'active' if active else 'disabled',
+    }
+    if active:
+        updates['deactivated_at'] = None
+        updates['deactivated_by'] = None
+    else:
+        updates['deactivated_at'] = now_sp_iso()
+        updates['deactivated_by'] = admin_username
+        # Remove da partida e derruba a sessão atual imediatamente.
+        game_id = account.get('current_game')
+        if game_id and game_id in games:
+            game = games[game_id]
+            if target_username in game.player_data:
+                game.remove_player(target_username)
+            sid = game.get_socket_id(target_username)
+            if sid:
+                socketio.emit(
+                    'force_redirect',
+                    {'message': 'Sua conta foi desativada por um administrador.', 'url': '/'},
+                    room=sid,
+                )
+        clear_user_game(target_username)
+
+    update_account(target_username, updates)
+    return jsonify({
+        'success': True,
+        'message': f'Conta de {target_username} '
+                   + ('ativada' if active else 'desativada'),
+        'active': active,
+    })
+
+
+@bp.route('/api/admin/user/<target_username>/email', methods=['POST'])
+@admin_required
+def api_admin_send_user_email(admin_username, target_username):
+    """Envia email direto ao usuário com remetente admin@game.opentty.fun."""
+    if not is_admin(admin_username):
+        return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+
+    account = get_account(target_username)
+    if not account:
+        return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
+
+    data = request.json or {}
+    to = email_verification.normalize_email(data.get('to') or account.get('email')
+                                            or account.get('oidc_email'))
+    if not email_verification.valid_email(to):
+        return jsonify({'success': False, 'message': 'Email inválido'}), 400
+
+    subject = str(data.get('subject') or '').strip()[:200]
+    body = str(data.get('body') or '').strip()[:8000]
+    if not subject or not body:
+        return jsonify({'success': False, 'message': 'Assunto e mensagem são obrigatórios'}), 400
+
+    if not send_admin_email(to, subject, body):
+        return jsonify({
+            'success': False,
+            'message': 'Envio indisponível (SMTP não configurado ou falha no envio)',
+        }), 503
+
+    return jsonify({'success': True, 'message': f'Email enviado para {to}'})
 
 @bp.route('/api/admin/user/<target_username>', methods=['DELETE'])
 @admin_required

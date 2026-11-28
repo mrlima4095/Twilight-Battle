@@ -3,7 +3,7 @@ from functools import wraps
 
 from flask import jsonify
 
-from twilight.auth.service import get_account, get_current_user
+from twilight.auth.service import get_account, get_current_user, is_account_active
 
 
 def is_admin(username):
@@ -12,7 +12,7 @@ def is_admin(username):
         return False
     account = get_account(username)
     # Admin level 1+ tem acesso ao painel
-    return bool(account and int(account.get('admin_level', 0) or 0) >= 1)
+    return bool(is_account_active(account) and int(account.get('admin_level', 0) or 0) >= 1)
 
 
 def is_super_admin(username):
@@ -20,7 +20,7 @@ def is_super_admin(username):
     if not username:
         return False
     account = get_account(username)
-    return bool(account and int(account.get('admin_level', 0) or 0) >= 4)
+    return bool(is_account_active(account) and int(account.get('admin_level', 0) or 0) >= 4)
 
 
 def admin_required(f):

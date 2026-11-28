@@ -926,6 +926,14 @@ def handle_player_action(data):
                 # se o próximo for bot (tutorial / IA), agenda o turno
                 from twilight.game.ai import schedule_bot_turn
                 schedule_bot_turn(game_id, delay=0.8)
+
+            # Persiste imediatamente: um redeploy logo após a jogada não perde
+            # mão, deck, efeitos, turno nem chat.
+            try:
+                from twilight.game.persistence import snapshot_game
+                snapshot_game(game_id)
+            except Exception:
+                pass
         else:
             error_msg = result['message'] if result else 'Ação inválida'
             emit('action_error', {

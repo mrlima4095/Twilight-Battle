@@ -1610,7 +1610,11 @@ class Game:
             immortality_index = -1
             if not skip_talisman:
                 for i, talisman in enumerate(target['hand']):
-                    if talisman and talisman.get('id') == 'talisma_imortalidade':
+                    if (
+                        talisman
+                        and talisman.get('id') == 'talisma_imortalidade'
+                        and not talisman.get('oracle_blocked')
+                    ):
                         immortality_index = i
                         break
             
@@ -2429,6 +2433,117 @@ class Game:
             'message': f"{target_card['name']} foi revivido do cemitério!"
         }
     
+    def flip_card(self, username, position_type, position_index):
+        """Revela uma armadilha disfarçada em uma base do próprio jogador."""
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return {'success': False, 'message': 'Jogador inválido ou morto'}
+
+        if position_type not in ('attack', 'defense'):
+            return {'success': False, 'message': 'Tipo de posição inválido'}
+        try:
+            index = int(position_index)
+        except (TypeError, ValueError):
+            return {'success': False, 'message': 'Índice de posição inválido'}
+
+        bases = player[f'{position_type}_bases']
+        if index < 0 or index >= len(bases):
+            return {'success': False, 'message': 'Índice de posição inválido'}
+
+        card = bases[index]
+        if not card or not card.get('is_disguised'):
+            return {'success': False, 'message': 'Essa carta não está disfarçada'}
+
+        real_name = card.get('name')
+        card.pop('is_disguised', None)
+        card.pop('disguise', None)
+        return {
+            'success': True,
+            'card': {'name': real_name, 'id': card.get('id')},
+            'message': f'{real_name} foi revelada!',
+        }
+
+    def perform_oracle(self, username, target_id):
+        """Oráculo: anula o Talismã da Imortalidade do alvo no próximo ataque mortal.
+
+        Requer o Oráculo na mão e um Elfo em defesa, as mesmas condições já
+        usadas na resolução de ataques. Consome a carta e marca o talismã.
+        """
+        if not self.can_act(username, 'oracle'):
+            return {'success': False, 'message': 'Você já usou o Oráculo neste turno'}
+
+        player = self.player_data.get(username)
+        if not player or player.get('dead', False):
+            return {'success': False, 'message': 'Jogador inválido ou morto'}
+
+        oracle_index = -1
+        for i, card in enumerate(player.get('hand') or []):
+            if card and card.get('id') == 'oraculo_imortalidade':
+                oracle_index = i
+                break
+        if oracle_index < 0:
+            return {'success': False, 'message': 'Você não tem o Oráculo na mão'}
+        if not any(
+            c and c.get('id') == 'elfo' for c in (player.get('defense_bases') or [])
+        ):
+            return {
+                'success': False,
+                'message': 'O Oráculo requer um Elfo em modo de defesa',
+            }
+
+        target_username = target_id
+        if target_username not in self.player_data:
+            matches = [
+                u for u, data in self.player_data.items()
+                if (data.get('name') or '').lower() == str(target_id).lower()
+            ]
+            if len(matches) == 1:
+                target_username = matches[0]
+        target = self.player_data.get(target_username)
+        if (
+            not target
+            or target.get('dead', False)
+            or target_username == username
+        ):
+            return {'success': False, 'message': 'Alvo inválido'}
+
+        talisman = None
+        for card in list(target.get('hand') or []) + list(target.get('talismans') or []):
+            if (
+                card
+                and card.get('id') == 'talisma_imortalidade'
+                and not card.get('oracle_blocked')
+            ):
+                talisman = card
+                break
+        if not talisman:
+            return {
+                'success': False,
+                'message': 'O alvo não possui Talismã da Imortalidade ativo',
+            }
+
+        used_oracle = player['hand'].pop(oracle_index)
+        self.deck.append(used_oracle)
+        shuffle(self.deck)
+        talisman['oracle_blocked'] = True
+        self.use_action(username, 'oracle')
+
+        message = (
+            f'👁️ {player["name"]} usou o Oráculo contra '
+            f'{target["name"]}: o Talismã da Imortalidade foi anulado!'
+        )
+        broadcast_system_message(
+            self.game_id,
+            message,
+            fog_message=f'👁️ {player["name"]} usou o Oráculo contra um oponente',
+        )
+        return {
+            'success': True,
+            'target': target_username,
+            'target_name': target['name'],
+            'message': message,
+        }
+
     def call_centaurs(self, username):
         """Habilidade especial do Super Centauro: Coleta todos os centauros em campo de todos os jogadores para a mão do usuário"""
         if not self.can_act(username, 'call_centaurs'):

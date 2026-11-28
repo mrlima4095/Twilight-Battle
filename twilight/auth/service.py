@@ -67,11 +67,20 @@ def verify_token(token):
     except jwt.InvalidTokenError:
         return None
 
+def is_account_active(account):
+    """Contas antigas sem campo `active` continuam ativas por padrão."""
+    return bool(account) and account.get('active', True) is not False
+
+
 def get_current_user():
     token = request.cookies.get('auth_token')
-    if token:
-        return verify_token(token)
-    return None
+    if not token:
+        return None
+    username = verify_token(token)
+    if not username:
+        return None
+    # JWT emitido antes da desativação não pode continuar valendo.
+    return username if is_account_active(get_account(username)) else None
 
 def update_user_game(username, game_id):
     """Atualiza o jogo atual do usuário"""

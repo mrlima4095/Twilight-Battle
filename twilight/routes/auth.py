@@ -15,6 +15,7 @@ from twilight.auth.service import (
     get_account as get_account_record,
     get_current_user,
     hash_password,
+    is_account_active,
     update_account,
     upsert_account,
     verify_password,
@@ -201,6 +202,9 @@ def login():
         _record(login_key)
         return jsonify({'success': False, 'message': 'Usuário ou senha inválidos'})
 
+    if not is_account_active(account):
+        return jsonify({'success': False, 'message': 'Esta conta foi desativada'}), 403
+
     if EMAIL_VERIFICATION_REQUIRED and not email_verification.is_verified(account):
         return jsonify({
             'success': False,
@@ -223,6 +227,8 @@ def verify_email(token):
     username = email_verification.confirm_token(token)
     if not username:
         return redirect('/login?verify_error=1')
+    if not is_account_active(get_account_record(username)):
+        return redirect('/login?error=account_disabled')
 
     response = redirect('/?email_verified=1')
     return _set_auth_cookie(response, create_token(username))

@@ -8,7 +8,7 @@ from flask import Blueprint, jsonify, redirect, request, session
 
 from twilight import config
 from twilight.auth import lucy as lucy_oidc
-from twilight.auth.service import create_token
+from twilight.auth.service import create_token, get_account, is_account_active
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +86,8 @@ def lucy_callback():
         tokens = lucy_oidc.exchange_code(code, str(pending.get('verifier') or ''))
         claims = lucy_oidc.fetch_claims(tokens)
         username = lucy_oidc.provision(claims)
+        if not is_account_active(get_account(username)):
+            return _login_error('account_disabled')
     except lucy_oidc.OidcError as exc:
         logger.error('[lucy-oidc] falha no callback: %s', exc)
         return _login_error('login_failed')

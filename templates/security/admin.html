@@ -402,7 +402,7 @@ input:focus, select:focus, textarea:focus {
     </style>
 </head>
 <body>
-<div class="shell">
+<div class="shell" data-super="{{ 'true' if is_super else 'false' }}">
     <header class="admin-header">
         <div class="admin-title">
             ⚔️ Painel Admin
@@ -467,6 +467,7 @@ input:focus, select:focus, textarea:focus {
                     <thead>
                         <tr>
                             <th>Usuário</th>
+                            <th>Email / Lucy</th>
                             <th>Criado em</th>
                             <th>Admin</th>
                             <th>Jogo atual</th>
@@ -475,7 +476,7 @@ input:focus, select:focus, textarea:focus {
                         </tr>
                     </thead>
                     <tbody id="users-tbody">
-                        <tr><td colspan="6" style="text-align:center;color:var(--muted)">Carregando...</td></tr>
+                        <tr><td colspan="7" style="text-align:center;color:var(--muted)">Carregando...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -493,6 +494,7 @@ input:focus, select:focus, textarea:focus {
     <div id="game-control" class="tab-content">
         <div class="panel">
             <h2>Controle de jogo</h2>
+            <p class="muted" style="margin:-8px 0 12px">💾 Partidas salvas automaticamente e restauradas após restart/redeploy.</p>
             <div class="flex-row">
                 <select id="control-game-select" onchange="loadGameControlState()">
                     <option value="">Selecione um jogo</option>
@@ -581,6 +583,12 @@ input:focus, select:focus, textarea:focus {
 
     <div id="set-turn-modal" class="modal"><div class="modal-content"><h3>Alterar turno</h3><select id="set-turn-select" style="width: 100%;"></select><div class="modal-buttons"><button class="btn btn-success" onclick="submitSetTurn()" type="button">Alterar</button><button class="btn btn-danger" onclick="closeModal('set-turn-modal')" type="button">Cancelar</button></div></div></div>
 
+    <div id="email-modal" class="modal"><div class="modal-content"><h3>Enviar email</h3><p>Para: <strong id="email-username"></strong></p><div class="form-group"><label>Destinatário</label><input type="email" id="email-to" style="width:100%"></div><div class="form-group"><label>Assunto</label><input type="text" id="email-subject" style="width:100%"></div><div class="form-group"><label>Mensagem</label><textarea id="email-body" rows="6" style="width:100%"></textarea></div><p class="muted" style="font-size:.78rem">Remetente: admin@game.opentty.fun</p><div class="modal-buttons"><button class="btn btn-success" onclick="sendAdminEmail()" type="button">Enviar</button><button class="btn btn-danger" onclick="closeModal('email-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="status-modal" class="modal"><div class="modal-content"><h3>Status da conta</h3><p>Usuário: <strong id="status-username"></strong></p><p id="status-description" class="muted"></p><div class="modal-buttons"><button class="btn btn-danger" id="status-confirm" onclick="setUserStatus()" type="button">Confirmar</button><button class="btn btn-primary" onclick="closeModal('status-modal')" type="button">Cancelar</button></div></div></div>
+
+    <div id="user-detail-modal" class="modal"><div class="modal-content"><h3>Detalhes da conta</h3><div id="user-detail-content"></div><div class="modal-buttons"><button class="btn btn-primary" onclick="closeModal('user-detail-modal')" type="button">Fechar</button></div></div></div>
+
     <div id="message" style="display: none;"></div>
 
     <script>
@@ -589,6 +597,7 @@ input:focus, select:focus, textarea:focus {
         let allCards = [];
         let currentTargetPlayer = null;
         let pendingUser = null;
+        const isSuperAdmin = document.querySelector('.shell')?.dataset.super === 'true';
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -662,18 +671,40 @@ input:focus, select:focus, textarea:focus {
                 const data = await fetchAPI('/api/admin/users');
                 const users = data.users || [];
                 const tbody = document.getElementById('users-tbody');
-                if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Nenhum usuário encontrado</td></tr>'; return; }
-                tbody.innerHTML = users.map(user => `
+                if (users.length === 0) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted)">Nenhum usuário encontrado</td></tr>'; return; }
+                tbody.innerHTML = users.map(user => {
+                    const provider = user.auth_provider === 'lucy' ? '🔗 Lucy' : '🔑 Local';
+                    const verified = user.email_verified ? '✅' : '⚠️';
+                    const active = user.active !== false;
+                    const inGame = user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline';
+                    return `
                     <tr data-username="${escapeAttr(user.username)}">
                         <td><strong>${escapeHtml(user.username)}</strong></td>
+                        <td>${user.email ? `${escapeHtml(user.email)} ${verified}` : '—'}<br><span class="badge" style="background:rgba(155,123,255,.15);color:var(--violet);border:1px solid rgba(155,123,255,.35);font-size:.62rem">${provider}</span></td>
                         <td>${new Date(user.created_at).toLocaleDateString()}</td>
                         <td><span class="badge" style="background: ${user.admin_level >= 1 ? 'rgba(240,193,75,.15)' : 'rgba(255,255,255,.06)'}; color: ${user.admin_level >= 1 ? 'var(--gold)' : 'var(--muted)'}; border: 1px solid ${user.admin_level >= 1 ? 'var(--border)' : 'transparent'}">Lvl ${user.admin_level}</span></td>
-                        <td>${escapeHtml(user.current_game || '-')}</td>
-                        <td class="${user.game_info?.is_dead ? 'status-dead' : 'status-alive'}">${user.game_info ? (user.game_info.is_dead ? '💀 Morto' : `✨ Vivo (${user.game_info.life}❤️)`) : '🚫 Offline'}</td>
-                        <td>${user.admin_level < 4 ? `<button class="btn btn-primary btn-sm js-level" data-username="${escapeAttr(user.username)}" data-level="${user.admin_level}" type="button">👑 Nível</button> <button class="btn btn-danger btn-sm js-delete" data-username="${escapeAttr(user.username)}" type="button">🗑️</button>` : '—'}</td>
+                        <td>${escapeHtml(user.current_game || '-')}<br><span style="font-size:.78rem;color:var(--muted)">${inGame}</span></td>
+                        <td><span class="badge" style="background:${active ? 'rgba(61,220,151,.15)' : 'rgba(255,77,109,.18)'};color:${active ? 'var(--green)' : '#ff8fa3'};border:1px solid ${active ? 'rgba(61,220,151,.35)' : 'rgba(255,77,109,.4)'}">${active ? 'Ativa' : 'Desativada'}</span></td>
+                        <td>
+                            <button class="btn btn-info btn-sm js-detail" data-username="${escapeAttr(user.username)}" type="button">🔍</button>
+                            <button class="btn btn-primary btn-sm js-email" data-username="${escapeAttr(user.username)}" data-email="${escapeAttr(user.email || '')}" type="button">✉️</button>
+                            ${isSuperAdmin && user.admin_level < 4 ? `
+                            <button class="btn btn-warning btn-sm js-status" data-username="${escapeAttr(user.username)}" data-active="${active}" type="button">${active ? '⛔' : '✅'}</button>
+                            <button class="btn btn-primary btn-sm js-level" data-username="${escapeAttr(user.username)}" data-level="${user.admin_level}" type="button">👑</button>
+                            <button class="btn btn-danger btn-sm js-delete" data-username="${escapeAttr(user.username)}" type="button">🗑️</button>` : ''}
+                        </td>
                     </tr>
-                `).join('');
+                `}).join('');
                 // Listeners (sem onclick inline com nome interpolado → evita XSS)
+                tbody.querySelectorAll('.js-detail').forEach(btn => {
+                    btn.addEventListener('click', () => showUserDetails(btn.dataset.username));
+                });
+                tbody.querySelectorAll('.js-email').forEach(btn => {
+                    btn.addEventListener('click', () => openEmailModal(btn.dataset.username, btn.dataset.email));
+                });
+                tbody.querySelectorAll('.js-status').forEach(btn => {
+                    btn.addEventListener('click', () => openStatusModal(btn.dataset.username, btn.dataset.active === 'true'));
+                });
                 tbody.querySelectorAll('.js-level').forEach(btn => {
                     btn.addEventListener('click', () => openLevelModal(btn.dataset.username, parseInt(btn.dataset.level, 10)));
                 });
@@ -688,7 +719,81 @@ input:focus, select:focus, textarea:focus {
         function openLevelModal(username, level) { pendingUser = username; document.getElementById('level-username').textContent = username; document.getElementById('level-select').value = level; document.getElementById('level-modal').style.display = 'flex'; }
         async function saveAdminLevel() { try { await fetchAPI(`/api/admin/user/${encodeURIComponent(pendingUser)}/admin-level`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: parseInt(document.getElementById('level-select').value) })}); showMessage(`Nível alterado`); closeModal('level-modal'); loadUsers(); } catch(error) { console.error(error); } }
         async function deleteUser(username) { if (!confirm(`Deletar "${username}"?`)) return; await fetchAPI(`/api/admin/user/${encodeURIComponent(username)}`, { method: 'DELETE' }); showMessage(`Usuário deletado`); loadUsers(); loadDashboard(); }
-        
+
+        async function showUserDetails(username) {
+            try {
+                const data = await fetchAPI(`/api/admin/user/${encodeURIComponent(username)}`);
+                const u = data.user;
+                const rows = [
+                    ['Usuário', u.username],
+                    ['Email', u.email || '—'],
+                    ['Email verificado', u.email_verified ? 'Sim' : 'Não'],
+                    ['Provedor', u.auth_provider === 'lucy' ? 'Lucy (OIDC)' : 'Login local'],
+                    ['ID Lucy (sub)', u.oidc_sub || '—'],
+                    ['Emissor Lucy', u.oidc_issuer || '—'],
+                    ['Nível admin', u.admin_level],
+                    ['Situação', u.active === false ? 'Desativada' : 'Ativa'],
+                    ['Jogo atual', u.current_game || '—'],
+                    ['Criado em', u.created_at || '—'],
+                ];
+                document.getElementById('user-detail-content').innerHTML =
+                    rows.map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(String(value))}</p>`).join('');
+                document.getElementById('user-detail-modal').style.display = 'flex';
+            } catch (error) { console.error(error); }
+        }
+
+        function openEmailModal(username, email) {
+            pendingUser = username;
+            document.getElementById('email-username').textContent = username;
+            document.getElementById('email-to').value = email || '';
+            document.getElementById('email-subject').value = '';
+            document.getElementById('email-body').value = '';
+            document.getElementById('email-modal').style.display = 'flex';
+        }
+
+        async function sendAdminEmail() {
+            try {
+                await fetchAPI(`/api/admin/user/${encodeURIComponent(pendingUser)}/email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: document.getElementById('email-to').value,
+                        subject: document.getElementById('email-subject').value,
+                        body: document.getElementById('email-body').value,
+                    }),
+                });
+                showMessage('Email enviado');
+                closeModal('email-modal');
+            } catch (error) { console.error(error); }
+        }
+
+        function openStatusModal(username, active) {
+            pendingUser = username;
+            document.getElementById('status-username').textContent = username;
+            document.getElementById('status-description').textContent = active
+                ? 'A conta será desativada: login, sessões ativas e partidas serão bloqueados.'
+                : 'A conta voltará a poder entrar normalmente.';
+            const btn = document.getElementById('status-confirm');
+            btn.textContent = active ? 'Desativar conta' : 'Reativar conta';
+            btn.dataset.active = active ? 'true' : 'false';
+            document.getElementById('status-modal').style.display = 'flex';
+        }
+
+        async function setUserStatus() {
+            try {
+                const active = document.getElementById('status-confirm').dataset.active === 'false';
+                await fetchAPI(`/api/admin/user/${encodeURIComponent(pendingUser)}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active }),
+                });
+                showMessage(active ? 'Conta reativada' : 'Conta desativada');
+                closeModal('status-modal');
+                loadUsers();
+                loadDashboard();
+            } catch (error) { console.error(error); }
+        }
+
         // Jogos
         async function loadGames() {
             try {
@@ -746,6 +851,8 @@ input:focus, select:focus, textarea:focus {
                             <button class="btn btn-danger btn-sm" onclick="openRemoveCardModal('${jsArg(uname)}', ${escapeAttr(JSON.stringify(p.hand))})" type="button">🗑️ Remover</button>
                             <button class="btn btn-info btn-sm" onclick="openFieldModal('${jsArg(uname)}')" type="button">🏟️ Campo</button>
                             ${p.dead ? `<button class="btn btn-success btn-sm" onclick="revivePlayer('${jsArg(uname)}')" type="button">✨ Reviver</button>` : `<button class="btn btn-danger btn-sm" onclick="killPlayer('${jsArg(uname)}')" type="button">💀 Matar</button>`}
+                            <button class="btn btn-warning btn-sm" onclick="clearPlayerHand('${jsArg(uname)}')" type="button">🧹 Limpar mão</button>
+                            <button class="btn btn-danger btn-sm" onclick="kickPlayer('${jsArg(uname)}')" type="button">🚫 Expulsar</button>
                         </div>
                         <div><strong>📚 Mão (${p.hand.length}):</strong> <div class="hand-cards">${p.hand.map(c => `<span class="hand-card" onclick="selectHandCard('${jsArg(uname)}', '${jsArg(c.instance_id)}', '${jsArg(c.name)}')">${escapeHtml(c.name)}</span>`).join('') || '<span style="color:var(--muted)">(vazia)</span>'}</div></div>
                         <div style="margin-top:8px"><strong>⚔️ Ataque:</strong> ${p.attack_bases.map((c, i) => `<span class="position-slot ${!c ? 'empty' : ''}" onclick="editFieldSlot('${jsArg(uname)}', 'attack', ${i})">${c ? escapeHtml(c.name) : `[${i}]`}</span>`).join('')}</div>
@@ -822,6 +929,8 @@ input:focus, select:focus, textarea:focus {
         async function reviveCard(index) { const target = prompt('Para qual jogador?'); if (!target) return; await fetchAPI(`/api/admin/game/${currentGameId}/graveyard/revive`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target, card_index: index }) }); showMessage(`Carta revivida`); closeModal('graveyard-modal'); loadGameControlState(); }
         async function killPlayer(username) { if (!confirm(`Matar ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/kill`, { method: 'POST' }); showMessage(`${username} morto`); loadGameControlState(); }
         async function revivePlayer(username) { await fetchAPI(`/api/admin/game/${currentGameId}/player/${username}/revive`, { method: 'POST' }); showMessage(`${username} revivido`); loadGameControlState(); }
+        async function clearPlayerHand(username) { if (!confirm(`Limpar toda a mão de ${username}?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/player/${encodeURIComponent(username)}/modify-hand`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear' }) }); showMessage(`Mão de ${username} limpa`); loadGameControlState(); }
+        async function kickPlayer(username) { if (!confirm(`Expulsar ${username} da sala?`)) return; await fetchAPI(`/api/admin/game/${currentGameId}/kick/${encodeURIComponent(username)}`, { method: 'POST' }); showMessage(`${username} expulso`); loadGames(); loadGameControlState(); }
         
         function openSetTurnModal() { const select = document.getElementById('set-turn-select'); select.innerHTML = currentGameState.players.map(p => `<option value="${escapeAttr(p)}">${escapeHtml(p)}</option>`).join(''); openModal('set-turn-modal'); }
         async function submitSetTurn() { const target = document.getElementById('set-turn-select').value; await fetchAPI(`/api/admin/game/${currentGameId}/set-turn`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ target_username: target }) }); showMessage(`Turno alterado para ${target}`); closeModal('set-turn-modal'); loadGameControlState(); }
