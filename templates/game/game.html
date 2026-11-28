@@ -260,22 +260,22 @@ body::before {
 }
 /* Slots maiores: vida/ataque/arma não vazam para fora da carta */
 .opponent-card .base-slot {
-  width: 62px;
-  height: 76px;
-  min-height: 76px;
-  min-width: 62px;
-  max-width: 62px;
-  padding: 4px 3px;
+  width: 68px;
+  height: 84px;
+  min-height: 84px;
+  min-width: 68px;
+  max-width: 68px;
+  padding: 5px 3px;
   border-radius: 10px;
-  font-size: .72rem;
+  font-size: .76rem;
   flex-shrink: 0;
 }
-.opponent-card .base-slot .slot-emoji { font-size: 1.2rem; line-height: 1; }
-.opponent-card .base-slot .slot-name { display: block; font-size: .66rem; line-height: 1.1; }
+.opponent-card .base-slot .slot-emoji { font-size: 1.35rem; line-height: 1; }
+.opponent-card .base-slot .slot-name { display: block; font-size: .72rem; line-height: 1.1; }
 .opponent-card .base-slot .slot-stats {
-  font-size: .64rem; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
+  font-size: .68rem; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
 }
-.opponent-card .base-slot .equipped-items { font-size: .62rem; }
+.opponent-card .base-slot .equipped-items { font-size: .66rem; }
 .opponent-card .action-btn {
   width: 100%;
   margin-top: 8px;
@@ -327,12 +327,12 @@ body::before {
 
 /* Slots fixos — o tooltip pode sair, o conteúdo da carta não */
 .base-slot {
-  width: 72px;
-  height: 88px;
-  min-width: 72px;
-  max-width: 72px;
-  min-height: 88px;
-  max-height: 88px;
+  width: 78px;
+  height: 96px;
+  min-width: 78px;
+  max-width: 78px;
+  min-height: 96px;
+  max-height: 96px;
   border-radius: 12px;
   border: 1.5px dashed rgba(255,255,255,.12);
   background: rgba(0,0,0,.25);
@@ -346,7 +346,7 @@ body::before {
   transition: border-color .15s, background .15s, box-shadow .15s;
   position: relative;
   text-align: center;
-  font-size: .72rem;
+  font-size: .76rem;
   overflow: visible;
   box-sizing: border-box;
 }
@@ -386,14 +386,14 @@ body::before {
   75% { transform: translateX(3px); }
 }
 .base-slot .slot-emoji {
-  font-size: 1.4rem;
+  font-size: 1.55rem;
   line-height: 1;
   flex-shrink: 0;
 }
 .base-slot .slot-name {
   font-weight: 700;
   color: var(--gold);
-  font-size: .7rem;
+  font-size: .74rem;
   line-height: 1.2;
   max-width: 100%;
   overflow: hidden;
@@ -403,13 +403,13 @@ body::before {
 }
 .base-slot .slot-stats {
   color: #d8d0eb;
-  font-size: .68rem;
+  font-size: .72rem;
   line-height: 1.2;
   font-weight: 600;
   white-space: nowrap;
 }
 .base-slot .equipped-items {
-  font-size: .62rem;
+  font-size: .66rem;
   color: var(--cyan);
   line-height: 1;
 }
@@ -446,16 +446,16 @@ body::before {
   letter-spacing: .04em; margin-bottom: 10px;
 }
 .hand-cards {
-  display: flex; flex-wrap: wrap; gap: 8px; min-height: 96px;
+  display: flex; flex-wrap: wrap; gap: 8px; min-height: 116px;
   align-items: flex-start;
 }
 .card {
-  width: 84px;
-  height: 108px;
-  min-width: 84px;
-  max-width: 84px;
-  min-height: 108px;
-  max-height: 108px;
+  width: 92px;
+  height: 118px;
+  min-width: 92px;
+  max-width: 92px;
+  min-height: 118px;
+  max-height: 118px;
   border-radius: 12px;
   padding: 6px 4px;
   background: linear-gradient(165deg, #2a2148 0%, #15102a 100%);
@@ -488,9 +488,9 @@ body::before {
 .card.trap { border-top: 3px solid #5ee7ff; }
 .card.weapon, .card.armor, .card.equipment { border-top: 3px solid #f0c14b; }
 .card.rune, .card.talisman { border-top: 3px solid #3ddc97; }
-.card .card-emoji { font-size: 1.45rem; line-height: 1; }
+.card .card-emoji { font-size: 1.6rem; line-height: 1; }
 .card .card-name {
-  font-weight: 700; font-size: .7rem; color: var(--text); line-height: 1.2;
+  font-weight: 700; font-size: .74rem; color: var(--text); line-height: 1.2;
   max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 0 2px;
 }
@@ -499,7 +499,7 @@ body::before {
   color: var(--muted);
 }
 .card .card-stats {
-  font-size: .68rem; color: #d8d0eb; font-weight: 600; line-height: 1.2;
+  font-size: .72rem; color: #d8d0eb; font-weight: 600; line-height: 1.2;
   white-space: nowrap;
 }
 .card .card-description { display: none !important; }
@@ -705,10 +705,10 @@ body::before {
   html, body { height: 100%; overflow: hidden; }
 
   .game-container {
-    --slot-w: clamp(50px, 6vh, 64px);
-    --slot-h: clamp(62px, 7.4vh, 78px);
-    --card-w: clamp(56px, 6.6vh, 70px);
-    --card-h: clamp(74px, 8.6vh, 90px);
+    --slot-w: clamp(56px, 6.8vh, 72px);
+    --slot-h: clamp(70px, 8.2vh, 88px);
+    --card-w: clamp(64px, 7.4vh, 78px);
+    --card-h: clamp(84px, 9.8vh, 104px);
     width: 100%; max-width: 1600px;
     height: 100vh; height: 100dvh;
     padding: 10px 12px calc(10px + var(--safe-bottom));
@@ -758,17 +758,17 @@ body::before {
   }
   .opponents-area > .opponent-card .bases-row { gap: 4px; }
   .opponents-area > .opponent-card .base-slot {
-    width: 46px; height: 60px; min-width: 46px; max-width: 46px;
-    min-height: 60px; max-height: 60px; padding: 3px 2px; border-radius: 8px;
+    width: 52px; height: 68px; min-width: 52px; max-width: 52px;
+    min-height: 68px; max-height: 68px; padding: 3px 2px; border-radius: 8px;
   }
-  .opponents-area > .opponent-card .base-slot .slot-emoji { font-size: 1.05rem; }
+  .opponents-area > .opponent-card .base-slot .slot-emoji { font-size: 1.15rem; }
   .opponents-area > .opponent-card .base-slot .slot-name {
     display: block; max-width: 100%; padding: 0 1px;
-    font-size: .6rem; line-height: 1.1;
+    font-size: .64rem; line-height: 1.1;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .opponents-area > .opponent-card .base-slot .slot-stats {
-    font-size: .62rem; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
+    font-size: .64rem; line-height: 1.1; white-space: normal; overflow-wrap: anywhere;
   }
   .opponents-area > .opponent-card .base-slot .card-tooltip { z-index: 100; }
   .opponents-area > .opponent-card .action-btn {
@@ -800,9 +800,9 @@ body::before {
     min-width: var(--slot-w); max-width: var(--slot-w);
     min-height: var(--slot-h); max-height: var(--slot-h);
   }
-  .player-area .base-slot .slot-emoji { font-size: 1.1rem; }
-  .player-area .base-slot .slot-name { font-size: .64rem; }
-  .player-area .base-slot .slot-stats { font-size: .62rem; }
+  .player-area .base-slot .slot-emoji { font-size: 1.2rem; }
+  .player-area .base-slot .slot-name { font-size: .68rem; }
+  .player-area .base-slot .slot-stats { font-size: .66rem; }
   .hand-area { flex: 1 1 auto; min-height: 0; margin: 5px 0; padding: 7px 9px; }
   .hand-title { font-size: .74rem; margin-bottom: 5px; }
   .hand-cards { min-height: 0; gap: 5px; }
@@ -812,9 +812,9 @@ body::before {
     min-height: var(--card-h); max-height: var(--card-h);
     padding: 4px 3px;
   }
-  .player-area .card .card-emoji { font-size: 1.15rem; }
-  .player-area .card .card-name { font-size: .64rem; }
-  .player-area .card .card-stats { font-size: .62rem; }
+  .player-area .card .card-emoji { font-size: 1.25rem; }
+  .player-area .card .card-name { font-size: .68rem; }
+  .player-area .card .card-stats { font-size: .66rem; }
   .deck-info { margin: 5px 0; gap: 8px; }
   .pile { padding: 8px; font-size: .8rem; }
   /* No PC os botões dividem toda a largura da linha inferior */
@@ -834,27 +834,27 @@ body::before {
 }
 @media (min-width: 901px) and (max-width: 1100px) {
   .game-container {
-    --slot-w: 46px; --slot-h: 58px; --card-w: 52px; --card-h: 68px;
+    --slot-w: 52px; --slot-h: 66px; --card-w: 60px; --card-h: 78px;
   }
   .opponents-area { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
   .opponents-area > .opponent-card .base-slot {
-    width: 42px; height: 54px; min-width: 42px; max-width: 42px;
-    min-height: 54px; max-height: 54px; padding: 2px 1px;
+    width: 46px; height: 60px; min-width: 46px; max-width: 46px;
+    min-height: 60px; max-height: 60px; padding: 2px 1px;
   }
   .opponents-area > .opponent-card .bases-section { flex-basis: 150px; }
-  .opponents-area > .opponent-card .base-slot .slot-stats { font-size: .58rem; }
+  .opponents-area > .opponent-card .base-slot .slot-stats { font-size: .6rem; }
 }
 @media (min-width: 901px) and (max-height: 740px) {
   .game-container {
-    --slot-w: 44px; --slot-h: 56px; --card-w: 50px; --card-h: 66px;
+    --slot-w: 50px; --slot-h: 64px; --card-w: 58px; --card-h: 76px;
   }
-  .opponents-area { grid-auto-rows: minmax(94px, auto); }
+  .opponents-area { grid-auto-rows: minmax(100px, auto); }
   .opponents-area > .opponent-card .base-slot {
-    width: 42px; height: 54px; min-width: 42px; max-width: 42px;
-    min-height: 54px; max-height: 54px; padding: 2px 1px;
+    width: 46px; height: 60px; min-width: 46px; max-width: 46px;
+    min-height: 60px; max-height: 60px; padding: 2px 1px;
   }
   .opponents-area > .opponent-card .bases-section { flex-basis: 150px; }
-  .opponents-area > .opponent-card .base-slot .slot-stats { font-size: .58rem; }
+  .opponents-area > .opponent-card .base-slot .slot-stats { font-size: .6rem; }
 }
 @media (max-width: 900px) {
   .game-header { align-items: flex-start; }
@@ -870,8 +870,8 @@ body::before {
   .waiting-room { padding: 28px 16px; margin: 24px auto; }
   .opponents-area { grid-template-columns: 1fr; }
   .player-area { padding: 12px; }
-  .base-slot { width: 62px; height: 76px; min-width: 62px; max-width: 62px; min-height: 76px; max-height: 76px; }
-  .card { width: 68px; height: 88px; min-width: 68px; max-width: 68px; min-height: 88px; max-height: 88px; }
+  .base-slot { width: 68px; height: 84px; min-width: 68px; max-width: 68px; min-height: 84px; max-height: 84px; }
+  .card { width: 76px; height: 98px; min-width: 76px; max-width: 76px; min-height: 98px; max-height: 98px; }
   .deck-info { gap: 8px; }
   .pile { min-width: 0; padding: 12px; }
   .action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
